@@ -1,0 +1,13 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond noir -->
+  <rect width="512" height="512" fill="#000000"/>
+  
+  <!-- Texte ECO en gris clair -->
+  <text x="80" y="280" font-family="Arial, sans-serif" font-size="120" font-weight="bold" fill="#E0E0E0">ECO</text>
+  
+  <!-- Éclair jaune qui remplace le V et le O -->
+  <path d="M 240 120 L 280 200 L 260 200 L 300 360 L 260 320 L 280 320 L 240 400 L 220 320 L 240 320 L 200 160 L 220 200 L 200 200 Z" fill="#FFD700" stroke="#FFD700" stroke-width="8"/>
+  
+  <!-- Texte LT en gris clair -->
+  <text x="320" y="280" font-family="Arial, sans-serif" font-size="120" font-weight="bold" fill="#E0E0E0">LT</text>
+</svg>
