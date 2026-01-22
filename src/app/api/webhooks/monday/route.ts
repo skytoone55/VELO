@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
         break
 
       case 'change_column_value':
+      case 'update_column_value': // Monday envoie ce type
         await handleColumnChange(adminClient, event)
         break
 
