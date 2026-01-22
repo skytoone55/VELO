@@ -125,7 +125,8 @@ const COLORS = {
   clientHorsZone: '#EF4444',
 }
 
-const MARKER_SIZE = 10
+const MARKER_SIZE = 6
+const DEPOT_MARKER_SIZE = 8
 
 export default function MapPage() {
   const [depots, setDepots] = useState<Depot[]>([])
@@ -226,13 +227,24 @@ export default function MapPage() {
     })
   }, [depots, selectedAgence, showLogistique, showRetrait])
 
-  // Clients filtrés
-  const filteredClients = useMemo(() => {
+  // Clients filtrés par agence uniquement (pour stats)
+  const clientsParAgence = useMemo(() => {
     return clients.filter(client => {
-      // Filtrer par agence (déjà normalisée dans loadData)
       if (selectedAgence !== 'all' && client.agence !== selectedAgence) {
         return false
       }
+      return true
+    })
+  }, [clients, selectedAgence])
+
+  // Clients hors zone (pour stats) - basé sur clientsParAgence
+  const clientsHorsZoneParAgence = useMemo(() => {
+    return clientsParAgence.filter(c => !c.depot_retrait_id && !c.depot_logistique_id)
+  }, [clientsParAgence])
+
+  // Clients filtrés pour l'affichage sur la carte (avec filtres visuels supplémentaires)
+  const filteredClients = useMemo(() => {
+    return clientsParAgence.filter(client => {
       // Filtrer par dépôt sélectionné
       if (selectedDepot) {
         return client.depot_retrait_id === selectedDepot || client.depot_logistique_id === selectedDepot
@@ -242,30 +254,18 @@ export default function MapPage() {
       if (!isHorsZone && !showLogistique && !showRetrait) return false
       return true
     })
-  }, [clients, selectedAgence, selectedDepot, showHorsZone, showLogistique, showRetrait])
+  }, [clientsParAgence, selectedDepot, showHorsZone, showLogistique, showRetrait])
 
-  // Clients hors zone filtrés par agence
-  const filteredClientsHorsZone = useMemo(() => {
-    return clients.filter(c => {
-      const isHorsZone = !c.depot_retrait_id && !c.depot_logistique_id
-      if (!isHorsZone) return false
-      // Agence déjà normalisée dans loadData
-      if (selectedAgence !== 'all' && c.agence !== selectedAgence) {
-        return false
-      }
-      return true
-    })
-  }, [clients, selectedAgence])
-
-  // Stats réactives
+  // Stats réactives - basées sur les données filtrées par agence (pas les filtres visuels)
   const stats = useMemo(() => {
-    const totalClients = filteredClients.length
-    const totalVelos = filteredClients.reduce((sum, c) => sum + (c.velo_valide || 0), 0)
+    const totalClients = clientsParAgence.length
+    const totalVelos = clientsParAgence.reduce((sum, c) => sum + (c.velo_valide || 0), 0)
     const totalDepotsLogistique = filteredDepots.filter(d => d.type === 'logistique').length
     const totalDepotsRetrait = filteredDepots.filter(d => d.type === 'retrait').length
-    const totalHorsZone = filteredClientsHorsZone.length
-    return { totalClients, totalVelos, totalDepotsLogistique, totalDepotsRetrait, totalHorsZone }
-  }, [filteredClients, filteredDepots, filteredClientsHorsZone])
+    const totalHorsZone = clientsHorsZoneParAgence.length
+    const clientsSansCoords = clientsParAgence.filter(c => !c.latitude || !c.longitude).length
+    return { totalClients, totalVelos, totalDepotsLogistique, totalDepotsRetrait, totalHorsZone, clientsSansCoords }
+  }, [clientsParAgence, filteredDepots, clientsHorsZoneParAgence])
 
   const handleSelectDepot = (depotId: string | null) => {
     setSelectedDepot(depotId)
@@ -397,7 +397,14 @@ export default function MapPage() {
                 <Users className="h-5 w-5 text-blue-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.totalClients}</p>
+                <p className="text-2xl font-bold">
+                  {stats.totalClients}
+                  {stats.clientsSansCoords > 0 && (
+                    <span className="text-sm font-normal text-muted-foreground ml-1" title="Clients sans coordonnées GPS">
+                      ({stats.clientsSansCoords} sans GPS)
+                    </span>
+                  )}
+                </p>
                 <p className="text-xs text-muted-foreground">Clients</p>
               </div>
             </div>
@@ -496,7 +503,7 @@ export default function MapPage() {
                   />
                   <label htmlFor="horsZone" className="text-sm flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.clientHorsZone }} />
-                    Hors zone ({filteredClientsHorsZone.length})
+                    Hors zone ({clientsHorsZoneParAgence.length})
                   </label>
                 </div>
               </div>
@@ -594,7 +601,7 @@ export default function MapPage() {
                     position={{ lat: depot.latitude, lng: depot.longitude }}
                     icon={{
                       path: google.maps.SymbolPath.CIRCLE,
-                      scale: MARKER_SIZE,
+                      scale: DEPOT_MARKER_SIZE,
                       fillColor: depot.type === 'logistique' ? COLORS.depotLogistique : COLORS.depotRetrait,
                       fillOpacity: 1,
                       strokeColor: '#fff',

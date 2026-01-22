@@ -14,15 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   RefreshCcw,
-  ArrowRight,
   ArrowLeft,
   CheckCircle,
   AlertCircle,
@@ -31,18 +23,25 @@ import {
   ExternalLink,
   Loader2,
   Info,
+  Webhook,
+  Copy,
+  Check,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { toast } from 'sonner'
 
 interface SyncStatus {
   configured: boolean
+  sourceOfTruth: string
+  webhookEndpoint: string
   lastSync: string | null
   lastSyncResult: any | null
+  recentWebhooks: any[]
   stats: {
     totalClients: number
-    syncedClients: number
+    syncedFromMonday: number
     pendingSync: number
   }
 }
@@ -54,18 +53,18 @@ interface SyncLog {
   direction: string
   statut: string
   donnees_apres: any
+  monday_item_id: number | null
 }
 
 export default function AdminSyncPage() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
-  const [syncDirection, setSyncDirection] = useState<'supabase_to_monday' | 'monday_to_supabase'>('supabase_to_monday')
   const [status, setStatus] = useState<SyncStatus | null>(null)
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([])
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
-  // Charger le statut et les logs
   useEffect(() => {
     loadData()
   }, [])
@@ -75,12 +74,10 @@ export default function AdminSyncPage() {
     setError(null)
 
     try {
-      // Charger le statut depuis l'API
       const statusRes = await fetch('/api/sync/monday')
       const statusData = await statusRes.json()
       setStatus(statusData)
 
-      // Charger les logs depuis Supabase
       const supabase = createClient()
       const { data: logs } = await supabase
         .from('sync_monday_log')
@@ -96,7 +93,7 @@ export default function AdminSyncPage() {
     }
   }
 
-  const handleSync = async () => {
+  const handleSync = async (fullSync: boolean = false) => {
     setSyncing(true)
     setError(null)
     setSuccessMessage(null)
@@ -105,7 +102,7 @@ export default function AdminSyncPage() {
       const res = await fetch('/api/sync/monday', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ direction: syncDirection }),
+        body: JSON.stringify({ fullSync }),
       })
 
       const result = await res.json()
@@ -118,17 +115,27 @@ export default function AdminSyncPage() {
         setSuccessMessage(
           `Synchronisation terminée: ${result.itemsProcessed} éléments traités, ${result.itemsCreated} créés, ${result.itemsUpdated} mis à jour`
         )
+        toast.success('Synchronisation réussie')
       } else {
         setError(`Synchronisation partielle: ${result.errors.length} erreurs`)
       }
 
-      // Recharger les données
       await loadData()
     } catch (err: any) {
       setError(err.message)
+      toast.error(err.message)
     } finally {
       setSyncing(false)
     }
+  }
+
+  const copyWebhookUrl = () => {
+    const baseUrl = window.location.origin
+    const webhookUrl = `${baseUrl}/api/webhooks/monday`
+    navigator.clipboard.writeText(webhookUrl)
+    setCopied(true)
+    toast.success('URL copiée!')
+    setTimeout(() => setCopied(false), 2000)
   }
 
   if (loading) {
@@ -139,12 +146,16 @@ export default function AdminSyncPage() {
     )
   }
 
+  const webhookUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/api/webhooks/monday`
+    : '/api/webhooks/monday'
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Synchronisation Monday</h1>
         <p className="text-muted-foreground">
-          Gérez la synchronisation bidirectionnelle avec Monday.com
+          Monday.com est la source de vérité - Les données sont synchronisées vers Supabase
         </p>
       </div>
 
@@ -152,7 +163,7 @@ export default function AdminSyncPage() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Monday.com n'est pas configuré. Ajoutez la variable d'environnement MONDAY_API_KEY pour activer la synchronisation.
+            Monday.com n'est pas configuré. Ajoutez MONDAY_API_KEY et MONDAY_BOARD_ID dans les variables d'environnement.
           </AlertDescription>
         </Alert>
       )}
@@ -171,39 +182,38 @@ export default function AdminSyncPage() {
         </Alert>
       )}
 
-      {/* Sync status */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-primary" />
-                <CardTitle>Supabase</CardTitle>
-              </div>
-              <Badge className="bg-green-100 text-green-800">SSOT</Badge>
+      {/* Architecture */}
+      <Card className="border-primary/50 bg-primary/5">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Info className="h-5 w-5 text-primary" />
+            <CardTitle>Architecture de synchronisation</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center gap-8 py-4">
+            <div className="text-center">
+              <ExternalLink className="h-12 w-12 mx-auto mb-2 text-primary" />
+              <span className="font-bold text-lg">Monday.com</span>
+              <Badge className="ml-2 bg-green-100 text-green-800">SOURCE</Badge>
+              <p className="text-sm text-muted-foreground mt-1">Création et modification des clients</p>
             </div>
-            <CardDescription>
-              Source de vérité - Base de données principale
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Total clients</span>
-                <span className="font-medium">{status?.stats.totalClients || 0}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Synchronisés</span>
-                <span className="font-medium text-green-600">{status?.stats.syncedClients || 0}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">En attente sync</span>
-                <span className="font-medium text-orange-600">{status?.stats.pendingSync || 0}</span>
-              </div>
+            <div className="flex flex-col items-center">
+              <ArrowLeft className="h-8 w-8 text-primary" />
+              <span className="text-xs text-muted-foreground mt-1">Webhook + Sync</span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-center">
+              <Database className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
+              <span className="font-bold text-lg">Supabase</span>
+              <Badge variant="outline" className="ml-2">CACHE</Badge>
+              <p className="text-sm text-muted-foreground mt-1">Miroir pour l'application</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* Stats */}
+      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -216,7 +226,7 @@ export default function AdminSyncPage() {
               </Badge>
             </div>
             <CardDescription>
-              Tableau de bord externe - Vue commerciale
+              Source de vérité - Gestion des clients
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -232,7 +242,7 @@ export default function AdminSyncPage() {
                 </div>
                 {status.lastSyncResult && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Résultat</span>
+                    <span className="text-muted-foreground">Dernier résultat</span>
                     <Badge
                       variant={status.lastSyncResult.success ? 'default' : 'destructive'}
                       className={status.lastSyncResult.success ? 'bg-green-100 text-green-800' : ''}
@@ -244,41 +254,72 @@ export default function AdminSyncPage() {
               </div>
             ) : (
               <div className="text-center py-4 text-muted-foreground">
-                Connexion non configurée
+                Configuration requise
               </div>
             )}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Database className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Supabase</CardTitle>
+              </div>
+              <Badge variant="outline">Cache</Badge>
+            </div>
+            <CardDescription>
+              Miroir des données Monday
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Total clients</span>
+                <span className="font-medium">{status?.stats.totalClients || 0}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Sync depuis Monday</span>
+                <span className="font-medium text-green-600">{status?.stats.syncedFromMonday || 0}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">En attente</span>
+                <span className="font-medium text-orange-600">{status?.stats.pendingSync || 0}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Sync direction */}
+      {/* Webhook configuration */}
       <Card>
         <CardHeader>
-          <CardTitle>Direction de synchronisation</CardTitle>
+          <div className="flex items-center gap-2">
+            <Webhook className="h-5 w-5 text-primary" />
+            <CardTitle>Configuration Webhook</CardTitle>
+          </div>
           <CardDescription>
-            La sync est bidirectionnelle mais Supabase prime en cas de conflit
+            Configurez ce webhook dans Monday.com pour une synchronisation en temps réel
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center gap-8 py-4">
-            <div className="text-center">
-              <Database className="h-10 w-10 mx-auto mb-2 text-primary" />
-              <span className="text-sm font-medium">Supabase</span>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex items-center gap-2">
-                <ArrowRight className={`h-5 w-5 ${syncDirection === 'supabase_to_monday' ? 'text-primary' : 'text-muted-foreground'}`} />
-                <span className="text-xs text-muted-foreground">Push</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ArrowLeft className={`h-5 w-5 ${syncDirection === 'monday_to_supabase' ? 'text-primary' : 'text-muted-foreground'}`} />
-                <span className="text-xs text-muted-foreground">Pull</span>
-              </div>
-            </div>
-            <div className="text-center">
-              <ExternalLink className={`h-10 w-10 mx-auto mb-2 ${status?.configured ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className="text-sm font-medium">Monday</span>
-            </div>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono">
+              {webhookUrl}
+            </code>
+            <Button variant="outline" size="sm" onClick={copyWebhookUrl}>
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
+          <div className="text-sm text-muted-foreground space-y-2">
+            <p><strong>Instructions pour Monday.com :</strong></p>
+            <ol className="list-decimal list-inside space-y-1 ml-2">
+              <li>Allez dans les paramètres de votre board Monday</li>
+              <li>Cliquez sur "Integrations" puis "Webhooks"</li>
+              <li>Créez un nouveau webhook avec l'URL ci-dessus</li>
+              <li>Sélectionnez les événements: create_item, change_column_value, change_name</li>
+            </ol>
           </div>
         </CardContent>
       </Card>
@@ -286,43 +327,35 @@ export default function AdminSyncPage() {
       {/* Sync actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Actions</CardTitle>
+          <CardTitle>Synchronisation manuelle</CardTitle>
+          <CardDescription>
+            Lance une synchronisation complète depuis Monday vers Supabase
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
-            <Select
-              value={syncDirection}
-              onValueChange={(v) => setSyncDirection(v as any)}
-              disabled={!status?.configured}
-            >
-              <SelectTrigger className="w-[280px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="supabase_to_monday">
-                  Supabase → Monday (Push)
-                </SelectItem>
-                <SelectItem value="monday_to_supabase">
-                  Monday → Supabase (Pull)
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
             <Button
-              onClick={handleSync}
+              onClick={() => handleSync(false)}
               disabled={syncing || !status?.configured}
             >
               <RefreshCcw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Synchronisation...' : 'Synchroniser maintenant'}
+              Sync incrémentale
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => handleSync(true)}
+              disabled={syncing || !status?.configured}
+            >
+              <RefreshCcw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+              Sync complète (tout réécrire)
             </Button>
           </div>
 
-          {!status?.configured && (
-            <p className="text-sm text-muted-foreground">
-              <Info className="h-4 w-4 inline mr-1" />
-              Configurez MONDAY_API_KEY dans les variables d'environnement pour activer la synchronisation.
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground">
+            <Info className="h-4 w-4 inline mr-1" />
+            La sync incrémentale ne met à jour que les éléments modifiés. La sync complète réécrit tous les clients depuis Monday.
+          </p>
         </CardContent>
       </Card>
 
@@ -331,7 +364,7 @@ export default function AdminSyncPage() {
         <CardHeader>
           <CardTitle>Historique des synchronisations</CardTitle>
           <CardDescription>
-            Dernières opérations de synchronisation
+            Dernières opérations (webhooks et syncs manuelles)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -346,7 +379,7 @@ export default function AdminSyncPage() {
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead>Action</TableHead>
-                  <TableHead>Direction</TableHead>
+                  <TableHead>Monday ID</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Détails</TableHead>
                 </TableRow>
@@ -354,40 +387,34 @@ export default function AdminSyncPage() {
               <TableBody>
                 {syncLogs.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-muted-foreground whitespace-nowrap">
                       {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: fr })}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{log.action}</Badge>
+                      <Badge variant="outline" className={log.action.includes('webhook') ? 'bg-blue-50' : ''}>
+                        {log.action.replace('webhook_', '')}
+                      </Badge>
                     </TableCell>
-                    <TableCell>
-                      {log.direction === 'supabase_to_monday' ? (
-                        <span className="flex items-center gap-1 text-sm">
-                          <ArrowRight className="h-3 w-3" /> Push
-                        </span>
-                      ) : log.direction === 'monday_to_supabase' ? (
-                        <span className="flex items-center gap-1 text-sm">
-                          <ArrowLeft className="h-3 w-3" /> Pull
-                        </span>
-                      ) : (
-                        '-'
-                      )}
+                    <TableCell className="font-mono text-sm">
+                      {log.monday_item_id || '-'}
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={log.statut === 'success' ? 'default' : 'destructive'}
+                        variant={log.statut === 'success' ? 'default' : log.statut === 'pending' ? 'outline' : 'destructive'}
                         className={log.statut === 'success' ? 'bg-green-100 text-green-800' : ''}
                       >
-                        {log.statut === 'success' ? 'Succès' : 'Erreur'}
+                        {log.statut === 'success' ? 'OK' : log.statut === 'pending' ? 'En cours' : 'Erreur'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {log.donnees_apres?.itemsProcessed !== undefined && (
+                    <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                      {log.donnees_apres?.itemsProcessed !== undefined ? (
                         <span>
-                          {log.donnees_apres.itemsProcessed} traités,{' '}
-                          {log.donnees_apres.itemsCreated} créés,{' '}
-                          {log.donnees_apres.itemsUpdated} mis à jour
+                          {log.donnees_apres.itemsProcessed} traités, {log.donnees_apres.itemsCreated} créés
                         </span>
+                      ) : log.donnees_apres?.clientId ? (
+                        <span>Client: {log.donnees_apres.clientId.slice(0, 8)}...</span>
+                      ) : (
+                        '-'
                       )}
                     </TableCell>
                   </TableRow>

@@ -74,13 +74,17 @@ export type Database = {
           created_at: string
           date_envoi_formulaire: string | null
           date_signature_devis: string | null
+          date_statut: string | null
           date_validation_code: string | null
           date_visite_prealable: string | null
           departement: string
           depot_logistique_id: string | null
           depot_retrait_id: string | null
+          devis_pdf_url: string | null
           agence: string | null
           email: string
+          email_beneficiaire: string | null
+          equipe_ids: string | null
           fnuci_ids: Json | null
           format_juridique: string | null
           id: string
@@ -92,13 +96,19 @@ export type Database = {
           nb_salaries: number | null
           nom_contact: string | null
           notes_internes: string | null
+          numero_devis: string | null
           numero_facture: string | null
           prenom_contact: string | null
           raison_sociale: string
           reference_dossier: string | null
           siret: string
+          statut_anomalie: string | null
           statut_commercial: string | null
+          statut_doublon: string | null
           statut_formulaire: string | null
+          statut_mail: string | null
+          statut_make: string | null
+          statut_retina: string | null
           telephone: string | null
           token_formulaire: string | null
           updated_at: string
@@ -128,13 +138,17 @@ export type Database = {
           created_at?: string
           date_envoi_formulaire?: string | null
           date_signature_devis?: string | null
+          date_statut?: string | null
           date_validation_code?: string | null
           date_visite_prealable?: string | null
           departement: string
           depot_logistique_id?: string | null
           depot_retrait_id?: string | null
+          devis_pdf_url?: string | null
           agence?: string | null
           email: string
+          email_beneficiaire?: string | null
+          equipe_ids?: string | null
           fnuci_ids?: Json | null
           format_juridique?: string | null
           id?: string
@@ -146,13 +160,19 @@ export type Database = {
           nb_salaries?: number | null
           nom_contact?: string | null
           notes_internes?: string | null
+          numero_devis?: string | null
           numero_facture?: string | null
           prenom_contact?: string | null
           raison_sociale: string
           reference_dossier?: string | null
           siret: string
+          statut_anomalie?: string | null
           statut_commercial?: string | null
+          statut_doublon?: string | null
           statut_formulaire?: string | null
+          statut_mail?: string | null
+          statut_make?: string | null
+          statut_retina?: string | null
           telephone?: string | null
           token_formulaire?: string | null
           updated_at?: string
@@ -182,13 +202,17 @@ export type Database = {
           created_at?: string
           date_envoi_formulaire?: string | null
           date_signature_devis?: string | null
+          date_statut?: string | null
           date_validation_code?: string | null
           date_visite_prealable?: string | null
           departement?: string
           depot_logistique_id?: string | null
           depot_retrait_id?: string | null
+          devis_pdf_url?: string | null
           agence?: string | null
           email?: string
+          email_beneficiaire?: string | null
+          equipe_ids?: string | null
           fnuci_ids?: Json | null
           format_juridique?: string | null
           id?: string
@@ -200,13 +224,19 @@ export type Database = {
           nb_salaries?: number | null
           nom_contact?: string | null
           notes_internes?: string | null
+          numero_devis?: string | null
           numero_facture?: string | null
           prenom_contact?: string | null
           raison_sociale?: string
           reference_dossier?: string | null
           siret?: string
+          statut_anomalie?: string | null
           statut_commercial?: string | null
+          statut_doublon?: string | null
           statut_formulaire?: string | null
+          statut_mail?: string | null
+          statut_make?: string | null
+          statut_retina?: string | null
           telephone?: string | null
           token_formulaire?: string | null
           updated_at?: string
@@ -701,6 +731,24 @@ export type StatutFormulaire =
   | 'formulaire_complete'
   | 'formulaire_bloque'
   | 'valide'
+
+// Statut commercial (Monday - colonne principale)
+export type StatutCommercial =
+  | 'dossier_complet'
+  | 'devis_signe'
+  | 'client_hs'
+  | 'devis_cree'
+  | 'controle_valide'
+  | 'inconnu'
+  | 'client_injoignable'
+  | 'doublon'
+  | 'controle_a_regulariser'
+  | 'ah_signee'
+  | 'livre'
+  | 'paye'
+  | 'controle_a_jour'
+  | 'client_contacte'
+  | 'franck'
 
 // Statut livraison
 export type StatutLivraison =

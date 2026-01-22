@@ -31,7 +31,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Plus, Pencil, Trash2, MoreHorizontal, Navigation, Eye, Phone } from 'lucide-react'
+import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Plus, Pencil, Trash2, MoreHorizontal, Navigation, Eye, Phone, KeyRound, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import {
   DropdownMenu,
@@ -53,44 +54,60 @@ import {
 import { Client } from '@/lib/types/database'
 import { toast } from 'sonner'
 
+// Statuts Monday - Statut commercial (color_mkvfws5n)
 const statutOptions = [
   { value: 'all', label: 'Tous les statuts' },
-  { value: 'en_attente', label: 'En attente' },
-  { value: 'formulaire_envoye', label: 'Formulaire envoyé' },
-  { value: 'formulaire_complete', label: 'Formulaire complété' },
-  { value: 'valide', label: 'Validé' },
+  { value: 'DOSSIER COMPLET', label: 'Dossier complet' },
+  { value: 'DEVIS SIGNÉ', label: 'Devis signé' },
+  { value: 'DEVIS CREE', label: 'Devis créé' },
+  { value: 'CONTROLE VALIDÉ', label: 'Contrôle validé' },
+  { value: 'CONTROLE A REGULARISER', label: 'Contrôle à régulariser' },
+  { value: 'CONTROLE A JOUR', label: 'Contrôle à jour' },
+  { value: 'CLIENT CONTACTÉ', label: 'Client contacté' },
+  { value: 'CLIENT INJOIGNABLE', label: 'Client injoignable' },
+  { value: 'CLIENT HS', label: 'Client HS' },
+  { value: 'AH SIGNÉE', label: 'AH signée' },
+  { value: 'LIVRÉ', label: 'Livré' },
+  { value: 'PAYÈ', label: 'Payé' },
+  { value: 'DOUBLON', label: 'Doublon' },
 ]
 
-const agenceOptions = [
-  { value: 'all', label: 'Toutes les agences' },
-  { value: 'reunion', label: 'La Réunion' },
-  { value: 'martinique', label: 'Martinique' },
-  { value: 'guadeloupe', label: 'Guadeloupe' },
-  { value: 'guyane', label: 'Guyane' },
-  { value: 'france_metro', label: 'France Métropolitaine' },
+// Départements Monday (color_mkvdkzxh)
+const departementOptions = [
+  { value: 'all', label: 'Tous les départements' },
+  { value: 'La Réunion', label: 'La Réunion' },
+  { value: 'Réunion', label: 'Réunion' },
+  { value: 'Martinique', label: 'Martinique' },
+  { value: 'Guadeloupe', label: 'Guadeloupe' },
+  { value: 'Guyane', label: 'Guyane' },
+  { value: 'Mayotte', label: 'Mayotte' },
+  { value: 'Hors DOM', label: 'Hors DOM' },
 ]
 
-const agenceLabels: Record<string, string> = {
-  reunion: 'La Réunion',
-  martinique: 'Martinique',
-  guadeloupe: 'Guadeloupe',
-  guyane: 'Guyane',
-  france_metro: 'France Métro',
-}
-
+// Couleurs des statuts Monday
 const statutColors: Record<string, string> = {
-  en_attente: 'bg-gray-100 text-gray-800',
-  formulaire_envoye: 'bg-yellow-100 text-yellow-800',
-  formulaire_complete: 'bg-blue-100 text-blue-800',
-  valide: 'bg-green-100 text-green-800',
+  'DOSSIER COMPLET': 'bg-lime-100 text-lime-800',
+  'DEVIS SIGNÉ': 'bg-green-100 text-green-800',
+  'DEVIS CREE': 'bg-blue-100 text-blue-800',
+  'CONTROLE VALIDÉ': 'bg-purple-100 text-purple-800',
+  'CONTROLE A REGULARISER': 'bg-pink-100 text-pink-800',
+  'CONTROLE A JOUR': 'bg-fuchsia-100 text-fuchsia-800',
+  'CLIENT CONTACTÉ': 'bg-sky-100 text-sky-800',
+  'CLIENT INJOIGNABLE': 'bg-violet-100 text-violet-800',
+  'CLIENT HS': 'bg-red-100 text-red-800',
+  'AH SIGNÉE': 'bg-yellow-100 text-yellow-800',
+  'LIVRÉ': 'bg-emerald-100 text-emerald-800',
+  'PAYÈ': 'bg-amber-100 text-amber-800',
+  'DOUBLON': 'bg-rose-100 text-rose-800',
+  'Inconnu': 'bg-gray-100 text-gray-800',
 }
 
-const statutLabels: Record<string, string> = {
-  en_attente: 'En attente',
-  formulaire_envoye: 'Formulaire envoyé',
-  formulaire_complete: 'Formulaire complété',
-  valide: 'Validé',
-}
+// Options de pagination
+const pageSizeOptions = [
+  { value: 20, label: '20 par page' },
+  { value: 50, label: '50 par page' },
+  { value: 100, label: '100 par page' },
+]
 
 // Déterminer l'agence à partir du code postal
 function getAgenceFromCodePostal(codePostal: string): string {
@@ -110,7 +127,11 @@ export default function AdminClientsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statutFilter, setStatutFilter] = useState('all')
-  const [agenceFilter, setAgenceFilter] = useState('all')
+  const [departementFilter, setDepartementFilter] = useState('all')
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
   // Dialog states
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
@@ -147,9 +168,29 @@ export default function AdminClientsPage() {
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
   const [deletingClient, setDeletingClient] = useState(false)
 
-  const fetchClients = async () => {
+  // Sélection multiple
+  const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
+  const [bulkActionLoading, setBulkActionLoading] = useState(false)
+
+  // Source de données: Monday (source de vérité) ou Supabase (cache)
+  const [dataSource, setDataSource] = useState<'monday' | 'supabase'>('monday')
+
+  // Info cache
+  const [cacheInfo, setCacheInfo] = useState<{
+    cached: boolean
+    cacheAge: number
+    cacheExpiresIn: number
+  } | null>(null)
+
+  const fetchClients = async (forceRefresh = false) => {
+    setLoading(true)
     try {
-      const response = await fetch('/api/admin/clients')
+      // Utiliser l'API Monday directe (source de vérité)
+      const endpoint = dataSource === 'monday'
+        ? `/api/monday/clients${forceRefresh ? '?refresh=true' : ''}`
+        : '/api/admin/clients'
+
+      const response = await fetch(endpoint)
       const result = await response.json()
 
       if (!response.ok) {
@@ -157,17 +198,46 @@ export default function AdminClientsPage() {
       }
 
       setClients(result.clients || [])
+
+      // Stocker les infos de cache
+      if (result.cached !== undefined) {
+        setCacheInfo({
+          cached: result.cached,
+          cacheAge: result.cacheAge || 0,
+          cacheExpiresIn: result.cacheExpiresIn || 0,
+        })
+      }
+
+      if (dataSource === 'monday') {
+        const cacheStatus = result.cached ? '(depuis cache)' : '(depuis Monday)'
+        console.log(`✓ ${result.total} clients chargés ${cacheStatus}`)
+
+        if (forceRefresh) {
+          toast.success('Données rafraîchies depuis Monday')
+        }
+      }
     } catch (error: any) {
       console.error('Erreur:', error)
-      toast.error('Erreur lors du chargement des clients')
+      toast.error(error.message || 'Erreur lors du chargement des clients')
+
+      // Fallback vers Supabase si Monday échoue
+      if (dataSource === 'monday') {
+        toast.info('Tentative de chargement depuis le cache...')
+        setDataSource('supabase')
+      }
     } finally {
       setLoading(false)
     }
   }
 
+  // Rafraîchir depuis Monday (ignorer le cache)
+  const handleForceRefresh = () => {
+    fetchClients(true)
+  }
+
   useEffect(() => {
-    fetchClients()
-  }, [])
+    fetchClients(false)
+  }, [dataSource])
 
   const handleSendForm = async (client: Client) => {
     setSendingEmail(true)
@@ -312,29 +382,119 @@ export default function AdminClientsPage() {
     }
   }
 
-  const filteredClients = clients.filter(client => {
+  // === Sélection multiple ===
+  const handleToggleSelect = (clientId: string) => {
+    const newSelected = new Set(selectedClients)
+    if (newSelected.has(clientId)) {
+      newSelected.delete(clientId)
+    } else {
+      newSelected.add(clientId)
+    }
+    setSelectedClients(newSelected)
+  }
+
+  const handleSelectAll = () => {
+    if (selectedClients.size === filteredClients.length) {
+      setSelectedClients(new Set())
+    } else {
+      setSelectedClients(new Set(filteredClients.map(c => c.id)))
+    }
+  }
+
+  const handleClearSelection = () => {
+    setSelectedClients(new Set())
+  }
+
+  // === Actions groupées ===
+  const handleBulkAction = async (action: 'send_code' | 'send_form' | 'change_status', data?: { statut?: string }) => {
+    if (selectedClients.size === 0) return
+    setBulkActionLoading(true)
+
+    try {
+      const response = await fetch('/api/admin/clients/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          clientIds: Array.from(selectedClients),
+          data,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erreur lors de l\'action groupée')
+      }
+
+      // Afficher le résultat
+      if (result.failed === 0) {
+        toast.success(`Action réussie pour ${result.success} client(s)`)
+      } else {
+        toast.warning(`${result.success} réussi(s), ${result.failed} échec(s)`)
+      }
+
+      // Rafraîchir et effacer la sélection
+      await fetchClients()
+      setSelectedClients(new Set())
+    } catch (error: any) {
+      console.error('Erreur bulk action:', error)
+      toast.error(error.message || 'Erreur lors de l\'action groupée')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
+
+  // Filtrage avec statut_commercial de Monday
+  const filteredClients = clients.filter((client: any) => {
     const matchesSearch =
       !searchQuery ||
       client.raison_sociale?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.siret?.includes(searchQuery) ||
       client.email?.toLowerCase().includes(searchQuery.toLowerCase())
 
+    // Utiliser statut_commercial de Monday
+    const clientStatut = client.statut_commercial || ''
     const matchesStatut =
-      statutFilter === 'all' || client.statut_formulaire === statutFilter
+      statutFilter === 'all' || clientStatut === statutFilter
 
+    // Utiliser departement de Monday
+    const clientDept = client.departement || ''
     const matchesDepartement =
-      agenceFilter === 'all' || client.agence === agenceFilter
+      departementFilter === 'all' ||
+      clientDept === departementFilter ||
+      clientDept.includes(departementFilter)
 
     return matchesSearch && matchesStatut && matchesDepartement
   })
 
-  // Stats
+  // Pagination
+  const totalPages = Math.ceil(filteredClients.length / pageSize)
+  const startIndex = (currentPage - 1) * pageSize
+  const paginatedClients = filteredClients.slice(startIndex, startIndex + pageSize)
+
+  // Reset page quand les filtres changent
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, statutFilter, departementFilter, pageSize])
+
+  // Statuts sélectionnés pour les stats dynamiques (2 sélecteurs indépendants)
+  const [selectedStatutClients, setSelectedStatutClients] = useState('DOSSIER COMPLET')
+  const [selectedStatutVelos, setSelectedStatutVelos] = useState('DOSSIER COMPLET')
+
+  // Stats basées sur statut_commercial Monday
   const stats = {
     total: clients.length,
-    enAttente: clients.filter(c => c.statut_formulaire === 'en_attente').length,
-    envoyes: clients.filter(c => c.statut_formulaire === 'formulaire_envoye').length,
-    completes: clients.filter(c => c.statut_formulaire === 'formulaire_complete').length,
-    valides: clients.filter(c => c.statut_formulaire === 'valide').length,
+    velosValides: clients.reduce((sum: number, c: any) => sum + (c.velo_valide || c.velo_confirme || 0), 0),
+    velosLivres: clients
+      .filter((c: any) => c.statut_commercial === 'LIVRÉ')
+      .reduce((sum: number, c: any) => sum + (c.velo_valide || c.velo_confirme || 0), 0),
+    // Stats dynamiques - clients par statut
+    clientsStatut: clients.filter((c: any) => c.statut_commercial === selectedStatutClients).length,
+    // Stats dynamiques - vélos par statut (sélecteur indépendant)
+    velosStatut: clients
+      .filter((c: any) => c.statut_commercial === selectedStatutVelos)
+      .reduce((sum: number, c: any) => sum + (c.velo_valide || c.velo_confirme || 0), 0),
   }
 
   if (loading) {
@@ -354,10 +514,29 @@ export default function AdminClientsPage() {
             Gérez les dossiers clients et envoyez les formulaires
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchClients}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Actualiser
+        <div className="flex items-center gap-2">
+          {/* Indicateur source de données et cache */}
+          {dataSource === 'monday' && cacheInfo && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {cacheInfo.cached ? (
+                <Badge variant="outline" className="text-xs">
+                  Cache ({Math.floor(cacheInfo.cacheAge / 60)}:{String(cacheInfo.cacheAge % 60).padStart(2, '0')})
+                </Badge>
+              ) : (
+                <Badge variant="default" className="bg-green-500 text-xs">
+                  Live
+                </Badge>
+              )}
+            </div>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleForceRefresh}
+            disabled={loading}
+            title="Rafraîchir depuis Monday (ignorer le cache)"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
           <Button onClick={() => setShowNewClientDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -368,34 +547,67 @@ export default function AdminClientsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {/* Total clients */}
         <Card>
           <CardContent className="pt-4 pb-4">
             <div className="text-2xl font-bold">{stats.total}</div>
             <div className="text-sm text-muted-foreground">Total clients</div>
           </CardContent>
         </Card>
+
+        {/* Vélos validés (total) */}
         <Card>
           <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-gray-600">{stats.enAttente}</div>
-            <div className="text-sm text-muted-foreground">En attente</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.velosValides}</div>
+            <div className="text-sm text-muted-foreground">Vélos validés</div>
           </CardContent>
         </Card>
+
+        {/* Vélos livrés (total) */}
         <Card>
           <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-yellow-600">{stats.envoyes}</div>
-            <div className="text-sm text-muted-foreground">Form. envoyés</div>
+            <div className="text-2xl font-bold text-emerald-600">{stats.velosLivres}</div>
+            <div className="text-sm text-muted-foreground">Vélos livrés</div>
           </CardContent>
         </Card>
+
+        {/* Sélecteur de statut + Clients de ce statut */}
         <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-blue-600">{stats.completes}</div>
-            <div className="text-sm text-muted-foreground">Complétés</div>
+          <CardContent className="pt-3 pb-3">
+            <Select value={selectedStatutClients} onValueChange={setSelectedStatutClients}>
+              <SelectTrigger className="h-7 text-xs mb-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {statutOptions.filter(o => o.value !== 'all').map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="text-2xl font-bold text-purple-600">{stats.clientsStatut}</div>
+            <div className="text-sm text-muted-foreground">Clients</div>
           </CardContent>
         </Card>
+
+        {/* Sélecteur de statut + Vélos de ce statut */}
         <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-green-600">{stats.valides}</div>
-            <div className="text-sm text-muted-foreground">Validés</div>
+          <CardContent className="pt-3 pb-3">
+            <Select value={selectedStatutVelos} onValueChange={setSelectedStatutVelos}>
+              <SelectTrigger className="h-7 text-xs mb-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {statutOptions.filter(o => o.value !== 'all').map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="text-2xl font-bold text-amber-600">{stats.velosStatut}</div>
+            <div className="text-sm text-muted-foreground">Vélos validés</div>
           </CardContent>
         </Card>
       </div>
@@ -426,21 +638,32 @@ export default function AdminClientsPage() {
                 ))}
               </SelectContent>
             </Select>
-            {user?.role === 'admin_general' && (
-              <Select value={agenceFilter} onValueChange={setAgenceFilter}>
-                <SelectTrigger className="w-full lg:w-56">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Département" />
-                </SelectTrigger>
-                <SelectContent>
-                  {agenceOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <Select value={departementFilter} onValueChange={setDepartementFilter}>
+              <SelectTrigger className="w-full lg:w-56">
+                <MapPin className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Département" />
+              </SelectTrigger>
+              <SelectContent>
+                {departementOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* Sélecteur nombre par page */}
+            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+              <SelectTrigger className="w-full lg:w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pageSizeOptions.map((option) => (
+                  <SelectItem key={option.value} value={String(option.value)}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -453,107 +676,94 @@ export default function AdminClientsPage() {
               <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h3 className="font-medium mb-1">Aucun client</h3>
               <p className="text-muted-foreground text-sm">
-                {searchQuery || statutFilter !== 'all' || agenceFilter !== 'all'
+                {searchQuery || statutFilter !== 'all' || departementFilter !== 'all'
                   ? 'Aucun client ne correspond à vos critères'
                   : 'Les clients apparaîtront ici après synchronisation avec Monday'}
               </p>
             </div>
           ) : (
+            <>
+            {/* Info pagination */}
+            <div className="px-4 py-3 border-b flex items-center justify-between text-sm text-muted-foreground">
+              <span>
+                {filteredClients.length} client{filteredClients.length > 1 ? 's' : ''} trouvé{filteredClients.length > 1 ? 's' : ''}
+                {filteredClients.length !== clients.length && ` (sur ${clients.length} total)`}
+              </span>
+              <span>
+                Page {currentPage} sur {totalPages}
+              </span>
+            </div>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={paginatedClients.length > 0 && selectedClients.size === paginatedClients.length}
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Tout sélectionner"
+                    />
+                  </TableHead>
                   <TableHead>Société</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <TableHead>Agence</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Département</TableHead>
                   <TableHead>Vélos</TableHead>
-                  <TableHead>Statut</TableHead>
+                  <TableHead>Statut commercial</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredClients.map((client) => (
-                  <TableRow key={client.id}>
+                {paginatedClients.map((client: any) => (
+                  <TableRow key={client.id} className={selectedClients.has(client.id) ? 'bg-muted/50' : ''}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedClients.has(client.id)}
+                        onCheckedChange={() => handleToggleSelect(client.id)}
+                        aria-label={`Sélectionner ${client.raison_sociale}`}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div>
                         <div className="font-medium">{client.raison_sociale}</div>
                         <div className="text-sm text-muted-foreground font-mono">
-                          {client.siret}
+                          {client.siret || '-'}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <div>{client.contact_prenom} {client.contact_nom}</div>
-                        <div className="text-muted-foreground flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {client.email}
-                        </div>
+                        {client.email ? (
+                          <div className="text-muted-foreground flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {client.email}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      {client.telephone ? (
-                        <div className="text-sm flex items-center gap-1">
-                          <Phone className="h-3 w-3 text-muted-foreground" />
-                          {client.telephone}
-                        </div>
+                      {client.departement ? (
+                        <Badge variant="outline">
+                          {client.departement}
+                        </Badge>
                       ) : (
                         <span className="text-muted-foreground text-sm">-</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">
-                        {client.agence}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
                       <div className="text-sm">
-                        <span className="font-medium">{client.velo_valide || 0}</span>
-                        <span className="text-muted-foreground"> / {client.velo_devis}</span>
+                        <span className="font-medium">{client.velo_valide || client.velo_confirme || 0}</span>
+                        <span className="text-muted-foreground"> / {client.velo_devis || 0}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={statutColors[client.statut_formulaire || 'en_attente']}>
-                        {statutLabels[client.statut_formulaire || 'en_attente']}
+                      <Badge className={statutColors[client.statut_commercial] || 'bg-gray-100 text-gray-800'}>
+                        {client.statut_commercial || 'Inconnu'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {client.statut_formulaire === 'en_attente' && (
-                          <Button
-                            size="sm"
-                            onClick={() => setSelectedClient(client)}
-                            disabled={sendingEmail}
-                          >
-                            <Send className="h-4 w-4 mr-1" />
-                            Envoyer formulaire
-                          </Button>
-                        )}
-                        {client.statut_formulaire === 'formulaire_envoye' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedClient(client)}
-                            disabled={sendingEmail}
-                          >
-                            <RefreshCw className="h-4 w-4 mr-1" />
-                            Renvoyer
-                          </Button>
-                        )}
-                        {client.token_formulaire && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const url = `${window.location.origin}/formulaire?token=${client.token_formulaire}`
-                              setGeneratedLink(url)
-                              setShowLinkDialog(true)
-                            }}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {/* Icônes d'accès rapide */}
+                      <div className="flex justify-end gap-1">
+                        {/* Voir la fiche */}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -561,14 +771,6 @@ export default function AdminClientsPage() {
                           title="Voir la fiche"
                         >
                           <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditClient(client)}
-                          title="Modifier"
-                        >
-                          <Pencil className="h-4 w-4" />
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -585,20 +787,11 @@ export default function AdminClientsPage() {
                               <Pencil className="h-4 w-4 mr-2" />
                               Modifier
                             </DropdownMenuItem>
-                            {user.role === 'admin_general' && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => {
-                                    setClientToDelete(client)
-                                    setShowDeleteDialog(true)
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Supprimer
-                                </DropdownMenuItem>
-                              </>
+                            {client.email && (
+                              <DropdownMenuItem onClick={() => setSelectedClient(client)}>
+                                <Send className="h-4 w-4 mr-2" />
+                                Envoyer formulaire
+                              </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -608,9 +801,121 @@ export default function AdminClientsPage() {
                 ))}
               </TableBody>
             </Table>
+
+            {/* Pagination en bas du tableau */}
+            {totalPages > 1 && (
+              <div className="px-4 py-3 border-t flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Affichage {startIndex + 1} - {Math.min(startIndex + pageSize, filteredClients.length)} sur {filteredClients.length}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Précédent
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number
+                      if (totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i
+                      } else {
+                        pageNum = currentPage - 2 + i
+                      }
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? 'default' : 'outline'}
+                          size="sm"
+                          className="w-9"
+                          onClick={() => setCurrentPage(pageNum)}
+                        >
+                          {pageNum}
+                        </Button>
+                      )
+                    })}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Suivant
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+            </>
           )}
         </CardContent>
       </Card>
+
+      {/* Barre d'actions groupées flottante */}
+      {selectedClients.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <Card className="shadow-lg border-2">
+            <CardContent className="flex items-center gap-4 py-3 px-4">
+              <span className="font-medium text-sm">
+                {selectedClients.size} client{selectedClients.size > 1 ? 's' : ''} sélectionné{selectedClients.size > 1 ? 's' : ''}
+              </span>
+              <div className="h-6 w-px bg-border" />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleBulkAction('send_code')}
+                disabled={bulkActionLoading}
+              >
+                <KeyRound className="h-4 w-4 mr-2" />
+                Envoyer codes
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleBulkAction('send_form')}
+                disabled={bulkActionLoading}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Envoyer formulaires
+              </Button>
+              <Select
+                onValueChange={(value) => handleBulkAction('change_status', { statut: value })}
+                disabled={bulkActionLoading}
+              >
+                <SelectTrigger className="w-44 h-9">
+                  <SelectValue placeholder="Changer statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en_attente">En attente</SelectItem>
+                  <SelectItem value="formulaire_envoye">Formulaire envoyé</SelectItem>
+                  <SelectItem value="formulaire_complete">Formulaire complété</SelectItem>
+                  <SelectItem value="valide">Validé</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleClearSelection}
+                disabled={bulkActionLoading}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              {bulkActionLoading && (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Confirmation Dialog */}
       <Dialog open={!!selectedClient && !showLinkDialog} onOpenChange={() => setSelectedClient(null)}>

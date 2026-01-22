@@ -248,6 +248,23 @@ export default function AdminDepotsPage() {
 
         setDepots(depots.map(d => d.id === editingDepot.id ? { ...d, ...depotData } : d))
         setSuccess('Depot mis a jour avec succes')
+
+        // Si c'est un dépôt logistique, lancer la réassignation des clients
+        if (depotData.type === 'logistique') {
+          try {
+            const reassignResponse = await fetch('/api/admin/depots/reassign-clients', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ agence: depotData.agence }),
+            })
+            const reassignData = await reassignResponse.json()
+            if (reassignData.reassigned > 0) {
+              setSuccess(`Depot mis a jour avec succes. ${reassignData.reassigned} client(s) réassigné(s).`)
+            }
+          } catch (reassignErr) {
+            console.error('Erreur réassignation:', reassignErr)
+          }
+        }
       } else {
         const { data: newDepot, error: insertError } = await supabase
           .from('depots')

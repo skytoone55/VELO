@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { syncClientToMonday, getChangedFields } from '@/lib/monday/sync'
+import { isMondayConfigured } from '@/lib/monday/config'
 
 // GET - Récupérer un client par ID
 export async function GET(
@@ -107,10 +109,10 @@ export async function PUT(
     // Utiliser le client admin pour bypasser RLS
     const adminClient = createAdminClient()
 
-    // Vérifier que le client existe et récupérer son département actuel
+    // Vérifier que le client existe et récupérer toutes ses données pour la sync
     const { data: existingClient, error: fetchError } = await adminClient
       .from('clients')
-      .select('departement')
+      .select('*')
       .eq('id', id)
       .single()
 
@@ -154,7 +156,43 @@ export async function PUT(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ client: updatedClient })
+    // Synchronisation bidirectionnelle vers Monday
+    let mondaySync = { success: false, skipped: true, error: null as string | null }
+    if (updatedClient.monday_item_id && isMondayConfigured()) {
+      try {
+        // Déterminer les champs modifiés pour ne synchroniser que ceux-là
+        const changedFields = getChangedFields(existingClient, updateData)
+
+        if (changedFields.length > 0) {
+          const syncResult = await syncClientToMonday(updatedClient, changedFields)
+          mondaySync = {
+            success: syncResult.success,
+            skipped: false,
+            error: syncResult.error || null,
+          }
+
+          // Logger la synchronisation
+          await adminClient.from('sync_monday_log').insert({
+            action: 'api_update',
+            direction: 'supabase_to_monday',
+            client_id: updatedClient.id,
+            monday_item_id: updatedClient.monday_item_id,
+            statut: syncResult.success ? 'success' : 'error',
+            donnees_avant: existingClient,
+            donnees_apres: updateData,
+            message_erreur: syncResult.error,
+          })
+        }
+      } catch (syncError: any) {
+        console.error('Erreur sync Monday:', syncError)
+        mondaySync.error = syncError.message
+      }
+    }
+
+    return NextResponse.json({
+      client: updatedClient,
+      mondaySync,
+    })
   } catch (error: any) {
     console.error('Erreur API:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })

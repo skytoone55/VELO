@@ -1,8 +1,10 @@
 'use client'
 
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Settings, Database, Mail, RefreshCcw, Shield } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Database, Mail, Shield, Link2, ArrowRight } from 'lucide-react'
 
 export default function AdminSettingsPage() {
   return (
@@ -15,6 +17,40 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="grid gap-6">
+        {/* Monday.com Mapping - Mise en avant */}
+        <Card className="border-primary/50 bg-primary/5">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Link2 className="h-5 w-5 text-primary" />
+                <CardTitle>Mapping Monday.com</CardTitle>
+              </div>
+              <Link href="/admin/settings/monday">
+                <Button size="sm">
+                  Configurer
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+            <CardDescription>
+              Connectez les champs de l'interface avec les colonnes Monday.
+              Monday est la source de vérité pour toutes les données clients.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Board</span>
+                <span className="font-medium">Vélos Cargos - Général</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Board ID</span>
+                <span className="font-mono">9990833105</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -22,7 +58,7 @@ export default function AdminSettingsPage() {
               <CardTitle>Base de données</CardTitle>
             </div>
             <CardDescription>
-              Informations sur la connexion Supabase
+              Cache local pour les performances (Monday reste la source de vérité)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -34,30 +70,6 @@ export default function AdminSettingsPage() {
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Projet</span>
                 <span className="font-mono">irpnllwlxivlylclfjwd</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <RefreshCcw className="h-5 w-5 text-primary" />
-              <CardTitle>Synchronisation Monday</CardTitle>
-            </div>
-            <CardDescription>
-              État de la synchronisation avec Monday.com
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Statut</span>
-                <Badge variant="outline">Non configuré</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Dernière sync</span>
-                <span>-</span>
               </div>
             </div>
           </CardContent>

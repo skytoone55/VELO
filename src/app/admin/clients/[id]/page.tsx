@@ -96,7 +96,45 @@ function InfoRow({
   )
 }
 
-const statutColors: Record<string, string> = {
+// Statuts commerciaux Monday (source de vérité)
+const statutCommercialColors: Record<string, string> = {
+  dossier_complet: 'bg-emerald-100 text-emerald-800',
+  devis_signe: 'bg-blue-100 text-blue-800',
+  devis_cree: 'bg-sky-100 text-sky-800',
+  client_contacte: 'bg-amber-100 text-amber-800',
+  client_injoignable: 'bg-orange-100 text-orange-800',
+  client_hs: 'bg-red-100 text-red-800',
+  controle_valide: 'bg-green-100 text-green-800',
+  controle_a_jour: 'bg-teal-100 text-teal-800',
+  controle_a_regulariser: 'bg-yellow-100 text-yellow-800',
+  ah_signee: 'bg-indigo-100 text-indigo-800',
+  livre: 'bg-purple-100 text-purple-800',
+  paye: 'bg-emerald-200 text-emerald-900',
+  doublon: 'bg-slate-100 text-slate-600',
+  franck: 'bg-pink-100 text-pink-800',
+  inconnu: 'bg-gray-100 text-gray-600',
+}
+
+const statutCommercialLabels: Record<string, string> = {
+  dossier_complet: 'Dossier complet',
+  devis_signe: 'Devis signé',
+  devis_cree: 'Devis créé',
+  client_contacte: 'Client contacté',
+  client_injoignable: 'Client injoignable',
+  client_hs: 'Client HS',
+  controle_valide: 'Contrôle validé',
+  controle_a_jour: 'Contrôle à jour',
+  controle_a_regulariser: 'Contrôle à régulariser',
+  ah_signee: 'AH signée',
+  livre: 'Livré',
+  paye: 'Payé',
+  doublon: 'Doublon',
+  franck: 'Franck',
+  inconnu: 'Inconnu',
+}
+
+// Ancien système de statuts formulaire (pour rétrocompatibilité)
+const statutFormulaireColors: Record<string, string> = {
   en_attente: 'bg-slate-100 text-slate-700',
   formulaire_envoye: 'bg-amber-100 text-amber-800',
   formulaire_complete: 'bg-blue-100 text-blue-800',
@@ -104,7 +142,7 @@ const statutColors: Record<string, string> = {
   valide: 'bg-emerald-100 text-emerald-800',
 }
 
-const statutLabels: Record<string, string> = {
+const statutFormulaireLabels: Record<string, string> = {
   en_attente: 'En attente',
   formulaire_envoye: 'Formulaire envoyé',
   formulaire_complete: 'Formulaire complété',
@@ -144,53 +182,44 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [newStatut, setNewStatut] = useState('')
   const [commentaire, setCommentaire] = useState('')
 
+  // Source de données
+  const [dataSource, setDataSource] = useState<'monday' | 'supabase'>('monday')
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`/api/admin/clients/${resolvedParams.id}`)
-        const data = await response.json()
+        // Essayer d'abord Monday (source de vérité)
+        const mondayResponse = await fetch(`/api/monday/clients/${resolvedParams.id}`)
+        const mondayData = await mondayResponse.json()
 
-        if (!response.ok) {
-          setError(data.error || 'Client introuvable')
-          setLoading(false)
-          return
-        }
+        if (mondayResponse.ok && mondayData.client) {
+          setClient(mondayData.client)
+          setDataSource('monday')
+          console.log('✓ Client chargé depuis Monday (source de vérité)')
 
-        setClient(data.client)
-        setLivraisons(data.livraisons || [])
-
-        // Récupérer les dépôts associés
-        const supabase = createClient()
-        if (data.client.depot_retrait_id) {
-          const { data: depot } = await supabase
-            .from('depots')
-            .select('*')
-            .eq('id', data.client.depot_retrait_id)
-            .single()
-          setDepotRetrait(depot)
-        }
-        if (data.client.depot_logistique_id) {
-          const { data: depot } = await supabase
-            .from('depots')
-            .select('*')
-            .eq('id', data.client.depot_logistique_id)
-            .single()
-          setDepotLogistique(depot)
-        }
-
-        // Récupérer la distance depuis le cache
-        const depotId = data.client.depot_retrait_id || data.client.depot_logistique_id
-        if (depotId) {
-          const { data: distanceData } = await supabase
-            .from('distances_cache')
-            .select('distance_km')
-            .eq('client_id', data.client.id)
-            .eq('depot_id', depotId)
-            .single()
-          if (distanceData) {
-            setDistanceKm(distanceData.distance_km)
+          // Les livraisons restent dans Supabase pour l'instant
+          const supabaseResponse = await fetch(`/api/admin/clients/${resolvedParams.id}`)
+          if (supabaseResponse.ok) {
+            const supabaseData = await supabaseResponse.json()
+            setLivraisons(supabaseData.livraisons || [])
           }
+        } else {
+          // Fallback vers Supabase si Monday échoue
+          console.log('Monday non disponible, fallback vers Supabase')
+          const response = await fetch(`/api/admin/clients/${resolvedParams.id}`)
+          const data = await response.json()
+
+          if (!response.ok) {
+            setError(data.error || 'Client introuvable')
+            setLoading(false)
+            return
+          }
+
+          setClient(data.client)
+          setLivraisons(data.livraisons || [])
+          setDataSource('supabase')
         }
+
       } catch (err) {
         setError('Erreur lors du chargement')
       } finally {
@@ -251,7 +280,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       const { error: updateError } = await supabase
         .from('clients')
         .update({
-          statut_formulaire: newStatut,
+          statut_commercial: newStatut,
           updated_at: new Date().toISOString(),
         })
         .eq('id', client.id)
@@ -261,14 +290,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       await supabase.from('workflow_transitions').insert({
         entity_type: 'client',
         entity_id: client.id,
-        statut_avant: client.statut_formulaire,
+        statut_avant: client.statut_commercial,
         statut_apres: newStatut,
         effectue_par: user?.id,
-        raison: commentaire || 'Changement manuel de statut',
+        raison: commentaire || 'Changement manuel de statut commercial',
       })
 
-      setSuccess('Statut mis à jour')
-      setClient({ ...client, statut_formulaire: newStatut })
+      setSuccess('Statut commercial mis à jour')
+      setClient({ ...client, statut_commercial: newStatut })
       setChangeStatutOpen(false)
       setCommentaire('')
     } catch (err: any) {
@@ -430,8 +459,15 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">{client.raison_sociale}</h1>
-              <p className="text-slate-300 mt-1">{getDepartementLabel(client.departement)}</p>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold">{client.raison_sociale}</h1>
+                <Badge
+                  className={dataSource === 'monday' ? 'bg-blue-500' : 'bg-slate-500'}
+                >
+                  {dataSource === 'monday' ? '● Monday' : '○ Cache'}
+                </Badge>
+              </div>
+              <p className="text-slate-300 mt-1">{getDepartementLabel(client.departement || '')}</p>
             </div>
           </div>
 
@@ -547,7 +583,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Changer le statut</DialogTitle>
+                  <DialogTitle>Changer le statut commercial</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <Select value={newStatut} onValueChange={setNewStatut}>
@@ -555,10 +591,19 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       <SelectValue placeholder="Sélectionner..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en_attente">En attente</SelectItem>
-                      <SelectItem value="formulaire_envoye">Formulaire envoyé</SelectItem>
-                      <SelectItem value="formulaire_complete">Formulaire complété</SelectItem>
-                      <SelectItem value="valide">Validé</SelectItem>
+                      <SelectItem value="devis_cree">Devis créé</SelectItem>
+                      <SelectItem value="devis_signe">Devis signé</SelectItem>
+                      <SelectItem value="client_contacte">Client contacté</SelectItem>
+                      <SelectItem value="client_injoignable">Client injoignable</SelectItem>
+                      <SelectItem value="client_hs">Client HS</SelectItem>
+                      <SelectItem value="dossier_complet">Dossier complet</SelectItem>
+                      <SelectItem value="controle_a_regulariser">Contrôle à régulariser</SelectItem>
+                      <SelectItem value="controle_a_jour">Contrôle à jour</SelectItem>
+                      <SelectItem value="controle_valide">Contrôle validé</SelectItem>
+                      <SelectItem value="ah_signee">AH signée</SelectItem>
+                      <SelectItem value="livre">Livré</SelectItem>
+                      <SelectItem value="paye">Payé</SelectItem>
+                      <SelectItem value="doublon">Doublon</SelectItem>
                     </SelectContent>
                   </Select>
                   <Textarea
@@ -577,8 +622,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </DialogContent>
             </Dialog>
 
-            <Badge className={`${statutColors[client.statut_formulaire || 'en_attente']} text-sm px-3 py-1 ml-2`}>
-              {statutLabels[client.statut_formulaire || 'en_attente']}
+            {/* Statut commercial Monday (principal) */}
+            <Badge className={`${statutCommercialColors[client.statut_commercial || 'inconnu']} text-sm px-3 py-1 ml-2`}>
+              {statutCommercialLabels[client.statut_commercial || 'inconnu']}
             </Badge>
           </div>
         </div>
