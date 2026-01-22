@@ -198,7 +198,7 @@ export default function AdminClientsPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery)
-    }, 300)
+    }, 600) // 600ms pour laisser le temps de taper
     return () => clearTimeout(timer)
   }, [searchQuery])
 
@@ -791,10 +791,10 @@ export default function AdminClientsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {client.email ? (
+                        {(client.email_beneficiaire || client.email) ? (
                           <div className="text-muted-foreground flex items-center gap-1">
                             <Mail className="h-3 w-3" />
-                            {client.email}
+                            {client.email_beneficiaire || client.email}
                           </div>
                         ) : (
                           <span className="text-muted-foreground">-</span>
