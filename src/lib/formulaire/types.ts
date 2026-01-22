@@ -1,7 +1,7 @@
 import { Depot } from '@/lib/types/database'
 
-// Étapes: 1=ENEMAT, 2=Infos, 3=Adresse, 4=Document, 5=Password, 6=Confirmation
-export type FormulaireStep = 1 | 2 | 3 | 4 | 5 | 6
+// Étapes: 1=ENEMAT, 2=Infos, 3=Adresse, 4=Préférence retrait/livraison, 5=Confirmation
+export type FormulaireStep = 1 | 2 | 3 | 4 | 5
 
 export interface FormulaireData {
   // Étape 1 - Code ENEMAT
@@ -23,24 +23,35 @@ export interface FormulaireData {
     codePostal: string
     ville: string
   }
-  // Mode de livraison déterminé automatiquement par l'API
+  // Mode de livraison déterminé automatiquement par l'API à l'étape 3
   modeLivraison?: 'domicile' | 'retrait'
-  depotRetrait?: Depot  // Dépôt assigné si mode retrait
-  depotLogistique?: Depot  // Dépôt logistique si mode domicile
+  // Zone de livraison: gratuite, payante, ou hors_zone
+  zoneLivraison?: 'gratuite' | 'payante' | 'hors_zone'
+  // Type du dépôt le plus proche
+  depotType?: 'retrait' | 'logistique'
+  depotRetrait?: Depot & { distance?: number }  // Dépôt assigné si mode retrait
+  depotLogistique?: Depot & { distance?: number }  // Dépôt logistique si mode domicile
+  // Prix de la livraison payante (si applicable)
+  prixLivraisonPayante?: number
 
-  // Étape 4 - Document identité
+  // Étape 4 - Préférence retrait / livraison
+  preferenceMode?: 'retrait' | 'livraison_gratuite' | 'livraison_payante'
+  modeLivraisonFinal?: 'domicile' | 'retrait'
+  livraisonPayante?: boolean
+
+  // Étape 5 - Confirmation
+  accepteCGV?: boolean
+  acceptePolitique?: boolean
+
+  // === ARCHIVÉ (anciennes étapes 4 et 5) ===
+  // Document identité (archivé)
   documentIdentite?: {
     type: string
     url: string
     nomFichier: string
   }
-
-  // Étape 5 - Création mot de passe compte client
+  // Création mot de passe compte client (archivé)
   password?: string
-
-  // Étape 6 - Confirmation
-  accepteCGV?: boolean
-  acceptePolitique?: boolean
 }
 
 export interface FormulaireContext {
@@ -56,8 +67,7 @@ export interface FormulaireContext {
 export const STEP_NAMES: Record<FormulaireStep, string> = {
   1: 'Code ENEMAT',
   2: 'Vos informations',
-  3: 'Adresse de livraison',
-  4: 'Document d\'identité',
-  5: 'Créer votre compte',
-  6: 'Confirmation',
+  3: 'Adresse livraison',
+  4: 'Mode de réception',
+  5: 'Confirmation',
 }

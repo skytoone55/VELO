@@ -60,7 +60,7 @@ export const useFormulaireStore = create<FormulaireStore>()(
             ? state.completedSteps
             : [...state.completedSteps, state.currentStep]
           return {
-            currentStep: Math.min(state.currentStep + 1, 6) as FormulaireStep,
+            currentStep: Math.min(state.currentStep + 1, 5) as FormulaireStep,
             completedSteps,
           }
         }),

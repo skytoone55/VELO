@@ -7,10 +7,11 @@ import { FormulaireStep, STEP_NAMES } from '@/lib/formulaire/types'
 interface StepIndicatorProps {
   currentStep: FormulaireStep
   completedSteps: FormulaireStep[]
+  totalSteps?: number
 }
 
-export function StepIndicator({ currentStep, completedSteps }: StepIndicatorProps) {
-  const steps: FormulaireStep[] = [1, 2, 3, 4, 5, 6]
+export function StepIndicator({ currentStep, completedSteps, totalSteps = 5 }: StepIndicatorProps) {
+  const steps: FormulaireStep[] = Array.from({ length: totalSteps }, (_, i) => (i + 1) as FormulaireStep)
 
   return (
     <div className="w-full">
@@ -66,7 +67,7 @@ export function StepIndicator({ currentStep, completedSteps }: StepIndicatorProp
       <div className="md:hidden">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium">
-            Étape {currentStep} sur 6
+            Étape {currentStep} sur {totalSteps}
           </span>
           <span className="text-sm text-muted-foreground">
             {STEP_NAMES[currentStep]}
@@ -75,7 +76,7 @@ export function StepIndicator({ currentStep, completedSteps }: StepIndicatorProp
         <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
           <div
             className="h-full bg-primary transition-all duration-300"
-            style={{ width: `${(currentStep / 6) * 100}%` }}
+            style={{ width: `${(currentStep / totalSteps) * 100}%` }}
           />
         </div>
       </div>

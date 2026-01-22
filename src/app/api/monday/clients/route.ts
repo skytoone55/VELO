@@ -9,8 +9,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
  * CACHE: Les données sont mises en cache pendant 5 minutes pour éviter
  * de recharger 1200+ clients depuis Monday à chaque requête
  *
- * GET /api/monday/clients - Liste tous les clients (depuis cache si disponible)
+ * GET /api/monday/clients - Liste les clients (paginé côté serveur)
+ * GET /api/monday/clients?page=1&pageSize=20 - Pagination
  * GET /api/monday/clients?search=xxx - Recherche
+ * GET /api/monday/clients?statut=xxx - Filtre par statut commercial
+ * GET /api/monday/clients?departement=xxx - Filtre par département
  * GET /api/monday/clients?refresh=true - Force le rafraîchissement du cache
  */
 
@@ -97,6 +100,14 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')?.toLowerCase()
     const forceRefresh = searchParams.get('refresh') === 'true'
 
+    // Paramètres de pagination
+    const page = parseInt(searchParams.get('page') || '1')
+    const pageSize = parseInt(searchParams.get('pageSize') || '20')
+
+    // Filtres
+    const statutFilter = searchParams.get('statut')
+    const departementFilter = searchParams.get('departement')
+
     let clients: Record<string, any>[]
     let fromCache = false
 
@@ -117,10 +128,12 @@ export async function GET(request: NextRequest) {
       console.log(`✅ Cache mis à jour: ${clients.length} clients`)
     }
 
-    // Filtrer si recherche
+    // Appliquer les filtres
     let filteredClients = clients
+
+    // Filtre recherche texte
     if (search) {
-      filteredClients = clients.filter((c: Record<string, any>) => {
+      filteredClients = filteredClients.filter((c: Record<string, any>) => {
         const searchableFields = [
           c.raison_sociale,
           c.siret,
@@ -134,16 +147,47 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Filtre par statut commercial
+    if (statutFilter && statutFilter !== 'all') {
+      filteredClients = filteredClients.filter((c: Record<string, any>) =>
+        c.statut_commercial === statutFilter
+      )
+    }
+
+    // Filtre par département
+    if (departementFilter && departementFilter !== 'all') {
+      filteredClients = filteredClients.filter((c: Record<string, any>) => {
+        const clientDept = c.departement || ''
+        return clientDept === departementFilter || clientDept.includes(departementFilter)
+      })
+    }
+
+    // Total après filtres (avant pagination)
+    const totalFiltered = filteredClients.length
+
+    // Appliquer la pagination côté serveur
+    const startIndex = (page - 1) * pageSize
+    const paginatedClients = filteredClients.slice(startIndex, startIndex + pageSize)
+    const totalPages = Math.ceil(totalFiltered / pageSize)
+
     // Calculer l'âge du cache en secondes
     const cacheAge = clientsCache ? Math.round((Date.now() - clientsCache.timestamp) / 1000) : 0
 
     return NextResponse.json({
-      clients: filteredClients,
-      total: filteredClients.length,
+      clients: paginatedClients,
+      pagination: {
+        page,
+        pageSize,
+        totalPages,
+        totalFiltered,
+        totalClients: clientsCache?.total || clients.length,
+        startIndex: startIndex + 1,
+        endIndex: Math.min(startIndex + pageSize, totalFiltered),
+      },
       source: 'monday',
       cached: fromCache,
-      cacheAge, // Âge du cache en secondes
-      cacheExpiresIn: Math.max(0, Math.round((CACHE_DURATION_MS - (Date.now() - (clientsCache?.timestamp || 0))) / 1000)), // Temps avant expiration
+      cacheAge,
+      cacheExpiresIn: Math.max(0, Math.round((CACHE_DURATION_MS - (Date.now() - (clientsCache?.timestamp || 0))) / 1000)),
     })
 
   } catch (error: any) {

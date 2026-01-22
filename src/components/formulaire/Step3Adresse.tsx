@@ -12,13 +12,16 @@ import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import { Loader2, MapPin, ArrowLeft, ArrowRight, AlertCircle, Info, Building2, MapPinned, CheckCircle, Truck, Store } from 'lucide-react'
 import { Depot } from '@/lib/types/database'
 
-type AddressChoice = 'societe' | 'autre'
+type AddressChoice = 'facturation' | 'autre'
 type ViewState = 'address_choice' | 'result'
 
 interface ValidationResult {
   modeLivraison: 'domicile' | 'retrait'
+  zoneLivraison: 'gratuite' | 'payante' | 'hors_zone'
+  depotType: 'retrait' | 'logistique'
   depotRetrait?: Depot & { distance: number }
   depotLogistique?: Depot & { distance: number }
+  prixLivraisonPayante?: number
   horsZone: boolean
 }
 
@@ -26,9 +29,9 @@ export function Step3Adresse() {
   const { clientId, data, updateData, nextStep, prevStep, setHorsZone } = useFormulaireStore()
 
   const [viewState, setViewState] = useState<ViewState>('address_choice')
-  const [addressChoice, setAddressChoice] = useState<AddressChoice>('societe')
+  const [addressChoice, setAddressChoice] = useState<AddressChoice>('facturation')
   const [showNewAddressForm, setShowNewAddressForm] = useState(false)
-  const [societeAddress, setSocieteAddress] = useState<{
+  const [facturationAddress, setFacturationAddress] = useState<{
     ligne1: string
     ligne2: string
     codePostal: string
@@ -50,7 +53,7 @@ export function Step3Adresse() {
   const [error, setError] = useState<string | null>(null)
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
 
-  // Charger l'adresse société via API
+  // Charger l'adresse de facturation via API
   useEffect(() => {
     const loadClientAddress = async () => {
       if (!clientId) return
@@ -65,7 +68,7 @@ export function Step3Adresse() {
         const result = await response.json()
 
         if (response.ok) {
-          setSocieteAddress(result.address)
+          setFacturationAddress(result.address)
         }
       } catch (err) {
         console.error('Erreur chargement adresse:', err)
@@ -102,7 +105,7 @@ export function Step3Adresse() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId,
-          useSocieteAddress: addressChoice === 'societe',
+          useSocieteAddress: addressChoice === 'facturation',
           address: addressChoice === 'autre' ? newAdresse : null,
         }),
       })
@@ -116,22 +119,28 @@ export function Step3Adresse() {
       }
 
       // Sauvegarder l'adresse dans le store
-      const finalAddress = addressChoice === 'societe' ? societeAddress : newAdresse
+      const finalAddress = addressChoice === 'facturation' ? facturationAddress : newAdresse
 
       // Stocker le résultat
       setValidationResult({
         modeLivraison: result.modeLivraison,
+        zoneLivraison: result.zoneLivraison,
+        depotType: result.depotType,
         depotRetrait: result.depotRetrait,
         depotLogistique: result.depotLogistique,
+        prixLivraisonPayante: result.prixLivraisonPayante,
         horsZone: result.horsZone,
       })
 
-      // Mettre à jour le store avec l'adresse et le mode
+      // Mettre à jour le store avec l'adresse, le mode et les infos de zone
       updateData({
         adresseLivraison: finalAddress!,
         modeLivraison: result.modeLivraison,
+        zoneLivraison: result.zoneLivraison,
+        depotType: result.depotType,
         depotRetrait: result.depotRetrait,
         depotLogistique: result.depotLogistique,
+        prixLivraisonPayante: result.prixLivraisonPayante,
       })
 
       setHorsZone(result.horsZone)
@@ -198,7 +207,7 @@ export function Step3Adresse() {
             </Alert>
 
             <div className="bg-muted/50 rounded-lg p-4 border">
-              <p className="text-sm font-medium text-muted-foreground mb-2">Adresse de livraison :</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">Adresse de livraison finale :</p>
               <p className="font-medium">{finalAddress?.ligne1}</p>
               {finalAddress?.ligne2 && <p className="text-sm text-muted-foreground">{finalAddress.ligne2}</p>}
               <p>{finalAddress?.codePostal} {finalAddress?.ville}</p>
@@ -258,7 +267,7 @@ export function Step3Adresse() {
             </div>
 
             <div className="bg-muted/50 rounded-lg p-4 border">
-              <p className="text-sm font-medium text-muted-foreground mb-2">Votre adresse :</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">Votre adresse de livraison finale :</p>
               <p className="font-medium">{finalAddress?.ligne1}</p>
               {finalAddress?.ligne2 && <p className="text-sm text-muted-foreground">{finalAddress.ligne2}</p>}
               <p>{finalAddress?.codePostal} {finalAddress?.ville}</p>
@@ -267,7 +276,7 @@ export function Step3Adresse() {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Vous serez contacté par email et SMS pour convenir d'un créneau de retrait
+                Vous serez contacté par email ou courrier pour convenir d'un créneau de retrait
                 une fois votre dossier validé.
               </AlertDescription>
             </Alert>
@@ -314,7 +323,7 @@ export function Step3Adresse() {
                 <MapPin className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="font-semibold">Adresse de livraison</p>
+                <p className="font-semibold">Adresse de livraison finale</p>
                 <p className="text-muted-foreground">{finalAddress?.ligne1}</p>
                 {finalAddress?.ligne2 && <p className="text-muted-foreground">{finalAddress.ligne2}</p>}
                 <p className="text-muted-foreground">{finalAddress?.codePostal} {finalAddress?.ville}</p>
@@ -333,7 +342,7 @@ export function Step3Adresse() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Un créneau de livraison vous sera proposé par email et SMS
+              Un créneau de livraison vous sera proposé par email ou courrier
               une fois votre dossier validé.
             </AlertDescription>
           </Alert>
@@ -360,13 +369,22 @@ export function Step3Adresse() {
         <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
           <MapPin className="w-8 h-8 text-primary" />
         </div>
-        <CardTitle>Adresse de livraison</CardTitle>
+        <CardTitle>Adresse livraison finale</CardTitle>
         <CardDescription>
-          Confirmez votre adresse pour déterminer le mode de livraison
+          Confirmez l'adresse où vous souhaitez recevoir votre vélo cargo
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
+        {/* Info importante en haut */}
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Votre adresse sera utilisée pour déterminer automatiquement
+            le mode de livraison de votre vélo cargo.
+          </AlertDescription>
+        </Alert>
+
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -374,31 +392,23 @@ export function Step3Adresse() {
           </Alert>
         )}
 
-        {/* Afficher l'adresse du dossier */}
-        {societeAddress && societeAddress.ligne1 && (
-          <div className="bg-muted/50 rounded-lg p-4 border">
-            <p className="text-sm font-medium text-muted-foreground mb-2">Adresse de votre dossier :</p>
-            <p className="font-medium">{societeAddress.ligne1}</p>
-            {societeAddress.ligne2 && <p className="text-sm text-muted-foreground">{societeAddress.ligne2}</p>}
-            <p>{societeAddress.codePostal} {societeAddress.ville}</p>
-          </div>
-        )}
-
         {/* Choix de l'adresse */}
         <RadioGroup value={addressChoice} onValueChange={(v) => handleChoiceChange(v as AddressChoice)} className="space-y-3">
+          {/* Option 1: Utiliser l'adresse de facturation */}
           <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-            <RadioGroupItem value="societe" id="societe" className="mt-1" />
-            <Label htmlFor="societe" className="flex-1 cursor-pointer">
+            <RadioGroupItem value="facturation" id="facturation" className="mt-1" />
+            <Label htmlFor="facturation" className="flex-1 cursor-pointer">
               <div className="flex items-center gap-2 mb-1">
                 <Building2 className="h-4 w-4 text-primary" />
-                <span className="font-medium">Utiliser cette adresse</span>
+                <span className="font-medium">Utiliser mon adresse de facturation</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                L'adresse de mon dossier ci-dessus
+                L'adresse enregistrée dans votre dossier
               </p>
             </Label>
           </div>
 
+          {/* Option 2: Autre adresse */}
           <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
             <RadioGroupItem value="autre" id="autre" className="mt-1" />
             <Label htmlFor="autre" className="flex-1 cursor-pointer">
@@ -413,10 +423,20 @@ export function Step3Adresse() {
           </div>
         </RadioGroup>
 
+        {/* Afficher l'adresse de facturation du dossier */}
+        {addressChoice === 'facturation' && facturationAddress && facturationAddress.ligne1 && (
+          <div className="bg-muted/50 rounded-lg p-4 border">
+            <p className="text-sm font-medium text-muted-foreground mb-2">Adresse du dossier (facturation) :</p>
+            <p className="font-medium">{facturationAddress.ligne1}</p>
+            {facturationAddress.ligne2 && <p className="text-sm text-muted-foreground">{facturationAddress.ligne2}</p>}
+            <p>{facturationAddress.codePostal} {facturationAddress.ville}</p>
+          </div>
+        )}
+
         {/* Formulaire nouvelle adresse */}
         {showNewAddressForm && (
           <div className="grid gap-4 pt-4 border-t">
-            <p className="text-sm font-medium">Nouvelle adresse :</p>
+            <p className="text-sm font-medium">Nouvelle adresse de livraison :</p>
 
             <div className="space-y-2">
               <Label htmlFor="ligne1">Adresse *</Label>
@@ -480,15 +500,6 @@ export function Step3Adresse() {
             </div>
           </div>
         )}
-
-        {/* Info */}
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Votre adresse sera utilisée pour déterminer automatiquement
-            le mode de livraison de votre vélo cargo.
-          </AlertDescription>
-        </Alert>
 
         <div className="flex gap-4">
           <Button variant="outline" onClick={prevStep} className="flex-1">

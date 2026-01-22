@@ -291,7 +291,9 @@ export type Database = {
           latitude: number
           longitude: number
           nom: string
+          prix_livraison_payante: number | null
           rayon_couverture_km: number
+          rayon_livraison_payant_km: number | null
           telephone: string | null
           type: string
           updated_at: string | null
@@ -309,7 +311,9 @@ export type Database = {
           latitude: number
           longitude: number
           nom: string
+          prix_livraison_payante?: number | null
           rayon_couverture_km?: number
+          rayon_livraison_payant_km?: number | null
           telephone?: string | null
           type?: string
           updated_at?: string | null
@@ -327,7 +331,9 @@ export type Database = {
           latitude?: number
           longitude?: number
           nom?: string
+          prix_livraison_payante?: number | null
           rayon_couverture_km?: number
+          rayon_livraison_payant_km?: number | null
           telephone?: string | null
           type?: string
           updated_at?: string | null

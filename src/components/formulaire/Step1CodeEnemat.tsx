@@ -71,7 +71,7 @@ export function Step1CodeEnemat() {
         </div>
         <CardTitle>Code de validation ENEMAT</CardTitle>
         <CardDescription>
-          Saisissez le code ENEMAT que vous avez reçu par email ou SMS
+          Saisissez le code ENEMAT que vous avez reçu par email ou courrier
         </CardDescription>
       </CardHeader>
 

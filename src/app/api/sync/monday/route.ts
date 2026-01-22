@@ -246,6 +246,23 @@ function mapMondayItemToClient(item: any): Record<string, any> {
         break
     }
 
+    // Convertir les champs entiers (velo_valide, velo_devis, nb_salaries, etc.)
+    // Monday peut envoyer "2.0" au lieu de 2 pour les colonnes numeric
+    if (['velo_valide', 'velo_devis', 'nb_salaries', 'nb_velos'].includes(supabaseField)) {
+      const numValue = parseFloat(value)
+      if (!isNaN(numValue)) {
+        value = Math.floor(numValue)
+      }
+    }
+
+    // Aussi gérer toutes les colonnes numeric_ de Monday qui pourraient avoir des décimales
+    if (col.id?.startsWith('numeric_') && typeof value === 'string' && value.includes('.')) {
+      const numValue = parseFloat(value)
+      if (!isNaN(numValue)) {
+        value = Math.floor(numValue)
+      }
+    }
+
     client[supabaseField] = value
   }
 

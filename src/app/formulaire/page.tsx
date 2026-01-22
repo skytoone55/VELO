@@ -8,9 +8,8 @@ import { StepIndicator } from '@/components/formulaire/StepIndicator'
 import { Step1CodeEnemat } from '@/components/formulaire/Step1CodeEnemat'
 import { Step2Informations } from '@/components/formulaire/Step2Informations'
 import { Step3Adresse } from '@/components/formulaire/Step3Adresse'
-import { Step4Document } from '@/components/formulaire/Step4Document'
-import { Step5Password } from '@/components/formulaire/Step5Password'
-import { Step6Confirmation } from '@/components/formulaire/Step6Confirmation'
+import { Step4Preference } from '@/components/formulaire/Step4Preference'
+import { Step5Confirmation } from '@/components/formulaire/Step5Confirmation'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -199,7 +198,7 @@ function FormulaireContent() {
     )
   }
 
-  // Rendu du step actuel (6 étapes: ENEMAT, Infos, Adresse, Document, Password, Confirmation)
+  // Rendu du step actuel (5 étapes: ENEMAT, Infos, Adresse, Préférence, Confirmation)
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -209,11 +208,9 @@ function FormulaireContent() {
       case 3:
         return <Step3Adresse />
       case 4:
-        return <Step4Document />
+        return <Step4Preference />
       case 5:
-        return <Step5Password />
-      case 6:
-        return <Step6Confirmation />
+        return <Step5Confirmation />
       default:
         return <Step1CodeEnemat />
     }
@@ -234,7 +231,7 @@ function FormulaireContent() {
         </div>
 
         {/* Step Indicator */}
-        <StepIndicator currentStep={currentStep} completedSteps={completedSteps} />
+        <StepIndicator currentStep={currentStep} completedSteps={completedSteps} totalSteps={5} />
 
         {/* Current Step Content */}
         {renderStep()}

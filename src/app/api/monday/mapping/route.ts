@@ -62,6 +62,11 @@ export const INTERFACE_FIELDS = [
 
   // Notes
   { field: 'notes_internes', label: 'Notes internes', type: 'long_text', section: 'notes' },
+
+  // Code ENEMAT (validation client)
+  { field: 'code_enemat_saisi', label: 'Code ENEMAT saisi', type: 'text', section: 'validation' },
+  { field: 'code_enemat_valide', label: 'Code ENEMAT validé', type: 'checkbox', section: 'validation' },
+  { field: 'date_validation_code', label: 'Date validation code', type: 'date', section: 'validation' },
 ]
 
 export async function GET() {
@@ -101,6 +106,7 @@ export async function GET() {
         { id: 'statuts', label: 'Statuts' },
         { id: 'assignation', label: 'Assignation' },
         { id: 'notes', label: 'Notes' },
+        { id: 'validation', label: 'Validation client' },
       ],
     })
 

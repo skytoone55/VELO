@@ -62,6 +62,9 @@ export const MONDAY_CONFIG = {
     'date_mkvfqvv1': 'date_signature_devis',         // Dateengagementdevis_RETINA
     'date_mkvsxn5j': 'date_statut',                  // DATE STATUT
 
+    // --- Code ENEMAT (code de livraison client) ---
+    'text_mkzvqk4s': 'code_enemat_saisi',           // Code ENEMAT saisi par le client
+
     // --- Statuts (le principal est statut_commercial) ---
     'color_mkvfws5n': 'statut_commercial',           // Statut commercial (PRINCIPAL)
     'color_mkvgsswc': 'statut_retina',               // StatutRETINA
@@ -124,6 +127,9 @@ export const MONDAY_CONFIG = {
     // Assignation
     commercial_assigne: 'multiple_person_mkvd4axb',
     equipe_ids: 'multiple_person_mkve97pm',
+
+    // Code ENEMAT
+    code_enemat_saisi: 'text_mkzvqk4s',
   },
 
   // =================================================================

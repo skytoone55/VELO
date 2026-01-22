@@ -3,15 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useFormulaireStore } from '@/lib/formulaire/store'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Building2, Info, ArrowLeft, ArrowRight } from 'lucide-react'
+import { Loader2, Building2, Info, ArrowLeft, CheckCircle, Mail, Phone, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export function Step2Informations() {
-  const { clientId, data, updateData, nextStep, prevStep, setLoading, isLoading } = useFormulaireStore()
+  const { clientId, data, updateData, nextStep, prevStep } = useFormulaireStore()
   const [localLoading, setLocalLoading] = useState(true)
 
   useEffect(() => {
@@ -46,8 +44,7 @@ export function Step2Informations() {
     }
   }, [clientId, data.raisonSociale, updateData])
 
-  const handleNext = () => {
-    // Les infos sont pré-remplies, pas de validation nécessaire
+  const handleValidate = () => {
     nextStep()
   }
 
@@ -67,62 +64,75 @@ export function Step2Informations() {
         <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
           <Building2 className="w-8 h-8 text-primary" />
         </div>
-        <CardTitle>Vos informations</CardTitle>
+        <CardTitle>Vérification de vos informations</CardTitle>
         <CardDescription>
-          Vérifiez les informations de votre société
+          Veuillez vérifier que les informations ci-dessous sont correctes
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Ces informations proviennent de votre dossier. Si elles sont incorrectes,
-            contactez ECO-VOLT au 07 57 99 11 25.
-          </AlertDescription>
-        </Alert>
-
-        <div className="grid gap-4">
-          <div className="space-y-2">
-            <Label>Raison sociale</Label>
-            <Input value={data.raisonSociale || ''} disabled className="bg-muted" />
-          </div>
-
-          <div className="space-y-2">
-            <Label>SIRET</Label>
-            <Input value={data.siret || ''} disabled className="bg-muted font-mono" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Prénom du contact</Label>
-              <Input value={data.contactPrenom || '-'} disabled className="bg-muted" />
+        {/* Fiche d'information - Style carte */}
+        <div className="bg-muted/30 rounded-xl p-6 space-y-4 border">
+          {/* Entreprise */}
+          <div className="pb-4 border-b">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+              <Building2 className="h-4 w-4" />
+              Entreprise
             </div>
-            <div className="space-y-2">
-              <Label>Nom du contact</Label>
-              <Input value={data.contactNom || '-'} disabled className="bg-muted" />
+            <p className="text-lg font-semibold">{data.raisonSociale || '-'}</p>
+            <p className="text-sm text-muted-foreground font-mono">SIRET : {data.siret || '-'}</p>
+          </div>
+
+          {/* Contact */}
+          <div className="pb-4 border-b">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+              <User className="h-4 w-4" />
+              Contact
             </div>
+            <p className="text-lg font-medium">
+              {data.contactPrenom || data.contactNom
+                ? `${data.contactPrenom || ''} ${data.contactNom || ''}`.trim()
+                : '-'}
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input value={data.email || ''} disabled className="bg-muted" />
+          {/* Email */}
+          <div className="pb-4 border-b">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+              <Mail className="h-4 w-4" />
+              Email
+            </div>
+            <p className="text-lg font-medium">{data.email || '-'}</p>
           </div>
 
-          <div className="space-y-2">
-            <Label>Téléphone</Label>
-            <Input value={data.telephone || '-'} disabled className="bg-muted" />
+          {/* Téléphone */}
+          <div>
+            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+              <Phone className="h-4 w-4" />
+              Téléphone
+            </div>
+            <p className="text-lg font-medium">{data.telephone || '-'}</p>
           </div>
         </div>
 
+        {/* Message d'information */}
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Si ces informations sont incorrectes, veuillez contacter ECO-VOLT au 07 57 99 11 25
+            avant de continuer.
+          </AlertDescription>
+        </Alert>
+
+        {/* Boutons */}
         <div className="flex gap-4">
           <Button variant="outline" onClick={prevStep} className="flex-1">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Retour
           </Button>
-          <Button onClick={handleNext} className="flex-1">
-            Continuer
-            <ArrowRight className="ml-2 h-4 w-4" />
+          <Button onClick={handleValidate} className="flex-1 bg-green-600 hover:bg-green-700">
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Je valide ces informations
           </Button>
         </div>
       </CardContent>

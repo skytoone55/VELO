@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     // Récupérer TOUS les dépôts actifs de l'agence
     const { data: allDepots } = await adminClient
       .from('depots')
-      .select('id, nom, adresse, code_postal, ville, latitude, longitude, rayon_couverture_km, type')
+      .select('id, nom, adresse, code_postal, ville, latitude, longitude, rayon_couverture_km, rayon_livraison_payant_km, prix_livraison_payante, type')
       .eq('agence', client.agence)
       .eq('actif', true)
 
@@ -100,58 +100,120 @@ export async function POST(request: NextRequest) {
     const depotsRetrait = allDepots?.filter(d => d.type === 'retrait') || []
     const depotsLogistique = allDepots?.filter(d => d.type === 'logistique') || []
 
-    let depotRetraitAssigne = null
-    let depotLogistiqueAssigne = null
+    let depotAssigneInfo: any = null
     let modeLivraison: 'retrait' | 'domicile' = 'domicile'
+    let zoneLivraison: 'gratuite' | 'payante' | 'hors_zone' = 'gratuite'
+    let depotType: 'retrait' | 'logistique' = 'logistique'
     let horsZone = false
 
+    // Logique de zone selon le type de dépôt:
+    //
+    // DEPOT DE RETRAIT:
+    // - 0 à rayon_couverture_km = Zone gratuite (retrait gratuit uniquement)
+    // - rayon_couverture_km à rayon_livraison_payant_km = Zone payante (retrait gratuit OU livraison payante)
+    // - Au-delà = Hors zone
+    //
+    // DEPOT LOGISTIQUE:
+    // - 0 à rayon_couverture_km = Zone gratuite (livraison gratuite)
+    // - rayon_couverture_km à rayon_livraison_payant_km = Zone payante (livraison payante)
+    // - Au-delà = Hors zone
+
     if (coords) {
-      // 1. Chercher si le client est dans le rayon d'un dépôt RETRAIT
+      // 1. D'abord chercher le dépôt RETRAIT le plus proche
+      let depotRetraitProche: any = null
+      let distanceRetraitMin = Infinity
+
       for (const depot of depotsRetrait) {
         if (depot.latitude && depot.longitude) {
           const distance = calculateDistance(coords.lat, coords.lon, depot.latitude, depot.longitude)
-
-          if (distance <= depot.rayon_couverture_km) {
-            // Client dans le rayon - DOIT récupérer ici
-            depotRetraitAssigne = {
+          if (distance < distanceRetraitMin) {
+            distanceRetraitMin = distance
+            depotRetraitProche = {
               ...depot,
               distance: Math.round(distance * 10) / 10
             }
-            modeLivraison = 'retrait'
-            break // Prendre le premier dépôt dans le rayon
           }
         }
       }
 
-      // 2. Si pas dans un rayon de retrait, chercher le dépôt LOGISTIQUE le plus proche
-      if (!depotRetraitAssigne) {
-        let distanceMin = Infinity
+      // 2. Chercher le dépôt LOGISTIQUE le plus proche
+      let depotLogistiqueProche: any = null
+      let distanceLogistiqueMin = Infinity
 
-        for (const depot of depotsLogistique) {
-          if (depot.latitude && depot.longitude) {
-            const distance = calculateDistance(coords.lat, coords.lon, depot.latitude, depot.longitude)
-
-            if (distance < distanceMin) {
-              distanceMin = distance
-              depotLogistiqueAssigne = {
-                ...depot,
-                distance: Math.round(distance * 10) / 10
-              }
+      for (const depot of depotsLogistique) {
+        if (depot.latitude && depot.longitude) {
+          const distance = calculateDistance(coords.lat, coords.lon, depot.latitude, depot.longitude)
+          if (distance < distanceLogistiqueMin) {
+            distanceLogistiqueMin = distance
+            depotLogistiqueProche = {
+              ...depot,
+              distance: Math.round(distance * 10) / 10
             }
           }
         }
+      }
 
-        modeLivraison = 'domicile'
+      // 3. Déterminer quel dépôt et quelle zone selon la distance
+      // Priorité au dépôt retrait si le client est dans sa couverture
+      if (depotRetraitProche) {
+        const rayonGratuit = depotRetraitProche.rayon_couverture_km || 30
+        const rayonPayant = depotRetraitProche.rayon_livraison_payant_km || rayonGratuit
 
-        // Si aucun dépôt logistique trouvé, client hors zone
-        if (!depotLogistiqueAssigne) {
+        if (distanceRetraitMin <= rayonGratuit) {
+          // Client dans zone retrait gratuit
+          depotAssigneInfo = depotRetraitProche
+          depotType = 'retrait'
+          modeLivraison = 'retrait'
+          zoneLivraison = 'gratuite'
+        } else if (distanceRetraitMin <= rayonPayant) {
+          // Client dans zone retrait payante (choix retrait gratuit ou livraison payante)
+          depotAssigneInfo = depotRetraitProche
+          depotType = 'retrait'
+          modeLivraison = 'retrait'
+          zoneLivraison = 'payante'
+        }
+      }
+
+      // Si pas dans la couverture d'un dépôt retrait, utiliser le dépôt logistique
+      if (!depotAssigneInfo && depotLogistiqueProche) {
+        const rayonGratuit = depotLogistiqueProche.rayon_couverture_km || 30
+        const rayonPayant = depotLogistiqueProche.rayon_livraison_payant_km || rayonGratuit
+
+        if (distanceLogistiqueMin <= rayonGratuit) {
+          // Client dans zone livraison gratuite
+          depotAssigneInfo = depotLogistiqueProche
+          depotType = 'logistique'
+          modeLivraison = 'domicile'
+          zoneLivraison = 'gratuite'
+        } else if (distanceLogistiqueMin <= rayonPayant) {
+          // Client dans zone livraison payante
+          depotAssigneInfo = depotLogistiqueProche
+          depotType = 'logistique'
+          modeLivraison = 'domicile'
+          zoneLivraison = 'payante'
+        } else {
+          // Client hors zone
+          depotAssigneInfo = depotLogistiqueProche // Garder pour info
+          depotType = 'logistique'
+          zoneLivraison = 'hors_zone'
           horsZone = true
         }
+      }
+
+      // Si aucun dépôt trouvé du tout
+      if (!depotAssigneInfo) {
+        horsZone = true
+        zoneLivraison = 'hors_zone'
       }
     } else {
       // Pas de coordonnées - impossible de calculer
       horsZone = true
+      zoneLivraison = 'hors_zone'
     }
+
+    // Variables de compatibilité avec l'ancien code
+    const depotRetraitAssigne = depotType === 'retrait' ? depotAssigneInfo : null
+    const depotLogistiqueAssigne = depotType === 'logistique' ? depotAssigneInfo : null
 
     // Préparer les données de mise à jour du client
     const updateData: Record<string, any> = {
@@ -230,9 +292,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       modeLivraison,
+      zoneLivraison,
+      depotType,
       horsZone,
       depotRetrait: depotRetraitAssigne,
       depotLogistique: depotLogistiqueAssigne,
+      prixLivraisonPayante: depotAssigneInfo?.prix_livraison_payante || 0,
       coordonnees: coords,
     })
 

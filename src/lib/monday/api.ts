@@ -289,3 +289,29 @@ export async function createMondayItem(
     return { success: false, error: error.message || 'Erreur de création Monday' }
   }
 }
+
+/**
+ * Créer une nouvelle colonne dans un board Monday
+ */
+export async function createMondayColumn(
+  title: string,
+  columnType: 'text' | 'date' | 'numbers' | 'status' | 'checkbox' = 'text',
+  description?: string
+): Promise<{ success: boolean; columnId?: string; error?: string }> {
+  try {
+    const boardId = MONDAY_CONFIG.boardIds.clients
+    if (!boardId) throw new Error('Board ID Monday non configuré')
+
+    const escapedTitle = title.replace(/"/g, '\\"')
+    const descPart = description ? `, description: "${description.replace(/"/g, '\\"')}"` : ''
+
+    const mutation = `mutation { create_column(board_id: ${boardId}, title: "${escapedTitle}", column_type: ${columnType}${descPart}) { id title } }`
+    const result = await executeMondayQuery(mutation)
+
+    console.log(`✅ Colonne créée dans Monday: ${result.create_column.title} (ID: ${result.create_column.id})`)
+    return { success: true, columnId: result.create_column.id }
+  } catch (error: any) {
+    console.error('Error creating Monday column:', error)
+    return { success: false, error: error.message || 'Erreur de création colonne Monday' }
+  }
+}

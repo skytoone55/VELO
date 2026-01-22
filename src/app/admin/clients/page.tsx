@@ -129,9 +129,18 @@ export default function AdminClientsPage() {
   const [statutFilter, setStatutFilter] = useState('all')
   const [departementFilter, setDepartementFilter] = useState('all')
 
-  // Pagination
+  // Pagination côté serveur
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const [pagination, setPagination] = useState<{
+    page: number
+    pageSize: number
+    totalPages: number
+    totalFiltered: number
+    totalClients: number
+    startIndex: number
+    endIndex: number
+  } | null>(null)
 
   // Dialog states
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
@@ -172,8 +181,9 @@ export default function AdminClientsPage() {
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
 
-  // Source de données: Monday (source de vérité) ou Supabase (cache)
-  const [dataSource, setDataSource] = useState<'monday' | 'supabase'>('monday')
+  // Source de données: Supabase (cache rapide) ou Monday (source de vérité)
+  // Par défaut Supabase car beaucoup plus rapide
+  const [dataSource, setDataSource] = useState<'monday' | 'supabase'>('supabase')
 
   // Info cache
   const [cacheInfo, setCacheInfo] = useState<{
@@ -182,13 +192,35 @@ export default function AdminClientsPage() {
     cacheExpiresIn: number
   } | null>(null)
 
-  const fetchClients = async (forceRefresh = false) => {
+  // Debounce pour la recherche (éviter trop de requêtes)
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const fetchClients = async (forceRefresh = false, page = currentPage, size = pageSize) => {
     setLoading(true)
     try {
-      // Utiliser l'API Monday directe (source de vérité)
-      const endpoint = dataSource === 'monday'
-        ? `/api/monday/clients${forceRefresh ? '?refresh=true' : ''}`
-        : '/api/admin/clients'
+      // Construire les paramètres de requête
+      const params = new URLSearchParams()
+      params.set('page', String(page))
+      params.set('pageSize', String(size))
+
+      if (forceRefresh) params.set('refresh', 'true')
+      if (debouncedSearch) params.set('search', debouncedSearch)
+      if (statutFilter !== 'all') params.set('statut', statutFilter)
+      if (departementFilter !== 'all') params.set('departement', departementFilter)
+
+      // Choisir l'API selon la source de données
+      // - supabase: /api/clients (cache local, rapide)
+      // - monday: /api/monday/clients (source de vérité, plus lent)
+      const endpoint = dataSource === 'supabase'
+        ? `/api/clients?${params.toString()}`
+        : `/api/monday/clients?${params.toString()}`
 
       const response = await fetch(endpoint)
       const result = await response.json()
@@ -199,31 +231,36 @@ export default function AdminClientsPage() {
 
       setClients(result.clients || [])
 
-      // Stocker les infos de cache
+      // Stocker les infos de pagination
+      if (result.pagination) {
+        setPagination(result.pagination)
+      }
+
+      // Stocker les infos de cache (uniquement pour Monday)
       if (result.cached !== undefined) {
         setCacheInfo({
           cached: result.cached,
           cacheAge: result.cacheAge || 0,
           cacheExpiresIn: result.cacheExpiresIn || 0,
         })
+      } else {
+        setCacheInfo(null)
       }
 
-      if (dataSource === 'monday') {
-        const cacheStatus = result.cached ? '(depuis cache)' : '(depuis Monday)'
-        console.log(`✓ ${result.total} clients chargés ${cacheStatus}`)
+      const sourceLabel = result.source === 'supabase' ? 'Supabase' : 'Monday'
+      console.log(`✓ ${result.pagination?.totalFiltered || result.clients?.length} clients chargés depuis ${sourceLabel}`)
 
-        if (forceRefresh) {
-          toast.success('Données rafraîchies depuis Monday')
-        }
+      if (forceRefresh && dataSource === 'monday') {
+        toast.success('Données rafraîchies depuis Monday')
       }
     } catch (error: any) {
       console.error('Erreur:', error)
       toast.error(error.message || 'Erreur lors du chargement des clients')
 
-      // Fallback vers Supabase si Monday échoue
-      if (dataSource === 'monday') {
-        toast.info('Tentative de chargement depuis le cache...')
-        setDataSource('supabase')
+      // Fallback: si Supabase échoue, essayer Monday
+      if (dataSource === 'supabase') {
+        toast.info('Tentative de chargement depuis Monday...')
+        setDataSource('monday')
       }
     } finally {
       setLoading(false)
@@ -235,9 +272,28 @@ export default function AdminClientsPage() {
     fetchClients(true)
   }
 
+  // Reset page quand les filtres ou la recherche changent
+  const [prevSearch, setPrevSearch] = useState(debouncedSearch)
+  const [prevStatut, setPrevStatut] = useState(statutFilter)
+  const [prevDept, setPrevDept] = useState(departementFilter)
+  const [prevPageSize, setPrevPageSize] = useState(pageSize)
+
   useEffect(() => {
-    fetchClients(false)
-  }, [dataSource])
+    // Détecter si un filtre a changé (pas la page)
+    if (debouncedSearch !== prevSearch || statutFilter !== prevStatut ||
+        departementFilter !== prevDept || pageSize !== prevPageSize) {
+      setCurrentPage(1) // Reset to page 1
+      setPrevSearch(debouncedSearch)
+      setPrevStatut(statutFilter)
+      setPrevDept(departementFilter)
+      setPrevPageSize(pageSize)
+    }
+  }, [debouncedSearch, statutFilter, departementFilter, pageSize])
+
+  // Charger les clients quand les paramètres changent
+  useEffect(() => {
+    fetchClients(false, currentPage, pageSize)
+  }, [dataSource, currentPage, pageSize, debouncedSearch, statutFilter, departementFilter])
 
   const handleSendForm = async (client: Client) => {
     setSendingEmail(true)
@@ -394,10 +450,10 @@ export default function AdminClientsPage() {
   }
 
   const handleSelectAll = () => {
-    if (selectedClients.size === filteredClients.length) {
+    if (selectedClients.size === paginatedClients.length) {
       setSelectedClients(new Set())
     } else {
-      setSelectedClients(new Set(filteredClients.map(c => c.id)))
+      setSelectedClients(new Set(paginatedClients.map(c => c.id)))
     }
   }
 
@@ -445,56 +501,60 @@ export default function AdminClientsPage() {
     }
   }
 
-  // Filtrage avec statut_commercial de Monday
-  const filteredClients = clients.filter((client: any) => {
-    const matchesSearch =
-      !searchQuery ||
-      client.raison_sociale?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.siret?.includes(searchQuery) ||
-      client.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  // Les clients sont déjà filtrés et paginés côté serveur
+  // On utilise directement la liste reçue
+  const paginatedClients = clients
 
-    // Utiliser statut_commercial de Monday
-    const clientStatut = client.statut_commercial || ''
-    const matchesStatut =
-      statutFilter === 'all' || clientStatut === statutFilter
+  // Valeurs de pagination (depuis l'API ou valeurs par défaut)
+  const totalPages = pagination?.totalPages || 1
+  const totalFiltered = pagination?.totalFiltered || clients.length
+  const startIndex = pagination?.startIndex || 1
+  const endIndex = pagination?.endIndex || clients.length
 
-    // Utiliser departement de Monday
-    const clientDept = client.departement || ''
-    const matchesDepartement =
-      departementFilter === 'all' ||
-      clientDept === departementFilter ||
-      clientDept.includes(departementFilter)
+  // Stats globales (chargées une fois séparément)
+  const [globalStats, setGlobalStats] = useState<{
+    total: number
+    velosValides: number
+    velosLivres: number
+    statsByStatut: Record<string, { clients: number, velos: number }>
+  } | null>(null)
 
-    return matchesSearch && matchesStatut && matchesDepartement
-  })
+  // Charger les stats globales une seule fois (ou au refresh)
+  const fetchStats = async () => {
+    try {
+      // Utiliser l'API Supabase pour les stats (plus rapide)
+      // ou Monday si on est en mode Monday
+      const statsEndpoint = dataSource === 'supabase'
+        ? '/api/clients/stats'
+        : '/api/monday/clients/stats'
 
-  // Pagination
-  const totalPages = Math.ceil(filteredClients.length / pageSize)
-  const startIndex = (currentPage - 1) * pageSize
-  const paginatedClients = filteredClients.slice(startIndex, startIndex + pageSize)
+      const response = await fetch(statsEndpoint)
+      if (response.ok) {
+        const stats = await response.json()
+        setGlobalStats(stats)
+      }
+    } catch (error) {
+      console.error('Erreur chargement stats:', error)
+    }
+  }
 
-  // Reset page quand les filtres changent
   useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery, statutFilter, departementFilter, pageSize])
+    fetchStats()
+  }, [dataSource])
 
   // Statuts sélectionnés pour les stats dynamiques (2 sélecteurs indépendants)
   const [selectedStatutClients, setSelectedStatutClients] = useState('DOSSIER COMPLET')
   const [selectedStatutVelos, setSelectedStatutVelos] = useState('DOSSIER COMPLET')
 
-  // Stats basées sur statut_commercial Monday
+  // Stats basées sur les données globales ou les données paginées
   const stats = {
-    total: clients.length,
-    velosValides: clients.reduce((sum: number, c: any) => sum + (c.velo_valide || c.velo_confirme || 0), 0),
-    velosLivres: clients
-      .filter((c: any) => c.statut_commercial === 'LIVRÉ')
-      .reduce((sum: number, c: any) => sum + (c.velo_valide || c.velo_confirme || 0), 0),
+    total: pagination?.totalClients || globalStats?.total || 0,
+    velosValides: globalStats?.velosValides || 0,
+    velosLivres: globalStats?.velosLivres || 0,
     // Stats dynamiques - clients par statut
-    clientsStatut: clients.filter((c: any) => c.statut_commercial === selectedStatutClients).length,
+    clientsStatut: globalStats?.statsByStatut?.[selectedStatutClients]?.clients || 0,
     // Stats dynamiques - vélos par statut (sélecteur indépendant)
-    velosStatut: clients
-      .filter((c: any) => c.statut_commercial === selectedStatutVelos)
-      .reduce((sum: number, c: any) => sum + (c.velo_valide || c.velo_confirme || 0), 0),
+    velosStatut: globalStats?.statsByStatut?.[selectedStatutVelos]?.velos || 0,
   }
 
   if (loading) {
@@ -671,7 +731,7 @@ export default function AdminClientsPage() {
       {/* Table */}
       <Card>
         <CardContent className="p-0">
-          {filteredClients.length === 0 ? (
+          {paginatedClients.length === 0 ? (
             <div className="text-center py-12">
               <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h3 className="font-medium mb-1">Aucun client</h3>
@@ -686,8 +746,8 @@ export default function AdminClientsPage() {
             {/* Info pagination */}
             <div className="px-4 py-3 border-b flex items-center justify-between text-sm text-muted-foreground">
               <span>
-                {filteredClients.length} client{filteredClients.length > 1 ? 's' : ''} trouvé{filteredClients.length > 1 ? 's' : ''}
-                {filteredClients.length !== clients.length && ` (sur ${clients.length} total)`}
+                {totalFiltered} client{totalFiltered > 1 ? 's' : ''} trouvé{totalFiltered > 1 ? 's' : ''}
+                {pagination && totalFiltered !== pagination.totalClients && ` (sur ${pagination.totalClients} total)`}
               </span>
               <span>
                 Page {currentPage} sur {totalPages}
@@ -806,7 +866,7 @@ export default function AdminClientsPage() {
             {totalPages > 1 && (
               <div className="px-4 py-3 border-t flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Affichage {startIndex + 1} - {Math.min(startIndex + pageSize, filteredClients.length)} sur {filteredClients.length}
+                  Affichage {startIndex} - {endIndex} sur {totalFiltered}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button

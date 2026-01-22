@@ -97,6 +97,8 @@ interface DepotForm {
   latitude: number
   longitude: number
   rayon_couverture_km: number
+  rayon_livraison_payant_km: number
+  prix_livraison_payante: number
   telephone: string
   email: string
   actif: boolean
@@ -112,6 +114,8 @@ const initialForm: DepotForm = {
   latitude: -21.1151,
   longitude: 55.5364,
   rayon_couverture_km: 30,
+  rayon_livraison_payant_km: 50,
+  prix_livraison_payante: 0,
   telephone: '',
   email: '',
   actif: true,
@@ -202,6 +206,8 @@ export default function AdminDepotsPage() {
       latitude: depot.latitude,
       longitude: depot.longitude,
       rayon_couverture_km: depot.rayon_couverture_km,
+      rayon_livraison_payant_km: depot.rayon_livraison_payant_km || 50,
+      prix_livraison_payante: depot.prix_livraison_payante || 0,
       telephone: depot.telephone || '',
       email: depot.email || '',
       actif: depot.actif ?? true,
@@ -232,6 +238,8 @@ export default function AdminDepotsPage() {
         latitude: form.latitude,
         longitude: form.longitude,
         rayon_couverture_km: form.rayon_couverture_km,
+        rayon_livraison_payant_km: form.rayon_livraison_payant_km,
+        prix_livraison_payante: form.prix_livraison_payante,
         telephone: form.telephone || null,
         email: form.email || null,
         actif: form.actif,
@@ -449,7 +457,9 @@ export default function AdminDepotsPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>Adresse</TableHead>
                   <TableHead>Département</TableHead>
-                  <TableHead>Rayon (km)</TableHead>
+                  <TableHead className="text-center">Zone gratuite (km)</TableHead>
+                  <TableHead className="text-center">Zone payante (km)</TableHead>
+                  <TableHead className="text-center">Prix livraison (€)</TableHead>
                   <TableHead>Actif</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -477,7 +487,13 @@ export default function AdminDepotsPage() {
                       <Badge variant="outline">{depot.agence}</Badge>
                     </TableCell>
                     <TableCell className="text-center">
-                      {depot.rayon_couverture_km}
+                      {depot.rayon_couverture_km} km
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {depot.rayon_livraison_payant_km || '-'} km
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {depot.prix_livraison_payante ? `${depot.prix_livraison_payante} €` : '-'}
                     </TableCell>
                     <TableCell>
                       {depot.actif ? (
@@ -534,7 +550,7 @@ export default function AdminDepotsPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[690px]">
           <DialogHeader>
             <DialogTitle>
               {editingDepot ? 'Modifier le depot' : 'Nouveau depot'}
@@ -646,7 +662,7 @@ export default function AdminDepotsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="latitude">Latitude (auto)</Label>
                 <Input
@@ -669,14 +685,59 @@ export default function AdminDepotsPage() {
                   className="bg-muted/50"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="rayon">Rayon (km)</Label>
-                <Input
-                  id="rayon"
-                  type="number"
-                  value={form.rayon_couverture_km}
-                  onChange={(e) => setForm({ ...form, rayon_couverture_km: parseInt(e.target.value) || 30 })}
-                />
+            </div>
+
+            {/* Périmètres de livraison */}
+            <div className="border-t pt-4 mt-2">
+              <Label className="text-sm font-medium mb-3 block">Zones de couverture</Label>
+              {form.type === 'retrait' ? (
+                <p className="text-xs text-muted-foreground mb-3">
+                  <strong>Point de retrait :</strong> 0→zone gratuite = retrait gratuit | zone gratuite→zone payante = livraison payante ou retrait | au-delà = hors zone
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mb-3">
+                  <strong>Dépôt logistique :</strong> 0→zone gratuite = livraison gratuite | zone gratuite→zone payante = livraison payante | au-delà = hors zone
+                </p>
+              )}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="rayon" className="text-xs text-muted-foreground">
+                    {form.type === 'retrait' ? 'Rayon retrait gratuit (km)' : 'Rayon livraison gratuite (km)'}
+                  </Label>
+                  <Input
+                    id="rayon"
+                    type="number"
+                    value={form.rayon_couverture_km}
+                    onChange={(e) => setForm({ ...form, rayon_couverture_km: parseInt(e.target.value) || 30 })}
+                    placeholder="30"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {form.type === 'retrait' ? 'Zone où seul le retrait est disponible' : 'Zone de livraison gratuite'}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rayon_payant" className="text-xs text-muted-foreground">Rayon max. livraison payante (km)</Label>
+                  <Input
+                    id="rayon_payant"
+                    type="number"
+                    value={form.rayon_livraison_payant_km}
+                    onChange={(e) => setForm({ ...form, rayon_livraison_payant_km: parseInt(e.target.value) || 50 })}
+                    placeholder="50"
+                  />
+                  <p className="text-xs text-muted-foreground">Au-delà = hors zone</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="prix_livraison" className="text-xs text-muted-foreground">Prix livraison payante (€)</Label>
+                  <Input
+                    id="prix_livraison"
+                    type="number"
+                    step="0.01"
+                    value={form.prix_livraison_payante}
+                    onChange={(e) => setForm({ ...form, prix_livraison_payante: parseFloat(e.target.value) || 0 })}
+                    placeholder="50"
+                  />
+                  <p className="text-xs text-muted-foreground">Frais facturés au client</p>
+                </div>
               </div>
             </div>
 
