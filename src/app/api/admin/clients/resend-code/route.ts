@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateValidationCode, hashValidationCode } from '@/lib/utils'
 import { sendCodeValidationEmail } from '@/lib/email/gmail'
+import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Récupérer le client
     const { data: client, error: fetchError } = await adminClient
       .from('clients')
-      .select('id, email, raison_sociale, contact_prenom, contact_nom')
+      .select('id, email, raison_sociale, contact_prenom, contact_nom, monday_item_id')
       .eq('id', clientId)
       .single()
 
@@ -79,6 +80,20 @@ export async function POST(request: NextRequest) {
     } catch (emailError) {
       console.error('Erreur envoi email:', emailError)
       return NextResponse.json({ error: 'Erreur lors de l\'envoi de l\'email' }, { status: 500 })
+    }
+
+    // Sync vers Monday - mettre le statut "CODE ENVOYÉ"
+    if (client.monday_item_id && isMondayConfigured()) {
+      try {
+        await syncClientToMonday(
+          { monday_item_id: client.monday_item_id, statut_commercial: 'code_envoye' },
+          ['statut_commercial']
+        )
+        console.log(`Statut CODE ENVOYÉ sync vers Monday pour ${client.raison_sociale}`)
+      } catch (syncError) {
+        console.error('Erreur sync Monday:', syncError)
+        // Ne pas bloquer si la sync échoue
+      }
     }
 
     return NextResponse.json({ success: true })

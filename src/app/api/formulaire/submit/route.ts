@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendFormulaireRecapEmail } from '@/lib/email/gmail'
+import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     // Vérifier que le client existe et récupérer ses infos
     const { data: client, error: clientCheckError } = await adminClient
       .from('clients')
-      .select('id, email, raison_sociale, contact_nom, contact_prenom, statut_formulaire, depot_retrait_id, depot_logistique_id')
+      .select('id, email, raison_sociale, contact_nom, contact_prenom, statut_formulaire, depot_retrait_id, depot_logistique_id, monday_item_id')
       .eq('id', clientId)
       .single()
 
@@ -184,6 +185,20 @@ export async function POST(request: NextRequest) {
     } catch (emailError) {
       console.error('Erreur envoi email récapitulatif:', emailError)
       // Ne pas bloquer si l'email échoue
+    }
+
+    // 7. Sync vers Monday - mettre le statut "FORMULAIRE VALIDÉ"
+    if (client.monday_item_id && isMondayConfigured()) {
+      try {
+        await syncClientToMonday(
+          { monday_item_id: client.monday_item_id, statut_commercial: 'formulaire_valide' },
+          ['statut_commercial']
+        )
+        console.log(`Statut FORMULAIRE VALIDÉ sync vers Monday pour ${client.raison_sociale}`)
+      } catch (syncError) {
+        console.error('Erreur sync Monday:', syncError)
+        // Ne pas bloquer si la sync échoue
+      }
     }
 
     return NextResponse.json({

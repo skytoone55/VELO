@@ -152,6 +152,10 @@ export const MONDAY_CONFIG = {
     'CONTROLE A JOUR': 'controle_a_jour',
     'CLIENT CONTACTÉ': 'client_contacte',
     'FRANCK': 'franck',
+    // Nouveaux statuts pour le workflow formulaire
+    'CODE ENVOYÉ': 'code_envoye',
+    'FORMULAIRE ENVOYÉ': 'formulaire_envoye',
+    'FORMULAIRE VALIDÉ': 'formulaire_valide',
   },
 
   // Mapping inverse statut commercial
@@ -171,6 +175,10 @@ export const MONDAY_CONFIG = {
     controle_a_jour: 'CONTROLE A JOUR',
     client_contacte: 'CLIENT CONTACTÉ',
     franck: 'FRANCK',
+    // Nouveaux statuts pour le workflow formulaire
+    code_envoye: 'CODE ENVOYÉ',
+    formulaire_envoye: 'FORMULAIRE ENVOYÉ',
+    formulaire_valide: 'FORMULAIRE VALIDÉ',
   },
 
   // =================================================================

@@ -107,6 +107,8 @@ const pageSizeOptions = [
   { value: 20, label: '20 par page' },
   { value: 50, label: '50 par page' },
   { value: 100, label: '100 par page' },
+  { value: 250, label: '250 par page' },
+  { value: 500, label: '500 par page' },
 ]
 
 // Déterminer l'agence à partir du code postal

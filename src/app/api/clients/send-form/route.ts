@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendFormulaireLinkEmail } from '@/lib/email/gmail'
+import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -74,6 +75,20 @@ export async function POST(request: NextRequest) {
         clientName,
         formulaireUrl
       )
+
+      // Sync vers Monday - mettre le statut "FORMULAIRE ENVOYÉ"
+      if (client.monday_item_id && isMondayConfigured()) {
+        try {
+          await syncClientToMonday(
+            { monday_item_id: client.monday_item_id, statut_commercial: 'formulaire_envoye' },
+            ['statut_commercial']
+          )
+          console.log(`Statut FORMULAIRE ENVOYÉ sync vers Monday pour ${client.raison_sociale}`)
+        } catch (syncError) {
+          console.error('Erreur sync Monday:', syncError)
+          // Ne pas bloquer si la sync échoue
+        }
+      }
 
       return NextResponse.json({
         success: true,

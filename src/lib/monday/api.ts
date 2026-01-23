@@ -366,6 +366,8 @@ export async function syncClientToMonday(
     // Mapper les champs Supabase vers Monday
     const columnValues: Record<string, any> = {}
     const mapping = MONDAY_CONFIG.supabaseToMondayMapping as Record<string, string>
+    const statutMapping = MONDAY_CONFIG.supabaseToMondayStatutCommercial as Record<string, string>
+    const deptMapping = MONDAY_CONFIG.supabaseToMondayDepartement as Record<string, string>
 
     for (const [supabaseField, mondayColumnId] of Object.entries(mapping)) {
       // Si fieldsToSync est spécifié, ne syncer que ces champs
@@ -373,8 +375,26 @@ export async function syncClientToMonday(
         continue
       }
 
-      if (client[supabaseField] !== undefined) {
-        columnValues[mondayColumnId] = client[supabaseField]
+      const value = client[supabaseField]
+      if (value === undefined) continue
+
+      // Conversion spéciale pour le statut commercial
+      if (supabaseField === 'statut_commercial' && value) {
+        const mondayLabel = statutMapping[value]
+        if (mondayLabel) {
+          columnValues[mondayColumnId] = mondayLabel
+        }
+      }
+      // Conversion spéciale pour le département
+      else if (supabaseField === 'departement' && value) {
+        const mondayLabel = deptMapping[value]
+        if (mondayLabel) {
+          columnValues[mondayColumnId] = mondayLabel
+        }
+      }
+      // Autres champs
+      else {
+        columnValues[mondayColumnId] = value
       }
     }
 
