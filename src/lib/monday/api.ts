@@ -289,11 +289,8 @@ export async function updateMondayItem(
         const formatted = formatValueForMonday(columnId, value)
         console.log(`updateMondayItem - formatting ${columnId}:`, { input: value, output: formatted })
         if (formatted !== null) {
-          // Monday API exige que chaque valeur de colonne soit une STRING JSON
-          // Donc on stringify les objets individuellement
-          formattedValues[columnId] = typeof formatted === 'object'
-            ? JSON.stringify(formatted)
-            : formatted
+          // NE PAS stringify ici - le JSON.stringify final s'en chargera
+          formattedValues[columnId] = formatted
         }
       }
     }
@@ -318,10 +315,10 @@ export async function updateMondayItem(
       await executeMondayMutationWithVariables(mutation, variables)
     }
 
-    // Mettre à jour le nom séparément si fourni
+    // Mettre à jour le nom séparément si fourni (utilise change_simple_column_value avec type String)
     if (nameValue) {
       const mutation = `
-        mutation ($boardId: ID!, $itemId: ID!, $value: JSON!) {
+        mutation ($boardId: ID!, $itemId: ID!, $value: String!) {
           change_simple_column_value(board_id: $boardId, item_id: $itemId, column_id: "name", value: $value) {
             id
           }
@@ -330,7 +327,7 @@ export async function updateMondayItem(
       const variables = {
         boardId: boardId,
         itemId: itemIdStr,
-        value: JSON.stringify(String(nameValue))
+        value: String(nameValue)
       }
       await executeMondayMutationWithVariables(mutation, variables)
     }
@@ -442,6 +439,12 @@ export async function getChangedFields(
   const changedFields: string[] = []
 
   for (const field of Object.keys(mapping)) {
+    // IMPORTANT: Ne comparer que les champs présents dans newClient (les champs qu'on veut modifier)
+    // Si le champ n'est pas dans newClient, on ne le considère pas comme modifié
+    if (!(field in newClient)) {
+      continue
+    }
+
     const oldValue = oldClient[field]
     const newValue = newClient[field]
 

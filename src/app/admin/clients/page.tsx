@@ -31,7 +31,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Plus, Pencil, Trash2, MoreHorizontal, Navigation, Eye, Phone, KeyRound, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Pencil, Trash2, MoreHorizontal, Navigation, Eye, Phone, KeyRound, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import {
@@ -164,24 +164,6 @@ export default function AdminClientsPage() {
   const [showLinkDialog, setShowLinkDialog] = useState(false)
   const [generatedLink, setGeneratedLink] = useState('')
   const [copied, setCopied] = useState(false)
-
-  // New client dialog
-  const [showNewClientDialog, setShowNewClientDialog] = useState(false)
-  const [creatingClient, setCreatingClient] = useState(false)
-  const [newClient, setNewClient] = useState({
-    raison_sociale: '',
-    siret: '',
-    email: '',
-    telephone: '',
-    contact_nom: '',
-    contact_prenom: '',
-    adresse_societe_ligne1: '',
-    adresse_societe_cp: '',
-    adresse_societe_ville: '',
-    departement: user.territoire || '974',
-    agence: getAgenceFromCodePostal(user.territoire || '974'),
-    velo_devis: 1,
-  })
 
   // Edit client dialog
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -350,47 +332,6 @@ export default function AdminClientsPage() {
     setCopied(true)
     toast.success('Lien copié !')
     setTimeout(() => setCopied(false), 2000)
-  }
-
-  const handleCreateClient = async () => {
-    setCreatingClient(true)
-
-    try {
-      const response = await fetch('/api/admin/clients/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newClient),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erreur lors de la création')
-      }
-
-      toast.success('Client créé avec succès')
-      setShowNewClientDialog(false)
-      setNewClient({
-        raison_sociale: '',
-        siret: '',
-        email: '',
-        telephone: '',
-        contact_nom: '',
-        contact_prenom: '',
-        adresse_societe_ligne1: '',
-        adresse_societe_cp: '',
-        adresse_societe_ville: '',
-        departement: user.territoire || '974',
-        agence: getAgenceFromCodePostal(user.territoire || '974'),
-        velo_devis: 1,
-      })
-      fetchClients()
-    } catch (error: any) {
-      console.error('Erreur:', error)
-      toast.error(error.message || 'Erreur lors de la création du client')
-    } finally {
-      setCreatingClient(false)
-    }
   }
 
   const handleEditClient = (client: Client) => {
@@ -619,13 +560,9 @@ export default function AdminClientsPage() {
             size="sm"
             onClick={handleForceRefresh}
             disabled={loading}
-            title="Rafraîchir depuis Monday (ignorer le cache)"
+            title="Rafraîchir depuis Monday"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-          <Button onClick={() => setShowNewClientDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nouveau client
           </Button>
         </div>
       </div>
@@ -988,14 +925,20 @@ export default function AdminClientsPage() {
                 onValueChange={(value) => handleBulkAction('change_status', { statut: value })}
                 disabled={bulkActionLoading}
               >
-                <SelectTrigger className="w-44 h-9">
+                <SelectTrigger className="w-52 h-9">
                   <SelectValue placeholder="Changer statut" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="en_attente">En attente</SelectItem>
+                  <SelectItem value="dossier_complet">Dossier complet</SelectItem>
+                  <SelectItem value="devis_signe">Devis signé</SelectItem>
+                  <SelectItem value="controle_valide">Contrôle validé</SelectItem>
+                  <SelectItem value="controle_a_regulariser">Contrôle à régulariser</SelectItem>
+                  <SelectItem value="client_contacte">Client contacté</SelectItem>
+                  <SelectItem value="client_injoignable">Client injoignable</SelectItem>
+                  <SelectItem value="code_envoye">Code envoyé</SelectItem>
                   <SelectItem value="formulaire_envoye">Formulaire envoyé</SelectItem>
-                  <SelectItem value="formulaire_complete">Formulaire complété</SelectItem>
-                  <SelectItem value="valide">Validé</SelectItem>
+                  <SelectItem value="formulaire_valide">Formulaire validé</SelectItem>
+                  <SelectItem value="livre">Livré</SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -1089,193 +1032,6 @@ export default function AdminClientsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* New Client Dialog */}
-      <Dialog open={showNewClientDialog} onOpenChange={setShowNewClientDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Nouveau client</DialogTitle>
-            <DialogDescription>
-              Créez un nouveau dossier client pour lui envoyer le formulaire.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="raison_sociale">Raison sociale *</Label>
-                <Input
-                  id="raison_sociale"
-                  value={newClient.raison_sociale}
-                  onChange={(e) => setNewClient({ ...newClient, raison_sociale: e.target.value })}
-                  placeholder="Nom de l'entreprise"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="siret">SIRET *</Label>
-                <Input
-                  id="siret"
-                  value={newClient.siret}
-                  onChange={(e) => setNewClient({ ...newClient, siret: e.target.value })}
-                  placeholder="12345678901234"
-                  maxLength={14}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newClient.email}
-                  onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
-                  placeholder="contact@entreprise.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="telephone">Téléphone</Label>
-                <Input
-                  id="telephone"
-                  value={newClient.telephone}
-                  onChange={(e) => setNewClient({ ...newClient, telephone: e.target.value })}
-                  placeholder="0690123456"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="contact_prenom">Prénom du contact</Label>
-                <Input
-                  id="contact_prenom"
-                  value={newClient.contact_prenom}
-                  onChange={(e) => setNewClient({ ...newClient, contact_prenom: e.target.value })}
-                  placeholder="Jean"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contact_nom">Nom du contact</Label>
-                <Input
-                  id="contact_nom"
-                  value={newClient.contact_nom}
-                  onChange={(e) => setNewClient({ ...newClient, contact_nom: e.target.value })}
-                  placeholder="Dupont"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="adresse">Adresse</Label>
-              <AddressAutocomplete
-                value={newClient.adresse_societe_ligne1}
-                onChange={(value) => setNewClient({ ...newClient, adresse_societe_ligne1: value })}
-                onSelect={(address) => {
-                  const agence = getAgenceFromCodePostal(address.codePostal)
-                  setNewClient({
-                    ...newClient,
-                    adresse_societe_ligne1: address.ligne1,
-                    adresse_societe_cp: address.codePostal,
-                    adresse_societe_ville: address.ville,
-                    agence: agence,
-                  })
-                }}
-                placeholder="Commencez à taper l'adresse..."
-              />
-              {newClient.adresse_societe_ligne1 && newClient.adresse_societe_cp && newClient.adresse_societe_ville && (
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <Navigation className="h-4 w-4" />
-                  Adresse remplie automatiquement
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="cp">Code postal</Label>
-                <Input
-                  id="cp"
-                  value={newClient.adresse_societe_cp}
-                  onChange={(e) => setNewClient({ ...newClient, adresse_societe_cp: e.target.value })}
-                  placeholder="97400"
-                  maxLength={5}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ville">Ville</Label>
-                <Input
-                  id="ville"
-                  value={newClient.adresse_societe_ville}
-                  onChange={(e) => setNewClient({ ...newClient, adresse_societe_ville: e.target.value })}
-                  placeholder="Saint-Denis"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="agence">Agence *</Label>
-                <Select
-                  value={newClient.agence}
-                  onValueChange={(value) => setNewClient({ ...newClient, agence: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="reunion">La Réunion</SelectItem>
-                    <SelectItem value="martinique">Martinique</SelectItem>
-                    <SelectItem value="guadeloupe">Guadeloupe</SelectItem>
-                    <SelectItem value="guyane">Guyane</SelectItem>
-                    <SelectItem value="france_metro">France Métro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="velo_devis">Nb vélos *</Label>
-                <Input
-                  id="velo_devis"
-                  type="number"
-                  min={1}
-                  value={newClient.velo_devis === 0 ? '' : newClient.velo_devis}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setNewClient({ ...newClient, velo_devis: val === '' ? 0 : parseInt(val) || 0 })
-                  }}
-                  onBlur={(e) => {
-                    if (!e.target.value || parseInt(e.target.value) < 1) {
-                      setNewClient({ ...newClient, velo_devis: 1 })
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewClientDialog(false)}>
-              Annuler
-            </Button>
-            <Button
-              onClick={handleCreateClient}
-              disabled={creatingClient || !newClient.raison_sociale || !newClient.siret || !newClient.email}
-            >
-              {creatingClient ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Création...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Créer le client
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Edit Client Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="sm:max-w-[600px]">
@@ -1310,7 +1066,16 @@ export default function AdminClientsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit_email">Email *</Label>
+                  <Label htmlFor="edit_email_beneficiaire">Email bénéficiaire *</Label>
+                  <Input
+                    id="edit_email_beneficiaire"
+                    type="email"
+                    value={editingClient.email_beneficiaire || ''}
+                    onChange={(e) => setEditingClient({ ...editingClient, email_beneficiaire: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_email">Email agent</Label>
                   <Input
                     id="edit_email"
                     type="email"
@@ -1318,6 +1083,9 @@ export default function AdminClientsPage() {
                     onChange={(e) => setEditingClient({ ...editingClient, email: e.target.value })}
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit_telephone">Téléphone</Label>
                   <Input
@@ -1424,19 +1192,32 @@ export default function AdminClientsPage() {
                   />
                 </div>
                 <div className="col-span-2 space-y-2">
-                  <Label htmlFor="edit_statut">Statut</Label>
+                  <Label htmlFor="edit_statut">Statut commercial</Label>
                   <Select
-                    value={editingClient.statut_formulaire || 'en_attente'}
-                    onValueChange={(value) => setEditingClient({ ...editingClient, statut_formulaire: value })}
+                    value={editingClient.statut_commercial || 'inconnu'}
+                    onValueChange={(value) => setEditingClient({ ...editingClient, statut_commercial: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Statut" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en_attente">En attente</SelectItem>
+                      <SelectItem value="dossier_complet">Dossier complet</SelectItem>
+                      <SelectItem value="devis_signe">Devis signé</SelectItem>
+                      <SelectItem value="devis_cree">Devis créé</SelectItem>
+                      <SelectItem value="controle_valide">Contrôle validé</SelectItem>
+                      <SelectItem value="controle_a_regulariser">Contrôle à régulariser</SelectItem>
+                      <SelectItem value="controle_a_jour">Contrôle à jour</SelectItem>
+                      <SelectItem value="client_contacte">Client contacté</SelectItem>
+                      <SelectItem value="client_injoignable">Client injoignable</SelectItem>
+                      <SelectItem value="client_hs">Client HS</SelectItem>
+                      <SelectItem value="ah_signee">AH signée</SelectItem>
+                      <SelectItem value="livre">Livré</SelectItem>
+                      <SelectItem value="paye">Payé</SelectItem>
+                      <SelectItem value="doublon">Doublon</SelectItem>
+                      <SelectItem value="code_envoye">Code envoyé</SelectItem>
                       <SelectItem value="formulaire_envoye">Formulaire envoyé</SelectItem>
-                      <SelectItem value="formulaire_complete">Formulaire complété</SelectItem>
-                      <SelectItem value="valide">Validé</SelectItem>
+                      <SelectItem value="formulaire_valide">Formulaire validé</SelectItem>
+                      <SelectItem value="inconnu">Inconnu</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1450,7 +1231,7 @@ export default function AdminClientsPage() {
             </Button>
             <Button
               onClick={handleSaveClient}
-              disabled={savingClient || !editingClient?.raison_sociale || !editingClient?.siret || !editingClient?.email}
+              disabled={savingClient || !editingClient?.raison_sociale || !editingClient?.siret || !editingClient?.email_beneficiaire}
             >
               {savingClient ? (
                 <>

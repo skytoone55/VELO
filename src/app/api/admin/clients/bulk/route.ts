@@ -241,7 +241,27 @@ async function handleBulkChangeStatus(
   newStatut: string
 ): Promise<BulkResponse> {
   const results: BulkResult[] = []
-  const validStatuts = ['en_attente', 'formulaire_envoye', 'formulaire_complete', 'valide']
+  // Statuts Monday valides (snake_case Supabase)
+  const validStatuts = [
+    'dossier_complet',
+    'devis_signe',
+    'devis_cree',
+    'controle_valide',
+    'controle_a_regulariser',
+    'controle_a_jour',
+    'client_contacte',
+    'client_injoignable',
+    'client_hs',
+    'ah_signee',
+    'livre',
+    'paye',
+    'doublon',
+    'franck',
+    'code_envoye',
+    'formulaire_envoye',
+    'formulaire_valide',
+    'inconnu',
+  ]
 
   if (!validStatuts.includes(newStatut)) {
     return {
@@ -255,11 +275,12 @@ async function handleBulkChangeStatus(
 
   for (const client of clients) {
     try {
-      // Mettre à jour le statut
+      // Mettre à jour le statut_commercial (pas statut_formulaire)
       const { error: updateError } = await adminClient
         .from('clients')
         .update({
-          statut_formulaire: newStatut,
+          statut_commercial: newStatut,
+          date_statut: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq('id', client.id)
@@ -273,8 +294,8 @@ async function handleBulkChangeStatus(
       if (client.monday_item_id && isMondayConfigured()) {
         try {
           await syncClientToMonday(
-            { ...client, statut_formulaire: newStatut },
-            ['statut_formulaire']
+            { ...client, statut_commercial: newStatut },
+            ['statut_commercial']
           )
         } catch (syncError) {
           console.error('Erreur sync Monday pour client', client.id, syncError)

@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
         break
 
       case 'change_name':
+      case 'update_name': // Monday envoie ce type
         await handleNameChange(adminClient, event)
         break
 

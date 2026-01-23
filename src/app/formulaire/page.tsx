@@ -76,9 +76,9 @@ function FormulaireContent() {
 
         const client = data.client
 
-        // Si le clientId est différent de celui en mémoire, réinitialiser le store
-        // Cela permet de repartir à zéro quand un client est supprimé et recréé
-        if (clientId && clientId !== client.id) {
+        // Si le clientId est différent de celui en mémoire, ou si le formulaire a été réinitialisé
+        // par l'admin (needsReset = code_enemat non validé), repartir à zéro
+        if ((clientId && clientId !== client.id) || data.needsReset) {
           reset()
         }
 

@@ -62,8 +62,10 @@ export async function POST(request: NextRequest) {
     })
 
     // Retourner les données du client (sans infos sensibles)
+    // needsReset = true si le code n'est pas validé (formulaire réinitialisé par admin)
     return NextResponse.json({
       valid: true,
+      needsReset: !client.code_enemat_valide,
       client: {
         id: client.id,
         raison_sociale: client.raison_sociale,
