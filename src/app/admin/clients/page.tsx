@@ -557,7 +557,16 @@ export default function AdminClientsPage() {
     velosStatut: globalStats?.statsByStatut?.[selectedStatutVelos]?.velos || 0,
   }
 
-  if (loading) {
+  // Premier chargement seulement - afficher spinner pleine page
+  const [initialLoad, setInitialLoad] = useState(true)
+
+  useEffect(() => {
+    if (!loading && initialLoad) {
+      setInitialLoad(false)
+    }
+  }, [loading, initialLoad])
+
+  if (initialLoad && loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -771,8 +780,15 @@ export default function AdminClientsPage() {
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {paginatedClients.map((client: any) => (
+              <TableBody className={loading ? 'opacity-50' : ''}>
+                {loading && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                    </TableCell>
+                  </TableRow>
+                )}
+                {!loading && paginatedClients.map((client: any) => (
                   <TableRow key={client.id} className={selectedClients.has(client.id) ? 'bg-muted/50' : ''}>
                     <TableCell>
                       <Checkbox

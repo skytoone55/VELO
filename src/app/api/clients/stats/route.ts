@@ -21,28 +21,52 @@ export async function GET() {
       throw error
     }
 
+    // Mapping snake_case -> Affichage pour les clés de statut
+    const statutDisplayMap: Record<string, string> = {
+      'dossier_complet': 'DOSSIER COMPLET',
+      'devis_signe': 'DEVIS SIGNÉ',
+      'devis_cree': 'DEVIS CREE',
+      'controle_valide': 'CONTROLE VALIDÉ',
+      'controle_a_regulariser': 'CONTROLE A REGULARISER',
+      'controle_a_jour': 'CONTROLE A JOUR',
+      'client_contacte': 'CLIENT CONTACTÉ',
+      'client_injoignable': 'CLIENT INJOIGNABLE',
+      'client_hs': 'CLIENT HS',
+      'ah_signee': 'AH SIGNÉE',
+      'livre': 'LIVRÉ',
+      'paye': 'PAYÈ',
+      'doublon': 'DOUBLON',
+    }
+
     // Calculer les stats
     const statsByStatut: Record<string, { clients: number; velos: number }> = {}
     let velosValides = 0
+    let velosDevis = 0
     let velosLivres = 0
 
     for (const client of clients || []) {
-      const statut = client.statut_commercial || 'Inconnu'
-      const velos = client.velo_valide || client.velo_devis || 0
+      const statutRaw = client.statut_commercial || 'Inconnu'
+      // Convertir en clé d'affichage si mapping existe
+      const statut = statutDisplayMap[statutRaw] || statutRaw
+
+      // Utiliser velo_valide pour les validés, velo_devis séparément
+      const velosV = client.velo_valide || 0
+      const velosD = client.velo_devis || 0
 
       // Initialiser si premier client avec ce statut
       if (!statsByStatut[statut]) {
         statsByStatut[statut] = { clients: 0, velos: 0 }
       }
 
-      // Incrémenter
+      // Incrémenter - utiliser velo_valide pour les stats par statut
       statsByStatut[statut].clients++
-      statsByStatut[statut].velos += velos
+      statsByStatut[statut].velos += velosV || velosD // fallback sur devis si pas de validé
 
       // Stats globales
-      velosValides += velos
+      velosValides += velosV
+      velosDevis += velosD
       if (statut === 'LIVRÉ') {
-        velosLivres += velos
+        velosLivres += velosV || velosD
       }
     }
 
@@ -57,6 +81,7 @@ export async function GET() {
     return NextResponse.json({
       total: clients?.length || 0,
       velosValides,
+      velosDevis,
       velosLivres,
       statsByStatut,
       lastSync: lastSync?.created_at || null,
