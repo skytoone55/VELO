@@ -436,6 +436,11 @@ export async function syncClientToMonday(
     // Charger le mapping dynamique depuis la base
     const mapping = await getSupabaseToMondayMapping()
 
+    // DEBUG: Log le mapping pour statut_commercial
+    console.log('syncClientToMonday - fieldsToSync:', fieldsToSync)
+    console.log('syncClientToMonday - mapping statut_commercial:', mapping['statut_commercial'])
+    console.log('syncClientToMonday - client.statut_commercial:', client.statut_commercial)
+
     // Mapper les champs Supabase vers Monday
     const columnValues: Record<string, any> = {}
 
@@ -450,10 +455,24 @@ export async function syncClientToMonday(
 
       // Convertir la valeur selon le mapping de valeurs (ex: statuts)
       const mondayValue = await convertValueToMonday(supabaseField, value)
+
+      // DEBUG: Log pour statut_commercial
+      if (supabaseField === 'statut_commercial') {
+        console.log('syncClientToMonday - statut_commercial:', {
+          supabaseField,
+          mondayColumnId,
+          originalValue: value,
+          convertedValue: mondayValue
+        })
+      }
+
       if (mondayValue !== null && mondayValue !== undefined) {
         columnValues[mondayColumnId] = mondayValue
       }
     }
+
+    // DEBUG: Log les colonnes finales
+    console.log('syncClientToMonday - columnValues to send:', JSON.stringify(columnValues))
 
     if (Object.keys(columnValues).length === 0) {
       return { success: true } // Rien à sync
