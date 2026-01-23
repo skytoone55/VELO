@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { MONDAY_CONFIG } from '@/lib/monday/config'
+import { getMondayToSupabaseMapping, convertValueToSupabase } from '@/lib/monday/dynamic-mapping'
 
 /**
  * Webhook endpoint pour recevoir les événements Monday.com
  *
  * Board: Vélos Cargos - Général (ID: 9990833105)
  * Monday est la SOURCE DE VÉRITÉ (SSOT)
+ *
+ * Les mappings sont chargés DYNAMIQUEMENT depuis la table `monday_field_mapping`
  *
  * Monday envoie des webhooks pour:
  * - create_item: Nouvel item créé
@@ -16,9 +18,6 @@ import { MONDAY_CONFIG } from '@/lib/monday/config'
  *
  * POST /api/webhooks/monday
  */
-
-// Utiliser le mapping centralisé depuis config.ts
-const mondayToSupabaseMapping = MONDAY_CONFIG.mondayToSupabaseMapping
 
 interface MondayWebhookPayload {
   challenge?: string // Pour la vérification initiale du webhook
@@ -153,6 +152,7 @@ async function handleCreateItem(adminClient: any, event: any) {
 
 /**
  * Gère le changement d'une valeur de colonne
+ * Utilise les mappings dynamiques depuis la base de données
  */
 async function handleColumnChange(adminClient: any, event: any) {
   const mondayItemId = event.pulseId
@@ -168,43 +168,24 @@ async function handleColumnChange(adminClient: any, event: any) {
 
   if (!client) {
     console.log('No client found for Monday item:', mondayItemId)
-    // Peut-être créer le client s'il n'existe pas
     return
   }
 
+  // Charger le mapping dynamique depuis la base
+  const mondayToSupabaseMapping = await getMondayToSupabaseMapping()
+
   // Mapper la colonne Monday vers Supabase
-  const supabaseColumn = (mondayToSupabaseMapping as Record<string, string>)[columnId]
+  const supabaseColumn = mondayToSupabaseMapping[columnId]
   if (!supabaseColumn) {
     console.log('No mapping for Monday column:', columnId)
     return
   }
 
   // Extraire la valeur selon le type de colonne
-  let supabaseValue = extractColumnValue(columnId, value)
+  let rawValue = extractColumnValue(columnId, value)
 
-  // Mapper les valeurs des colonnes status selon leur type
-  if (supabaseValue) {
-    switch (columnId) {
-      case 'color_mkvfws5n': // Statut commercial (PRINCIPAL)
-        supabaseValue = (MONDAY_CONFIG.mondayToSupabaseStatutCommercial as Record<string, string>)[supabaseValue] || supabaseValue
-        break
-      case 'color_mkvdkzxh': // Département
-        supabaseValue = (MONDAY_CONFIG.mondayToSupabaseDepartement as Record<string, string>)[supabaseValue] || supabaseValue
-        break
-      case 'color_mkvgsswc': // StatutRETINA
-        supabaseValue = (MONDAY_CONFIG.mondayToSupabaseStatutRetina as Record<string, string>)[supabaseValue] || supabaseValue
-        break
-      case 'color_mkyqn153': // statut mail
-        supabaseValue = (MONDAY_CONFIG.mondayToSupabaseStatutMail as Record<string, string>)[supabaseValue] || supabaseValue
-        break
-      case 'color_mkvp4dmz': // StatutAnomalie
-        supabaseValue = (MONDAY_CONFIG.mondayToSupabaseStatutAnomalie as Record<string, string>)[supabaseValue] || supabaseValue
-        break
-      case 'color_mkvn1kg0': // doublon_RETINA
-        supabaseValue = (MONDAY_CONFIG.mondayToSupabaseStatutDoublon as Record<string, string>)[supabaseValue] || supabaseValue
-        break
-    }
-  }
+  // Convertir la valeur selon le mapping de valeurs (ex: statuts)
+  const supabaseValue = await convertValueToSupabase(supabaseColumn, rawValue)
 
   // Mettre à jour le client
   const updateData: Record<string, any> = {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { invalidateMappingsCache } from '@/lib/monday/dynamic-mapping'
 
 /**
  * API pour gérer le mapping des champs Monday
@@ -165,6 +166,9 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error
 
+    // Invalider le cache des mappings pour que la sync utilise les nouvelles valeurs
+    invalidateMappingsCache()
+
     return NextResponse.json({
       success: true,
       mapping: data,
@@ -199,6 +203,9 @@ export async function DELETE(request: NextRequest) {
       .eq('interface_field', interface_field)
 
     if (error) throw error
+
+    // Invalider le cache des mappings
+    invalidateMappingsCache()
 
     return NextResponse.json({ success: true })
 

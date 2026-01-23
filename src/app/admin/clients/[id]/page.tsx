@@ -509,7 +509,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Envoyer le formulaire</DialogTitle>
-                    <DialogDescription>Email: {client.email}</DialogDescription>
+                    <DialogDescription>Email: {client.email_beneficiaire || client.email}</DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setSendEmailOpen(false)}>Annuler</Button>
@@ -548,7 +548,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 <DialogHeader>
                   <DialogTitle>Renvoyer le code de validation</DialogTitle>
                   <DialogDescription>
-                    Un nouveau code sera généré et envoyé à {client.email}
+                    Un nouveau code sera généré et envoyé à {client.email_beneficiaire || client.email}
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
@@ -760,11 +760,16 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <div>
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                   <Mail className="h-3.5 w-3.5" />
-                  Email
+                  Email bénéficiaire
                 </p>
-                <a href={`mailto:${client.email}`} className="font-medium hover:underline">
-                  {client.email}
+                <a href={`mailto:${client.email_beneficiaire || client.email}`} className="font-medium hover:underline">
+                  {client.email_beneficiaire || client.email}
                 </a>
+                {client.email_beneficiaire && client.email && client.email_beneficiaire !== client.email && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Agent: {client.email}
+                  </p>
+                )}
               </div>
               {client.telephone && (
                 <div>

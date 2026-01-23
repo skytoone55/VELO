@@ -347,6 +347,8 @@ export function isMondayConfigured(): boolean {
 
 /**
  * Synchroniser un client Supabase vers Monday
+ * Utilise les mappings DYNAMIQUES depuis la base de données
+ *
  * @param client Objet partiel du client avec monday_item_id et les champs à sync
  * @param fieldsToSync Liste des champs Supabase à synchroniser (optionnel, tous si non spécifié)
  */
@@ -354,6 +356,9 @@ export async function syncClientToMonday(
   client: { monday_item_id: string | number } & Record<string, any>,
   fieldsToSync?: string[]
 ): Promise<{ success: boolean; error?: string }> {
+  // Import dynamique pour éviter les dépendances circulaires
+  const { getSupabaseToMondayMapping, convertValueToMonday } = await import('./dynamic-mapping')
+
   try {
     if (!client.monday_item_id) {
       return { success: false, error: 'monday_item_id manquant' }
@@ -363,11 +368,11 @@ export async function syncClientToMonday(
       ? parseInt(client.monday_item_id)
       : client.monday_item_id
 
+    // Charger le mapping dynamique depuis la base
+    const mapping = await getSupabaseToMondayMapping()
+
     // Mapper les champs Supabase vers Monday
     const columnValues: Record<string, any> = {}
-    const mapping = MONDAY_CONFIG.supabaseToMondayMapping as Record<string, string>
-    const statutMapping = MONDAY_CONFIG.supabaseToMondayStatutCommercial as Record<string, string>
-    const deptMapping = MONDAY_CONFIG.supabaseToMondayDepartement as Record<string, string>
 
     for (const [supabaseField, mondayColumnId] of Object.entries(mapping)) {
       // Si fieldsToSync est spécifié, ne syncer que ces champs
@@ -378,23 +383,10 @@ export async function syncClientToMonday(
       const value = client[supabaseField]
       if (value === undefined) continue
 
-      // Conversion spéciale pour le statut commercial
-      if (supabaseField === 'statut_commercial' && value) {
-        const mondayLabel = statutMapping[value]
-        if (mondayLabel) {
-          columnValues[mondayColumnId] = mondayLabel
-        }
-      }
-      // Conversion spéciale pour le département
-      else if (supabaseField === 'departement' && value) {
-        const mondayLabel = deptMapping[value]
-        if (mondayLabel) {
-          columnValues[mondayColumnId] = mondayLabel
-        }
-      }
-      // Autres champs
-      else {
-        columnValues[mondayColumnId] = value
+      // Convertir la valeur selon le mapping de valeurs (ex: statuts)
+      const mondayValue = await convertValueToMonday(supabaseField, value)
+      if (mondayValue !== null && mondayValue !== undefined) {
+        columnValues[mondayColumnId] = mondayValue
       }
     }
 
