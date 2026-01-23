@@ -56,6 +56,35 @@ async function executeMondayQuery(query: string): Promise<any> {
 const executeMondayMutation = executeMondayQuery
 
 /**
+ * Exécuter une mutation Monday avec des variables GraphQL
+ * C'est la méthode recommandée pour éviter les problèmes d'échappement
+ */
+async function executeMondayMutationWithVariables(query: string, variables: Record<string, any>): Promise<any> {
+  const apiKey = getMondayApiKey()
+  if (!apiKey) {
+    throw new Error('API Key Monday non configurée')
+  }
+
+  const response = await fetch(MONDAY_CONFIG.apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: apiKey,
+    },
+    body: JSON.stringify({ query, variables }),
+  })
+
+  const data = await response.json()
+
+  if (data.errors) {
+    console.error('Monday API Error:', data.errors)
+    throw new Error(data.errors[0]?.message || 'Erreur API Monday')
+  }
+
+  return data.data
+}
+
+/**
  * LECTURE - Récupérer TOUS les items (clients) du board Monday avec pagination
  * Monday limite à 500 items par requête, donc on pagine automatiquement
  */
@@ -230,7 +259,6 @@ export async function updateMondayItem(
     const boardId = MONDAY_CONFIG.boardIds.clients
     if (!boardId) throw new Error('Board ID Monday non configuré')
 
-    // Garder l'ID en string pour éviter les pertes de précision avec les grands nombres
     const itemIdStr = String(itemId)
 
     // Séparer le champ "name" (colonne spéciale) des autres colonnes
@@ -245,18 +273,38 @@ export async function updateMondayItem(
       }
     }
 
-    // Mettre à jour les colonnes normales
+    // Mettre à jour les colonnes normales avec des variables GraphQL
     if (Object.keys(formattedValues).length > 0) {
-      const columnValuesJson = JSON.stringify(formattedValues).replace(/"/g, '\\"')
-      const mutation = `mutation { change_multiple_column_values(board_id: ${boardId}, item_id: ${itemIdStr}, column_values: "${columnValuesJson}") { id } }`
-      await executeMondayMutation(mutation)
+      const mutation = `
+        mutation ($boardId: ID!, $itemId: ID!, $columnValues: JSON!) {
+          change_multiple_column_values(board_id: $boardId, item_id: $itemId, column_values: $columnValues) {
+            id
+          }
+        }
+      `
+      const variables = {
+        boardId: boardId,
+        itemId: itemIdStr,
+        columnValues: JSON.stringify(formattedValues)
+      }
+      await executeMondayMutationWithVariables(mutation, variables)
     }
 
     // Mettre à jour le nom séparément si fourni
     if (nameValue) {
-      const escapedName = String(nameValue).replace(/"/g, '\\"')
-      const nameMutation = `mutation { change_simple_column_value(board_id: ${boardId}, item_id: ${itemIdStr}, column_id: "name", value: "\\"${escapedName}\\"") { id } }`
-      await executeMondayMutation(nameMutation)
+      const mutation = `
+        mutation ($boardId: ID!, $itemId: ID!, $value: JSON!) {
+          change_simple_column_value(board_id: $boardId, item_id: $itemId, column_id: "name", value: $value) {
+            id
+          }
+        }
+      `
+      const variables = {
+        boardId: boardId,
+        itemId: itemIdStr,
+        value: JSON.stringify(String(nameValue))
+      }
+      await executeMondayMutationWithVariables(mutation, variables)
     }
 
     return { success: true, itemId: typeof itemId === 'number' ? itemId : parseInt(itemIdStr) }

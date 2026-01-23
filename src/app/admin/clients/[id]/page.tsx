@@ -192,9 +192,22 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   // Source de données
   const [dataSource, setDataSource] = useState<'monday' | 'supabase'>('monday')
 
+  // Statuts Monday chargés dynamiquement
+  const [mondayStatuts, setMondayStatuts] = useState<{ key: string; label: string }[]>([])
+
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Charger les statuts Monday en parallèle
+        const statutsPromise = fetch('/api/monday/statuts')
+          .then(r => r.json())
+          .then(data => {
+            if (data.statuts) {
+              setMondayStatuts(data.statuts)
+            }
+          })
+          .catch(e => console.error('Erreur chargement statuts Monday:', e))
+
         // Essayer d'abord Monday (source de vérité)
         const mondayResponse = await fetch(`/api/monday/clients/${resolvedParams.id}`)
         const mondayData = await mondayResponse.json()
@@ -226,6 +239,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           setLivraisons(data.livraisons || [])
           setDataSource('supabase')
         }
+
+        // Attendre que les statuts soient chargés
+        await statutsPromise
 
       } catch (err) {
         setError('Erreur lors du chargement')
@@ -656,23 +672,24 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       <SelectValue placeholder="Sélectionner un statut..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="devis_cree">Devis créé</SelectItem>
-                      <SelectItem value="devis_signe">Devis signé</SelectItem>
-                      <SelectItem value="client_contacte">Client contacté</SelectItem>
-                      <SelectItem value="client_injoignable">Client injoignable</SelectItem>
-                      <SelectItem value="client_hs">Client HS</SelectItem>
-                      <SelectItem value="dossier_complet">Dossier complet</SelectItem>
-                      <SelectItem value="code_envoye">Code envoyé</SelectItem>
-                      <SelectItem value="formulaire_envoye">Formulaire envoyé</SelectItem>
-                      <SelectItem value="formulaire_valide">Formulaire validé</SelectItem>
-                      <SelectItem value="controle_a_regulariser">Contrôle à régulariser</SelectItem>
-                      <SelectItem value="controle_a_jour">Contrôle à jour</SelectItem>
-                      <SelectItem value="controle_valide">Contrôle validé</SelectItem>
-                      <SelectItem value="ah_signee">AH signée</SelectItem>
-                      <SelectItem value="livre">Livré</SelectItem>
-                      <SelectItem value="paye">Payé</SelectItem>
-                      <SelectItem value="doublon">Doublon</SelectItem>
-                      <SelectItem value="franck">Franck</SelectItem>
+                      {mondayStatuts.length > 0 ? (
+                        mondayStatuts.map((statut) => (
+                          <SelectItem key={statut.key} value={statut.key}>
+                            {statut.label}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        // Fallback si les statuts ne sont pas chargés
+                        <>
+                          <SelectItem value="devis_cree">Devis créé</SelectItem>
+                          <SelectItem value="devis_signe">Devis signé</SelectItem>
+                          <SelectItem value="client_contacte">Client contacté</SelectItem>
+                          <SelectItem value="dossier_complet">Dossier complet</SelectItem>
+                          <SelectItem value="controle_valide">Contrôle validé</SelectItem>
+                          <SelectItem value="livre">Livré</SelectItem>
+                          <SelectItem value="paye">Payé</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                   <Textarea
