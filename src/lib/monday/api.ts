@@ -223,12 +223,15 @@ export function formatValueForMonday(columnId: string, value: any): string {
 }
 
 export async function updateMondayItem(
-  itemId: number,
+  itemId: number | string,
   columnValues: Record<string, any>
 ): Promise<MondayMutationResult> {
   try {
     const boardId = MONDAY_CONFIG.boardIds.clients
     if (!boardId) throw new Error('Board ID Monday non configuré')
+
+    // Garder l'ID en string pour éviter les pertes de précision avec les grands nombres
+    const itemIdStr = String(itemId)
 
     // Séparer le champ "name" (colonne spéciale) des autres colonnes
     const nameValue = columnValues['name']
@@ -245,18 +248,18 @@ export async function updateMondayItem(
     // Mettre à jour les colonnes normales
     if (Object.keys(formattedValues).length > 0) {
       const columnValuesJson = JSON.stringify(formattedValues).replace(/"/g, '\\"')
-      const mutation = `mutation { change_multiple_column_values(board_id: ${boardId}, item_id: ${itemId}, column_values: "${columnValuesJson}") { id } }`
+      const mutation = `mutation { change_multiple_column_values(board_id: ${boardId}, item_id: ${itemIdStr}, column_values: "${columnValuesJson}") { id } }`
       await executeMondayMutation(mutation)
     }
 
     // Mettre à jour le nom séparément si fourni
     if (nameValue) {
       const escapedName = String(nameValue).replace(/"/g, '\\"')
-      const nameMutation = `mutation { change_simple_column_value(board_id: ${boardId}, item_id: ${itemId}, column_id: "name", value: "\\"${escapedName}\\"") { id } }`
+      const nameMutation = `mutation { change_simple_column_value(board_id: ${boardId}, item_id: ${itemIdStr}, column_id: "name", value: "\\"${escapedName}\\"") { id } }`
       await executeMondayMutation(nameMutation)
     }
 
-    return { success: true, itemId }
+    return { success: true, itemId: typeof itemId === 'number' ? itemId : parseInt(itemIdStr) }
   } catch (error: any) {
     console.error('Error updating Monday item:', error)
     return { success: false, error: error.message || 'Erreur de mise à jour Monday' }
@@ -364,9 +367,8 @@ export async function syncClientToMonday(
       return { success: false, error: 'monday_item_id manquant' }
     }
 
-    const itemId = typeof client.monday_item_id === 'string'
-      ? parseInt(client.monday_item_id)
-      : client.monday_item_id
+    // Garder l'ID en string pour éviter les pertes de précision
+    const itemId = String(client.monday_item_id)
 
     // Charger le mapping dynamique depuis la base
     const mapping = await getSupabaseToMondayMapping()

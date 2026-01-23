@@ -99,15 +99,18 @@ function InfoRow({
 
 // Statuts commerciaux Monday (source de vérité)
 const statutCommercialColors: Record<string, string> = {
-  dossier_complet: 'bg-emerald-100 text-emerald-800',
-  devis_signe: 'bg-blue-100 text-blue-800',
   devis_cree: 'bg-sky-100 text-sky-800',
+  devis_signe: 'bg-blue-100 text-blue-800',
   client_contacte: 'bg-amber-100 text-amber-800',
   client_injoignable: 'bg-orange-100 text-orange-800',
   client_hs: 'bg-red-100 text-red-800',
-  controle_valide: 'bg-green-100 text-green-800',
-  controle_a_jour: 'bg-teal-100 text-teal-800',
+  dossier_complet: 'bg-emerald-100 text-emerald-800',
+  code_envoye: 'bg-cyan-100 text-cyan-800',
+  formulaire_envoye: 'bg-violet-100 text-violet-800',
+  formulaire_valide: 'bg-lime-100 text-lime-800',
   controle_a_regulariser: 'bg-yellow-100 text-yellow-800',
+  controle_a_jour: 'bg-teal-100 text-teal-800',
+  controle_valide: 'bg-green-100 text-green-800',
   ah_signee: 'bg-indigo-100 text-indigo-800',
   livre: 'bg-purple-100 text-purple-800',
   paye: 'bg-emerald-200 text-emerald-900',
@@ -117,15 +120,18 @@ const statutCommercialColors: Record<string, string> = {
 }
 
 const statutCommercialLabels: Record<string, string> = {
-  dossier_complet: 'Dossier complet',
-  devis_signe: 'Devis signé',
   devis_cree: 'Devis créé',
+  devis_signe: 'Devis signé',
   client_contacte: 'Client contacté',
   client_injoignable: 'Client injoignable',
   client_hs: 'Client HS',
-  controle_valide: 'Contrôle validé',
-  controle_a_jour: 'Contrôle à jour',
+  dossier_complet: 'Dossier complet',
+  code_envoye: 'Code envoyé',
+  formulaire_envoye: 'Formulaire envoyé',
+  formulaire_valide: 'Formulaire validé',
   controle_a_regulariser: 'Contrôle à régulariser',
+  controle_a_jour: 'Contrôle à jour',
+  controle_valide: 'Contrôle validé',
   ah_signee: 'AH signée',
   livre: 'Livré',
   paye: 'Payé',
@@ -656,6 +662,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       <SelectItem value="client_injoignable">Client injoignable</SelectItem>
                       <SelectItem value="client_hs">Client HS</SelectItem>
                       <SelectItem value="dossier_complet">Dossier complet</SelectItem>
+                      <SelectItem value="code_envoye">Code envoyé</SelectItem>
+                      <SelectItem value="formulaire_envoye">Formulaire envoyé</SelectItem>
+                      <SelectItem value="formulaire_valide">Formulaire validé</SelectItem>
                       <SelectItem value="controle_a_regulariser">Contrôle à régulariser</SelectItem>
                       <SelectItem value="controle_a_jour">Contrôle à jour</SelectItem>
                       <SelectItem value="controle_valide">Contrôle validé</SelectItem>
@@ -663,6 +672,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       <SelectItem value="livre">Livré</SelectItem>
                       <SelectItem value="paye">Payé</SelectItem>
                       <SelectItem value="doublon">Doublon</SelectItem>
+                      <SelectItem value="franck">Franck</SelectItem>
                     </SelectContent>
                   </Select>
                   <Textarea
