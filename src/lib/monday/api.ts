@@ -222,6 +222,19 @@ export function parseValueFromMonday(
 export function formatValueForMonday(columnId: string, value: any): any {
   if (value === null || value === undefined) return null
 
+  // Si la valeur est déjà un objet avec 'label', ne pas re-formatter (status/color)
+  if (typeof value === 'object' && value !== null && 'label' in value) {
+    return value
+  }
+  // Si la valeur est déjà un objet avec 'date', ne pas re-formatter
+  if (typeof value === 'object' && value !== null && 'date' in value) {
+    return value
+  }
+  // Si la valeur est déjà un objet avec 'email', ne pas re-formatter
+  if (typeof value === 'object' && value !== null && 'email' in value) {
+    return value
+  }
+
   // Colonnes de type status/color (commencent par color_)
   if (columnId.startsWith('color_')) {
     return { label: String(value) }
@@ -274,6 +287,7 @@ export async function updateMondayItem(
     for (const [columnId, value] of Object.entries(otherColumns)) {
       if (value !== null && value !== undefined && value !== '') {
         const formatted = formatValueForMonday(columnId, value)
+        console.log(`updateMondayItem - formatting ${columnId}:`, { input: value, output: formatted })
         if (formatted !== null) {
           // Les valeurs doivent être stringifiées individuellement pour Monday
           formattedValues[columnId] = typeof formatted === 'object'
@@ -282,6 +296,8 @@ export async function updateMondayItem(
         }
       }
     }
+
+    console.log('updateMondayItem - final formattedValues:', JSON.stringify(formattedValues))
 
     // Mettre à jour les colonnes normales avec des variables GraphQL
     if (Object.keys(formattedValues).length > 0) {
