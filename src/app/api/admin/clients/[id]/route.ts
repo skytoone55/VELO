@@ -192,6 +192,10 @@ export async function PUT(
         // Déterminer les champs modifiés pour ne synchroniser que ceux-là
         const changedFields = getChangedFields(existingClient, updateData)
 
+        // DEBUG: Log les champs modifiés
+        console.log('API PUT - changedFields:', changedFields)
+        console.log('API PUT - updateData:', JSON.stringify(updateData))
+
         if (changedFields.length > 0) {
           const syncResult = await syncClientToMonday(updatedClient, changedFields)
           mondaySync = {
