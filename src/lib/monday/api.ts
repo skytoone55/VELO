@@ -188,10 +188,12 @@ export function parseValueFromMonday(
 export function formatValueForMonday(columnId: string, value: any): string {
   if (value === null || value === undefined) return ''
 
-  if (columnId === 'status') {
+  // Colonnes de type status/color (commencent par color_)
+  if (columnId.startsWith('color_')) {
     return JSON.stringify({ label: String(value) })
   }
-  if (columnId === 'date') {
+  // Colonnes de type date
+  if (columnId.startsWith('date_') || columnId === 'date') {
     const dateStr = value instanceof Date
       ? value.toISOString().split('T')[0]
       : typeof value === 'string' && value.includes('T')
@@ -199,18 +201,24 @@ export function formatValueForMonday(columnId: string, value: any): string {
         : String(value)
     return JSON.stringify({ date: dateStr })
   }
-  if (columnId === 'numbers' || columnId === 'numbers1') {
+  // Colonnes numériques
+  if (columnId.startsWith('numeric_') || columnId === 'numbers' || columnId === 'numbers1') {
     return JSON.stringify(Number(value) || 0)
   }
-  if (columnId === 'email') {
+  // Colonnes email
+  if (columnId.startsWith('email_') || columnId === 'email') {
     return JSON.stringify({ email: String(value), text: String(value) })
   }
-  if (columnId === 'phone') {
+  // Colonnes téléphone (long_text pour téléphone dans ce cas)
+  if (columnId.startsWith('phone_')) {
     return JSON.stringify({ phone: String(value), countryShortName: 'FR' })
   }
+  // Colonnes dropdown
   if (columnId === 'dropdown') {
     return JSON.stringify({ labels: [String(value)] })
   }
+  // Colonnes texte (text_, long_text_, ou autres) - juste la valeur en string
+  // Monday attend une string JSON-escaped pour les colonnes texte
   return JSON.stringify(String(value))
 }
 
@@ -222,22 +230,33 @@ export async function updateMondayItem(
     const boardId = MONDAY_CONFIG.boardIds.clients
     if (!boardId) throw new Error('Board ID Monday non configuré')
 
+    // Séparer le champ "name" (colonne spéciale) des autres colonnes
+    const nameValue = columnValues['name']
+    const otherColumns = { ...columnValues }
+    delete otherColumns['name']
+
     const formattedValues: Record<string, string> = {}
-    for (const [columnId, value] of Object.entries(columnValues)) {
+    for (const [columnId, value] of Object.entries(otherColumns)) {
       if (value !== null && value !== undefined && value !== '') {
         formattedValues[columnId] = formatValueForMonday(columnId, value)
       }
     }
 
-    if (Object.keys(formattedValues).length === 0) {
-      return { success: true, itemId }
+    // Mettre à jour les colonnes normales
+    if (Object.keys(formattedValues).length > 0) {
+      const columnValuesJson = JSON.stringify(formattedValues).replace(/"/g, '\\"')
+      const mutation = `mutation { change_multiple_column_values(board_id: ${boardId}, item_id: ${itemId}, column_values: "${columnValuesJson}") { id } }`
+      await executeMondayMutation(mutation)
     }
 
-    const columnValuesJson = JSON.stringify(formattedValues).replace(/"/g, '\\"')
-    const mutation = `mutation { change_multiple_column_values(board_id: ${boardId}, item_id: ${itemId}, column_values: "${columnValuesJson}") { id } }`
+    // Mettre à jour le nom séparément si fourni
+    if (nameValue) {
+      const escapedName = String(nameValue).replace(/"/g, '\\"')
+      const nameMutation = `mutation { change_simple_column_value(board_id: ${boardId}, item_id: ${itemId}, column_id: "name", value: "\\"${escapedName}\\"") { id } }`
+      await executeMondayMutation(nameMutation)
+    }
 
-    const result = await executeMondayMutation(mutation)
-    return { success: true, itemId: parseInt(result.change_multiple_column_values.id) }
+    return { success: true, itemId }
   } catch (error: any) {
     console.error('Error updating Monday item:', error)
     return { success: false, error: error.message || 'Erreur de mise à jour Monday' }
