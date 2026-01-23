@@ -49,6 +49,7 @@ import {
   Bike,
   Shield,
   Clock,
+  CloudUpload,
 } from 'lucide-react'
 import { Client, Livraison, Depot } from '@/lib/types/database'
 import { createClient } from '@/lib/supabase/client'
@@ -417,6 +418,30 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     }
   }
 
+  // Sync vers Monday
+  const handleSyncToMonday = async () => {
+    if (!client) return
+    setActionLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/admin/clients/${client.id}/sync-monday`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}), // Sync tous les champs mappés
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error)
+
+      setSuccess('Client synchronisé vers Monday')
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la sync')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -574,6 +599,18 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 Débloquer
               </Button>
             )}
+
+            {/* Bouton Sync vers Monday */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSyncToMonday}
+              disabled={actionLoading}
+              className="text-cyan-300 hover:bg-cyan-500/20"
+            >
+              <CloudUpload className="mr-2 h-4 w-4" />
+              Sync Monday
+            </Button>
 
             <Dialog open={changeStatutOpen} onOpenChange={setChangeStatutOpen}>
               <DialogTrigger asChild>
