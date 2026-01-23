@@ -289,15 +289,14 @@ export async function updateMondayItem(
         const formatted = formatValueForMonday(columnId, value)
         console.log(`updateMondayItem - formatting ${columnId}:`, { input: value, output: formatted })
         if (formatted !== null) {
-          // Les valeurs doivent être stringifiées individuellement pour Monday
-          formattedValues[columnId] = typeof formatted === 'object'
-            ? JSON.stringify(formatted)
-            : formatted
+          // Garder les objets tels quels (pas de stringify individuel)
+          // Le JSON.stringify sera fait une seule fois sur l'objet entier
+          formattedValues[columnId] = formatted
         }
       }
     }
 
-    console.log('updateMondayItem - final formattedValues:', JSON.stringify(formattedValues))
+    console.log('updateMondayItem - final formattedValues:', JSON.stringify(formattedValues, null, 2))
 
     // Mettre à jour les colonnes normales avec des variables GraphQL
     if (Object.keys(formattedValues).length > 0) {
@@ -311,8 +310,10 @@ export async function updateMondayItem(
       const variables = {
         boardId: boardId,
         itemId: itemIdStr,
+        // Stringifier l'objet entier une seule fois
         columnValues: JSON.stringify(formattedValues)
       }
+      console.log('updateMondayItem - sending to Monday:', JSON.stringify(variables, null, 2))
       await executeMondayMutationWithVariables(mutation, variables)
     }
 
