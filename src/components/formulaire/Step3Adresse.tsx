@@ -395,43 +395,46 @@ export function Step3Adresse() {
         {/* Choix de l'adresse */}
         <RadioGroup value={addressChoice} onValueChange={(v) => handleChoiceChange(v as AddressChoice)} className="space-y-3">
           {/* Option 1: Utiliser l'adresse de facturation */}
-          <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-            <RadioGroupItem value="facturation" id="facturation" className="mt-1" />
-            <Label htmlFor="facturation" className="flex-1 cursor-pointer">
-              <div className="flex items-center gap-2 mb-1">
-                <Building2 className="h-4 w-4 text-primary" />
-                <span className="font-medium">Utiliser mon adresse de facturation</span>
+          <div className={`p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${addressChoice === 'facturation' ? 'border-primary bg-primary/5' : ''}`}>
+            <div className="flex items-start space-x-3">
+              <RadioGroupItem value="facturation" id="facturation" className="mt-1" />
+              <Label htmlFor="facturation" className="flex-1 cursor-pointer">
+                <div className="flex items-center gap-2 mb-1">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Utiliser mon adresse de facturation</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  L'adresse enregistrée dans votre dossier
+                </p>
+              </Label>
+            </div>
+
+            {/* Afficher l'adresse de facturation juste en dessous de ce choix */}
+            {facturationAddress && facturationAddress.ligne1 && (
+              <div className="mt-3 ml-7 bg-muted/50 rounded-lg p-3 border">
+                <p className="font-medium">{facturationAddress.ligne1}</p>
+                {facturationAddress.ligne2 && <p className="text-sm text-muted-foreground">{facturationAddress.ligne2}</p>}
+                <p className="text-sm">{facturationAddress.codePostal} {facturationAddress.ville}</p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                L'adresse enregistrée dans votre dossier
-              </p>
-            </Label>
+            )}
           </div>
 
           {/* Option 2: Autre adresse */}
-          <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-            <RadioGroupItem value="autre" id="autre" className="mt-1" />
-            <Label htmlFor="autre" className="flex-1 cursor-pointer">
-              <div className="flex items-center gap-2 mb-1">
-                <MapPinned className="h-4 w-4 text-primary" />
-                <span className="font-medium">Utiliser une autre adresse</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Je souhaite indiquer une adresse différente
-              </p>
-            </Label>
+          <div className={`p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${addressChoice === 'autre' ? 'border-primary bg-primary/5' : ''}`}>
+            <div className="flex items-start space-x-3">
+              <RadioGroupItem value="autre" id="autre" className="mt-1" />
+              <Label htmlFor="autre" className="flex-1 cursor-pointer">
+                <div className="flex items-center gap-2 mb-1">
+                  <MapPinned className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Utiliser une autre adresse</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Je souhaite indiquer une adresse différente
+                </p>
+              </Label>
+            </div>
           </div>
         </RadioGroup>
-
-        {/* Afficher l'adresse de facturation du dossier */}
-        {addressChoice === 'facturation' && facturationAddress && facturationAddress.ligne1 && (
-          <div className="bg-muted/50 rounded-lg p-4 border">
-            <p className="text-sm font-medium text-muted-foreground mb-2">Adresse du dossier (facturation) :</p>
-            <p className="font-medium">{facturationAddress.ligne1}</p>
-            {facturationAddress.ligne2 && <p className="text-sm text-muted-foreground">{facturationAddress.ligne2}</p>}
-            <p>{facturationAddress.codePostal} {facturationAddress.ville}</p>
-          </div>
-        )}
 
         {/* Formulaire nouvelle adresse */}
         {showNewAddressForm && (

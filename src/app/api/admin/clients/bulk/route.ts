@@ -158,7 +158,10 @@ async function handleBulkSendForm(
   adminClient: ReturnType<typeof createAdminClient>
 ): Promise<BulkResponse> {
   const results: BulkResult[] = []
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+  // NEXT_PUBLIC_APP_URL doit être défini dans Vercel: https://velo-fawn.vercel.app
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    || 'http://localhost:3001'
 
   for (const client of clients) {
     try {

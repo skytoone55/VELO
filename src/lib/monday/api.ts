@@ -315,3 +315,58 @@ export async function createMondayColumn(
     return { success: false, error: error.message || 'Erreur de création colonne Monday' }
   }
 }
+
+/**
+ * Vérifier si Monday est configuré
+ */
+export function isMondayConfigured(): boolean {
+  return !!(
+    process.env.MONDAY_API_KEY &&
+    MONDAY_CONFIG.boardIds.clients
+  )
+}
+
+/**
+ * Synchroniser un client Supabase vers Monday
+ * @param client Objet partiel du client avec monday_item_id et les champs à sync
+ * @param fieldsToSync Liste des champs Supabase à synchroniser (optionnel, tous si non spécifié)
+ */
+export async function syncClientToMonday(
+  client: { monday_item_id: string | number } & Record<string, any>,
+  fieldsToSync?: string[]
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (!client.monday_item_id) {
+      return { success: false, error: 'monday_item_id manquant' }
+    }
+
+    const itemId = typeof client.monday_item_id === 'string'
+      ? parseInt(client.monday_item_id)
+      : client.monday_item_id
+
+    // Mapper les champs Supabase vers Monday
+    const columnValues: Record<string, any> = {}
+    const mapping = MONDAY_CONFIG.supabaseToMondayMapping as Record<string, string>
+
+    for (const [supabaseField, mondayColumnId] of Object.entries(mapping)) {
+      // Si fieldsToSync est spécifié, ne syncer que ces champs
+      if (fieldsToSync && !fieldsToSync.includes(supabaseField)) {
+        continue
+      }
+
+      if (client[supabaseField] !== undefined) {
+        columnValues[mondayColumnId] = client[supabaseField]
+      }
+    }
+
+    if (Object.keys(columnValues).length === 0) {
+      return { success: true } // Rien à sync
+    }
+
+    const result = await updateMondayItem(itemId, columnValues)
+    return result
+  } catch (error: any) {
+    console.error('Erreur syncClientToMonday:', error)
+    return { success: false, error: error.message }
+  }
+}

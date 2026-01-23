@@ -12,14 +12,27 @@ export async function GET() {
     const adminClient = createAdminClient()
 
     // Requête pour les stats par statut commercial
-    const { data: clients, error } = await adminClient
-      .from('clients')
-      .select('statut_commercial, velo_valide, velo_devis')
-      .not('monday_sync_status', 'eq', 'deleted')
+    // IMPORTANT: Supabase limite à 1000 par défaut, on doit paginer
+    let allClients: any[] = []
+    let page = 0
+    const pageSize = 1000
 
-    if (error) {
-      throw error
+    while (true) {
+      const { data: clients, error } = await adminClient
+        .from('clients')
+        .select('statut_commercial, velo_valide, velo_devis')
+        .not('monday_sync_status', 'eq', 'deleted')
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+
+      if (error) throw error
+      if (!clients || clients.length === 0) break
+
+      allClients = allClients.concat(clients)
+      if (clients.length < pageSize) break
+      page++
     }
+
+    const clients = allClients
 
     // Mapping snake_case -> Affichage pour les clés de statut
     const statutDisplayMap: Record<string, string> = {

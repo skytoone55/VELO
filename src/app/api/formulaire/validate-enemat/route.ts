@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyValidationCode } from '@/lib/utils'
+import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,6 +86,28 @@ export async function POST(request: NextRequest) {
     }
 
     if (isValid) {
+      // Sync vers Monday si configuré
+      if (isMondayConfigured()) {
+        try {
+          // Récupérer le monday_item_id du client
+          const { data: clientData } = await adminClient
+            .from('clients')
+            .select('monday_item_id')
+            .eq('id', clientId)
+            .single()
+
+          if (clientData?.monday_item_id) {
+            await syncClientToMonday(
+              { monday_item_id: clientData.monday_item_id, code_enemat_saisi: code },
+              ['code_enemat_saisi']
+            )
+          }
+        } catch (syncError) {
+          console.error('Erreur sync Monday code ENEMAT:', syncError)
+          // Ne pas bloquer si la sync échoue
+        }
+      }
+
       return NextResponse.json({
         valid: true,
         message: 'Code validé avec succès',
