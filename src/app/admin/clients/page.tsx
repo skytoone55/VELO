@@ -54,52 +54,66 @@ import {
 import { Client } from '@/lib/types/database'
 import { toast } from 'sonner'
 
-// Statuts Monday - Statut commercial (color_mkvfws5n)
+// Statuts pour filtre - clés Supabase (snake_case)
 const statutOptions = [
   { value: 'all', label: 'Tous les statuts' },
-  { value: 'DOSSIER COMPLET', label: 'Dossier complet' },
-  { value: 'DEVIS SIGNÉ', label: 'Devis signé' },
-  { value: 'DEVIS CREE', label: 'Devis créé' },
-  { value: 'CONTROLE VALIDÉ', label: 'Contrôle validé' },
-  { value: 'CONTROLE A REGULARISER', label: 'Contrôle à régulariser' },
-  { value: 'CONTROLE A JOUR', label: 'Contrôle à jour' },
-  { value: 'CLIENT CONTACTÉ', label: 'Client contacté' },
-  { value: 'CLIENT INJOIGNABLE', label: 'Client injoignable' },
-  { value: 'CLIENT HS', label: 'Client HS' },
-  { value: 'AH SIGNÉE', label: 'AH signée' },
-  { value: 'LIVRÉ', label: 'Livré' },
-  { value: 'PAYÈ', label: 'Payé' },
-  { value: 'DOUBLON', label: 'Doublon' },
+  { value: 'dossier_complet', label: 'Dossier complet' },
+  { value: 'devis_signe', label: 'Devis signé' },
+  { value: 'devis_cree', label: 'Devis créé' },
+  { value: 'controle_valide', label: 'Contrôle validé' },
+  { value: 'controle_a_regulariser', label: 'Contrôle à régulariser' },
+  { value: 'controle_a_jour', label: 'Contrôle à jour' },
+  { value: 'client_contacte', label: 'Client contacté' },
+  { value: 'client_injoignable', label: 'Client injoignable' },
+  { value: 'client_hs', label: 'Client HS' },
+  { value: 'ah_signee', label: 'AH signée' },
+  { value: 'livre', label: 'Livré' },
+  { value: 'paye', label: 'Payé' },
+  { value: 'doublon', label: 'Doublon' },
+  { value: 'franck', label: 'Franck' },
+  { value: 'code_envoye', label: 'Code envoyé' },
+  { value: 'formulaire_envoye', label: 'Formulaire envoyé' },
+  { value: 'formulaire_valide', label: 'Formulaire validé' },
+  { value: 'inconnu', label: 'Inconnu' },
 ]
 
-// Départements Monday (color_mkvdkzxh)
+// Départements - clés Supabase (codes postaux DOM-TOM)
 const departementOptions = [
   { value: 'all', label: 'Tous les départements' },
-  { value: 'La Réunion', label: 'La Réunion' },
-  { value: 'Réunion', label: 'Réunion' },
-  { value: 'Martinique', label: 'Martinique' },
-  { value: 'Guadeloupe', label: 'Guadeloupe' },
-  { value: 'Guyane', label: 'Guyane' },
-  { value: 'Mayotte', label: 'Mayotte' },
-  { value: 'Hors DOM', label: 'Hors DOM' },
+  { value: '974', label: 'La Réunion (974)' },
+  { value: '972', label: 'Martinique (972)' },
+  { value: '971', label: 'Guadeloupe (971)' },
+  { value: '973', label: 'Guyane (973)' },
+  { value: '976', label: 'Mayotte (976)' },
+  { value: 'hors_dom', label: 'Hors DOM' },
 ]
 
-// Couleurs des statuts Monday
-const statutColors: Record<string, string> = {
-  'DOSSIER COMPLET': 'bg-lime-100 text-lime-800',
-  'DEVIS SIGNÉ': 'bg-green-100 text-green-800',
-  'DEVIS CREE': 'bg-blue-100 text-blue-800',
-  'CONTROLE VALIDÉ': 'bg-purple-100 text-purple-800',
-  'CONTROLE A REGULARISER': 'bg-pink-100 text-pink-800',
-  'CONTROLE A JOUR': 'bg-fuchsia-100 text-fuchsia-800',
-  'CLIENT CONTACTÉ': 'bg-sky-100 text-sky-800',
-  'CLIENT INJOIGNABLE': 'bg-violet-100 text-violet-800',
-  'CLIENT HS': 'bg-red-100 text-red-800',
-  'AH SIGNÉE': 'bg-yellow-100 text-yellow-800',
-  'LIVRÉ': 'bg-emerald-100 text-emerald-800',
-  'PAYÈ': 'bg-amber-100 text-amber-800',
-  'DOUBLON': 'bg-rose-100 text-rose-800',
-  'Inconnu': 'bg-gray-100 text-gray-800',
+// Mapping Supabase -> label Monday et couleur
+const statutConfig: Record<string, { label: string; color: string }> = {
+  dossier_complet: { label: 'DOSSIER COMPLET', color: 'bg-lime-100 text-lime-800' },
+  devis_signe: { label: 'DEVIS SIGNÉ', color: 'bg-green-100 text-green-800' },
+  devis_cree: { label: 'DEVIS CREE', color: 'bg-blue-100 text-blue-800' },
+  controle_valide: { label: 'CONTROLE VALIDÉ', color: 'bg-purple-100 text-purple-800' },
+  controle_a_regulariser: { label: 'CONTROLE A REGULARISER', color: 'bg-pink-100 text-pink-800' },
+  controle_a_jour: { label: 'CONTROLE A JOUR', color: 'bg-fuchsia-100 text-fuchsia-800' },
+  client_contacte: { label: 'CLIENT CONTACTÉ', color: 'bg-sky-100 text-sky-800' },
+  client_injoignable: { label: 'CLIENT INJOIGNABLE', color: 'bg-violet-100 text-violet-800' },
+  client_hs: { label: 'CLIENT HS', color: 'bg-red-100 text-red-800' },
+  ah_signee: { label: 'AH SIGNÉE', color: 'bg-yellow-100 text-yellow-800' },
+  livre: { label: 'LIVRÉ', color: 'bg-emerald-100 text-emerald-800' },
+  paye: { label: 'PAYÉ', color: 'bg-amber-100 text-amber-800' },
+  doublon: { label: 'DOUBLON', color: 'bg-rose-100 text-rose-800' },
+  inconnu: { label: 'Inconnu', color: 'bg-gray-100 text-gray-800' },
+  franck: { label: 'FRANCK', color: 'bg-orange-100 text-orange-800' },
+  code_envoye: { label: 'CODE ENVOYÉ', color: 'bg-indigo-100 text-indigo-800' },
+  formulaire_envoye: { label: 'FORMULAIRE ENVOYÉ', color: 'bg-cyan-100 text-cyan-800' },
+  formulaire_valide: { label: 'FORMULAIRE VALIDÉ', color: 'bg-teal-100 text-teal-800' },
+}
+
+// Helper pour obtenir le label et la couleur d'un statut
+function getStatutDisplay(statut: string | null | undefined): { label: string; color: string } {
+  if (!statut) return { label: 'Inconnu', color: 'bg-gray-100 text-gray-800' }
+  return statutConfig[statut] || { label: statut, color: 'bg-gray-100 text-gray-800' }
 }
 
 // Options de pagination
@@ -835,9 +849,14 @@ export default function AdminClientsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={statutColors[client.statut_commercial] || 'bg-gray-100 text-gray-800'}>
-                        {client.statut_commercial || 'Inconnu'}
-                      </Badge>
+                      {(() => {
+                        const display = getStatutDisplay(client.statut_commercial)
+                        return (
+                          <Badge className={display.color}>
+                            {display.label}
+                          </Badge>
+                        )
+                      })()}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
