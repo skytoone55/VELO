@@ -180,7 +180,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [changeStatutOpen, setChangeStatutOpen] = useState(false)
   const [resetFormOpen, setResetFormOpen] = useState(false)
   const [resendCodeOpen, setResendCodeOpen] = useState(false)
-  const [newStatut, setNewStatut] = useState('')
+  const [newStatut, setNewStatut] = useState<string>('')
   const [commentaire, setCommentaire] = useState('')
 
   // Source de données
@@ -272,22 +272,27 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   const handleChangeStatut = async () => {
     if (!client || !newStatut) return
+    // Ne rien faire si le statut n'a pas changé
+    if (newStatut === client.statut_commercial) {
+      setChangeStatutOpen(false)
+      return
+    }
     setActionLoading(true)
     setError(null)
 
     try {
+      // Utiliser l'API pour mettre à jour et synchroniser avec Monday
+      const response = await fetch(`/api/admin/clients/${client.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ statut_commercial: newStatut }),
+      })
+
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Erreur de mise à jour')
+
+      // Logger la transition de workflow
       const supabase = createClient()
-
-      const { error: updateError } = await supabase
-        .from('clients')
-        .update({
-          statut_commercial: newStatut,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', client.id)
-
-      if (updateError) throw updateError
-
       await supabase.from('workflow_transitions').insert({
         entity_type: 'client',
         entity_id: client.id,
@@ -297,7 +302,15 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         raison: commentaire || 'Changement manuel de statut commercial',
       })
 
-      setSuccess('Statut commercial mis à jour')
+      // Afficher le résultat de la sync Monday
+      if (result.mondaySync?.success) {
+        setSuccess('Statut mis à jour et synchronisé avec Monday')
+      } else if (result.mondaySync?.skipped) {
+        setSuccess('Statut mis à jour (pas de sync Monday)')
+      } else {
+        setSuccess(`Statut mis à jour (sync Monday: ${result.mondaySync?.error || 'erreur'})`)
+      }
+
       setClient({ ...client, statut_commercial: newStatut })
       setChangeStatutOpen(false)
       setCommentaire('')
@@ -612,7 +625,13 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               Sync Monday
             </Button>
 
-            <Dialog open={changeStatutOpen} onOpenChange={setChangeStatutOpen}>
+            <Dialog open={changeStatutOpen} onOpenChange={(open) => {
+              setChangeStatutOpen(open)
+              // Pré-sélectionner le statut actuel quand on ouvre le dialogue
+              if (open && client.statut_commercial) {
+                setNewStatut(client.statut_commercial)
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
                   Changer statut
@@ -621,11 +640,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Changer le statut commercial</DialogTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Statut actuel : {statutCommercialLabels[client.statut_commercial || 'inconnu']}
+                  </p>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <Select value={newStatut} onValueChange={setNewStatut}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner..." />
+                      <SelectValue placeholder="Sélectionner un statut..." />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="devis_cree">Devis créé</SelectItem>

@@ -95,6 +95,7 @@ export async function PUT(
       raison_sociale,
       siret,
       email,
+      email_beneficiaire,
       telephone,
       contact_nom,
       contact_prenom,
@@ -104,6 +105,8 @@ export async function PUT(
       departement,
       velo_devis,
       statut_formulaire,
+      statut_commercial,
+      code_enemat_saisi,
     } = body
 
     // Utiliser le client admin pour bypasser RLS
@@ -133,6 +136,7 @@ export async function PUT(
     if (raison_sociale !== undefined) updateData.raison_sociale = raison_sociale
     if (siret !== undefined) updateData.siret = siret
     if (email !== undefined) updateData.email = email
+    if (email_beneficiaire !== undefined) updateData.email_beneficiaire = email_beneficiaire
     if (telephone !== undefined) updateData.telephone = telephone
     if (contact_nom !== undefined) updateData.contact_nom = contact_nom
     if (contact_prenom !== undefined) updateData.contact_prenom = contact_prenom
@@ -142,6 +146,8 @@ export async function PUT(
     if (departement !== undefined) updateData.departement = departement
     if (velo_devis !== undefined) updateData.velo_devis = velo_devis
     if (statut_formulaire !== undefined) updateData.statut_formulaire = statut_formulaire
+    if (statut_commercial !== undefined) updateData.statut_commercial = statut_commercial
+    if (code_enemat_saisi !== undefined) updateData.code_enemat_saisi = code_enemat_saisi
 
     // Mettre à jour le client
     const { data: updatedClient, error } = await adminClient
