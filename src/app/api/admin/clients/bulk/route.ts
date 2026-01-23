@@ -181,12 +181,18 @@ async function handleBulkSendForm(
         continue
       }
 
-      // Envoyer l'email
+      // Envoyer l'email au bénéficiaire (prioritaire) ou commercial (fallback)
       const clientName = client.contact_prenom
         ? `${client.contact_prenom} ${client.contact_nom || ''}`
         : client.raison_sociale || 'Client'
 
-      await sendFormulaireLinkEmail(client.email, clientName, formulaireUrl)
+      const recipientEmail = client.email_beneficiaire || client.email
+      if (!recipientEmail || !recipientEmail.includes('@')) {
+        results.push({ clientId: client.id, success: false, error: 'Email bénéficiaire manquant' })
+        continue
+      }
+
+      await sendFormulaireLinkEmail(recipientEmail, clientName, formulaireUrl)
 
       // Synchroniser vers Monday si configuré
       if (client.monday_item_id && isMondayConfigured()) {

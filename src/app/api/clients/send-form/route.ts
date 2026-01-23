@@ -53,10 +53,20 @@ export async function POST(request: NextRequest) {
       ? `${client.contact_prenom} ${client.contact_nom || ''}`
       : client.raison_sociale || 'Client'
 
+    // Email du bénéficiaire (prioritaire) ou email commercial (fallback)
+    const recipientEmail = client.email_beneficiaire || client.email
+
+    // Validation de l'email
+    if (!recipientEmail || !recipientEmail.includes('@')) {
+      return NextResponse.json({
+        error: 'Email du bénéficiaire manquant ou invalide. Veuillez renseigner l\'email dans Monday.'
+      }, { status: 400 })
+    }
+
     // Envoyer l'email via Gmail OAuth2
     try {
       const emailResult = await sendFormulaireLinkEmail(
-        client.email,
+        recipientEmail,
         clientName,
         formulaireUrl
       )
