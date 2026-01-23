@@ -428,6 +428,32 @@ export function isMondayConfigured(): boolean {
 }
 
 /**
+ * Détermine quels champs ont été modifiés entre deux versions du client
+ * Utilise les mappings DYNAMIQUES depuis la base de données
+ */
+export async function getChangedFields(
+  oldClient: Record<string, any>,
+  newClient: Record<string, any>
+): Promise<string[]> {
+  const { getSupabaseToMondayMapping } = await import('./dynamic-mapping')
+  const mapping = await getSupabaseToMondayMapping()
+  const changedFields: string[] = []
+
+  for (const field of Object.keys(mapping)) {
+    const oldValue = oldClient[field]
+    const newValue = newClient[field]
+
+    // Comparer les valeurs (gérer null/undefined)
+    if (oldValue !== newValue) {
+      if (oldValue == null && newValue == null) continue
+      changedFields.push(field)
+    }
+  }
+
+  return changedFields
+}
+
+/**
  * Synchroniser un client Supabase vers Monday
  * Utilise les mappings DYNAMIQUES depuis la base de données
  *

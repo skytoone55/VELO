@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateValidationCode, hashValidationCode } from '@/lib/utils'
 import { sendCodeValidationEmail, sendFormulaireLinkEmail } from '@/lib/email/gmail'
-import { syncClientToMonday } from '@/lib/monday/sync'
+import { syncClientToMonday } from '@/lib/monday/api'
 import { isMondayConfigured } from '@/lib/monday/config'
 
 type BulkAction = 'send_code' | 'send_form' | 'change_status'

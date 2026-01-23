@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { syncClientToMonday, getChangedFields } from '@/lib/monday/sync'
+import { syncClientToMonday, getChangedFields } from '@/lib/monday/api'
 import { isMondayConfigured } from '@/lib/monday/config'
 
 // GET - Récupérer un client par ID
@@ -190,7 +190,7 @@ export async function PUT(
     if (updatedClient.monday_item_id && isMondayConfigured()) {
       try {
         // Déterminer les champs modifiés pour ne synchroniser que ceux-là
-        const changedFields = getChangedFields(existingClient, updateData)
+        const changedFields = await getChangedFields(existingClient, updateData)
 
         // DEBUG: Log les champs modifiés
         console.log('API PUT - changedFields:', changedFields)
