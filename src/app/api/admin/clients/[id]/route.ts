@@ -91,23 +91,6 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const {
-      raison_sociale,
-      siret,
-      email,
-      email_beneficiaire,
-      telephone,
-      contact_nom,
-      contact_prenom,
-      adresse_societe_ligne1,
-      adresse_societe_cp,
-      adresse_societe_ville,
-      departement,
-      velo_devis,
-      statut_formulaire,
-      statut_commercial,
-      code_enemat_saisi,
-    } = body
 
     // Utiliser le client admin pour bypasser RLS
     const adminClient = createAdminClient()
@@ -128,26 +111,66 @@ export async function PUT(
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
-    // Préparer les données de mise à jour
+    // Liste de tous les champs modifiables (synchronisés vers Monday)
+    const allowedFields = [
+      // Identification
+      'raison_sociale',
+      'siret',
+      'reference_dossier',
+      'numero_devis',
+      // Contact
+      'email',
+      'email_beneficiaire',
+      'telephone',
+      'contact_nom',
+      'contact_prenom',
+      'contact_fonction',
+      // Adresse siège
+      'adresse_societe_ligne1',
+      'adresse_societe_ligne2',
+      'adresse_societe_cp',
+      'adresse_societe_ville',
+      // Adresse livraison
+      'adresse_livraison_ligne1',
+      'adresse_livraison_ligne2',
+      'adresse_livraison_cp',
+      'adresse_livraison_ville',
+      // Entreprise
+      'format_juridique',
+      'code_ape',
+      'nb_salaries',
+      'departement',
+      // Vélos & Devis
+      'velo_devis',
+      'velo_valide',
+      'devis_pdf_url',
+      'date_signature_devis',
+      // Statuts
+      'statut_formulaire',
+      'statut_commercial',
+      'statut_retina',
+      'statut_mail',
+      'statut_anomalie',
+      'statut_doublon',
+      'date_statut',
+      // Validation
+      'code_enemat_saisi',
+      'code_enemat_valide',
+      'date_validation_code',
+      // Notes
+      'notes_internes',
+    ]
+
+    // Préparer les données de mise à jour dynamiquement
     const updateData: Record<string, any> = {
       updated_at: new Date().toISOString(),
     }
 
-    if (raison_sociale !== undefined) updateData.raison_sociale = raison_sociale
-    if (siret !== undefined) updateData.siret = siret
-    if (email !== undefined) updateData.email = email
-    if (email_beneficiaire !== undefined) updateData.email_beneficiaire = email_beneficiaire
-    if (telephone !== undefined) updateData.telephone = telephone
-    if (contact_nom !== undefined) updateData.contact_nom = contact_nom
-    if (contact_prenom !== undefined) updateData.contact_prenom = contact_prenom
-    if (adresse_societe_ligne1 !== undefined) updateData.adresse_societe_ligne1 = adresse_societe_ligne1
-    if (adresse_societe_cp !== undefined) updateData.adresse_societe_cp = adresse_societe_cp
-    if (adresse_societe_ville !== undefined) updateData.adresse_societe_ville = adresse_societe_ville
-    if (departement !== undefined) updateData.departement = departement
-    if (velo_devis !== undefined) updateData.velo_devis = velo_devis
-    if (statut_formulaire !== undefined) updateData.statut_formulaire = statut_formulaire
-    if (statut_commercial !== undefined) updateData.statut_commercial = statut_commercial
-    if (code_enemat_saisi !== undefined) updateData.code_enemat_saisi = code_enemat_saisi
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field]
+      }
+    }
 
     // Mettre à jour le client
     const { data: updatedClient, error } = await adminClient
