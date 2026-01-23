@@ -18,8 +18,8 @@ export const INTERFACE_FIELDS = [
   { field: 'numero_devis', label: 'Numéro de devis', type: 'text', section: 'identification' },
 
   // Contact
-  { field: 'email', label: 'Email principal', type: 'email', section: 'contact', required: true },
-  { field: 'email_beneficiaire', label: 'Email bénéficiaire', type: 'email', section: 'contact' },
+  { field: 'email', label: 'Email agent/commercial', type: 'email', section: 'contact' },
+  { field: 'email_beneficiaire', label: 'Email client (pour envoi code/formulaire)', type: 'email', section: 'contact', required: true },
   { field: 'telephone', label: 'Téléphone', type: 'phone', section: 'contact' },
   { field: 'contact_nom', label: 'Nom du contact', type: 'text', section: 'contact' },
   { field: 'contact_prenom', label: 'Prénom du contact', type: 'text', section: 'contact' },

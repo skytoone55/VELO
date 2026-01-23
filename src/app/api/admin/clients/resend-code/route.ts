@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Récupérer le client
     const { data: client, error: fetchError } = await adminClient
       .from('clients')
-      .select('id, email, raison_sociale, contact_prenom, contact_nom, monday_item_id')
+      .select('id, email, email_beneficiaire, raison_sociale, contact_prenom, contact_nom, monday_item_id')
       .eq('id', clientId)
       .single()
 
@@ -69,14 +69,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 })
     }
 
-    // Envoyer l'email avec le nouveau code
+    // Envoyer l'email avec le nouveau code au bénéficiaire (prioritaire) ou commercial (fallback)
     const clientName = client.contact_prenom && client.contact_nom
       ? `${client.contact_prenom} ${client.contact_nom}`
       : client.raison_sociale
 
+    const recipientEmail = client.email_beneficiaire || client.email
+    if (!recipientEmail || !recipientEmail.includes('@')) {
+      return NextResponse.json({
+        error: 'Email du bénéficiaire manquant ou invalide'
+      }, { status: 400 })
+    }
+
     try {
-      await sendCodeValidationEmail(client.email, clientName, newCode)
-      console.log(`Nouveau code de validation envoyé à ${client.email}`)
+      await sendCodeValidationEmail(recipientEmail, clientName, newCode)
+      console.log(`Nouveau code de validation envoyé à ${recipientEmail}`)
     } catch (emailError) {
       console.error('Erreur envoi email:', emailError)
       return NextResponse.json({ error: 'Erreur lors de l\'envoi de l\'email' }, { status: 500 })

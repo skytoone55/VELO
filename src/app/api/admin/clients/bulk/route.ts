@@ -132,12 +132,18 @@ async function handleBulkSendCode(
         continue
       }
 
-      // Envoyer l'email
+      // Envoyer l'email au bénéficiaire (prioritaire) ou commercial (fallback)
       const clientName = client.contact_prenom && client.contact_nom
         ? `${client.contact_prenom} ${client.contact_nom}`
         : client.raison_sociale
 
-      await sendCodeValidationEmail(client.email, clientName, newCode)
+      const recipientEmail = client.email_beneficiaire || client.email
+      if (!recipientEmail || !recipientEmail.includes('@')) {
+        results.push({ clientId: client.id, success: false, error: 'Email bénéficiaire manquant' })
+        continue
+      }
+
+      await sendCodeValidationEmail(recipientEmail, clientName, newCode)
       results.push({ clientId: client.id, success: true })
     } catch (error: any) {
       results.push({ clientId: client.id, success: false, error: error.message })
