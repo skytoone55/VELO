@@ -214,12 +214,17 @@ export function parseValueFromMonday(
   }
 }
 
-export function formatValueForMonday(columnId: string, value: any): string {
-  if (value === null || value === undefined) return ''
+/**
+ * Formate une valeur pour l'API Monday
+ * Retourne l'objet/valeur directement (pas JSON stringifié)
+ * Le JSON.stringify sera fait dans updateMondayItem
+ */
+export function formatValueForMonday(columnId: string, value: any): any {
+  if (value === null || value === undefined) return null
 
   // Colonnes de type status/color (commencent par color_)
   if (columnId.startsWith('color_')) {
-    return JSON.stringify({ label: String(value) })
+    return { label: String(value) }
   }
   // Colonnes de type date
   if (columnId.startsWith('date_') || columnId === 'date') {
@@ -228,27 +233,26 @@ export function formatValueForMonday(columnId: string, value: any): string {
       : typeof value === 'string' && value.includes('T')
         ? value.split('T')[0]
         : String(value)
-    return JSON.stringify({ date: dateStr })
+    return { date: dateStr }
   }
   // Colonnes numériques
   if (columnId.startsWith('numeric_') || columnId === 'numbers' || columnId === 'numbers1') {
-    return JSON.stringify(Number(value) || 0)
+    return String(Number(value) || 0)
   }
   // Colonnes email
   if (columnId.startsWith('email_') || columnId === 'email') {
-    return JSON.stringify({ email: String(value), text: String(value) })
+    return { email: String(value), text: String(value) }
   }
   // Colonnes téléphone (long_text pour téléphone dans ce cas)
   if (columnId.startsWith('phone_')) {
-    return JSON.stringify({ phone: String(value), countryShortName: 'FR' })
+    return { phone: String(value), countryShortName: 'FR' }
   }
   // Colonnes dropdown
   if (columnId === 'dropdown') {
-    return JSON.stringify({ labels: [String(value)] })
+    return { labels: [String(value)] }
   }
-  // Colonnes texte (text_, long_text_, ou autres) - juste la valeur en string
-  // Monday attend une string JSON-escaped pour les colonnes texte
-  return JSON.stringify(String(value))
+  // Colonnes texte (text_, long_text_, ou autres)
+  return String(value)
 }
 
 export async function updateMondayItem(
@@ -266,10 +270,16 @@ export async function updateMondayItem(
     const otherColumns = { ...columnValues }
     delete otherColumns['name']
 
-    const formattedValues: Record<string, string> = {}
+    const formattedValues: Record<string, any> = {}
     for (const [columnId, value] of Object.entries(otherColumns)) {
       if (value !== null && value !== undefined && value !== '') {
-        formattedValues[columnId] = formatValueForMonday(columnId, value)
+        const formatted = formatValueForMonday(columnId, value)
+        if (formatted !== null) {
+          // Les valeurs doivent être stringifiées individuellement pour Monday
+          formattedValues[columnId] = typeof formatted === 'object'
+            ? JSON.stringify(formatted)
+            : formatted
+        }
       }
     }
 
@@ -342,10 +352,15 @@ export async function createMondayItem(
     let colValuesStr = ''
 
     if (columnValues && Object.keys(columnValues).length > 0) {
-      const formattedValues: Record<string, string> = {}
+      const formattedValues: Record<string, any> = {}
       for (const [columnId, value] of Object.entries(columnValues)) {
         if (value !== null && value !== undefined && value !== '') {
-          formattedValues[columnId] = formatValueForMonday(columnId, value)
+          const formatted = formatValueForMonday(columnId, value)
+          if (formatted !== null) {
+            formattedValues[columnId] = typeof formatted === 'object'
+              ? JSON.stringify(formatted)
+              : formatted
+          }
         }
       }
       colValuesStr = `, column_values: "${JSON.stringify(formattedValues).replace(/"/g, '\\"')}"`
