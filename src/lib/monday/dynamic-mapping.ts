@@ -21,40 +21,54 @@ export interface FieldMapping {
 }
 
 // Cache des mappings pour éviter des requêtes répétées
-let mappingsCache: FieldMapping[] | null = null
-let cacheTimestamp: number = 0
+// En multi-board, on cache par boardId (clé = boardId ou 'default')
+const mappingsCache: Map<string, { data: FieldMapping[]; timestamp: number }> = new Map()
 const CACHE_TTL = 60 * 1000 // 1 minute
 
 /**
  * Charger les mappings depuis la base de données
  * Utilise un cache de 1 minute pour éviter les requêtes répétées
+ *
+ * @param boardId - En multi-board, charge les mappings spécifiques au board
  */
-export async function loadMappings(forceRefresh = false): Promise<FieldMapping[]> {
+export async function loadMappings(forceRefresh = false, boardId?: string): Promise<FieldMapping[]> {
   const now = Date.now()
+  const cacheKey = boardId || 'default'
 
   // Retourner le cache s'il est encore valide
-  if (!forceRefresh && mappingsCache && (now - cacheTimestamp) < CACHE_TTL) {
-    return mappingsCache
+  const cached = mappingsCache.get(cacheKey)
+  if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_TTL) {
+    return cached.data
   }
 
   const adminClient = createAdminClient()
 
-  const { data: mappings, error } = await adminClient
+  let query = adminClient
     .from('monday_field_mapping')
     .select('*')
     .eq('is_synced', true) // Seulement les champs mappés
     .order('interface_section')
 
+  // En multi-board, filtrer par board_id
+  if (boardId) {
+    query = query.eq('board_id', boardId)
+  } else {
+    // Si pas de boardId, charger les mappings sans board_id (mode single-board)
+    query = query.is('board_id', null)
+  }
+
+  const { data: mappings, error } = await query
+
   if (error) {
     console.error('Erreur chargement mappings:', error)
     // En cas d'erreur, retourner le cache s'il existe, sinon tableau vide
-    return mappingsCache || []
+    return cached?.data || []
   }
 
-  mappingsCache = mappings || []
-  cacheTimestamp = now
+  const result = mappings || []
+  mappingsCache.set(cacheKey, { data: result, timestamp: now })
 
-  return mappingsCache
+  return result
 }
 
 /**
@@ -62,16 +76,17 @@ export async function loadMappings(forceRefresh = false): Promise<FieldMapping[]
  * À appeler quand un mapping est modifié via l'interface Settings
  */
 export function invalidateMappingsCache(): void {
-  mappingsCache = null
-  cacheTimestamp = 0
+  mappingsCache.clear()
 }
 
 /**
  * Obtenir le mapping Supabase → Monday
  * Retourne un objet { supabaseField: mondayColumnId }
+ *
+ * @param boardId - En multi-board, retourne le mapping spécifique au board
  */
-export async function getSupabaseToMondayMapping(): Promise<Record<string, string>> {
-  const mappings = await loadMappings()
+export async function getSupabaseToMondayMapping(boardId?: string): Promise<Record<string, string>> {
+  const mappings = await loadMappings(false, boardId)
   const result: Record<string, string> = {}
 
   for (const mapping of mappings) {
@@ -86,9 +101,11 @@ export async function getSupabaseToMondayMapping(): Promise<Record<string, strin
 /**
  * Obtenir le mapping Monday → Supabase
  * Retourne un objet { mondayColumnId: supabaseField }
+ *
+ * @param boardId - En multi-board, retourne le mapping spécifique au board
  */
-export async function getMondayToSupabaseMapping(): Promise<Record<string, string>> {
-  const mappings = await loadMappings()
+export async function getMondayToSupabaseMapping(boardId?: string): Promise<Record<string, string>> {
+  const mappings = await loadMappings(false, boardId)
   const result: Record<string, string> = {}
 
   for (const mapping of mappings) {
@@ -139,6 +156,7 @@ export async function convertValueToMonday(interfaceField: string, supabaseValue
     'statut_mail',
     'statut_anomalie',
     'statut_doublon',
+    'type_livraison',
   ]
 
   if (fieldsWithValueMapping.includes(interfaceField)) {
@@ -163,6 +181,7 @@ export async function convertValueToSupabase(interfaceField: string, mondayValue
     'statut_mail',
     'statut_anomalie',
     'statut_doublon',
+    'type_livraison',
   ]
 
   if (fieldsWithValueMapping.includes(interfaceField)) {
@@ -176,8 +195,11 @@ export async function convertValueToSupabase(interfaceField: string, mondayValue
 /**
  * Initialiser les mappings dans la base depuis la config hardcodée
  * À utiliser une fois pour migrer vers le système dynamique
+ *
+ * @param boardId - En multi-board, stocker les mappings avec ce board_id
+ *                  Si non fourni, les mappings sont globaux (single-board mode)
  */
-export async function initializeMappingsFromConfig(): Promise<{ success: boolean; count: number; error?: string }> {
+export async function initializeMappingsFromConfig(boardId?: string): Promise<{ success: boolean; count: number; error?: string }> {
   const adminClient = createAdminClient()
 
   try {
@@ -200,6 +222,13 @@ export async function initializeMappingsFromConfig(): Promise<{ success: boolean
       adresse_societe_ligne1: { label: 'Adresse siège (ligne 1)', type: 'text', section: 'adresse_siege' },
       adresse_societe_cp: { label: 'Code postal siège', type: 'text', section: 'adresse_siege' },
       adresse_societe_ville: { label: 'Ville siège', type: 'text', section: 'adresse_siege' },
+      // Adresse livraison
+      adresse_livraison_ligne1: { label: 'Adresse livraison (ligne 1)', type: 'text', section: 'adresse_livraison' },
+      adresse_livraison_ligne2: { label: 'Adresse livraison (ligne 2)', type: 'text', section: 'adresse_livraison' },
+      adresse_livraison_cp: { label: 'Code postal livraison', type: 'text', section: 'adresse_livraison' },
+      adresse_livraison_ville: { label: 'Ville livraison', type: 'text', section: 'adresse_livraison' },
+      // Type de livraison
+      type_livraison: { label: 'Type de livraison', type: 'status', section: 'livraison' },
       format_juridique: { label: 'Format juridique', type: 'text', section: 'entreprise' },
       code_ape: { label: 'Code APE/NAF', type: 'text', section: 'entreprise' },
       nb_salaries: { label: 'Nombre de salariés', type: 'number', section: 'entreprise' },
@@ -223,6 +252,12 @@ export async function initializeMappingsFromConfig(): Promise<{ success: boolean
     const valueMappings: Record<string, Record<string, string>> = {
       statut_commercial: MONDAY_CONFIG.supabaseToMondayStatutCommercial as Record<string, string>,
       departement: MONDAY_CONFIG.supabaseToMondayDepartement as Record<string, string>,
+      // Type de livraison
+      type_livraison: {
+        livraison_gratuite: 'Livraison gratuite',
+        retrait_depot: 'Retrait depot',
+        livraison_payante: 'Livraison payante',
+      },
       // Inverser les mappings Monday → Supabase pour les autres statuts
       statut_retina: Object.fromEntries(
         Object.entries(MONDAY_CONFIG.mondayToSupabaseStatutRetina as Record<string, string>)
@@ -242,11 +277,13 @@ export async function initializeMappingsFromConfig(): Promise<{ success: boolean
       ),
     }
 
+    let count = 0
+
     for (const [supabaseField, mondayColumnId] of Object.entries(supabaseToMonday)) {
       const fieldDef = fieldDefinitions[supabaseField]
       if (!fieldDef) continue
 
-      mappingsToInsert.push({
+      const mappingData = {
         interface_field: supabaseField,
         interface_label: fieldDef.label,
         interface_type: fieldDef.type,
@@ -257,20 +294,43 @@ export async function initializeMappingsFromConfig(): Promise<{ success: boolean
         value_mapping: valueMappings[supabaseField] || {},
         is_synced: true,
         is_required: fieldDef.required || false,
-      })
+        board_id: boardId || null,
+        updated_at: new Date().toISOString(),
+      }
+
+      // SELECT + INSERT/UPDATE au lieu de upsert
+      // (car la contrainte unique utilise COALESCE, incompatible avec onConflict de PostgREST)
+      let existingQuery = adminClient
+        .from('monday_field_mapping')
+        .select('id')
+        .eq('interface_field', supabaseField)
+
+      if (boardId) {
+        existingQuery = existingQuery.eq('board_id', boardId)
+      } else {
+        existingQuery = existingQuery.is('board_id', null)
+      }
+
+      const { data: existing } = await existingQuery.maybeSingle()
+
+      if (existing) {
+        await adminClient
+          .from('monday_field_mapping')
+          .update(mappingData)
+          .eq('id', existing.id)
+      } else {
+        await adminClient
+          .from('monday_field_mapping')
+          .insert(mappingData)
+      }
+
+      count++
     }
-
-    // Upsert tous les mappings
-    const { error } = await adminClient
-      .from('monday_field_mapping')
-      .upsert(mappingsToInsert, { onConflict: 'interface_field' })
-
-    if (error) throw error
 
     // Invalider le cache
     invalidateMappingsCache()
 
-    return { success: true, count: mappingsToInsert.length }
+    return { success: true, count }
   } catch (error: any) {
     console.error('Erreur initialisation mappings:', error)
     return { success: false, count: 0, error: error.message }

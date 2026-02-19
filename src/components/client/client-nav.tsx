@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useClientUser, ClientUser } from './client-user-provider'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Zap, LogOut, User, FileText, Truck, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getTenantConfig } from '@/lib/tenants'
 
 const clientNavItems = [
   { href: '/client/dashboard', label: 'Tableau de bord', icon: Home },
@@ -24,6 +26,7 @@ const clientNavItems = [
 ]
 
 export function ClientNav({ user }: { user: ClientUser }) {
+  const tenant = getTenantConfig()
   const router = useRouter()
   const pathname = usePathname()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -42,10 +45,14 @@ export function ClientNav({ user }: { user: ClientUser }) {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/client/dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <Zap className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="font-bold text-lg">ECO-VOLT</span>
+              <Image
+                src={tenant.branding.logo}
+                alt={tenant.branding.logoAlt}
+                width={32}
+                height={32}
+                className="h-8 w-auto"
+              />
+              <span className="font-bold text-lg">{tenant.name}</span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-1">

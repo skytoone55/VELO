@@ -56,7 +56,50 @@ export async function GET(
       .eq('client_id', id)
       .order('created_at', { ascending: false })
 
-    return NextResponse.json({ client, livraisons: livraisons || [] })
+    // Récupérer les dépôts associés au client
+    let depotRetrait = null
+    let depotLogistique = null
+    let distanceKm = null
+
+    if (client.depot_retrait_id) {
+      const { data: depot } = await adminClient
+        .from('depots')
+        .select('*')
+        .eq('id', client.depot_retrait_id)
+        .single()
+      depotRetrait = depot
+    }
+
+    if (client.depot_logistique_id) {
+      const { data: depot } = await adminClient
+        .from('depots')
+        .select('*')
+        .eq('id', client.depot_logistique_id)
+        .single()
+      depotLogistique = depot
+    }
+
+    // Récupérer la distance depuis le cache si disponible
+    const depotId = client.depot_retrait_id || client.depot_logistique_id
+    if (depotId) {
+      const { data: distanceCache } = await adminClient
+        .from('distances_cache')
+        .select('distance_km')
+        .eq('client_id', id)
+        .eq('depot_id', depotId)
+        .single()
+      if (distanceCache) {
+        distanceKm = distanceCache.distance_km
+      }
+    }
+
+    return NextResponse.json({
+      client,
+      livraisons: livraisons || [],
+      depotRetrait,
+      depotLogistique,
+      distanceKm,
+    })
   } catch (error: any) {
     console.error('Erreur API:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })

@@ -1,19 +1,26 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { RefreshCcw, Link2, Link2Off, Plus, Check, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import {
+  RefreshCcw,
+  Link2,
+  Database,
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  CheckCircle2,
+  ArrowLeft,
+} from 'lucide-react'
+import Link from 'next/link'
 
 interface MondayColumn {
   id: string
   title: string
   type: string
-  labels?: { id: string; label: string }[]
 }
 
 interface InterfaceField {
@@ -27,6 +34,7 @@ interface InterfaceField {
   monday_column_type: string | null
   value_mapping: Record<string, string>
   is_synced: boolean
+  mapping_status: 'unmapped' | 'monday' | 'supabase_only'
 }
 
 interface Section {
@@ -40,46 +48,52 @@ export default function MondayMappingPage() {
   const [sections, setSections] = useState<Section[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['identification', 'statuts']))
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
   const [boardInfo, setBoardInfo] = useState<{ id: string; name: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [newColumnField, setNewColumnField] = useState<string | null>(null)
-  const [newColumnTitle, setNewColumnTitle] = useState('')
+  const [showMapped, setShowMapped] = useState(false)
 
-  // Charger le schéma Monday et le mapping
   useEffect(() => {
     loadData()
   }, [])
+
+  // Auto-expand sections that have unmapped fields
+  useEffect(() => {
+    const sectionsWithUnmapped = new Set<string>()
+    interfaceFields.forEach(f => {
+      if (f.mapping_status === 'unmapped') {
+        sectionsWithUnmapped.add(f.section)
+      }
+    })
+    setExpandedSections(sectionsWithUnmapped)
+  }, [interfaceFields])
 
   const loadData = async () => {
     setLoading(true)
     setError(null)
 
     try {
-      // Charger en parallèle le schéma Monday et le mapping
-      const [schemaRes, mappingRes] = await Promise.all([
-        fetch('/api/monday/schema'),
-        fetch('/api/monday/mapping'),
-      ])
-
-      if (!schemaRes.ok) {
-        const err = await schemaRes.json()
-        throw new Error(err.error || 'Erreur chargement schéma Monday')
-      }
-
+      // Charger le mapping d'abord (plus rapide, depuis Supabase)
+      const mappingRes = await fetch('/api/monday/mapping')
       if (!mappingRes.ok) {
         const err = await mappingRes.json()
         throw new Error(err.error || 'Erreur chargement mapping')
       }
-
-      const schemaData = await schemaRes.json()
       const mappingData = await mappingRes.json()
-
-      setBoardInfo({ id: schemaData.boardId, name: schemaData.boardName })
-      setMondayColumns(schemaData.columns)
       setInterfaceFields(mappingData.fields)
       setSections(mappingData.sections)
 
+      // Puis charger le schéma Monday (peut être lent)
+      const schemaRes = await fetch('/api/monday/schema')
+
+      if (schemaRes.ok) {
+        const schemaData = await schemaRes.json()
+        setBoardInfo({ id: schemaData.boardId, name: schemaData.boardName })
+        setMondayColumns(schemaData.columns)
+      } else {
+        console.error('Erreur chargement schéma Monday - continuera sans')
+        setError('Impossible de charger les colonnes Monday. Réessayez avec le bouton Actualiser.')
+      }
     } catch (err: any) {
       console.error('Erreur chargement:', err)
       setError(err.message)
@@ -88,10 +102,9 @@ export default function MondayMappingPage() {
     }
   }
 
-  // Sauvegarder un mapping
-  const saveMapping = async (field: string, mondayColumnId: string | null) => {
+  // Mapper un champ vers une colonne Monday
+  const saveMapping = async (field: string, mondayColumnId: string) => {
     setSaving(field)
-
     try {
       const mondayColumn = mondayColumns.find(c => c.id === mondayColumnId)
 
@@ -111,7 +124,7 @@ export default function MondayMappingPage() {
         throw new Error(err.error)
       }
 
-      // Mettre à jour l'état local
+      // Mettre à jour l'état local - le champ passe en "monday"
       setInterfaceFields(prev =>
         prev.map(f =>
           f.field === field
@@ -120,12 +133,12 @@ export default function MondayMappingPage() {
                 monday_column_id: mondayColumnId,
                 monday_column_title: mondayColumn?.title || null,
                 monday_column_type: mondayColumn?.type || null,
-                is_synced: !!mondayColumnId,
+                is_synced: true,
+                mapping_status: 'monday' as const,
               }
             : f
         )
       )
-
     } catch (err: any) {
       console.error('Erreur sauvegarde:', err)
       setError(err.message)
@@ -134,22 +147,16 @@ export default function MondayMappingPage() {
     }
   }
 
-  // Créer une nouvelle colonne Monday
-  const createMondayColumn = async (interfaceField: string) => {
-    if (!newColumnTitle.trim()) return
-
-    setSaving(interfaceField)
-
+  // Marquer un champ comme "Supabase uniquement"
+  const markSupabaseOnly = async (field: string) => {
+    setSaving(field)
     try {
-      const fieldDef = interfaceFields.find(f => f.field === interfaceField)
-      const columnType = fieldDef?.type || 'text'
-
-      const res = await fetch('/api/monday/columns', {
+      const res = await fetch('/api/monday/mapping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: newColumnTitle,
-          columnType,
+          interface_field: field,
+          supabase_only: true,
         }),
       })
 
@@ -158,19 +165,23 @@ export default function MondayMappingPage() {
         throw new Error(err.error)
       }
 
-      const data = await res.json()
-
-      // Mapper automatiquement le nouveau champ
-      await saveMapping(interfaceField, data.column.id)
-
-      // Recharger les colonnes Monday
-      await loadData()
-
-      setNewColumnField(null)
-      setNewColumnTitle('')
-
+      // Mettre à jour l'état local - le champ passe en "supabase_only"
+      setInterfaceFields(prev =>
+        prev.map(f =>
+          f.field === field
+            ? {
+                ...f,
+                monday_column_id: null,
+                monday_column_title: null,
+                monday_column_type: null,
+                is_synced: false,
+                mapping_status: 'supabase_only' as const,
+              }
+            : f
+        )
+      )
     } catch (err: any) {
-      console.error('Erreur création colonne:', err)
+      console.error('Erreur sauvegarde:', err)
       setError(err.message)
     } finally {
       setSaving(null)
@@ -189,11 +200,15 @@ export default function MondayMappingPage() {
     })
   }
 
-  // Compter les champs mappés par section
-  const getMappingStats = (sectionId: string) => {
-    const sectionFields = interfaceFields.filter(f => f.section === sectionId)
-    const mapped = sectionFields.filter(f => f.is_synced).length
-    return { mapped, total: sectionFields.length }
+  // Stats globales
+  const unmappedFields = interfaceFields.filter(f => f.mapping_status === 'unmapped')
+  const mondayMappedFields = interfaceFields.filter(f => f.mapping_status === 'monday')
+  const supabaseOnlyFields = interfaceFields.filter(f => f.mapping_status === 'supabase_only')
+  const allConfigured = unmappedFields.length === 0
+
+  // Stats par section pour les non-mappés
+  const getSectionUnmappedCount = (sectionId: string) => {
+    return interfaceFields.filter(f => f.section === sectionId && f.mapping_status === 'unmapped').length
   }
 
   if (loading) {
@@ -206,12 +221,22 @@ export default function MondayMappingPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Mapping Monday.com</h1>
-          <p className="text-muted-foreground">
-            Connectez les champs de l'interface avec les colonnes Monday
-          </p>
+        <div className="flex items-center gap-4">
+          <Link href="/admin/settings">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold">Mapping Monday.com</h1>
+            <p className="text-muted-foreground">
+              {allConfigured
+                ? 'Tous les champs sont configurés'
+                : `${unmappedFields.length} champ${unmappedFields.length > 1 ? 's' : ''} à configurer`}
+            </p>
+          </div>
         </div>
         <Button onClick={loadData} variant="outline" size="sm">
           <RefreshCcw className="h-4 w-4 mr-2" />
@@ -229,180 +254,218 @@ export default function MondayMappingPage() {
         </div>
       )}
 
-      {boardInfo && (
+      {/* Board info + stats globales */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {boardInfo && (
+          <Card className="md:col-span-1">
+            <CardContent className="py-4">
+              <div className="text-sm text-muted-foreground">Board Monday</div>
+              <div className="font-medium truncate">{boardInfo.name}</div>
+              <div className="text-xs text-muted-foreground font-mono">{boardInfo.id}</div>
+            </CardContent>
+          </Card>
+        )}
         <Card>
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Badge variant="outline" className="bg-blue-50">Monday.com</Badge>
-                <span className="font-medium">{boardInfo.name}</span>
-                <span className="text-muted-foreground text-sm">ID: {boardInfo.id}</span>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {mondayColumns.length} colonnes disponibles
-              </div>
-            </div>
+          <CardContent className="py-4 text-center">
+            <div className="text-2xl font-bold text-orange-600">{unmappedFields.length}</div>
+            <div className="text-sm text-muted-foreground">Non configurés</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="py-4 text-center">
+            <div className="text-2xl font-bold text-green-600">{mondayMappedFields.length}</div>
+            <div className="text-sm text-muted-foreground">Liés à Monday</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="py-4 text-center">
+            <div className="text-2xl font-bold text-blue-600">{supabaseOnlyFields.length}</div>
+            <div className="text-sm text-muted-foreground">Supabase uniquement</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* All configured message */}
+      {allConfigured && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="py-6 flex items-center justify-center gap-3">
+            <CheckCircle2 className="h-6 w-6 text-green-600" />
+            <span className="text-green-800 font-medium text-lg">
+              Tous les champs sont configurés !
+            </span>
           </CardContent>
         </Card>
       )}
 
-      <div className="space-y-4">
-        {sections.map(section => {
-          const stats = getMappingStats(section.id)
-          const isExpanded = expandedSections.has(section.id)
-          const sectionFields = interfaceFields.filter(f => f.section === section.id)
+      {/* Champs non mappés - par section */}
+      {!allConfigured && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Champs à configurer</h2>
+          {sections.map(section => {
+            const unmappedCount = getSectionUnmappedCount(section.id)
+            if (unmappedCount === 0) return null
 
-          return (
-            <Card key={section.id}>
-              <CardHeader
-                className="cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => toggleSection(section.id)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {isExpanded ? (
-                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                    ) : (
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    )}
-                    <CardTitle className="text-lg">{section.label}</CardTitle>
+            const isExpanded = expandedSections.has(section.id)
+            const sectionFields = interfaceFields.filter(
+              f => f.section === section.id && f.mapping_status === 'unmapped'
+            )
+
+            return (
+              <Card key={section.id}>
+                <CardHeader
+                  className="cursor-pointer hover:bg-muted/50 transition-colors py-3"
+                  onClick={() => toggleSection(section.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {isExpanded ? (
+                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      )}
+                      <CardTitle className="text-base">{section.label}</CardTitle>
+                    </div>
+                    <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                      {unmappedCount} à configurer
+                    </Badge>
                   </div>
-                  <Badge
-                    variant={stats.mapped === stats.total ? 'default' : 'secondary'}
-                    className={cn(
-                      stats.mapped === stats.total && 'bg-green-100 text-green-800'
-                    )}
-                  >
-                    {stats.mapped}/{stats.total} mappés
-                  </Badge>
-                </div>
-              </CardHeader>
+                </CardHeader>
 
-              {isExpanded && (
-                <CardContent className="pt-0">
-                  <div className="divide-y">
-                    {sectionFields.map(field => (
-                      <div key={field.field} className="py-4 first:pt-0 last:pb-0">
-                        <div className="flex items-center justify-between gap-4">
-                          {/* Champ interface */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{field.label}</span>
-                              {field.required && (
-                                <Badge variant="outline" className="text-xs">Requis</Badge>
-                              )}
-                            </div>
-                            <div className="text-sm text-muted-foreground font-mono">
-                              {field.field}
-                            </div>
-                          </div>
-
-                          {/* Icône de connexion */}
-                          <div className="flex items-center">
-                            {field.is_synced ? (
-                              <Link2 className="h-5 w-5 text-green-500" />
-                            ) : (
-                              <Link2Off className="h-5 w-5 text-muted-foreground" />
-                            )}
-                          </div>
-
-                          {/* Sélection colonne Monday */}
-                          <div className="flex-1 min-w-0">
-                            {newColumnField === field.field ? (
+                {isExpanded && (
+                  <CardContent className="pt-0">
+                    <div className="divide-y">
+                      {sectionFields.map(field => (
+                        <div key={field.field} className="py-4 first:pt-0 last:pb-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                            {/* Field info */}
+                            <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <Input
-                                  placeholder="Nom de la nouvelle colonne"
-                                  value={newColumnTitle}
-                                  onChange={e => setNewColumnTitle(e.target.value)}
-                                  className="h-9"
-                                />
-                                <Button
-                                  size="sm"
-                                  onClick={() => createMondayColumn(field.field)}
-                                  disabled={!newColumnTitle.trim() || saving === field.field}
-                                >
-                                  {saving === field.field ? (
-                                    <RefreshCcw className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Check className="h-4 w-4" />
-                                  )}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    setNewColumnField(null)
-                                    setNewColumnTitle('')
-                                  }}
-                                >
-                                  Annuler
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <Select
-                                  value={field.monday_column_id || 'none'}
-                                  onValueChange={value => {
-                                    if (value === 'none') {
-                                      saveMapping(field.field, null)
-                                    } else if (value === 'create') {
-                                      setNewColumnField(field.field)
-                                      setNewColumnTitle(field.label)
-                                    } else {
-                                      saveMapping(field.field, value)
-                                    }
-                                  }}
-                                  disabled={saving === field.field}
-                                >
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Sélectionner une colonne Monday" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="none">
-                                      <span className="text-muted-foreground">Non mappé</span>
-                                    </SelectItem>
-                                    <SelectItem value="create">
-                                      <span className="flex items-center gap-2 text-primary">
-                                        <Plus className="h-4 w-4" />
-                                        Créer une nouvelle colonne
-                                      </span>
-                                    </SelectItem>
-                                    {mondayColumns.map(col => (
-                                      <SelectItem key={col.id} value={col.id}>
-                                        <div className="flex items-center gap-2">
-                                          <span>{col.title}</span>
-                                          <Badge variant="outline" className="text-xs">
-                                            {col.type}
-                                          </Badge>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-
-                                {saving === field.field && (
-                                  <RefreshCcw className="h-4 w-4 animate-spin text-muted-foreground" />
+                                <span className="font-medium">{field.label}</span>
+                                {field.required && (
+                                  <Badge variant="outline" className="text-xs">Requis</Badge>
                                 )}
                               </div>
-                            )}
+                              <div className="text-sm text-muted-foreground font-mono">
+                                {field.field}
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {/* Select Monday column */}
+                              <Select
+                                onValueChange={value => saveMapping(field.field, value)}
+                                disabled={saving === field.field}
+                              >
+                                <SelectTrigger className="w-[240px]">
+                                  <SelectValue placeholder="Colonne Monday..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {mondayColumns.map(col => (
+                                    <SelectItem key={col.id} value={col.id}>
+                                      <div className="flex items-center gap-2">
+                                        <span>{col.title}</span>
+                                        <Badge variant="outline" className="text-xs">
+                                          {col.type}
+                                        </Badge>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+
+                              {/* Supabase only button */}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => markSupabaseOnly(field.field)}
+                                disabled={saving === field.field}
+                                className="whitespace-nowrap"
+                              >
+                                {saving === field.field ? (
+                                  <RefreshCcw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Database className="h-4 w-4 mr-1" />
+                                )}
+                                Supabase seul
+                              </Button>
+                            </div>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            )
+          })}
+        </div>
+      )}
 
-                        {/* Info sur le mapping actuel */}
-                        {field.is_synced && field.monday_column_title && (
-                          <div className="mt-2 text-sm text-muted-foreground pl-4 border-l-2 border-green-200">
-                            Mappé vers: <span className="font-mono">{field.monday_column_id}</span> ({field.monday_column_title})
-                          </div>
+      {/* Champs déjà configurés (résumé pliable) */}
+      {(mondayMappedFields.length > 0 || supabaseOnlyFields.length > 0) && (
+        <div className="space-y-4">
+          <button
+            onClick={() => setShowMapped(!showMapped)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showMapped ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            <span>
+              Champs déjà configurés ({mondayMappedFields.length + supabaseOnlyFields.length})
+            </span>
+          </button>
+
+          {showMapped && (
+            <Card>
+              <CardContent className="py-4">
+                <div className="divide-y">
+                  {/* Monday mapped fields */}
+                  {mondayMappedFields.map(field => (
+                    <div key={field.field} className="py-2 flex items-center gap-3">
+                      <Link2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium">{field.label}</span>
+                        <span className="text-xs text-muted-foreground font-mono ml-2">
+                          {field.field}
+                        </span>
+                      </div>
+                      <div className="text-sm text-muted-foreground flex items-center gap-1">
+                        <span className="font-mono text-xs">{field.monday_column_id}</span>
+                        {field.monday_column_title && (
+                          <span className="text-xs">({field.monday_column_title})</span>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              )}
+                      <Badge variant="outline" className="bg-green-50 text-green-700 text-xs">
+                        Monday
+                      </Badge>
+                    </div>
+                  ))}
+
+                  {/* Supabase only fields */}
+                  {supabaseOnlyFields.map(field => (
+                    <div key={field.field} className="py-2 flex items-center gap-3">
+                      <Database className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium">{field.label}</span>
+                        <span className="text-xs text-muted-foreground font-mono ml-2">
+                          {field.field}
+                        </span>
+                      </div>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 text-xs">
+                        Supabase seul
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
             </Card>
-          )
-        })}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -263,9 +263,9 @@ export default function AdminUsersPage() {
       }
 
       setDialogOpen(false)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erreur sauvegarde:', err)
-      setError(err.message || 'Erreur lors de la sauvegarde')
+      setError(err instanceof Error ? err.message : 'Erreur lors de la sauvegarde')
     } finally {
       setSaving(false)
     }
@@ -289,9 +289,9 @@ export default function AdminUsersPage() {
       toast.success('Utilisateur supprimé avec succès')
       setShowDeleteDialog(false)
       setUserToDelete(null)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erreur suppression:', err)
-      toast.error(err.message || 'Erreur lors de la suppression')
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de la suppression')
     } finally {
       setDeleting(false)
     }

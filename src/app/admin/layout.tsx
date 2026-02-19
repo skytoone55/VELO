@@ -11,15 +11,18 @@ export default async function AdminLayout({
 }) {
   const supabase = await createClient()
 
+  // Le middleware a déjà vérifié que l'utilisateur est connecté
+  // On récupère juste le profil ici (une seule requête)
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
     redirect('/auth/login')
   }
 
+  // Utiliser des champs spécifiques au lieu de '*' pour optimiser
   const { data: profile, error } = await supabase
     .from('users_profile')
-    .select('*')
+    .select('id, email, role, nom, prenom, territoire, depot_id, actif')
     .eq('id', user.id)
     .single()
 

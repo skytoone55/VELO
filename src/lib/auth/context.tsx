@@ -26,9 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserProfile = useCallback(async (supabaseUserId: string) => {
     const supabase = createClient()
 
+    // Utiliser des champs spécifiques au lieu de '*'
     const { data: profile, error } = await supabase
       .from('users_profile')
-      .select('*')
+      .select('id, email, role, nom, prenom, territoire, depot_id, actif')
       .eq('id', supabaseUserId)
       .single()
 
@@ -64,18 +65,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient()
+    let mounted = true
 
     // Récupérer la session initiale
     const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession()
 
-      if (session?.user) {
+      if (session?.user && mounted) {
         setSupabaseUser(session.user)
         const profile = await fetchUserProfile(session.user.id)
-        setUser(profile)
+        if (mounted) {
+          setUser(profile)
+        }
       }
 
-      setLoading(false)
+      if (mounted) {
+        setLoading(false)
+      }
     }
 
     initAuth()
@@ -83,21 +89,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Écouter les changements d'auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return
+
         if (event === 'SIGNED_IN' && session?.user) {
           setSupabaseUser(session.user)
           const profile = await fetchUserProfile(session.user.id)
-          setUser(profile)
+          if (mounted) {
+            setUser(profile)
+          }
         } else if (event === 'SIGNED_OUT') {
           setSupabaseUser(null)
           setUser(null)
         } else if (event === 'USER_UPDATED' && session?.user) {
           const profile = await fetchUserProfile(session.user.id)
-          setUser(profile)
+          if (mounted) {
+            setUser(profile)
+          }
         }
       }
     )
 
     return () => {
+      mounted = false
       subscription.unsubscribe()
     }
   }, [fetchUserProfile])
@@ -107,8 +120,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
     setUser(null)
     setSupabaseUser(null)
+    // IMPORTANT: Pas de router.refresh() ici - cela causait une boucle infinie !
+    // Le push vers /auth/login suffit
     router.push('/auth/login')
-    router.refresh()
   }
 
   return (

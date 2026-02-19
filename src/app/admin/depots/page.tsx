@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAdminUser } from '@/components/admin/admin-user-provider'
 import { Card, CardContent } from '@/components/ui/card'
@@ -54,6 +55,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 import { Depot } from '@/lib/types/database'
+import { getTenantId } from '@/lib/tenants'
+
+const tenantId = getTenantId()
 
 const typeOptions = [
   { value: 'all', label: 'Tous les types' },
@@ -61,14 +65,19 @@ const typeOptions = [
   { value: 'logistique', label: 'Dépôt logistique' },
 ]
 
-const agenceOptions = [
-  { value: 'all', label: 'Toutes les agences' },
-  { value: 'reunion', label: 'La Réunion' },
-  { value: 'martinique', label: 'Martinique' },
-  { value: 'guadeloupe', label: 'Guadeloupe' },
-  { value: 'guyane', label: 'Guyane' },
-  { value: 'france_metro', label: 'France Métropolitaine' },
-]
+const agenceOptions = tenantId === 'ppe'
+  ? [
+      { value: 'all', label: 'Toutes les agences' },
+      { value: 'france_metro', label: 'France Métropolitaine' },
+    ]
+  : [
+      { value: 'all', label: 'Toutes les agences' },
+      { value: 'reunion', label: 'La Réunion' },
+      { value: 'martinique', label: 'Martinique' },
+      { value: 'guadeloupe', label: 'Guadeloupe' },
+      { value: 'guyane', label: 'Guyane' },
+      { value: 'france_metro', label: 'France Métropolitaine' },
+    ]
 
 // Convertir un code département en agence
 function getAgenceFromTerritoire(territoire: string): string {
@@ -110,9 +119,9 @@ const initialForm: DepotForm = {
   adresse: '',
   code_postal: '',
   ville: '',
-  agence: 'reunion',
-  latitude: -21.1151,
-  longitude: 55.5364,
+  agence: tenantId === 'ppe' ? 'france_metro' : 'reunion',
+  latitude: tenantId === 'ppe' ? 46.603354 : -21.1151,
+  longitude: tenantId === 'ppe' ? 1.888334 : 55.5364,
   rayon_couverture_km: 30,
   rayon_livraison_payant_km: 50,
   prix_livraison_payante: 0,
@@ -136,6 +145,27 @@ export default function AdminDepotsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  // Pre-fill depuis URL (depuis simulation carte)
+  const searchParams = useSearchParams()
+  const prefillDone = useRef(false)
+  useEffect(() => {
+    if (prefillDone.current) return
+    const lat = searchParams.get('lat')
+    const lng = searchParams.get('lng')
+    const rayon = searchParams.get('rayon')
+    if (lat && lng) {
+      prefillDone.current = true
+      setForm(prev => ({
+        ...prev,
+        latitude: parseFloat(lat),
+        longitude: parseFloat(lng),
+        rayon_couverture_km: rayon ? parseInt(rayon) : prev.rayon_couverture_km,
+        type: 'logistique',
+      }))
+      setDialogOpen(true)
+    }
+  }, [searchParams])
 
   // Delete dialog state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -257,21 +287,19 @@ export default function AdminDepotsPage() {
         setDepots(depots.map(d => d.id === editingDepot.id ? { ...d, ...depotData } : d))
         setSuccess('Depot mis a jour avec succes')
 
-        // Si c'est un dépôt logistique, lancer la réassignation des clients
-        if (depotData.type === 'logistique') {
-          try {
-            const reassignResponse = await fetch('/api/admin/depots/reassign-clients', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ agence: depotData.agence }),
-            })
-            const reassignData = await reassignResponse.json()
-            if (reassignData.reassigned > 0) {
-              setSuccess(`Depot mis a jour avec succes. ${reassignData.reassigned} client(s) réassigné(s).`)
-            }
-          } catch (reassignErr) {
-            console.error('Erreur réassignation:', reassignErr)
+        // Lancer la réassignation des clients (force=true car le dépôt a changé)
+        try {
+          const reassignResponse = await fetch('/api/admin/depots/reassign-clients', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ force: true }),
+          })
+          const reassignData = await reassignResponse.json()
+          if (reassignData.reassigned > 0) {
+            setSuccess(`Depot mis a jour. ${reassignData.reassigned} client(s) réassigné(s), ${reassignData.horsZone || 0} hors zone.`)
           }
+        } catch (reassignErr) {
+          console.error('Erreur réassignation:', reassignErr)
         }
       } else {
         const { data: newDepot, error: insertError } = await supabase
@@ -285,22 +313,19 @@ export default function AdminDepotsPage() {
         setDepots([...depots, newDepot])
         setSuccess('Depot cree avec succes')
 
-        // Si c'est un dépôt logistique, lancer la réassignation des clients
-        if (depotData.type === 'logistique') {
-          try {
-            const reassignResponse = await fetch('/api/admin/depots/reassign-clients', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ agence: depotData.agence }),
-            })
-            const reassignData = await reassignResponse.json()
-            if (reassignData.reassigned > 0) {
-              setSuccess(`Depot cree avec succes. ${reassignData.reassigned} client(s) réassigné(s) au dépôt le plus proche.`)
-            }
-          } catch (reassignErr) {
-            console.error('Erreur réassignation:', reassignErr)
-            // Ne pas bloquer si la réassignation échoue
+        // Lancer la réassignation des clients (le nouveau dépôt peut absorber des clients)
+        try {
+          const reassignResponse = await fetch('/api/admin/depots/reassign-clients', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ force: true }),
+          })
+          const reassignData = await reassignResponse.json()
+          if (reassignData.reassigned > 0) {
+            setSuccess(`Depot cree. ${reassignData.reassigned} client(s) assigné(s), ${reassignData.horsZone || 0} hors zone.`)
           }
+        } catch (reassignErr) {
+          console.error('Erreur réassignation:', reassignErr)
         }
       }
 
@@ -323,6 +348,17 @@ export default function AdminDepotsPage() {
 
     if (!updateError) {
       setDepots(depots.map(d => d.id === depot.id ? { ...d, actif: newActif } : d))
+
+      // Réassigner les clients (le changement d'état affecte la couverture)
+      try {
+        await fetch('/api/admin/depots/reassign-clients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ force: true }),
+        })
+      } catch (reassignErr) {
+        console.error('Erreur réassignation après toggle:', reassignErr)
+      }
     }
   }
 
@@ -358,6 +394,21 @@ export default function AdminDepotsPage() {
       toast.success('Dépôt supprimé avec succès')
       setShowDeleteDialog(false)
       setDepotToDelete(null)
+
+      // Réassigner les clients qui étaient sur ce dépôt
+      try {
+        const reassignResponse = await fetch('/api/admin/depots/reassign-clients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ force: true }),
+        })
+        const reassignData = await reassignResponse.json()
+        if (reassignData.reassigned > 0) {
+          toast.success(`${reassignData.reassigned} client(s) réassigné(s) à un autre dépôt`)
+        }
+      } catch (reassignErr) {
+        console.error('Erreur réassignation après suppression:', reassignErr)
+      }
     } catch (err: any) {
       console.error('Erreur suppression:', err)
       toast.error(err.message || 'Erreur lors de la suppression')
@@ -758,7 +809,7 @@ export default function AdminDepotsPage() {
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="depot@eco-volt.fr"
+                  placeholder="depot@example.com"
                 />
               </div>
             </div>

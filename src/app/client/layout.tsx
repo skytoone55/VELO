@@ -9,16 +9,18 @@ export default async function ClientLayout({
   children: React.ReactNode
 }) {
   const supabase = await createClient()
+
+  // Le middleware a déjà vérifié que l'utilisateur est connecté
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
     redirect('/auth/login')
   }
 
-  // Récupérer le profil utilisateur
+  // Utiliser des champs spécifiques au lieu de '*' pour optimiser
   const { data: profile } = await supabase
     .from('users_profile')
-    .select('*')
+    .select('id, nom, prenom, email')
     .eq('id', user.id)
     .single()
 

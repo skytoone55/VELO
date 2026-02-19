@@ -34,22 +34,33 @@ export async function GET() {
 
     const clients = allClients
 
-    // Mapping snake_case -> Affichage pour les clés de statut
-    const statutDisplayMap: Record<string, string> = {
-      'dossier_complet': 'DOSSIER COMPLET',
-      'devis_signe': 'DEVIS SIGNÉ',
-      'devis_cree': 'DEVIS CREE',
-      'controle_valide': 'CONTROLE VALIDÉ',
-      'controle_a_regulariser': 'CONTROLE A REGULARISER',
-      'controle_a_jour': 'CONTROLE A JOUR',
-      'client_contacte': 'CLIENT CONTACTÉ',
-      'client_injoignable': 'CLIENT INJOIGNABLE',
-      'client_hs': 'CLIENT HS',
-      'ah_signee': 'AH SIGNÉE',
-      'livre': 'LIVRÉ',
-      'paye': 'PAYÈ',
-      'doublon': 'DOUBLON',
+    // Normalisation des statuts : fusion des variantes orthographiques
+    // (certains boards Monday ont "CONTROL VALIDER" au lieu de "CONTROL VALIDÉ", etc.)
+    const statutNormalizationMap: Record<string, string> = {
+      'CONTROL VALIDER': 'CONTROL VALIDÉ',
+      'CONTROLE VALIDER': 'CONTROL VALIDÉ',
+      'CONTROLE VALIDÉ': 'CONTROL VALIDÉ',
+      'DEVIS SIGNE': 'DEVIS SIGNÉ',
+      'DEVIS ENVOYE': 'DEVIS ENVOYÉ',
+      'DEVIS CREER': 'DEVIS CRÉÉ',
+      'DEVIS CREE': 'DEVIS CRÉÉ',
     }
+
+    // Statuts à exclure du compteur "Vélos validés" global
+    // (ces statuts sont en attente, pas encore réellement validés)
+    const statutsExclusVelosValides = new Set([
+      'ATTENTE DOCUMENT',
+      'RELANCE DEVIS',
+      'DEVIS ENVOYÉ',
+      'DEVIS CRÉÉ',
+      'NEW',
+      'HS',
+      'RETRACTATION',
+      // ECO-VOLT statuts (snake_case)
+      'client_hs',
+      'doublon',
+      'client_injoignable',
+    ])
 
     // Calculer les stats
     const statsByStatut: Record<string, { clients: number; velos: number }> = {}
@@ -59,8 +70,8 @@ export async function GET() {
 
     for (const client of clients || []) {
       const statutRaw = client.statut_commercial || 'Inconnu'
-      // Convertir en clé d'affichage si mapping existe
-      const statut = statutDisplayMap[statutRaw] || statutRaw
+      // Normaliser le statut (fusion des variantes)
+      const statut = statutNormalizationMap[statutRaw] || statutRaw
 
       // Utiliser velo_valide pour les validés, velo_devis séparément
       const velosV = client.velo_valide || 0
@@ -75,10 +86,15 @@ export async function GET() {
       statsByStatut[statut].clients++
       statsByStatut[statut].velos += velosV || velosD // fallback sur devis si pas de validé
 
-      // Stats globales
-      velosValides += velosV
+      // Stats globales - exclure certains statuts du compteur vélos validés
+      if (!statutsExclusVelosValides.has(statut)) {
+        velosValides += velosV
+      }
       velosDevis += velosD
-      if (statut === 'LIVRÉ') {
+
+      // Vélos livrés
+      const statutUpper = statut.toUpperCase()
+      if (statutUpper === 'LIVRÉ' || statutUpper === 'LIVRE' || statut === 'livre') {
         velosLivres += velosV || velosD
       }
     }

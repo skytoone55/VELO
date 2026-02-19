@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { MONDAY_CONFIG } from '@/lib/monday/config'
 
+// Cache du schéma pour éviter les appels répétés à Monday
+// En multi-board: cache par boardId
+const schemaCache: Map<string, { data: any; timestamp: number }> = new Map()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
 /**
  * API pour récupérer le schéma du board Monday (colonnes disponibles)
- * GET /api/monday/schema
+ * GET /api/monday/schema?boardId=xxx
+ *
+ * En multi-board, le boardId est obligatoire
+ * En single-board, il utilise MONDAY_CONFIG.boardIds.clients par défaut
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   const apiKey = process.env.MONDAY_API_KEY
 
   if (!apiKey) {
@@ -15,11 +23,29 @@ export async function GET() {
     )
   }
 
+  // Récupérer le boardId depuis les query params ou la config
+  const { searchParams } = new URL(request.url)
+  const requestedBoardId = searchParams.get('boardId')
+  const boardId = requestedBoardId || MONDAY_CONFIG.boardIds.clients
+
+  if (!boardId) {
+    return NextResponse.json(
+      { error: 'Board ID non spécifié' },
+      { status: 400 }
+    )
+  }
+
+  // Retourner le cache s'il est valide
+  const cached = schemaCache.get(boardId)
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+    return NextResponse.json(cached.data)
+  }
+
   try {
     // Query pour récupérer toutes les colonnes du board
     const query = `
       query {
-        boards(ids: [${MONDAY_CONFIG.boardIds.clients}]) {
+        boards(ids: [${boardId}]) {
           id
           name
           columns {
@@ -32,6 +58,10 @@ export async function GET() {
       }
     `
 
+    // Ajouter un AbortController avec timeout de 10 secondes
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     const response = await fetch(MONDAY_CONFIG.apiUrl, {
       method: 'POST',
       headers: {
@@ -39,7 +69,10 @@ export async function GET() {
         'Authorization': apiKey,
       },
       body: JSON.stringify({ query }),
+      signal: controller.signal,
     })
+
+    clearTimeout(timeoutId)
 
     const data = await response.json()
 
@@ -84,14 +117,27 @@ export async function GET() {
       return column
     })
 
-    return NextResponse.json({
+    const result = {
       boardId: board.id,
       boardName: board.name,
       columns,
-    })
+    }
+
+    // Mettre en cache
+    schemaCache.set(boardId, { data: result, timestamp: Date.now() })
+
+    return NextResponse.json(result)
 
   } catch (error: any) {
     console.error('Erreur récupération schéma Monday:', error)
+
+    // Si on a un cache même expiré, le retourner plutôt que d'échouer
+    const cachedFallback = schemaCache.get(boardId)
+    if (cachedFallback) {
+      console.log('Retour du cache expiré suite à erreur')
+      return NextResponse.json(cachedFallback.data)
+    }
+
     return NextResponse.json(
       { error: error.message || 'Erreur de connexion à Monday' },
       { status: 500 }

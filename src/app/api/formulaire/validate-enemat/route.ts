@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyValidationCode } from '@/lib/utils'
 import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
+import { getTenantConfig } from '@/lib/tenants'
 
 export async function POST(request: NextRequest) {
   try {
@@ -123,10 +124,11 @@ export async function POST(request: NextRequest) {
         details: { tentatives: 3 },
       })
 
+      const tenant = getTenantConfig()
       return NextResponse.json({
         valid: false,
         blocked: true,
-        message: 'Code invalide. Vous avez atteint la limite de tentatives. Contactez ECO-VOLT au 07 57 99 11 25 ou admin@eco-volt.fr',
+        message: `Code invalide. Vous avez atteint la limite de tentatives. Contactez ${tenant.name} au ${tenant.phoneFormatted} ou ${tenant.email}`,
       })
     }
 

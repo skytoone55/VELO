@@ -35,12 +35,21 @@ import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 
+interface AlertDetails {
+  adresse?: string
+  code_postal?: string
+  ville?: string
+  tentatives?: number
+  raison?: string
+  [key: string]: unknown
+}
+
 interface EmailAlert {
   id: string
   created_at: string
   type: string
   message: string
-  details: any
+  details: AlertDetails | null
   statut: string
   sent_at: string | null
   client_id: string | null
@@ -107,8 +116,8 @@ export default function AdminAlertesPage() {
 
       setAlerts(data.alerts)
       setStats(data.stats)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue')
     } finally {
       setLoading(false)
     }

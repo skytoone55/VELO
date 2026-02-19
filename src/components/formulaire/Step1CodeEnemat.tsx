@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, KeyRound, AlertCircle, CheckCircle, Info } from 'lucide-react'
+import { getTenantConfig } from '@/lib/tenants'
 
 export function Step1CodeEnemat() {
+  const tenant = getTenantConfig()
   const { clientId, data, updateData, nextStep } = useFormulaireStore()
   const [code, setCode] = useState(data.codeEnemat || '')
   const [loading, setLoading] = useState(false)
@@ -19,7 +21,7 @@ export function Step1CodeEnemat() {
 
   const handleValidate = async () => {
     if (!code.trim()) {
-      setLocalError('Veuillez saisir votre code ENEMAT')
+      setLocalError('Veuillez saisir votre code')
       return
     }
 
@@ -66,12 +68,12 @@ export function Step1CodeEnemat() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-          <KeyRound className="w-8 h-8 text-primary" />
+        <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+          <KeyRound className="w-8 h-8 text-foreground" />
         </div>
-        <CardTitle>Code de validation ENEMAT</CardTitle>
+        <CardTitle>Code de validation</CardTitle>
         <CardDescription>
-          Saisissez le code ENEMAT que vous avez reçu par email ou courrier
+          Saisissez le code que vous avez reçu par email de {tenant.name}
         </CardDescription>
       </CardHeader>
 
@@ -79,8 +81,7 @@ export function Step1CodeEnemat() {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Le code ENEMAT vous a été envoyé par le mandataire dans le cadre du programme CEE.
-            Vous disposez de 3 tentatives pour le valider.
+            Ce code vous a été envoyé par email depuis <span className="font-semibold">{tenant.email}</span> — vous disposez de 3 tentatives pour le valider.
           </AlertDescription>
         </Alert>
 
@@ -99,7 +100,7 @@ export function Step1CodeEnemat() {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="code">Code ENEMAT</Label>
+          <Label htmlFor="code">Code de validation</Label>
           <Input
             id="code"
             type="text"
@@ -118,7 +119,7 @@ export function Step1CodeEnemat() {
         </div>
 
         <Button
-          className="w-full"
+          className="w-full bg-green-600 hover:bg-green-700"
           onClick={handleValidate}
           disabled={loading || bloque || !code.trim()}
         >
@@ -134,8 +135,12 @@ export function Step1CodeEnemat() {
 
         <p className="text-xs text-muted-foreground text-center">
           Vous n'avez pas reçu votre code ?{' '}
-          <a href="tel:0757991125" className="text-primary hover:underline">
-            Contactez-nous au 07 57 99 11 25
+          <a href={`tel:${tenant.phone}`} className="text-foreground font-medium hover:underline">
+            {tenant.phoneFormatted}
+          </a>
+          {' '}ou{' '}
+          <a href={`mailto:${tenant.email}`} className="text-foreground font-medium hover:underline">
+            {tenant.email}
           </a>
         </p>
       </CardContent>

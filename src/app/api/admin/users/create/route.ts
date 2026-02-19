@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendUserInvitationEmail } from '@/lib/email/gmail'
+
+/**
+ * Génère un mot de passe temporaire sécurisé
+ * Utilise crypto.randomBytes pour une génération cryptographiquement sûre
+ */
+function generateSecurePassword(length: number = 16): string {
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
+  const bytes = randomBytes(length)
+  let password = ''
+  for (let i = 0; i < length; i++) {
+    password += charset[bytes[i] % charset.length]
+  }
+  // S'assurer qu'il y a au moins une majuscule, une minuscule, un chiffre et un caractère spécial
+  return password + 'Aa1!'
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,8 +32,8 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    // Create auth user with a random password (user will reset it)
-    const tempPassword = Math.random().toString(36).slice(-12) + 'A1!'
+    // Create auth user with a cryptographically secure random password (user will reset it)
+    const tempPassword = generateSecurePassword()
 
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email,
@@ -102,10 +118,10 @@ export async function POST(request: NextRequest) {
         : 'Utilisateur créé. L\'email d\'invitation n\'a pas pu être envoyé - l\'utilisateur peut utiliser "Mot de passe oublié".'
     })
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in create user API:', error)
     return NextResponse.json(
-      { error: error.message || 'Erreur serveur' },
+      { error: error instanceof Error ? error.message : 'Erreur serveur' },
       { status: 500 }
     )
   }

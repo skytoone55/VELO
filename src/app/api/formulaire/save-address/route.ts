@@ -1,39 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-
-// Fonction pour géocoder une adresse via l'API gouvernementale
-async function geocodeAddress(adresse: string, codePostal: string, ville: string): Promise<{ lat: number; lon: number } | null> {
-  try {
-    const query = encodeURIComponent(`${adresse} ${codePostal} ${ville}`)
-    const response = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${query}&limit=1`)
-
-    if (!response.ok) return null
-
-    const data = await response.json()
-
-    if (data.features && data.features.length > 0) {
-      const [lon, lat] = data.features[0].geometry.coordinates
-      return { lat, lon }
-    }
-    return null
-  } catch (error) {
-    console.error('Erreur géocodage:', error)
-    return null
-  }
-}
-
-// Calcul de distance avec formule Haversine
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371 // Rayon de la Terre en km
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a =
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon/2) * Math.sin(dLon/2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-  return R * c
-}
+import { geocodeAddress, calculateHaversineDistance } from '@/lib/geo/utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,11 +56,10 @@ export async function POST(request: NextRequest) {
       livraisonAddress.ville
     )
 
-    // Récupérer TOUS les dépôts actifs de l'agence
+    // Récupérer TOUS les dépôts actifs (sans filtre par agence - c'est l'adresse qui prime)
     const { data: allDepots } = await adminClient
       .from('depots')
       .select('id, nom, adresse, code_postal, ville, latitude, longitude, rayon_couverture_km, rayon_livraison_payant_km, prix_livraison_payante, type')
-      .eq('agence', client.agence)
       .eq('actif', true)
 
     // Séparer les dépôts par type
@@ -125,7 +91,7 @@ export async function POST(request: NextRequest) {
 
       for (const depot of depotsRetrait) {
         if (depot.latitude && depot.longitude) {
-          const distance = calculateDistance(coords.lat, coords.lon, depot.latitude, depot.longitude)
+          const distance = calculateHaversineDistance(coords.lat, coords.lng, depot.latitude, depot.longitude)
           if (distance < distanceRetraitMin) {
             distanceRetraitMin = distance
             depotRetraitProche = {
@@ -142,7 +108,7 @@ export async function POST(request: NextRequest) {
 
       for (const depot of depotsLogistique) {
         if (depot.latitude && depot.longitude) {
-          const distance = calculateDistance(coords.lat, coords.lon, depot.latitude, depot.longitude)
+          const distance = calculateHaversineDistance(coords.lat, coords.lng, depot.latitude, depot.longitude)
           if (distance < distanceLogistiqueMin) {
             distanceLogistiqueMin = distance
             depotLogistiqueProche = {
@@ -230,7 +196,7 @@ export async function POST(request: NextRequest) {
     // Ajouter les coordonnées si trouvées
     if (coords) {
       updateData.latitude = coords.lat
-      updateData.longitude = coords.lon
+      updateData.longitude = coords.lng
     }
 
     // Assigner le dépôt selon le mode

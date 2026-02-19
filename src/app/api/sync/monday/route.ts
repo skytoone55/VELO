@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { MONDAY_CONFIG, getMondayApiKey, isMondayConfigured } from '@/lib/monday/config'
+import { getMondayToSupabaseMapping, loadMappings, convertValueToSupabase } from '@/lib/monday/dynamic-mapping'
 import { SyncResult } from '@/lib/monday/types'
+import { buildClientAddress, geocodeAddress, findNearestDepot, classifyClientZone, DepotWithCoords } from '@/lib/geo/utils'
 
 /**
  * API de synchronisation Monday.com → Supabase
@@ -11,6 +13,9 @@ import { SyncResult } from '@/lib/monday/types'
  * - Supabase sert de cache/miroir pour l'application
  * - Direction principale: Monday → Supabase (PULL)
  *
+ * MULTI-BOARD: En mode multi-board (PPE), itère tous les boards
+ * et utilise le mapping dynamique par board
+ *
  * POST /api/sync/monday - Lance une synchronisation complète
  * GET /api/sync/monday - Retourne le statut de synchronisation
  */
@@ -19,13 +24,13 @@ export async function POST(request: NextRequest) {
   try {
     if (!isMondayConfigured()) {
       return NextResponse.json(
-        { error: 'Monday.com non configuré. Vérifiez MONDAY_API_KEY et MONDAY_BOARD_ID.', configured: false },
+        { error: 'Monday.com non configuré. Vérifiez MONDAY_API_KEY et MONDAY_BOARD_ID(S).', configured: false },
         { status: 400 }
       )
     }
 
     const body = await request.json().catch(() => ({}))
-    const { fullSync = false } = body
+    const { fullSync = false, boardId: specificBoardId } = body
 
     const result: SyncResult = {
       success: true,
@@ -38,8 +43,22 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     }
 
-    // Synchroniser depuis Monday vers Supabase
-    await syncMondayToSupabase(result, fullSync)
+    // Déterminer les boards à synchroniser
+    const boardIds = specificBoardId
+      ? [specificBoardId]
+      : MONDAY_CONFIG.allBoardIds
+
+    // Synchroniser chaque board
+    for (const boardId of boardIds) {
+      await syncBoardToSupabase(boardId, result, fullSync)
+    }
+
+    // Géocodage incrémental post-sync
+    // Géocode les clients sans coordonnées (limité à 100 par sync)
+    const geocodingResult = await geocodeNewClients(100)
+    if (geocodingResult) {
+      ;(result as any).geocoding = geocodingResult
+    }
 
     // Log l'opération
     const adminClient = createAdminClient()
@@ -47,7 +66,11 @@ export async function POST(request: NextRequest) {
       action: 'sync_batch',
       direction: 'monday_to_supabase',
       statut: result.success ? 'success' : 'error',
-      donnees_apres: result,
+      donnees_apres: {
+        ...result,
+        boardsCount: boardIds.length,
+        isMultiBoard: MONDAY_CONFIG.isMultiBoard,
+      },
     })
 
     return NextResponse.json(result)
@@ -62,10 +85,10 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Synchronise tous les items Monday vers Supabase
- * Monday est la source de vérité - on crée/met à jour dans Supabase
+ * Synchronise un board Monday vers Supabase
+ * Utilise le mapping dynamique si disponible, sinon le mapping hardcodé (ECO-VOLT)
  */
-async function syncMondayToSupabase(result: SyncResult, fullSync: boolean = false) {
+async function syncBoardToSupabase(boardId: string, result: SyncResult, fullSync: boolean = false) {
   const apiKey = getMondayApiKey()
   if (!apiKey) {
     result.success = false
@@ -74,6 +97,24 @@ async function syncMondayToSupabase(result: SyncResult, fullSync: boolean = fals
   }
 
   const adminClient = createAdminClient()
+  const isMultiBoard = MONDAY_CONFIG.isMultiBoard
+
+  // Charger le mapping dynamique pour ce board
+  let dynamicMapping: Record<string, string> = {}
+  let dynamicMappings: any[] = []
+  try {
+    dynamicMapping = await getMondayToSupabaseMapping(isMultiBoard ? boardId : undefined)
+    dynamicMappings = await loadMappings(false, isMultiBoard ? boardId : undefined)
+  } catch (e) {
+    console.warn(`Pas de mapping dynamique pour board ${boardId}, utilisation du mapping hardcodé`)
+  }
+
+  // Fallback sur le mapping hardcodé si pas de mapping dynamique
+  const useHardcodedMapping = Object.keys(dynamicMapping).length === 0
+  const columnMapping = useHardcodedMapping
+    ? (MONDAY_CONFIG.mondayToSupabaseMapping as Record<string, string>)
+    : dynamicMapping
+
   let cursor: string | null = null
   let hasMore = true
 
@@ -81,7 +122,7 @@ async function syncMondayToSupabase(result: SyncResult, fullSync: boolean = fals
     // Query avec pagination
     const graphqlQuery: string = `
       query {
-        boards(ids: [${MONDAY_CONFIG.boardIds.clients}]) {
+        boards(ids: [${boardId}]) {
           items_page(limit: ${MONDAY_CONFIG.batchSize}${cursor ? `, cursor: "${cursor}"` : ''}) {
             cursor
             items {
@@ -114,7 +155,7 @@ async function syncMondayToSupabase(result: SyncResult, fullSync: boolean = fals
 
       if (data.errors) {
         result.success = false
-        result.errors.push({ error: 'Erreur API Monday', details: data.errors })
+        result.errors.push({ error: `Erreur API Monday (board ${boardId})`, details: data.errors })
         return
       }
 
@@ -132,12 +173,17 @@ async function syncMondayToSupabase(result: SyncResult, fullSync: boolean = fals
           // Vérifier si ce client existe déjà dans Supabase
           const { data: existingClient } = await adminClient
             .from('clients')
-            .select('id, monday_synced_at')
+            .select('id, monday_synced_at, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville, adresse_societe_ligne1, adresse_societe_cp, adresse_societe_ville, latitude, longitude')
             .eq('monday_item_id', mondayItemId)
             .single()
 
           // Mapper les colonnes Monday vers les champs Supabase
-          const clientData = mapMondayItemToClient(item)
+          const clientData = await mapMondayItemToClient(item, columnMapping, dynamicMappings, useHardcodedMapping)
+
+          // En multi-board, ajouter le board_id au client
+          if (isMultiBoard) {
+            clientData.monday_board_id = boardId
+          }
 
           if (existingClient) {
             // Vérifier si une mise à jour est nécessaire
@@ -148,14 +194,39 @@ async function syncMondayToSupabase(result: SyncResult, fullSync: boolean = fals
 
             // Mettre à jour si Monday a été modifié après la dernière sync ou si fullSync
             if (fullSync || mondayUpdatedAt > supabaseSyncedAt) {
+              // Détecter un changement d'adresse → reset coordonnées pour forcer re-géocodage
+              const addressFields = [
+                'adresse_livraison_ligne1', 'adresse_livraison_cp', 'adresse_livraison_ville',
+                'adresse_societe_ligne1', 'adresse_societe_cp', 'adresse_societe_ville',
+              ] as const
+              const addressChanged = addressFields.some(field => {
+                const newVal = clientData[field]
+                const oldVal = (existingClient as any)[field]
+                return newVal !== undefined && newVal !== oldVal
+              })
+
+              const updateData: Record<string, any> = {
+                ...clientData,
+                monday_synced_at: new Date().toISOString(),
+                monday_sync_status: 'synced',
+                updated_at: new Date().toISOString(),
+              }
+
+              // Si l'adresse a changé et le client avait des coordonnées, les réinitialiser
+              if (addressChanged && existingClient.latitude) {
+                updateData.latitude = null
+                updateData.longitude = null
+                updateData.geocoding_score = null
+                updateData.geocoding_source = null
+                updateData.address_used_for_geocoding = null
+                // Aussi réinitialiser les assignations dépôt
+                updateData.depot_retrait_id = null
+                updateData.depot_logistique_id = null
+              }
+
               await adminClient
                 .from('clients')
-                .update({
-                  ...clientData,
-                  monday_synced_at: new Date().toISOString(),
-                  monday_sync_status: 'synced',
-                  updated_at: new Date().toISOString(),
-                })
+                .update(updateData)
                 .eq('id', existingClient.id)
               result.itemsUpdated++
             } else {
@@ -180,9 +251,10 @@ async function syncMondayToSupabase(result: SyncResult, fullSync: boolean = fals
             result.itemsCreated++
           }
         } catch (err: any) {
-          console.error(`Error syncing item ${item.id}:`, err)
+          console.error(`Error syncing item ${item.id} (board ${boardId}):`, err)
           result.errors.push({
             mondayItemId: item.id,
+            boardId,
             error: err.message || 'Erreur de synchronisation',
           })
         }
@@ -195,7 +267,7 @@ async function syncMondayToSupabase(result: SyncResult, fullSync: boolean = fals
 
     } catch (err: any) {
       result.success = false
-      result.errors.push({ error: 'Erreur connexion Monday', details: err.message })
+      result.errors.push({ error: `Erreur connexion Monday (board ${boardId})`, details: err.message })
       hasMore = false
     }
   }
@@ -205,49 +277,49 @@ async function syncMondayToSupabase(result: SyncResult, fullSync: boolean = fals
 
 /**
  * Mappe un item Monday vers un objet client Supabase
- * Utilise le mapping complet défini dans MONDAY_CONFIG
+ * En mode dynamique: utilise le mapping de la DB
+ * En mode hardcodé (fallback ECO-VOLT): utilise MONDAY_CONFIG
  */
-function mapMondayItemToClient(item: any): Record<string, any> {
+async function mapMondayItemToClient(
+  item: any,
+  columnMapping: Record<string, string>,
+  dynamicMappings: any[],
+  useHardcodedMapping: boolean
+): Promise<Record<string, any>> {
   const client: Record<string, any> = {
     raison_sociale: item.name,
   }
 
   for (const col of item.column_values || []) {
-    const supabaseField = (MONDAY_CONFIG.mondayToSupabaseMapping as Record<string, string>)[col.id]
+    const supabaseField = columnMapping[col.id]
     if (!supabaseField) continue
 
     let value = extractColumnValue(col)
     if (value === null || value === undefined || value === '') continue
 
-    // Mapper les valeurs des colonnes status selon leur type
-    switch (col.id) {
-      case 'color_mkvfws5n': // Statut commercial (PRINCIPAL)
-        value = (MONDAY_CONFIG.mondayToSupabaseStatutCommercial as Record<string, string>)[value] || value
-        break
-      case 'color_mkvdkzxh': // Département
-        value = (MONDAY_CONFIG.mondayToSupabaseDepartement as Record<string, string>)[value] || value
-        break
-      case 'color_mkvgsswc': // StatutRETINA
-        value = (MONDAY_CONFIG.mondayToSupabaseStatutRetina as Record<string, string>)[value] || value
-        break
-      case 'color_mkyqn153': // statut mail
-        value = (MONDAY_CONFIG.mondayToSupabaseStatutMail as Record<string, string>)[value] || value
-        break
-      case 'color_mkvp4dmz': // StatutAnomalie
-        value = (MONDAY_CONFIG.mondayToSupabaseStatutAnomalie as Record<string, string>)[value] || value
-        break
-      case 'color_mkvn1kg0': // doublon_RETINA
-        value = (MONDAY_CONFIG.mondayToSupabaseStatutDoublon as Record<string, string>)[value] || value
-        break
-      case 'multiple_person_mkvd4axb': // Commercial attribué (people)
-      case 'multiple_person_mkve97pm': // Équipe (people)
-        // Extraire les IDs des personnes et les stocker en JSON
-        value = extractPeopleIds(col)
-        break
+    // Conversion des valeurs status
+    if (useHardcodedMapping) {
+      // Mode hardcodé (ECO-VOLT): utiliser les mappings de MONDAY_CONFIG
+      value = convertValueHardcoded(col.id, value)
+    } else {
+      // Mode dynamique: utiliser le mapping de valeurs de la DB
+      const fieldMapping = dynamicMappings.find(m => m.monday_column_id === col.id)
+      if (fieldMapping?.value_mapping && Object.keys(fieldMapping.value_mapping).length > 0) {
+        // Le value_mapping est Supabase→Monday, on doit l'inverser pour Monday→Supabase
+        const reverseMapping: Record<string, string> = {}
+        for (const [supVal, monVal] of Object.entries(fieldMapping.value_mapping)) {
+          reverseMapping[monVal as string] = supVal
+        }
+        value = reverseMapping[value] || value
+      }
     }
 
-    // Convertir les champs entiers (velo_valide, velo_devis, nb_salaries, etc.)
-    // Monday peut envoyer "2.0" au lieu de 2 pour les colonnes numeric
+    // Extraire les IDs des personnes pour les colonnes people
+    if (col.id?.startsWith('multiple_person_') || col.id?.startsWith('people_')) {
+      value = extractPeopleIds(col)
+    }
+
+    // Convertir les champs entiers
     if (['velo_valide', 'velo_devis', 'nb_salaries', 'nb_velos'].includes(supabaseField)) {
       const numValue = parseFloat(value)
       if (!isNaN(numValue)) {
@@ -255,7 +327,7 @@ function mapMondayItemToClient(item: any): Record<string, any> {
       }
     }
 
-    // Aussi gérer toutes les colonnes numeric_ de Monday qui pourraient avoir des décimales
+    // Gérer les colonnes numeric de Monday avec des décimales
     if (col.id?.startsWith('numeric_') && typeof value === 'string' && value.includes('.')) {
       const numValue = parseFloat(value)
       if (!isNaN(numValue)) {
@@ -267,6 +339,29 @@ function mapMondayItemToClient(item: any): Record<string, any> {
   }
 
   return client
+}
+
+/**
+ * Conversion des valeurs en mode hardcodé (ECO-VOLT / fallback)
+ * Utilise les mappings de MONDAY_CONFIG
+ */
+function convertValueHardcoded(columnId: string, value: any): any {
+  switch (columnId) {
+    case 'color_mkvfws5n': // Statut commercial (PRINCIPAL)
+      return (MONDAY_CONFIG.mondayToSupabaseStatutCommercial as Record<string, string>)[value] || value
+    case 'color_mkvdkzxh': // Département
+      return (MONDAY_CONFIG.mondayToSupabaseDepartement as Record<string, string>)[value] || value
+    case 'color_mkvgsswc': // StatutRETINA
+      return (MONDAY_CONFIG.mondayToSupabaseStatutRetina as Record<string, string>)[value] || value
+    case 'color_mkyqn153': // statut mail
+      return (MONDAY_CONFIG.mondayToSupabaseStatutMail as Record<string, string>)[value] || value
+    case 'color_mkvp4dmz': // StatutAnomalie
+      return (MONDAY_CONFIG.mondayToSupabaseStatutAnomalie as Record<string, string>)[value] || value
+    case 'color_mkvn1kg0': // doublon_RETINA
+      return (MONDAY_CONFIG.mondayToSupabaseStatutDoublon as Record<string, string>)[value] || value
+    default:
+      return value
+  }
 }
 
 /**
@@ -294,6 +389,21 @@ function extractPeopleIds(col: any): string | null {
  * Extrait la valeur d'une colonne Monday selon son type
  */
 function extractColumnValue(col: any): any {
+  // Checkbox/Boolean: Monday retourne {"checked": true/false} comme texte
+  // Il faut parser AVANT de retourner col.text brut
+  if (col.id?.startsWith('boolean_') || col.id?.startsWith('checkbox_')) {
+    if (col.value) {
+      try {
+        const parsed = JSON.parse(col.value)
+        if (typeof parsed.checked === 'boolean') return parsed.checked
+      } catch { /* fallback ci-dessous */ }
+    }
+    // Fallback: interpréter le texte
+    if (col.text === 'v' || col.text === 'true') return true
+    if (col.text === '' || col.text === null || col.text === undefined || col.text === 'false') return false
+    return false
+  }
+
   // Valeur texte directe
   if (col.text !== null && col.text !== undefined && col.text !== '') {
     return col.text
@@ -303,6 +413,9 @@ function extractColumnValue(col: any): any {
   if (col.value) {
     try {
       const parsed = JSON.parse(col.value)
+
+      // Checkbox (au cas où l'id ne commence pas par boolean_)
+      if (typeof parsed.checked === 'boolean') return parsed.checked
 
       // Email
       if (parsed.email) return parsed.email
@@ -332,56 +445,174 @@ function extractColumnValue(col: any): any {
 }
 
 /**
+ * Géocodage incrémental post-sync
+ *
+ * Géocode les clients sans coordonnées (limité à `limit` par exécution)
+ * et les assigne au dépôt le plus proche.
+ *
+ * Utilise l'API unitaire api-adresse.data.gouv.fr/search/ (pas le batch CSV)
+ * car on traite un petit nombre de clients à la fois.
+ */
+async function geocodeNewClients(limit: number = 100) {
+  const adminClient = createAdminClient()
+
+  try {
+    // 1. Récupérer les clients sans coordonnées qui ont une adresse exploitable
+    const { data: clientsToGeocode, error: fetchError } = await adminClient
+      .from('clients')
+      .select('id, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville, adresse_societe_ligne1, adresse_societe_cp, adresse_societe_ville')
+      .is('latitude', null)
+      .not('monday_sync_status', 'eq', 'deleted')
+      .limit(limit)
+
+    if (fetchError) {
+      console.error('Erreur fetch clients pour géocodage:', fetchError)
+      return null
+    }
+
+    if (!clientsToGeocode || clientsToGeocode.length === 0) {
+      return { total: 0, geocoded: 0, assigned: 0, noAddress: 0, failed: 0 }
+    }
+
+    // 2. Récupérer les dépôts actifs pour l'assignation
+    const { data: depots } = await adminClient
+      .from('depots')
+      .select('id, nom, latitude, longitude, rayon_couverture_km, rayon_livraison_payant_km, prix_livraison_payante, type, agence')
+      .eq('actif', true)
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
+
+    const activeDepots: DepotWithCoords[] = (depots || []).map(d => ({
+      ...d,
+      type: d.type as 'retrait' | 'logistique',
+    }))
+
+    let geocoded = 0
+    let assigned = 0
+    let noAddress = 0
+    let failed = 0
+
+    // 3. Géocoder chaque client
+    for (const client of clientsToGeocode) {
+      const address = buildClientAddress(client)
+
+      if (!address) {
+        noAddress++
+        continue
+      }
+
+      try {
+        const coords = await geocodeAddress(address.adresse, address.codePostal, address.ville)
+
+        if (coords && coords.score >= 0.4) {
+          const updateData: Record<string, any> = {
+            latitude: coords.lat,
+            longitude: coords.lng,
+            geocoding_score: coords.score,
+            geocoding_source: 'post_sync',
+            address_used_for_geocoding: address.source,
+          }
+
+          // Assigner au dépôt le plus proche
+          if (activeDepots.length > 0) {
+            const classification = classifyClientZone(coords.lat, coords.lng, activeDepots)
+            if (classification.depotRetraitId) {
+              updateData.depot_retrait_id = classification.depotRetraitId
+            }
+            if (classification.depotLogistiqueId) {
+              updateData.depot_logistique_id = classification.depotLogistiqueId
+            }
+            if (!classification.horsZone) {
+              assigned++
+            }
+          }
+
+          await adminClient
+            .from('clients')
+            .update(updateData)
+            .eq('id', client.id)
+
+          geocoded++
+        } else {
+          failed++
+        }
+
+        // Petit délai pour respecter le rate limit de l'API (50 req/s)
+        await new Promise(resolve => setTimeout(resolve, 50))
+      } catch (err) {
+        console.error(`Erreur géocodage client ${client.id}:`, err)
+        failed++
+      }
+    }
+
+    console.log(`Géocodage post-sync: ${geocoded}/${clientsToGeocode.length} géocodés, ${assigned} assignés, ${noAddress} sans adresse, ${failed} échecs`)
+
+    return {
+      total: clientsToGeocode.length,
+      geocoded,
+      assigned,
+      noAddress,
+      failed,
+    }
+  } catch (error) {
+    console.error('Erreur géocodage incrémental:', error)
+    return null
+  }
+}
+
+/**
  * GET - Retourne le statut de synchronisation
  */
 export async function GET() {
-  const configured = isMondayConfigured()
-  const adminClient = createAdminClient()
+  try {
+    const configured = isMondayConfigured()
+    const adminClient = createAdminClient()
 
-  // Dernière sync
-  const { data: lastSync } = await adminClient
-    .from('sync_monday_log')
-    .select('*')
-    .eq('action', 'sync_batch')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
+    // Requêtes en parallèle avec timeout implicite
+    const [lastSyncResult, totalResult, syncedResult] = await Promise.all([
+      adminClient
+        .from('sync_monday_log')
+        .select('created_at, donnees_apres')
+        .eq('action', 'sync_batch')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single(),
+      adminClient
+        .from('clients')
+        .select('id', { count: 'exact', head: true }),
+      adminClient
+        .from('clients')
+        .select('id', { count: 'exact', head: true })
+        .not('monday_item_id', 'is', null)
+        .eq('monday_sync_status', 'synced'),
+    ])
 
-  // Derniers webhooks reçus
-  const { data: recentWebhooks } = await adminClient
-    .from('sync_monday_log')
-    .select('*')
-    .like('action', 'webhook_%')
-    .order('created_at', { ascending: false })
-    .limit(10)
+    const lastSync = lastSyncResult.data
+    const totalClients = totalResult.count || 0
+    const syncedFromMonday = syncedResult.count || 0
 
-  // Compteurs
-  const { count: totalClients } = await adminClient
-    .from('clients')
-    .select('id', { count: 'exact', head: true })
-
-  const { count: syncedFromMonday } = await adminClient
-    .from('clients')
-    .select('id', { count: 'exact', head: true })
-    .not('monday_item_id', 'is', null)
-    .eq('monday_sync_status', 'synced')
-
-  const { count: pendingSync } = await adminClient
-    .from('clients')
-    .select('id', { count: 'exact', head: true })
-    .or('monday_item_id.is.null,monday_sync_status.neq.synced')
-
-  return NextResponse.json({
-    configured,
-    sourceOfTruth: 'monday', // Indique que Monday est la source de vérité
-    webhookEndpoint: '/api/webhooks/monday',
-    lastSync: lastSync?.created_at || null,
-    lastSyncResult: lastSync?.donnees_apres || null,
-    recentWebhooks: recentWebhooks || [],
-    stats: {
-      totalClients: totalClients || 0,
-      syncedFromMonday: syncedFromMonday || 0,
-      pendingSync: pendingSync || 0,
-    },
-  })
+    return NextResponse.json({
+      configured,
+      sourceOfTruth: 'monday',
+      isMultiBoard: MONDAY_CONFIG.isMultiBoard,
+      boardCount: MONDAY_CONFIG.allBoardIds.length,
+      webhookEndpoint: '/api/webhooks/monday',
+      lastSync: lastSync?.created_at || null,
+      lastSyncResult: lastSync?.donnees_apres || null,
+      stats: {
+        totalClients,
+        syncedFromMonday,
+        pendingSync: totalClients - syncedFromMonday,
+      },
+    })
+  } catch (error: any) {
+    console.error('Error in GET /api/sync/monday:', error)
+    return NextResponse.json({
+      configured: isMondayConfigured(),
+      sourceOfTruth: 'monday',
+      isMultiBoard: MONDAY_CONFIG.isMultiBoard,
+      error: 'Erreur lors du chargement du statut',
+      stats: { totalClients: 0, syncedFromMonday: 0, pendingSync: 0 },
+    })
+  }
 }

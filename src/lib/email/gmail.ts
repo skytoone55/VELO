@@ -1,22 +1,35 @@
 import nodemailer from 'nodemailer'
 import { google } from 'googleapis'
-
-const OAuth2 = google.auth.OAuth2
-
-const oauth2Client = new OAuth2(
-  process.env.GMAIL_CLIENT_ID,
-  process.env.GMAIL_CLIENT_SECRET,
-  'https://developers.google.com/oauthplayground'
-)
-
-oauth2Client.setCredentials({
-  refresh_token: process.env.GMAIL_REFRESH_TOKEN
-})
+import { getTenantConfig } from '@/lib/tenants'
 
 async function createTransporter() {
+  // Mode 1 : SMTP direct (Microsoft 365, etc.)
+  if (process.env.SMTP_HOST) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER || process.env.GMAIL_USER,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    })
+  }
+
+  // Mode 2 : Gmail OAuth2 (ECO-VOLT)
+  const OAuth2 = google.auth.OAuth2
+  const oauth2Client = new OAuth2(
+    process.env.GMAIL_CLIENT_ID,
+    process.env.GMAIL_CLIENT_SECRET,
+    'https://developers.google.com/oauthplayground'
+  )
+  oauth2Client.setCredentials({
+    refresh_token: process.env.GMAIL_REFRESH_TOKEN
+  })
+
   const accessToken = await oauth2Client.getAccessToken()
 
-  const transporter = nodemailer.createTransport({
+  return nodemailer.createTransport({
     service: 'gmail',
     auth: {
       type: 'OAuth2',
@@ -27,8 +40,6 @@ async function createTransporter() {
       accessToken: accessToken.token || undefined,
     },
   })
-
-  return transporter
 }
 
 interface EmailOptions {
@@ -40,10 +51,11 @@ interface EmailOptions {
 
 export async function sendEmail({ to, subject, html, from }: EmailOptions) {
   try {
+    const tenant = getTenantConfig()
     const transporter = await createTransporter()
 
     const mailOptions = {
-      from: from || `ECO-VOLT <${process.env.GMAIL_USER}>`,
+      from: from || `${tenant.name} <${process.env.SMTP_USER || process.env.GMAIL_USER}>`,
       to,
       subject,
       html,
@@ -58,37 +70,87 @@ export async function sendEmail({ to, subject, html, from }: EmailOptions) {
   }
 }
 
+/**
+ * Génère le header HTML commun pour tous les emails
+ */
+function getEmailHeader(tenant: ReturnType<typeof getTenantConfig>): string {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${tenant.branding.colors.secondary}; border-radius: 12px 12px 0 0; padding: 30px;">
+      <tr>
+        <td align="center">
+          <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">
+            ${tenant.branding.emailEmoji} ${tenant.name}
+          </h1>
+          <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">
+            ${tenant.tagline}
+          </p>
+        </td>
+      </tr>
+    </table>
+  `
+}
+
+/**
+ * Génère le footer HTML commun pour tous les emails
+ */
+function getEmailFooter(tenant: ReturnType<typeof getTenantConfig>): string {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" style="padding: 20px;">
+      <tr>
+        <td align="center">
+          <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
+            ${tenant.texts.copyright}
+          </p>
+        </td>
+      </tr>
+    </table>
+  `
+}
+
+/**
+ * Génère la section contact pour les emails
+ */
+function getContactSection(tenant: ReturnType<typeof getTenantConfig>): string {
+  return `
+    <p style="margin: 0; color: #71717a; font-size: 13px; line-height: 1.5;">
+      En cas de question, contactez-nous à <a href="mailto:${tenant.email}" style="color: ${tenant.branding.colors.secondary};">${tenant.email}</a>
+    </p>
+  `
+}
+
+/**
+ * Génère la section contact complète avec téléphone
+ */
+function getFullContactSection(tenant: ReturnType<typeof getTenantConfig>): string {
+  return `
+    <p style="margin: 0; color: #71717a; font-size: 13px; line-height: 1.5;">
+      En cas de question, contactez-nous à <a href="mailto:${tenant.email}" style="color: ${tenant.branding.colors.secondary};">${tenant.email}</a> ou par téléphone au <strong>${tenant.phoneFormatted}</strong>
+    </p>
+  `
+}
+
 // Email d'envoi du code de validation à 6 chiffres
 export async function sendCodeValidationEmail(
   clientEmail: string,
   clientName: string,
   code: string
 ) {
+  const tenant = getTenantConfig()
+
   const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ECO-VOLT - Votre code de validation</title>
+  <title>${tenant.name} - Votre code de validation</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
     <tr>
       <td>
         <!-- Header -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #16a34a; border-radius: 12px 12px 0 0; padding: 30px;">
-          <tr>
-            <td align="center">
-              <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">
-                ⚡ ECO-VOLT
-              </h1>
-              <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">
-                Vélos cargo électriques
-              </p>
-            </td>
-          </tr>
-        </table>
+        ${getEmailHeader(tenant)}
 
         <!-- Content -->
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: white; padding: 40px; border-radius: 0 0 12px 12px;">
@@ -99,7 +161,7 @@ export async function sendCodeValidationEmail(
               </h2>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Bienvenue chez ECO-VOLT ! Votre compte a été créé avec succès.
+                ${tenant.texts.welcomeMessage} Votre compte a été créé avec succès.
               </p>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
@@ -110,7 +172,7 @@ export async function sendCodeValidationEmail(
               <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
                 <tr>
                   <td align="center">
-                    <div style="display: inline-block; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 24px 48px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="display: inline-block; background: linear-gradient(135deg, ${tenant.branding.colors.secondary} 0%, ${tenant.branding.colors.secondaryDark} 100%); padding: 24px 48px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                       <span style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: bold; color: white; letter-spacing: 8px;">
                         ${code}
                       </span>
@@ -131,23 +193,13 @@ export async function sendCodeValidationEmail(
 
               <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
 
-              <p style="margin: 0; color: #71717a; font-size: 13px; line-height: 1.5;">
-                En cas de question, contactez-nous à <a href="mailto:admin@eco-volt.fr" style="color: #16a34a;">admin@eco-volt.fr</a>
-              </p>
+              ${getContactSection(tenant)}
             </td>
           </tr>
         </table>
 
         <!-- Footer -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="padding: 20px;">
-          <tr>
-            <td align="center">
-              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
-                © 2026 ECO-VOLT - Tous droits réservés
-              </p>
-            </td>
-          </tr>
-        </table>
+        ${getEmailFooter(tenant)}
       </td>
     </tr>
   </table>
@@ -157,7 +209,7 @@ export async function sendCodeValidationEmail(
 
   return sendEmail({
     to: clientEmail,
-    subject: 'ECO-VOLT - Votre code de validation personnel',
+    subject: `${tenant.name} - Votre code de validation personnel`,
     html,
   })
 }
@@ -167,31 +219,22 @@ export async function sendFormulaireLinkEmail(
   clientName: string,
   formulaireLink: string
 ) {
+  const tenant = getTenantConfig()
+
   const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ECO-VOLT - Votre formulaire de livraison</title>
+  <title>${tenant.name} - Votre formulaire de livraison</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
     <tr>
       <td>
         <!-- Header -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #16a34a; border-radius: 12px 12px 0 0; padding: 30px;">
-          <tr>
-            <td align="center">
-              <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">
-                ⚡ ECO-VOLT
-              </h1>
-              <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">
-                Vélos cargo électriques
-              </p>
-            </td>
-          </tr>
-        </table>
+        ${getEmailHeader(tenant)}
 
         <!-- Content -->
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: white; padding: 40px; border-radius: 0 0 12px 12px;">
@@ -214,7 +257,7 @@ export async function sendFormulaireLinkEmail(
                 <tr>
                   <td align="center">
                     <a href="${formulaireLink}"
-                       style="display: inline-block; background-color: #16a34a; color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                       style="display: inline-block; background-color: ${tenant.branding.colors.secondary}; color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                       Remplir le formulaire
                     </a>
                   </td>
@@ -223,7 +266,7 @@ export async function sendFormulaireLinkEmail(
 
               <p style="margin: 30px 0 0 0; color: #71717a; font-size: 14px; line-height: 1.6;">
                 Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
-                <a href="${formulaireLink}" style="color: #16a34a; word-break: break-all;">
+                <a href="${formulaireLink}" style="color: ${tenant.branding.colors.secondary}; word-break: break-all;">
                   ${formulaireLink}
                 </a>
               </p>
@@ -232,22 +275,14 @@ export async function sendFormulaireLinkEmail(
 
               <p style="margin: 0; color: #71717a; font-size: 13px; line-height: 1.5;">
                 Ce lien est personnel et unique. Veuillez ne pas le partager.<br>
-                En cas de question, contactez-nous à <a href="mailto:admin@eco-volt.fr" style="color: #16a34a;">admin@eco-volt.fr</a>
+                ${getContactSection(tenant)}
               </p>
             </td>
           </tr>
         </table>
 
         <!-- Footer -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="padding: 20px;">
-          <tr>
-            <td align="center">
-              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
-                © 2026 ECO-VOLT - Tous droits réservés
-              </p>
-            </td>
-          </tr>
-        </table>
+        ${getEmailFooter(tenant)}
       </td>
     </tr>
   </table>
@@ -257,7 +292,7 @@ export async function sendFormulaireLinkEmail(
 
   return sendEmail({
     to: clientEmail,
-    subject: 'ECO-VOLT - Formulaire de livraison de votre vélo cargo',
+    subject: `${tenant.name} - Formulaire de livraison de votre vélo cargo`,
     html,
   })
 }
@@ -286,6 +321,8 @@ export async function sendFormulaireRecapEmail(
   clientName: string,
   data: RecapEmailData
 ) {
+  const tenant = getTenantConfig()
+
   const livraisonDetails = data.modeLivraison === 'domicile'
     ? `
       <div style="background-color: #f0fdf4; border-radius: 8px; padding: 16px;">
@@ -329,25 +366,14 @@ export async function sendFormulaireRecapEmail(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ECO-VOLT - Confirmation de votre demande</title>
+  <title>${tenant.name} - Confirmation de votre demande</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
     <tr>
       <td>
         <!-- Header -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #16a34a; border-radius: 12px 12px 0 0; padding: 30px;">
-          <tr>
-            <td align="center">
-              <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">
-                ⚡ ECO-VOLT
-              </h1>
-              <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">
-                Vélos cargo électriques
-              </p>
-            </td>
-          </tr>
-        </table>
+        ${getEmailHeader(tenant)}
 
         <!-- Content -->
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: white; padding: 40px; border-radius: 0 0 12px 12px;">
@@ -368,7 +394,7 @@ export async function sendFormulaireRecapEmail(
               </p>
 
               <p style="margin: 0 0 30px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Nous avons bien reçu votre demande de livraison de vélo cargo électrique. Voici le récapitulatif de votre commande :
+                Nous avons bien reçu votre demande de ${data.modeLivraison === 'retrait' ? 'retrait' : 'livraison'} de vélo cargo électrique. Voici le récapitulatif :
               </p>
 
               <!-- Récap société -->
@@ -391,28 +417,18 @@ export async function sendFormulaireRecapEmail(
 
               <p style="margin: 30px 0 0 0; color: #52525b; font-size: 16px; line-height: 1.6;">
                 <strong>Prochaines étapes :</strong><br>
-                Notre équipe va traiter votre demande et vous contactera prochainement pour programmer la livraison de votre vélo cargo.
+                Notre équipe va traiter votre demande et vous contactera prochainement pour ${data.modeLivraison === 'retrait' ? 'convenir du retrait' : 'programmer la livraison'} de votre vélo cargo.
               </p>
 
               <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
 
-              <p style="margin: 0; color: #71717a; font-size: 13px; line-height: 1.5;">
-                En cas de question, contactez-nous à <a href="mailto:admin@eco-volt.fr" style="color: #16a34a;">admin@eco-volt.fr</a> ou par téléphone au <strong>07 57 99 11 25</strong>
-              </p>
+              ${getFullContactSection(tenant)}
             </td>
           </tr>
         </table>
 
         <!-- Footer -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="padding: 20px;">
-          <tr>
-            <td align="center">
-              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
-                © 2026 ECO-VOLT - Tous droits réservés
-              </p>
-            </td>
-          </tr>
-        </table>
+        ${getEmailFooter(tenant)}
       </td>
     </tr>
   </table>
@@ -422,7 +438,7 @@ export async function sendFormulaireRecapEmail(
 
   return sendEmail({
     to: clientEmail,
-    subject: 'ECO-VOLT - Confirmation de votre demande de vélo cargo',
+    subject: `${tenant.name} - Confirmation de votre demande de vélo cargo`,
     html,
   })
 }
@@ -434,6 +450,8 @@ export async function sendUserInvitationEmail(
   role: string,
   resetPasswordLink: string
 ) {
+  const tenant = getTenantConfig()
+
   const roleLabels: Record<string, string> = {
     admin_general: 'Administrateur Général',
     admin_regional: 'Administrateur Régional',
@@ -451,18 +469,18 @@ export async function sendUserInvitationEmail(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ECO-VOLT - Bienvenue sur la plateforme</title>
+  <title>${tenant.name} - Bienvenue sur la plateforme</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
     <tr>
       <td>
         <!-- Header -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #16a34a; border-radius: 12px 12px 0 0; padding: 30px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${tenant.branding.colors.secondary}; border-radius: 12px 12px 0 0; padding: 30px;">
           <tr>
             <td align="center">
               <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">
-                ⚡ ECO-VOLT
+                ${tenant.branding.emailEmoji} ${tenant.name}
               </h1>
               <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">
                 Plateforme de gestion
@@ -480,7 +498,7 @@ export async function sendUserInvitationEmail(
               </h2>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Un compte a été créé pour vous sur la plateforme ECO-VOLT avec le rôle <strong style="color: #16a34a;">${roleLabel}</strong>.
+                Un compte a été créé pour vous sur la plateforme ${tenant.name} avec le rôle <strong style="color: ${tenant.branding.colors.secondary};">${roleLabel}</strong>.
               </p>
 
               <p style="margin: 0 0 30px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
@@ -492,7 +510,7 @@ export async function sendUserInvitationEmail(
                 <tr>
                   <td align="center">
                     <a href="${resetPasswordLink}"
-                       style="display: inline-block; background-color: #16a34a; color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                       style="display: inline-block; background-color: ${tenant.branding.colors.secondary}; color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                       Créer mon mot de passe
                     </a>
                   </td>
@@ -507,7 +525,7 @@ export async function sendUserInvitationEmail(
 
               <p style="margin: 30px 0 0 0; color: #71717a; font-size: 14px; line-height: 1.6;">
                 Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
-                <a href="${resetPasswordLink}" style="color: #16a34a; word-break: break-all;">
+                <a href="${resetPasswordLink}" style="color: ${tenant.branding.colors.secondary}; word-break: break-all;">
                   ${resetPasswordLink}
                 </a>
               </p>
@@ -516,22 +534,14 @@ export async function sendUserInvitationEmail(
 
               <p style="margin: 0; color: #71717a; font-size: 13px; line-height: 1.5;">
                 Votre identifiant de connexion : <strong>${userEmail}</strong><br><br>
-                En cas de question, contactez votre administrateur ou écrivez à <a href="mailto:admin@eco-volt.fr" style="color: #16a34a;">admin@eco-volt.fr</a>
+                En cas de question, contactez votre administrateur ou écrivez à <a href="mailto:${tenant.email}" style="color: ${tenant.branding.colors.secondary};">${tenant.email}</a>
               </p>
             </td>
           </tr>
         </table>
 
         <!-- Footer -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="padding: 20px;">
-          <tr>
-            <td align="center">
-              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
-                © 2026 ECO-VOLT - Tous droits réservés
-              </p>
-            </td>
-          </tr>
-        </table>
+        ${getEmailFooter(tenant)}
       </td>
     </tr>
   </table>
@@ -541,7 +551,7 @@ export async function sendUserInvitationEmail(
 
   return sendEmail({
     to: userEmail,
-    subject: 'ECO-VOLT - Bienvenue ! Créez votre mot de passe',
+    subject: `${tenant.name} - Bienvenue ! Créez votre mot de passe`,
     html,
   })
 }

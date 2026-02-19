@@ -34,6 +34,7 @@ export interface SyncResult {
 export interface SyncError {
   itemId?: string
   mondayItemId?: string
+  boardId?: string
   error: string
   details?: any
 }

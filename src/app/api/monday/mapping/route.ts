@@ -1,114 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { invalidateMappingsCache } from '@/lib/monday/dynamic-mapping'
+import { INTERFACE_FIELDS, INTERFACE_SECTIONS } from '@/lib/monday/interface-fields'
+import { MONDAY_CONFIG } from '@/lib/monday/config'
 
 /**
  * API pour gérer le mapping des champs Monday
- * GET /api/monday/mapping - Récupérer tous les mappings
- * POST /api/monday/mapping - Créer/Mettre à jour un mapping
+ * GET /api/monday/mapping?boardId=xxx - Récupérer tous les mappings (non-mappés + mappés)
+ * POST /api/monday/mapping - Créer/Mettre à jour un mapping (ou marquer "supabase_only")
  * DELETE /api/monday/mapping - Supprimer un mapping
+ *
+ * En multi-board, boardId est obligatoire pour GET/POST/DELETE
+ * En single-board, les mappings ont board_id = NULL
  */
 
-// Définition des champs de notre interface avec leurs métadonnées
-export const INTERFACE_FIELDS = [
-  // Identification
-  { field: 'raison_sociale', label: 'Raison sociale', type: 'text', section: 'identification', required: true },
-  { field: 'siret', label: 'SIRET', type: 'text', section: 'identification', required: true },
-  { field: 'reference_dossier', label: 'Code Retina / Réf dossier', type: 'text', section: 'identification' },
-  { field: 'numero_devis', label: 'Numéro de devis', type: 'text', section: 'identification' },
-
-  // Contact
-  { field: 'email', label: 'Email agent/commercial', type: 'email', section: 'contact' },
-  { field: 'email_beneficiaire', label: 'Email client (pour envoi code/formulaire)', type: 'email', section: 'contact', required: true },
-  { field: 'telephone', label: 'Téléphone', type: 'phone', section: 'contact' },
-  { field: 'contact_nom', label: 'Nom du contact', type: 'text', section: 'contact' },
-  { field: 'contact_prenom', label: 'Prénom du contact', type: 'text', section: 'contact' },
-  { field: 'contact_fonction', label: 'Fonction du contact', type: 'text', section: 'contact' },
-
-  // Adresse siège
-  { field: 'adresse_societe_ligne1', label: 'Adresse (ligne 1)', type: 'text', section: 'adresse_siege' },
-  { field: 'adresse_societe_ligne2', label: 'Adresse (ligne 2)', type: 'text', section: 'adresse_siege' },
-  { field: 'adresse_societe_cp', label: 'Code postal', type: 'text', section: 'adresse_siege' },
-  { field: 'adresse_societe_ville', label: 'Ville', type: 'text', section: 'adresse_siege' },
-
-  // Adresse livraison
-  { field: 'adresse_livraison_ligne1', label: 'Adresse livraison (ligne 1)', type: 'text', section: 'adresse_livraison' },
-  { field: 'adresse_livraison_ligne2', label: 'Adresse livraison (ligne 2)', type: 'text', section: 'adresse_livraison' },
-  { field: 'adresse_livraison_cp', label: 'CP livraison', type: 'text', section: 'adresse_livraison' },
-  { field: 'adresse_livraison_ville', label: 'Ville livraison', type: 'text', section: 'adresse_livraison' },
-
-  // Informations entreprise
-  { field: 'format_juridique', label: 'Format juridique', type: 'text', section: 'entreprise' },
-  { field: 'code_ape', label: 'Code APE/NAF', type: 'text', section: 'entreprise' },
-  { field: 'nb_salaries', label: 'Nombre de salariés', type: 'number', section: 'entreprise' },
-  { field: 'departement', label: 'Département', type: 'status', section: 'entreprise' },
-
-  // Vélos & Devis
-  { field: 'velo_devis', label: 'Nombre vélos devis', type: 'number', section: 'velos' },
-  { field: 'velo_valide', label: 'Nombre vélos validés', type: 'number', section: 'velos' },
-  { field: 'devis_pdf_url', label: 'URL devis PDF', type: 'link', section: 'velos' },
-  { field: 'date_signature_devis', label: 'Date signature devis', type: 'date', section: 'velos' },
-
-  // Statuts
-  { field: 'statut_commercial', label: 'Statut commercial', type: 'status', section: 'statuts' },
-  { field: 'statut_retina', label: 'Statut Retina', type: 'status', section: 'statuts' },
-  { field: 'statut_mail', label: 'Statut mail', type: 'status', section: 'statuts' },
-  { field: 'statut_anomalie', label: 'Statut anomalie', type: 'status', section: 'statuts' },
-  { field: 'statut_doublon', label: 'Statut doublon', type: 'status', section: 'statuts' },
-  { field: 'date_statut', label: 'Date statut', type: 'date', section: 'statuts' },
-
-  // Assignation
-  { field: 'commercial_assigne', label: 'Commercial assigné', type: 'people', section: 'assignation' },
-  { field: 'equipe_ids', label: 'Équipe', type: 'people', section: 'assignation' },
-
-  // Notes
-  { field: 'notes_internes', label: 'Notes internes', type: 'long_text', section: 'notes' },
-
-  // Code ENEMAT (validation client)
-  { field: 'code_enemat_saisi', label: 'Code ENEMAT saisi', type: 'text', section: 'validation' },
-  { field: 'code_enemat_valide', label: 'Code ENEMAT validé', type: 'checkbox', section: 'validation' },
-  { field: 'date_validation_code', label: 'Date validation code', type: 'date', section: 'validation' },
-]
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   const adminClient = createAdminClient()
 
   try {
-    // Récupérer les mappings existants
-    const { data: mappings, error } = await adminClient
+    const { searchParams } = new URL(request.url)
+    const boardId = searchParams.get('boardId')
+
+    // Construire la requête avec filtre par board_id
+    let query = adminClient
       .from('monday_field_mapping')
       .select('*')
       .order('interface_section', { ascending: true })
 
+    if (boardId) {
+      query = query.eq('board_id', boardId)
+    } else if (!MONDAY_CONFIG.isMultiBoard) {
+      // Single-board: charger les mappings sans board_id
+      query = query.is('board_id', null)
+    }
+    // En multi-board sans boardId spécifié, on charge tout (pour la vue d'ensemble)
+
+    const { data: mappings, error } = await query
+
     if (error) throw error
 
     // Combiner avec la définition des champs interface
+    // Statut: 'unmapped' = pas encore configuré, 'monday' = lié à Monday, 'supabase_only' = pas de sync Monday
     const result = INTERFACE_FIELDS.map(field => {
       const mapping = mappings?.find(m => m.interface_field === field.field)
+      const hasMapping = !!mapping
+      const isMondayMapped = hasMapping && !!mapping.monday_column_id
+      const isSupabaseOnly = hasMapping && !mapping.monday_column_id
+
       return {
         ...field,
         monday_column_id: mapping?.monday_column_id || null,
         monday_column_title: mapping?.monday_column_title || null,
         monday_column_type: mapping?.monday_column_type || null,
         value_mapping: mapping?.value_mapping || {},
-        is_synced: !!mapping?.monday_column_id,
+        board_id: mapping?.board_id || null,
+        is_synced: isMondayMapped,
+        mapping_status: isMondayMapped ? 'monday' : isSupabaseOnly ? 'supabase_only' : 'unmapped',
       }
     })
 
     return NextResponse.json({
       fields: result,
-      sections: [
-        { id: 'identification', label: 'Identification' },
-        { id: 'contact', label: 'Contact' },
-        { id: 'adresse_siege', label: 'Adresse siège' },
-        { id: 'adresse_livraison', label: 'Adresse livraison' },
-        { id: 'entreprise', label: 'Informations entreprise' },
-        { id: 'velos', label: 'Vélos & Devis' },
-        { id: 'statuts', label: 'Statuts' },
-        { id: 'assignation', label: 'Assignation' },
-        { id: 'notes', label: 'Notes' },
-        { id: 'validation', label: 'Validation client' },
-      ],
+      sections: INTERFACE_SECTIONS,
+      boardId: boardId || null,
+      isMultiBoard: MONDAY_CONFIG.isMultiBoard,
     })
 
   } catch (error: any) {
@@ -125,13 +80,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { interface_field, monday_column_id, monday_column_title, monday_column_type, value_mapping } = body
+    const { interface_field, monday_column_id, monday_column_title, monday_column_type, value_mapping, supabase_only, boardId } = body
 
     if (!interface_field) {
       return NextResponse.json(
         { error: 'interface_field est requis' },
         { status: 400 }
       )
+    }
+
+    // En multi-board, boardId est recommandé
+    if (MONDAY_CONFIG.isMultiBoard && !boardId) {
+      console.warn('POST mapping en multi-board sans boardId - les mappings seront globaux')
     }
 
     // Trouver la définition du champ
@@ -143,26 +103,61 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Upsert le mapping
-    const { data, error } = await adminClient
+    // En multi-board, on ne peut pas utiliser onConflict avec l'index composite
+    // car Supabase/PostgREST ne supporte pas COALESCE dans onConflict.
+    // On fait donc un SELECT + INSERT/UPDATE manuellement.
+    const mappingData = {
+      interface_field,
+      interface_label: fieldDef.label,
+      interface_type: fieldDef.type,
+      interface_section: fieldDef.section,
+      monday_column_id: supabase_only ? null : (monday_column_id || null),
+      monday_column_title: supabase_only ? null : (monday_column_title || null),
+      monday_column_type: supabase_only ? null : (monday_column_type || null),
+      value_mapping: value_mapping || {},
+      is_required: fieldDef.required || false,
+      is_synced: supabase_only ? false : !!monday_column_id,
+      board_id: boardId || null,
+      updated_at: new Date().toISOString(),
+    }
+
+    // Chercher si un mapping existe déjà pour ce champ + board
+    let existingQuery = adminClient
       .from('monday_field_mapping')
-      .upsert({
-        interface_field,
-        interface_label: fieldDef.label,
-        interface_type: fieldDef.type,
-        interface_section: fieldDef.section,
-        monday_column_id: monday_column_id || null,
-        monday_column_title: monday_column_title || null,
-        monday_column_type: monday_column_type || null,
-        value_mapping: value_mapping || {},
-        is_required: fieldDef.required || false,
-        is_synced: !!monday_column_id,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'interface_field',
-      })
-      .select()
-      .single()
+      .select('id')
+      .eq('interface_field', interface_field)
+
+    if (boardId) {
+      existingQuery = existingQuery.eq('board_id', boardId)
+    } else {
+      existingQuery = existingQuery.is('board_id', null)
+    }
+
+    const { data: existing } = await existingQuery.maybeSingle()
+
+    let data
+    let error
+
+    if (existing) {
+      // UPDATE
+      const result = await adminClient
+        .from('monday_field_mapping')
+        .update(mappingData)
+        .eq('id', existing.id)
+        .select()
+        .single()
+      data = result.data
+      error = result.error
+    } else {
+      // INSERT
+      const result = await adminClient
+        .from('monday_field_mapping')
+        .insert(mappingData)
+        .select()
+        .single()
+      data = result.data
+      error = result.error
+    }
 
     if (error) throw error
 
@@ -189,6 +184,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const interface_field = searchParams.get('interface_field')
+    const boardId = searchParams.get('boardId')
 
     if (!interface_field) {
       return NextResponse.json(
@@ -197,10 +193,19 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const { error } = await adminClient
+    let query = adminClient
       .from('monday_field_mapping')
       .delete()
       .eq('interface_field', interface_field)
+
+    // Filtrer par board_id (ou NULL en single-board)
+    if (boardId) {
+      query = query.eq('board_id', boardId)
+    } else {
+      query = query.is('board_id', null)
+    }
+
+    const { error } = await query
 
     if (error) throw error
 

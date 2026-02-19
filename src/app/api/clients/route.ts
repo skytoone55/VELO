@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { validatePagination } from '@/lib/constants'
 
 /**
  * API pour lire les clients depuis SUPABASE (cache local)
@@ -25,9 +26,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')?.toLowerCase()
 
-    // Paramètres de pagination
-    const page = parseInt(searchParams.get('page') || '1')
-    const pageSize = parseInt(searchParams.get('pageSize') || '20')
+    // Paramètres de pagination avec validation
+    const { page, pageSize } = validatePagination(
+      searchParams.get('page') || '1',
+      searchParams.get('pageSize') || '20'
+    )
 
     // Filtres
     const statutFilter = searchParams.get('statut')
@@ -101,10 +104,10 @@ export async function GET(request: NextRequest) {
       source: 'supabase',
     })
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erreur récupération clients Supabase:', error)
     return NextResponse.json(
-      { error: error.message || 'Erreur de connexion à Supabase' },
+      { error: error instanceof Error ? error.message : 'Erreur de connexion à Supabase' },
       { status: 500 }
     )
   }

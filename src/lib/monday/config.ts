@@ -10,9 +10,28 @@ export const MONDAY_CONFIG = {
   apiUrl: 'https://api.monday.com/v2',
 
   // Board IDs
+  // ECO-VOLT: un seul board (MONDAY_BOARD_ID)
+  // PPE: plusieurs boards (MONDAY_BOARD_IDS, séparés par des virgules)
   boardIds: {
     clients: process.env.MONDAY_BOARD_ID || '9990833105',
     subitems: '10082173584',
+  },
+
+  // Multi-board: liste de tous les board IDs (pour tenants avec plusieurs boards)
+  // Si MONDAY_BOARD_IDS est défini, il prend la priorité sur MONDAY_BOARD_ID
+  get allBoardIds(): string[] {
+    const multiBoards = process.env.MONDAY_BOARD_IDS
+    if (multiBoards) {
+      return multiBoards.split(',').map(id => id.trim()).filter(Boolean)
+    }
+    // Fallback sur le board unique
+    const singleBoard = process.env.MONDAY_BOARD_ID || '9990833105'
+    return [singleBoard]
+  },
+
+  // Vérifier si on est en mode multi-board
+  get isMultiBoard(): boolean {
+    return !!process.env.MONDAY_BOARD_IDS
   },
 
   // Workspace
@@ -45,6 +64,13 @@ export const MONDAY_CONFIG = {
     'text_mkvfetg2': 'adresse_societe_ligne1',       // adresseopération_RETINA
     'text_mkvfhcn9': 'adresse_societe_cp',           // CPoperation_RETINA
     'text_mkvfgh8t': 'adresse_societe_ville',        // Villeopération_RETINA
+
+    // --- Adresse livraison ---
+    'text_mkzvhvmd': 'adresse_livraison_ligne1',    // Adresse livraison ligne 1
+    'text_mkzvrj8d': 'adresse_livraison_ligne2',    // Adresse livraison ligne 2
+    'text_mkzvp1ea': 'adresse_livraison_cp',        // Code postal livraison
+    'text_mkzvhaed': 'adresse_livraison_ville',     // Ville livraison
+    // 'color_xxxxx': 'type_livraison',             // À mapper dans les paramètres (Livraison gratuite / Retrait depot / Livraison payante)
 
     // --- Informations entreprise ---
     'text_mkvtxy4q': 'format_juridique',             // format juridique
@@ -95,10 +121,17 @@ export const MONDAY_CONFIG = {
     contact_nom: 'text_mkvfkr8t',
     contact_prenom: 'text_mkvfjqvv',
 
-    // Adresse
+    // Adresse siège
     adresse_societe_ligne1: 'text_mkvfetg2',
     adresse_societe_cp: 'text_mkvfhcn9',
     adresse_societe_ville: 'text_mkvfgh8t',
+
+    // Adresse livraison
+    adresse_livraison_ligne1: 'text_mkzvhvmd',
+    adresse_livraison_ligne2: 'text_mkzvrj8d',
+    adresse_livraison_cp: 'text_mkzvp1ea',
+    adresse_livraison_ville: 'text_mkzvhaed',
+    // type_livraison: 'color_xxxxx',  // À mapper dans les paramètres
 
     // Entreprise
     format_juridique: 'text_mkvtxy4q',
@@ -279,7 +312,7 @@ export const MONDAY_CONFIG = {
 export function isMondayConfigured(): boolean {
   return !!(
     process.env.MONDAY_API_KEY &&
-    MONDAY_CONFIG.boardIds.clients
+    (MONDAY_CONFIG.boardIds.clients || MONDAY_CONFIG.allBoardIds.length > 0)
   )
 }
 

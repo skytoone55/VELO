@@ -1,30 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-
-// Calcul de distance avec formule Haversine
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371 // Rayon de la Terre en km
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
-}
+import { classifyClientZone, DepotWithCoords } from '@/lib/geo/utils'
 
 /**
- * API pour réassigner les clients aux dépôts logistiques les plus proches
- * Appelée après la création/modification d'un dépôt logistique
+ * API pour réassigner les clients aux dépôts les plus proches
+ * Appelée après la création/modification/suppression d'un dépôt
  *
  * POST /api/admin/depots/reassign-clients
- * Body: { agence?: string, depotId?: string }
+ * Body: {
+ *   agence?: string,     - Filtre par agence
+ *   depotId?: string,    - (optionnel) dépôt spécifique
+ *   force?: boolean,     - Si true, reassigne TOUS les clients (même ceux déjà assignés)
+ * }
  *
- * - Si agence est fournie, réassigne tous les clients de cette agence
- * - Si depotId est fourni, vérifie si des clients existants seraient plus proches de ce dépôt
- * - Ne touche PAS aux clients qui ont un depot_retrait_id (mode retrait)
+ * Logique :
+ * - Utilise classifyClientZone() pour une classification complète (retrait/logistique/hors_zone)
+ * - Met à jour clients_hors_zone pour le suivi des clients sans couverture
+ * - Pagine les clients pour gérer les gros volumes (PPE: 2000+ clients)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -48,16 +41,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { agence, depotId } = body
+    const { agence, depotId, force = false } = body
 
     const adminClient = createAdminClient()
 
-    // Récupérer tous les dépôts logistiques actifs
+    // Récupérer TOUS les dépôts actifs (retrait ET logistique)
+    // classifyClientZone() gère la logique retrait vs logistique
     let depotsQuery = adminClient
       .from('depots')
-      .select('id, nom, latitude, longitude, agence')
-      .eq('type', 'logistique')
+      .select('id, nom, latitude, longitude, rayon_couverture_km, rayon_livraison_payant_km, prix_livraison_payante, type, agence')
       .eq('actif', true)
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
 
     if (agence) {
       depotsQuery = depotsQuery.eq('agence', agence)
@@ -68,101 +63,173 @@ export async function POST(request: NextRequest) {
     if (depotsError || !depots || depots.length === 0) {
       return NextResponse.json({
         success: true,
-        message: 'Aucun dépôt logistique trouvé',
+        message: 'Aucun dépôt actif trouvé',
         reassigned: 0,
       })
     }
 
-    // Récupérer tous les clients avec coordonnées qui n'ont PAS de dépôt retrait
-    // (ceux avec dépôt retrait ne doivent pas être réassignés)
-    let clientsQuery = adminClient
-      .from('clients')
-      .select('id, latitude, longitude, agence, depot_logistique_id')
-      .not('latitude', 'is', null)
-      .not('longitude', 'is', null)
-      .is('depot_retrait_id', null) // Uniquement les clients en mode domicile
+    const activeDepots: DepotWithCoords[] = depots.map(d => ({
+      ...d,
+      type: d.type as 'retrait' | 'logistique',
+    }))
 
-    if (agence) {
-      clientsQuery = clientsQuery.eq('agence', agence)
+    // Récupérer les clients avec coordonnées — pagination pour gros volumes
+    let allClients: any[] = []
+    let page = 0
+    const pageSize = 1000
+
+    while (true) {
+      let clientsQuery = adminClient
+        .from('clients')
+        .select('id, latitude, longitude, agence, depot_logistique_id, depot_retrait_id')
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+        .not('monday_sync_status', 'eq', 'deleted')
+
+      if (agence) {
+        clientsQuery = clientsQuery.eq('agence', agence)
+      }
+
+      // Si pas en mode force, ne traiter que les clients non assignés
+      if (!force) {
+        clientsQuery = clientsQuery
+          .is('depot_retrait_id', null)
+          .is('depot_logistique_id', null)
+      }
+
+      const { data: clients, error } = await clientsQuery
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+
+      if (error) throw error
+      if (!clients || clients.length === 0) break
+
+      allClients = allClients.concat(clients)
+      if (clients.length < pageSize) break
+      page++
     }
 
-    const { data: clients, error: clientsError } = await clientsQuery
-
-    if (clientsError || !clients || clients.length === 0) {
+    if (allClients.length === 0) {
       return NextResponse.json({
         success: true,
         message: 'Aucun client à réassigner',
         reassigned: 0,
+        horsZone: 0,
       })
     }
 
-    // Pour chaque client, trouver le dépôt logistique le plus proche dans son agence
+    // Classifier chaque client et appliquer les mises à jour
     let reassignedCount = 0
-    const updates: { clientId: string; newDepotId: string; distance: number }[] = []
+    let horsZoneCount = 0
+    const horsZoneEntries: { clientId: string; depotId: string | null; distance: number | null }[] = []
 
-    for (const client of clients) {
+    for (const client of allClients) {
       if (!client.latitude || !client.longitude) continue
 
-      // Filtrer les dépôts de la même agence
-      const agenceDepots = depots.filter(d => d.agence === client.agence)
-      if (agenceDepots.length === 0) continue
+      const classification = classifyClientZone(client.latitude, client.longitude, activeDepots)
 
-      // Trouver le dépôt le plus proche
-      let closestDepot = null
-      let minDistance = Infinity
+      const newDepotRetraitId = classification.depotRetraitId || null
+      const newDepotLogistiqueId = classification.depotLogistiqueId || null
 
-      for (const depot of agenceDepots) {
-        const distance = calculateDistance(
-          client.latitude,
-          client.longitude,
-          depot.latitude,
-          depot.longitude
-        )
+      // Vérifier si l'assignation a changé
+      const changed =
+        newDepotRetraitId !== client.depot_retrait_id ||
+        newDepotLogistiqueId !== client.depot_logistique_id
 
-        if (distance < minDistance) {
-          minDistance = distance
-          closestDepot = depot
+      if (changed) {
+        const { error: updateError } = await adminClient
+          .from('clients')
+          .update({
+            depot_retrait_id: newDepotRetraitId,
+            depot_logistique_id: newDepotLogistiqueId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', client.id)
+
+        if (!updateError) {
+          reassignedCount++
+
+          // Mettre à jour le cache de distance pour le dépôt assigné
+          const assignedDepotId = newDepotRetraitId || newDepotLogistiqueId
+          if (assignedDepotId && classification.distanceKm) {
+            await adminClient.from('distances_cache').upsert({
+              client_id: client.id,
+              depot_id: assignedDepotId,
+              distance_km: classification.distanceKm,
+              calculated_at: new Date().toISOString(),
+            }, { onConflict: 'client_id,depot_id' })
+          }
         }
       }
 
-      // Si le dépôt le plus proche est différent du dépôt actuel, planifier la mise à jour
-      if (closestDepot && closestDepot.id !== client.depot_logistique_id) {
-        updates.push({
+      // Tracker les clients hors zone
+      if (classification.horsZone) {
+        horsZoneCount++
+        horsZoneEntries.push({
           clientId: client.id,
-          newDepotId: closestDepot.id,
-          distance: Math.round(minDistance * 10) / 10,
+          depotId: classification.depotInfo?.id || null,
+          distance: classification.distanceKm,
         })
       }
     }
 
-    // Appliquer les mises à jour
-    for (const update of updates) {
-      const { error: updateError } = await adminClient
-        .from('clients')
-        .update({
-          depot_logistique_id: update.newDepotId,
-          updated_at: new Date().toISOString(),
+    // Mettre à jour clients_hors_zone
+    if (horsZoneEntries.length > 0) {
+      // D'abord, supprimer les anciennes entrées pour ces clients
+      const clientIds = horsZoneEntries.map(e => e.clientId)
+      await adminClient
+        .from('clients_hors_zone')
+        .delete()
+        .in('client_id', clientIds)
+
+      // Insérer les nouvelles entrées hors zone
+      const horsZoneInserts = horsZoneEntries
+        .filter(e => e.depotId) // Seulement si on a un dépôt de référence
+        .map(e => ({
+          client_id: e.clientId,
+          depot_plus_proche_id: e.depotId,
+          distance_depot_plus_proche_km: e.distance,
+          statut: 'nouveau',
+          created_at: new Date().toISOString(),
+        }))
+
+      if (horsZoneInserts.length > 0) {
+        // Insérer par batch de 500
+        for (let i = 0; i < horsZoneInserts.length; i += 500) {
+          const batch = horsZoneInserts.slice(i, i + 500)
+          await adminClient.from('clients_hors_zone').insert(batch)
+        }
+      }
+    }
+
+    // Nettoyer les entrées clients_hors_zone pour les clients qui ne sont plus hors zone
+    // (clients qui étaient hors zone mais sont maintenant assignés)
+    if (force) {
+      const assignedClientIds = allClients
+        .filter(c => {
+          const classification = classifyClientZone(c.latitude, c.longitude, activeDepots)
+          return !classification.horsZone
         })
-        .eq('id', update.clientId)
+        .map(c => c.id)
 
-      if (!updateError) {
-        reassignedCount++
-
-        // Mettre à jour le cache de distance
-        await adminClient.from('distances_cache').upsert({
-          client_id: update.clientId,
-          depot_id: update.newDepotId,
-          distance_km: update.distance,
-          calculated_at: new Date().toISOString(),
-        }, { onConflict: 'client_id,depot_id' })
+      if (assignedClientIds.length > 0) {
+        // Supprimer par batch
+        for (let i = 0; i < assignedClientIds.length; i += 500) {
+          const batch = assignedClientIds.slice(i, i + 500)
+          await adminClient
+            .from('clients_hors_zone')
+            .delete()
+            .in('client_id', batch)
+        }
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: `${reassignedCount} client(s) réassigné(s) au dépôt le plus proche`,
+      message: `${reassignedCount} client(s) réassigné(s), ${horsZoneCount} hors zone`,
       reassigned: reassignedCount,
-      total_checked: clients.length,
+      horsZone: horsZoneCount,
+      totalChecked: allClients.length,
+      force,
     })
 
   } catch (error: any) {

@@ -172,7 +172,7 @@ export function Step3Adresse() {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
     )
@@ -218,7 +218,7 @@ export function Step3Adresse() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Modifier
               </Button>
-              <Button onClick={nextStep} className="flex-1">
+              <Button onClick={nextStep} className="flex-1 bg-green-600 hover:bg-green-700">
                 Continuer
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -250,43 +250,28 @@ export function Step3Adresse() {
               </AlertDescription>
             </Alert>
 
-            <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
+            <div className="bg-muted/50 rounded-lg p-4 border">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Store className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+                  <Store className="w-5 h-5 text-foreground" />
                 </div>
                 <div>
                   <p className="font-semibold text-lg">{depotRetrait.nom}</p>
                   <p className="text-muted-foreground">{depotRetrait.adresse}</p>
                   <p className="text-muted-foreground">{depotRetrait.code_postal} {depotRetrait.ville}</p>
-                  <p className="text-sm text-primary mt-2">
+                  <p className="text-sm text-muted-foreground mt-2">
                     Distance : {depotRetrait.distance} km de votre adresse
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-muted/50 rounded-lg p-4 border">
-              <p className="text-sm font-medium text-muted-foreground mb-2">Votre adresse de livraison finale :</p>
-              <p className="font-medium">{finalAddress?.ligne1}</p>
-              {finalAddress?.ligne2 && <p className="text-sm text-muted-foreground">{finalAddress.ligne2}</p>}
-              <p>{finalAddress?.codePostal} {finalAddress?.ville}</p>
-            </div>
-
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                Vous serez contacté par email ou courrier pour convenir d'un créneau de retrait
-                une fois votre dossier validé.
-              </AlertDescription>
-            </Alert>
-
             <div className="flex gap-4">
               <Button variant="outline" onClick={handleBack} className="flex-1">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Modifier l'adresse
               </Button>
-              <Button onClick={handleContinue} className="flex-1">
+              <Button onClick={handleContinue} className="flex-1 bg-green-600 hover:bg-green-700">
                 Continuer
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -310,17 +295,17 @@ export function Step3Adresse() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <Alert className="bg-blue-50 border-blue-200">
-            <CheckCircle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-800">
-              Votre adresse est éligible à la livraison à domicile.
+          <Alert className="bg-green-50 border-green-200">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              Votre adresse est éligible à la livraison gratuite à domicile.
             </AlertDescription>
           </Alert>
 
-          <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
+          <div className="bg-muted/50 rounded-lg p-4 border">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                <MapPin className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-5 h-5 text-foreground" />
               </div>
               <div>
                 <p className="font-semibold">Adresse de livraison finale</p>
@@ -331,28 +316,12 @@ export function Step3Adresse() {
             </div>
           </div>
 
-          {depotLogistique && (
-            <div className="bg-muted/50 rounded-lg p-4 border">
-              <p className="text-sm font-medium text-muted-foreground mb-2">Dépôt de départ :</p>
-              <p className="font-medium">{depotLogistique.nom}</p>
-              <p className="text-sm text-muted-foreground">{depotLogistique.ville}</p>
-            </div>
-          )}
-
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Un créneau de livraison vous sera proposé par email ou courrier
-              une fois votre dossier validé.
-            </AlertDescription>
-          </Alert>
-
           <div className="flex gap-4">
             <Button variant="outline" onClick={handleBack} className="flex-1">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Modifier l'adresse
             </Button>
-            <Button onClick={handleContinue} className="flex-1">
+            <Button onClick={handleContinue} className="flex-1 bg-green-600 hover:bg-green-700">
               Continuer
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -366,8 +335,8 @@ export function Step3Adresse() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-          <MapPin className="w-8 h-8 text-primary" />
+        <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+          <MapPin className="w-8 h-8 text-foreground" />
         </div>
         <CardTitle>Adresse livraison finale</CardTitle>
         <CardDescription>
@@ -395,12 +364,12 @@ export function Step3Adresse() {
         {/* Choix de l'adresse */}
         <RadioGroup value={addressChoice} onValueChange={(v) => handleChoiceChange(v as AddressChoice)} className="space-y-3">
           {/* Option 1: Utiliser l'adresse de facturation */}
-          <div className={`p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${addressChoice === 'facturation' ? 'border-primary bg-primary/5' : ''}`}>
+          <div className={`p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${addressChoice === 'facturation' ? 'border-foreground bg-muted' : ''}`}>
             <div className="flex items-start space-x-3">
               <RadioGroupItem value="facturation" id="facturation" className="mt-1" />
               <Label htmlFor="facturation" className="flex-1 cursor-pointer">
                 <div className="flex items-center gap-2 mb-1">
-                  <Building2 className="h-4 w-4 text-primary" />
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">Utiliser mon adresse de facturation</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -420,12 +389,12 @@ export function Step3Adresse() {
           </div>
 
           {/* Option 2: Autre adresse */}
-          <div className={`p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${addressChoice === 'autre' ? 'border-primary bg-primary/5' : ''}`}>
+          <div className={`p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${addressChoice === 'autre' ? 'border-foreground bg-muted' : ''}`}>
             <div className="flex items-start space-x-3">
               <RadioGroupItem value="autre" id="autre" className="mt-1" />
               <Label htmlFor="autre" className="flex-1 cursor-pointer">
                 <div className="flex items-center gap-2 mb-1">
-                  <MapPinned className="h-4 w-4 text-primary" />
+                  <MapPinned className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">Utiliser une autre adresse</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -509,7 +478,7 @@ export function Step3Adresse() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Retour
           </Button>
-          <Button onClick={validateAddress} disabled={validating} className="flex-1">
+          <Button onClick={validateAddress} disabled={validating} className="flex-1 bg-green-600 hover:bg-green-700">
             {validating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useTheme } from 'next-themes'
+import Image from 'next/image'
 import {
   Zap,
   LogOut,
@@ -13,7 +14,6 @@ import {
   Building2,
   Truck,
   Settings,
-  RefreshCcw,
   Menu,
   X,
   FileText,
@@ -23,6 +23,7 @@ import {
   Map,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { getTenantConfig } from '@/lib/tenants'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,12 +87,6 @@ const adminNavItems: NavItem[] = [
     roles: ['admin_general', 'admin_regional'],
   },
   {
-    href: '/admin/sync',
-    label: 'Synchronisation',
-    icon: RefreshCcw,
-    roles: ['admin_general'],
-  },
-  {
     href: '/admin/settings',
     label: 'Paramètres',
     icon: Settings,
@@ -120,6 +115,7 @@ interface AdminNavProps {
 }
 
 export function AdminNav({ user }: AdminNavProps) {
+  const tenant = getTenantConfig()
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -148,10 +144,14 @@ export function AdminNav({ user }: AdminNavProps) {
           {/* Logo + Theme Toggle */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-sidebar-primary rounded-full flex items-center justify-center">
-                <Zap className="w-4 h-4 text-sidebar-primary-foreground" />
-              </div>
-              <span className="font-bold text-lg">ECO-VOLT</span>
+              <Image
+                src={tenant.branding.logo}
+                alt={tenant.branding.logoAlt}
+                width={32}
+                height={32}
+                className="h-8 w-auto"
+              />
+              <span className="font-bold text-lg">{tenant.name}</span>
             </div>
             <Button
               variant="ghost"
@@ -224,10 +224,14 @@ export function AdminNav({ user }: AdminNavProps) {
           <div className="fixed inset-y-0 left-0 w-64 bg-sidebar text-sidebar-foreground">
             <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-sidebar-primary rounded-full flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-sidebar-primary-foreground" />
-                </div>
-                <span className="font-bold text-lg">ECO-VOLT</span>
+                <Image
+                  src={tenant.branding.logo}
+                  alt={tenant.branding.logoAlt}
+                  width={32}
+                  height={32}
+                  className="h-8 w-auto"
+                />
+                <span className="font-bold text-lg">{tenant.name}</span>
               </div>
               <Button
                 variant="ghost"
@@ -273,10 +277,14 @@ export function AdminNav({ user }: AdminNavProps) {
         </Button>
 
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <Zap className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="font-bold">ECO-VOLT</span>
+          <Image
+            src={tenant.branding.logo}
+            alt={tenant.branding.logoAlt}
+            width={32}
+            height={32}
+            className="h-8 w-auto"
+          />
+          <span className="font-bold">{tenant.name}</span>
         </div>
 
         <DropdownMenu>

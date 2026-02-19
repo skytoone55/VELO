@@ -38,6 +38,11 @@ const statutOptions = [
   { value: 'annulee', label: 'Annulée' },
 ]
 
+interface DepotOption {
+  value: string
+  label: string
+}
+
 const statutColors: Record<string, string> = {
   en_attente: 'bg-yellow-100 text-yellow-800',
   programmee: 'bg-blue-100 text-blue-800',
@@ -51,6 +56,27 @@ export default function AdminLivraisonsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statutFilter, setStatutFilter] = useState('all')
+  const [depotFilter, setDepotFilter] = useState('all')
+  const [depotOptions, setDepotOptions] = useState<DepotOption[]>([{ value: 'all', label: 'Tous les dépôts' }])
+
+  // Charger les dépôts pour le filtre
+  useEffect(() => {
+    const fetchDepots = async () => {
+      const supabase = createClient()
+      const { data: depots } = await supabase
+        .from('depots')
+        .select('id, nom')
+        .order('nom')
+
+      if (depots) {
+        setDepotOptions([
+          { value: 'all', label: 'Tous les dépôts' },
+          ...depots.map(d => ({ value: d.id, label: d.nom }))
+        ])
+      }
+    }
+    fetchDepots()
+  }, [])
 
   useEffect(() => {
     const fetchLivraisons = async () => {
@@ -101,7 +127,10 @@ export default function AdminLivraisonsPage() {
     const matchesStatut =
       statutFilter === 'all' || livraison.statut === statutFilter
 
-    return matchesSearch && matchesStatut
+    const matchesDepot =
+      depotFilter === 'all' || livraison.depot_id === depotFilter
+
+    return matchesSearch && matchesStatut && matchesDepot
   })
 
   if (loading) {
@@ -149,6 +178,19 @@ export default function AdminLivraisonsPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={depotFilter} onValueChange={setDepotFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <MapPin className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filtrer par dépôt" />
+              </SelectTrigger>
+              <SelectContent>
+                {depotOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -161,7 +203,7 @@ export default function AdminLivraisonsPage() {
               <Truck className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h3 className="font-medium mb-1">Aucune livraison</h3>
               <p className="text-muted-foreground text-sm">
-                {searchQuery || statutFilter !== 'all'
+                {searchQuery || statutFilter !== 'all' || depotFilter !== 'all'
                   ? 'Aucune livraison ne correspond à vos critères'
                   : 'Les livraisons apparaîtront ici'}
               </p>

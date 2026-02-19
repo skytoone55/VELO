@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMondayToSupabaseMapping, convertValueToSupabase } from '@/lib/monday/dynamic-mapping'
+import { MONDAY_CONFIG } from '@/lib/monday/config'
 
 /**
  * Webhook endpoint pour recevoir les événements Monday.com
  *
- * Board: Vélos Cargos - Général (ID: 9990833105)
  * Monday est la SOURCE DE VÉRITÉ (SSOT)
  *
  * Les mappings sont chargés DYNAMIQUEMENT depuis la table `monday_field_mapping`
+ * En multi-board, le boardId de l'événement est utilisé pour charger le bon mapping
  *
  * Monday envoie des webhooks pour:
  * - create_item: Nouvel item créé
@@ -112,6 +113,7 @@ export async function POST(request: NextRequest) {
 async function handleCreateItem(adminClient: any, event: any) {
   const mondayItemId = event.pulseId
   const itemName = event.pulseName
+  const boardId = event.boardId ? String(event.boardId) : undefined
 
   // Vérifier si le client existe déjà
   const { data: existing } = await adminClient
@@ -127,17 +129,24 @@ async function handleCreateItem(adminClient: any, event: any) {
 
   // Créer un nouveau client avec les infos de base
   // Les autres colonnes seront mises à jour via les webhooks change_column_value
+  const insertData: Record<string, any> = {
+    raison_sociale: itemName || 'Nouveau client',
+    monday_item_id: mondayItemId,
+    monday_sync_status: 'synced',
+    monday_synced_at: new Date().toISOString(),
+    statut_formulaire: 'en_attente',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+
+  // En multi-board, stocker le board d'origine
+  if (MONDAY_CONFIG.isMultiBoard && boardId) {
+    insertData.monday_board_id = boardId
+  }
+
   const { data: newClient, error } = await adminClient
     .from('clients')
-    .insert({
-      raison_sociale: itemName || 'Nouveau client',
-      monday_item_id: mondayItemId,
-      monday_sync_status: 'synced',
-      monday_synced_at: new Date().toISOString(),
-      statut_formulaire: 'en_attente',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+    .insert(insertData)
     .select()
     .single()
 
@@ -148,22 +157,24 @@ async function handleCreateItem(adminClient: any, event: any) {
   }
 
   console.log('Created new client from Monday:', newClient.id)
-  await logSyncSuccess(adminClient, mondayItemId, 'create_item', { clientId: newClient.id })
+  await logSyncSuccess(adminClient, mondayItemId, 'create_item', { clientId: newClient.id, boardId })
 }
 
 /**
  * Gère le changement d'une valeur de colonne
  * Utilise les mappings dynamiques depuis la base de données
+ * En multi-board, charge le mapping spécifique au board de l'événement
  */
 async function handleColumnChange(adminClient: any, event: any) {
   const mondayItemId = event.pulseId
   const columnId = event.columnId
   const value = event.value
+  const boardId = event.boardId ? String(event.boardId) : undefined
 
   // Trouver le client correspondant
   const { data: client } = await adminClient
     .from('clients')
-    .select('id')
+    .select('id, monday_board_id')
     .eq('monday_item_id', mondayItemId)
     .single()
 
@@ -172,13 +183,19 @@ async function handleColumnChange(adminClient: any, event: any) {
     return
   }
 
-  // Charger le mapping dynamique depuis la base
-  const mondayToSupabaseMapping = await getMondayToSupabaseMapping()
+  // Déterminer le boardId pour le mapping
+  // Priorité: boardId de l'événement > monday_board_id du client > undefined (single-board)
+  const mappingBoardId = MONDAY_CONFIG.isMultiBoard
+    ? (boardId || client.monday_board_id || undefined)
+    : undefined
+
+  // Charger le mapping dynamique depuis la base (spécifique au board en multi-board)
+  const mondayToSupabaseMapping = await getMondayToSupabaseMapping(mappingBoardId)
 
   // Mapper la colonne Monday vers Supabase
   const supabaseColumn = mondayToSupabaseMapping[columnId]
   if (!supabaseColumn) {
-    console.log('No mapping for Monday column:', columnId)
+    console.log('No mapping for Monday column:', columnId, 'on board:', mappingBoardId)
     return
   }
 

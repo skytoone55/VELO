@@ -9,14 +9,18 @@ import { Step1CodeEnemat } from '@/components/formulaire/Step1CodeEnemat'
 import { Step2Informations } from '@/components/formulaire/Step2Informations'
 import { Step3Adresse } from '@/components/formulaire/Step3Adresse'
 import { Step4Preference } from '@/components/formulaire/Step4Preference'
-import { Step5Confirmation } from '@/components/formulaire/Step5Confirmation'
+import { Step5Fnuci } from '@/components/formulaire/Step5Fnuci'
+import { Step6Confirmation } from '@/components/formulaire/Step6Confirmation'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AlertCircle, Loader2, Bike } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { getTenantConfig } from '@/lib/tenants'
 
 function FormulaireContent() {
+  const tenant = getTenantConfig()
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get('token')
@@ -124,7 +128,7 @@ function FormulaireContent() {
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center py-12">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
             <p className="text-muted-foreground">Chargement du formulaire...</p>
           </CardContent>
         </Card>
@@ -144,7 +148,7 @@ function FormulaireContent() {
             <h2 className="text-xl font-bold mb-2">Lien invalide ou expiré</h2>
             <p className="text-muted-foreground mb-6">
               Le lien que vous avez utilisé n'est pas valide ou a expiré.
-              Veuillez contacter l'équipe ECO-VOLT pour obtenir un nouveau lien.
+              Veuillez contacter l'équipe {tenant.name} pour obtenir un nouveau lien.
             </p>
             <Button asChild>
               <Link href="/">Retour à l'accueil</Link>
@@ -181,8 +185,8 @@ function FormulaireContent() {
       <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center py-12 text-center">
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
-              <AlertCircle className="h-8 w-8 text-orange-600" />
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle className="h-8 w-8 text-destructive" />
             </div>
             <h2 className="text-xl font-bold mb-2">Accès temporairement bloqué</h2>
             <p className="text-muted-foreground mb-6">
@@ -198,7 +202,7 @@ function FormulaireContent() {
     )
   }
 
-  // Rendu du step actuel (5 étapes: ENEMAT, Infos, Adresse, Préférence, Confirmation)
+  // Rendu du step actuel (6 étapes: ENEMAT, Infos, Adresse, Préférence, FNUCI, Confirmation)
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -210,7 +214,9 @@ function FormulaireContent() {
       case 4:
         return <Step4Preference />
       case 5:
-        return <Step5Confirmation />
+        return <Step5Fnuci />
+      case 6:
+        return <Step6Confirmation />
       default:
         return <Step1CodeEnemat />
     }
@@ -222,8 +228,14 @@ function FormulaireContent() {
         {/* Header */}
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Bike className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-primary">ECO-VOLT</h1>
+            <Image
+              src={tenant.branding.logo}
+              alt={tenant.branding.logoAlt}
+              width={48}
+              height={48}
+              className="h-12 w-auto"
+            />
+            <h1 className="text-2xl font-bold text-foreground">{tenant.name}</h1>
           </div>
           <p className="text-muted-foreground">
             Formulaire de demande de livraison de vélo cargo
@@ -231,7 +243,7 @@ function FormulaireContent() {
         </div>
 
         {/* Step Indicator */}
-        <StepIndicator currentStep={currentStep} completedSteps={completedSteps} totalSteps={5} />
+        <StepIndicator currentStep={currentStep} completedSteps={completedSteps} totalSteps={6} />
 
         {/* Current Step Content */}
         {renderStep()}
@@ -239,8 +251,8 @@ function FormulaireContent() {
         {/* Footer */}
         <p className="text-center text-xs text-muted-foreground">
           En cas de problème, contactez-nous à{' '}
-          <a href="mailto:support@eco-volt.fr" className="text-primary hover:underline">
-            support@eco-volt.fr
+          <a href={`mailto:${tenant.email}`} className="text-foreground font-medium hover:underline">
+            {tenant.email}
           </a>
         </p>
       </div>
@@ -255,7 +267,7 @@ export default function FormulairePage() {
         <div className="min-h-screen flex items-center justify-center bg-muted/30">
           <Card className="w-full max-w-md">
             <CardContent className="flex flex-col items-center py-12">
-              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+              <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
               <p className="text-muted-foreground">Chargement...</p>
             </CardContent>
           </Card>

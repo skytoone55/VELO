@@ -15,26 +15,31 @@ import {
   AlertCircle,
   Loader2,
   Building2,
-  MapPin,
   Truck,
   Store,
   Euro,
+  UserCheck,
+  IdCard,
+  Mail,
+  Calendar,
+  Phone,
 } from 'lucide-react'
-import Link from 'next/link'
+import { getTenantConfig } from '@/lib/tenants'
 
-export function Step5Confirmation() {
+export function Step6Confirmation() {
+  const tenant = getTenantConfig()
   const router = useRouter()
   const { clientId, data, prevStep, reset, isHorsZone } = useFormulaireStore()
 
-  const [acceptCGV, setAcceptCGV] = useState(false)
-  const [acceptPolitique, setAcceptPolitique] = useState(false)
+  const [confirmPersonne, setConfirmPersonne] = useState(false)
+  const [confirmIdentite, setConfirmIdentite] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
   const handleSubmit = async () => {
-    if (!acceptCGV || !acceptPolitique) {
-      setError('Veuillez accepter les conditions générales et la politique de confidentialité')
+    if (!confirmPersonne || !confirmIdentite) {
+      setError('Veuillez cocher les deux cases obligatoires')
       return
     }
 
@@ -83,15 +88,63 @@ export function Step5Confirmation() {
             <CheckCircle className="w-10 h-10 text-green-600" />
           </div>
           <h2 className="text-2xl font-bold mb-2">Demande enregistrée !</h2>
-          <p className="text-muted-foreground mb-6 max-w-md">
-            Votre demande a été enregistrée avec succès. Notre équipe vous contactera
-            prochainement pour {isRetrait ? 'convenir d\'un créneau de retrait' : 'programmer la livraison'} de votre vélo cargo.
+          <p className="text-muted-foreground mb-4 max-w-md">
+            Votre demande a été enregistrée avec succès.
           </p>
-          <div className="flex gap-4">
-            <Button onClick={() => handleNavigate('/')}>
-              Retour à l'accueil
-            </Button>
+
+          {/* Bloc livraison prévue */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 max-w-md text-left">
+            <div className="flex items-start gap-3">
+              <Calendar className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-semibold text-blue-900">
+                  Livraison prévue entre Mars et Mai 2026
+                </p>
+                <p className="text-sm text-blue-800 mt-1">
+                  Selon les arrivages et les secteurs géographiques. Notre équipe vous contactera
+                  pour {isRetrait ? 'convenir d\'un créneau de retrait' : 'programmer la livraison'} de votre vélo cargo.
+                </p>
+              </div>
+            </div>
           </div>
+
+          {/* Rappel Bicycode */}
+          <Alert className="max-w-md mb-4 text-left">
+            <Mail className="h-4 w-4" />
+            <AlertDescription>
+              N'oubliez pas de surveiller vos emails (y compris les spams) pour l'email
+              de <span className="font-semibold">Bicycode</span> concernant l'identification de votre vélo.
+            </AlertDescription>
+          </Alert>
+
+          {/* Rappel emails livraison */}
+          <Alert className="max-w-md mb-4 text-left">
+            <Mail className="h-4 w-4" />
+            <AlertDescription>
+              Restez attentif à vos emails. Vous recevrez des informations importantes concernant
+              votre livraison depuis <span className="font-semibold">{tenant.email}</span>.
+            </AlertDescription>
+          </Alert>
+
+          {/* Bloc contact */}
+          <div className="bg-muted rounded-lg p-4 mb-6 max-w-md text-center">
+            <p className="text-sm font-medium mb-2">Une question ?</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-sm">
+              <a href={`tel:${tenant.phone}`} className="flex items-center gap-1 text-foreground hover:underline">
+                <Phone className="h-4 w-4" />
+                {tenant.phoneFormatted}
+              </a>
+              <span className="hidden sm:inline text-muted-foreground">ou</span>
+              <a href={`mailto:${tenant.email}`} className="flex items-center gap-1 text-foreground hover:underline">
+                <Mail className="h-4 w-4" />
+                {tenant.email}
+              </a>
+            </div>
+          </div>
+
+          <p className="text-sm text-muted-foreground text-center mt-6">
+            Vous pouvez fermer cette page en toute sécurité.
+          </p>
         </CardContent>
       </Card>
     )
@@ -100,8 +153,8 @@ export function Step5Confirmation() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle className="w-8 h-8 text-primary" />
+        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+          <CheckCircle className="w-8 h-8 text-green-600" />
         </div>
         <CardTitle>Récapitulatif</CardTitle>
         <CardDescription>
@@ -120,7 +173,7 @@ export function Step5Confirmation() {
         {/* Récap société */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
-            <Building2 className="h-4 w-4 text-primary" />
+            <Building2 className="h-4 w-4 text-muted-foreground" />
             Société
           </div>
           <div className="bg-muted rounded-lg p-3 text-sm">
@@ -140,9 +193,9 @@ export function Step5Confirmation() {
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
             {isRetrait ? (
-              <Store className="h-4 w-4 text-primary" />
+              <Store className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <Truck className="h-4 w-4 text-primary" />
+              <Truck className="h-4 w-4 text-muted-foreground" />
             )}
             Mode de réception
           </div>
@@ -166,7 +219,7 @@ export function Step5Confirmation() {
                 <div className="font-medium flex items-center gap-2">
                   Livraison à domicile
                   {isLivraisonPayante ? (
-                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1 border">
                       <Euro className="h-3 w-3" />
                       Payant
                     </span>
@@ -198,35 +251,72 @@ export function Step5Confirmation() {
 
         <Separator />
 
-        {/* Acceptations */}
+        {/* Confirmations obligatoires - 2 colonnes côte à côte */}
         <div className="space-y-4">
-          <div className="flex items-start space-x-3">
-            <Checkbox
-              id="cgv"
-              checked={acceptCGV}
-              onCheckedChange={(checked) => setAcceptCGV(checked as boolean)}
-            />
-            <Label htmlFor="cgv" className="text-sm cursor-pointer leading-relaxed">
-              J'accepte les{' '}
-              <Link href="/conditions" className="text-primary hover:underline">
-                conditions générales de vente
-              </Link>{' '}
-              *
-            </Label>
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            Confirmations obligatoires
           </div>
-          <div className="flex items-start space-x-3">
-            <Checkbox
-              id="politique"
-              checked={acceptPolitique}
-              onCheckedChange={(checked) => setAcceptPolitique(checked as boolean)}
-            />
-            <Label htmlFor="politique" className="text-sm cursor-pointer leading-relaxed">
-              J'accepte la{' '}
-              <Link href="/confidentialite" className="text-primary hover:underline">
-                politique de confidentialité
-              </Link>{' '}
-              et le traitement de mes données *
-            </Label>
+
+          {/* Grille 2 colonnes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Bloc 1 - Confirmation personne */}
+            <label
+              htmlFor="confirmPersonne"
+              className="flex flex-col p-4 border rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex justify-center mb-3">
+                <UserCheck className="h-12 w-12 text-foreground" />
+              </div>
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="confirmPersonne"
+                  checked={confirmPersonne}
+                  onCheckedChange={(checked) => setConfirmPersonne(checked as boolean)}
+                  className="mt-0.5 shrink-0"
+                />
+                <span className="text-sm leading-relaxed">
+                  {isRetrait ? (
+                    <>
+                      Je confirme que <span className="font-semibold">{data.contactPrenom} {data.contactNom}</span> viendra récupérer le matériel. *
+                    </>
+                  ) : (
+                    <>
+                      Je confirme que <span className="font-semibold">{data.contactPrenom} {data.contactNom}</span> réceptionnera la livraison. *
+                    </>
+                  )}
+                </span>
+              </div>
+            </label>
+
+            {/* Bloc 2 - Confirmation pièce d'identité */}
+            <label
+              htmlFor="confirmIdentite"
+              className="flex flex-col p-4 border rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex justify-center mb-3">
+                <IdCard className="h-12 w-12 text-foreground" />
+              </div>
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="confirmIdentite"
+                  checked={confirmIdentite}
+                  onCheckedChange={(checked) => setConfirmIdentite(checked as boolean)}
+                  className="mt-0.5 shrink-0"
+                />
+                <span className="text-sm leading-relaxed">
+                  {isRetrait ? (
+                    <>
+                      Je comprends qu'une <span className="font-semibold">pièce d'identité</span> sera demandée lors du retrait. *
+                    </>
+                  ) : (
+                    <>
+                      Je comprends qu'une <span className="font-semibold">pièce d'identité</span> sera demandée à la livraison. *
+                    </>
+                  )}
+                </span>
+              </div>
+            </label>
           </div>
         </div>
 
@@ -238,7 +328,7 @@ export function Step5Confirmation() {
           <Button
             onClick={handleSubmit}
             className="flex-1 bg-green-600 hover:bg-green-700"
-            disabled={submitting || !acceptCGV || !acceptPolitique}
+            disabled={submitting || !confirmPersonne || !confirmIdentite}
           >
             {submitting ? (
               <>

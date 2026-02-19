@@ -85,11 +85,13 @@ async function executeMondayMutationWithVariables(query: string, variables: Reco
 }
 
 /**
- * LECTURE - Récupérer TOUS les items (clients) du board Monday avec pagination
+ * LECTURE - Récupérer TOUS les items (clients) d'un board Monday avec pagination
  * Monday limite à 500 items par requête, donc on pagine automatiquement
+ *
+ * @param boardId - ID du board à lire (optionnel, utilise le board par défaut si non spécifié)
  */
-export async function getMondayItems(): Promise<MondayItem[]> {
-  const boardId = MONDAY_CONFIG.boardIds.clients
+export async function getMondayItems(boardId?: string): Promise<MondayItem[]> {
+  const targetBoardId = boardId || MONDAY_CONFIG.boardIds.clients
   const allItems: MondayItem[] = []
   let cursor: string | null = null
   const pageSize = 500 // Maximum autorisé par Monday
@@ -98,7 +100,7 @@ export async function getMondayItems(): Promise<MondayItem[]> {
     const cursorParam = cursor ? `, cursor: "${cursor}"` : ''
     const query = `
       query {
-        boards(ids: [${boardId}]) {
+        boards(ids: [${targetBoardId}]) {
           items_page(limit: ${pageSize}${cursorParam}) {
             cursor
             items {
@@ -128,11 +130,27 @@ export async function getMondayItems(): Promise<MondayItem[]> {
     // Récupérer le cursor pour la page suivante
     cursor = itemsPage?.cursor || null
 
-    console.log(`📦 Monday: ${allItems.length} clients chargés...`)
-
   } while (cursor) // Continuer tant qu'il y a un cursor (= plus de pages)
+  return allItems
+}
 
-  console.log(`✅ Monday: Total ${allItems.length} clients récupérés`)
+/**
+ * LECTURE - Récupérer TOUS les items de TOUS les boards (multi-board)
+ * Retourne les items avec leur boardId pour savoir de quel board ils viennent
+ */
+export async function getAllBoardsItems(): Promise<(MondayItem & { boardId: string })[]> {
+  const boardIds = MONDAY_CONFIG.allBoardIds
+  const allItems: (MondayItem & { boardId: string })[] = []
+
+  for (const boardId of boardIds) {
+    const items = await getMondayItems(boardId)
+    allItems.push(...items.map(item => ({ ...item, boardId })))
+    // Petit délai pour éviter le rate limiting entre boards
+    if (boardIds.length > 1) {
+      await new Promise(resolve => setTimeout(resolve, 200))
+    }
+  }
+
   return allItems
 }
 
@@ -270,11 +288,12 @@ export function formatValueForMonday(columnId: string, value: any): any {
 
 export async function updateMondayItem(
   itemId: number | string,
-  columnValues: Record<string, any>
+  columnValues: Record<string, any>,
+  boardId?: string
 ): Promise<MondayMutationResult> {
   try {
-    const boardId = MONDAY_CONFIG.boardIds.clients
-    if (!boardId) throw new Error('Board ID Monday non configuré')
+    const targetBoardId = boardId || MONDAY_CONFIG.boardIds.clients
+    if (!targetBoardId) throw new Error('Board ID Monday non configuré')
 
     const itemIdStr = String(itemId)
 
@@ -285,17 +304,15 @@ export async function updateMondayItem(
 
     const formattedValues: Record<string, any> = {}
     for (const [columnId, value] of Object.entries(otherColumns)) {
-      if (value !== null && value !== undefined && value !== '') {
+      // Permettre les chaînes vides pour synchroniser les champs optionnels comme le complément d'adresse
+      if (value !== null && value !== undefined) {
         const formatted = formatValueForMonday(columnId, value)
-        console.log(`updateMondayItem - formatting ${columnId}:`, { input: value, output: formatted })
         if (formatted !== null) {
           // NE PAS stringify ici - le JSON.stringify final s'en chargera
           formattedValues[columnId] = formatted
         }
       }
     }
-
-    console.log('updateMondayItem - final formattedValues:', JSON.stringify(formattedValues))
 
     // Mettre à jour les colonnes normales avec des variables GraphQL
     if (Object.keys(formattedValues).length > 0) {
@@ -307,11 +324,10 @@ export async function updateMondayItem(
         }
       `
       const variables = {
-        boardId: boardId,
+        boardId: targetBoardId,
         itemId: itemIdStr,
         columnValues: JSON.stringify(formattedValues)
       }
-      console.log('updateMondayItem - sending to Monday:', JSON.stringify(variables))
       await executeMondayMutationWithVariables(mutation, variables)
     }
 
@@ -325,7 +341,7 @@ export async function updateMondayItem(
         }
       `
       const variables = {
-        boardId: boardId,
+        boardId: targetBoardId,
         itemId: itemIdStr,
         value: String(nameValue)
       }
@@ -333,35 +349,37 @@ export async function updateMondayItem(
     }
 
     return { success: true, itemId: typeof itemId === 'number' ? itemId : parseInt(itemIdStr) }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error updating Monday item:', error)
-    return { success: false, error: error.message || 'Erreur de mise à jour Monday' }
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur de mise à jour Monday' }
   }
 }
 
 export async function updateMondayItemName(
   itemId: number,
-  newName: string
+  newName: string,
+  boardId?: string
 ): Promise<MondayMutationResult> {
   try {
-    const boardId = MONDAY_CONFIG.boardIds.clients
+    const targetBoardId = boardId || MONDAY_CONFIG.boardIds.clients
     const escapedName = newName.replace(/"/g, '\\"')
-    const mutation = `mutation { change_simple_column_value(board_id: ${boardId}, item_id: ${itemId}, column_id: "name", value: "${escapedName}") { id } }`
+    const mutation = `mutation { change_simple_column_value(board_id: ${targetBoardId}, item_id: ${itemId}, column_id: "name", value: "${escapedName}") { id } }`
     const result = await executeMondayMutation(mutation)
     return { success: true, itemId: parseInt(result.change_simple_column_value.id) }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error updating Monday item name:', error)
-    return { success: false, error: error.message || 'Erreur de mise à jour du nom Monday' }
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur de mise à jour du nom Monday' }
   }
 }
 
 export async function createMondayItem(
   itemName: string,
-  columnValues?: Record<string, any>
+  columnValues?: Record<string, any>,
+  boardId?: string
 ): Promise<MondayMutationResult> {
   try {
-    const boardId = MONDAY_CONFIG.boardIds.clients
-    if (!boardId) throw new Error('Board ID Monday non configuré')
+    const targetBoardId = boardId || MONDAY_CONFIG.boardIds.clients
+    if (!targetBoardId) throw new Error('Board ID Monday non configuré')
 
     const escapedName = itemName.replace(/"/g, '\\"')
     let colValuesStr = ''
@@ -369,7 +387,8 @@ export async function createMondayItem(
     if (columnValues && Object.keys(columnValues).length > 0) {
       const formattedValues: Record<string, any> = {}
       for (const [columnId, value] of Object.entries(columnValues)) {
-        if (value !== null && value !== undefined && value !== '') {
+        // Permettre les chaînes vides pour synchroniser les champs optionnels
+        if (value !== null && value !== undefined) {
           const formatted = formatValueForMonday(columnId, value)
           if (formatted !== null) {
             formattedValues[columnId] = typeof formatted === 'object'
@@ -381,12 +400,12 @@ export async function createMondayItem(
       colValuesStr = `, column_values: "${JSON.stringify(formattedValues).replace(/"/g, '\\"')}"`
     }
 
-    const mutation = `mutation { create_item(board_id: ${boardId}, item_name: "${escapedName}"${colValuesStr}) { id } }`
+    const mutation = `mutation { create_item(board_id: ${targetBoardId}, item_name: "${escapedName}"${colValuesStr}) { id } }`
     const result = await executeMondayMutation(mutation)
     return { success: true, itemId: parseInt(result.create_item.id) }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating Monday item:', error)
-    return { success: false, error: error.message || 'Erreur de création Monday' }
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur de création Monday' }
   }
 }
 
@@ -396,23 +415,23 @@ export async function createMondayItem(
 export async function createMondayColumn(
   title: string,
   columnType: 'text' | 'date' | 'numbers' | 'status' | 'checkbox' = 'text',
-  description?: string
+  description?: string,
+  boardId?: string
 ): Promise<{ success: boolean; columnId?: string; error?: string }> {
   try {
-    const boardId = MONDAY_CONFIG.boardIds.clients
-    if (!boardId) throw new Error('Board ID Monday non configuré')
+    const targetBoardId = boardId || MONDAY_CONFIG.boardIds.clients
+    if (!targetBoardId) throw new Error('Board ID Monday non configuré')
 
     const escapedTitle = title.replace(/"/g, '\\"')
     const descPart = description ? `, description: "${description.replace(/"/g, '\\"')}"` : ''
 
-    const mutation = `mutation { create_column(board_id: ${boardId}, title: "${escapedTitle}", column_type: ${columnType}${descPart}) { id title } }`
+    const mutation = `mutation { create_column(board_id: ${targetBoardId}, title: "${escapedTitle}", column_type: ${columnType}${descPart}) { id title } }`
     const result = await executeMondayQuery(mutation)
 
-    console.log(`✅ Colonne créée dans Monday: ${result.create_column.title} (ID: ${result.create_column.id})`)
     return { success: true, columnId: result.create_column.id }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating Monday column:', error)
-    return { success: false, error: error.message || 'Erreur de création colonne Monday' }
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur de création colonne Monday' }
   }
 }
 
@@ -462,11 +481,14 @@ export async function getChangedFields(
  * Synchroniser un client Supabase vers Monday
  * Utilise les mappings DYNAMIQUES depuis la base de données
  *
+ * En mode multi-board, utilise le monday_board_id du client pour
+ * charger le bon mapping et écrire sur le bon board.
+ *
  * @param client Objet partiel du client avec monday_item_id et les champs à sync
  * @param fieldsToSync Liste des champs Supabase à synchroniser (optionnel, tous si non spécifié)
  */
 export async function syncClientToMonday(
-  client: { monday_item_id: string | number } & Record<string, any>,
+  client: { monday_item_id: string | number; monday_board_id?: string } & Record<string, any>,
   fieldsToSync?: string[]
 ): Promise<{ success: boolean; error?: string }> {
   // Import dynamique pour éviter les dépendances circulaires
@@ -479,14 +501,12 @@ export async function syncClientToMonday(
 
     // Garder l'ID en string pour éviter les pertes de précision
     const itemId = String(client.monday_item_id)
+    // En multi-board, le boardId est stocké sur le client
+    const clientBoardId = client.monday_board_id || undefined
 
     // Charger le mapping dynamique depuis la base
-    const mapping = await getSupabaseToMondayMapping()
-
-    // DEBUG: Log le mapping pour statut_commercial
-    console.log('syncClientToMonday - fieldsToSync:', fieldsToSync)
-    console.log('syncClientToMonday - mapping statut_commercial:', mapping['statut_commercial'])
-    console.log('syncClientToMonday - client.statut_commercial:', client.statut_commercial)
+    // En multi-board, le mapping est spécifique au board
+    const mapping = await getSupabaseToMondayMapping(clientBoardId)
 
     // Mapper les champs Supabase vers Monday
     const columnValues: Record<string, any> = {}
@@ -503,32 +523,23 @@ export async function syncClientToMonday(
       // Convertir la valeur selon le mapping de valeurs (ex: statuts)
       const mondayValue = await convertValueToMonday(supabaseField, value)
 
-      // DEBUG: Log pour statut_commercial
-      if (supabaseField === 'statut_commercial') {
-        console.log('syncClientToMonday - statut_commercial:', {
-          supabaseField,
-          mondayColumnId,
-          originalValue: value,
-          convertedValue: mondayValue
-        })
-      }
-
       if (mondayValue !== null && mondayValue !== undefined) {
         columnValues[mondayColumnId] = mondayValue
       }
     }
 
-    // DEBUG: Log les colonnes finales
-    console.log('syncClientToMonday - columnValues to send:', JSON.stringify(columnValues))
-
     if (Object.keys(columnValues).length === 0) {
       return { success: true } // Rien à sync
     }
 
-    const result = await updateMondayItem(itemId, columnValues)
+    console.log('[syncClientToMonday] Fields to sync:', fieldsToSync)
+    console.log('[syncClientToMonday] Board ID:', clientBoardId || 'default')
+    console.log('[syncClientToMonday] Column values to send:', JSON.stringify(columnValues, null, 2))
+
+    const result = await updateMondayItem(itemId, columnValues, clientBoardId)
     return result
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erreur syncClientToMonday:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' }
   }
 }

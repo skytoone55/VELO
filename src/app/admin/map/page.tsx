@@ -7,9 +7,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, RefreshCw, Eye, Shuffle } from 'lucide-react'
+import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, RefreshCw, Eye, Shuffle, Crosshair, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Slider } from '@/components/ui/slider'
+import { getTenantId } from '@/lib/tenants'
+
+const tenantId = getTenantId()
 
 interface Depot {
   id: string
@@ -43,18 +47,26 @@ interface Client {
   velo_valide: number | null
 }
 
-const agenceOptions = [
-  { value: 'all', label: 'Toutes les agences' },
-  { value: 'FR', label: 'France' },
-  { value: '971', label: 'Guadeloupe' },
-  { value: '972', label: 'Martinique' },
-  { value: '973', label: 'Guyane' },
-  { value: '974', label: 'La Réunion' },
-]
+const agenceOptions = tenantId === 'ppe'
+  ? [
+      { value: 'all', label: 'Toutes les agences' },
+      { value: 'FR', label: 'France Métropolitaine' },
+    ]
+  : [
+      { value: 'all', label: 'Toutes les agences' },
+      { value: 'FR', label: 'France' },
+      { value: '971', label: 'Guadeloupe' },
+      { value: '972', label: 'Martinique' },
+      { value: '973', label: 'Guyane' },
+      { value: '974', label: 'La Réunion' },
+    ]
 
 // Mapping des noms d'agence vers les codes (pour correspondre aux filtres)
 const agenceNameToCode: Record<string, string> = {
   'france': 'FR',
+  'france_metro': 'FR',
+  'france métropolitaine': 'FR',
+  'france metropolitaine': 'FR',
   'métropole': 'FR',
   'metropole': 'FR',
   'guadeloupe': '971',
@@ -108,14 +120,19 @@ function normalizeAgence(agence: string | null | undefined): string {
 }
 
 // Centres géographiques par agence
-const agenceCenters: Record<string, { lat: number; lng: number; zoom: number }> = {
-  'all': { lat: 46.603354, lng: 1.888334, zoom: 6 },
-  'FR': { lat: 46.603354, lng: 1.888334, zoom: 6 },
-  '971': { lat: 16.265, lng: -61.551, zoom: 10 },
-  '972': { lat: 14.636, lng: -61.024, zoom: 10 },
-  '973': { lat: 3.933, lng: -53.125, zoom: 7 },
-  '974': { lat: -21.115, lng: 55.536, zoom: 10 },
-}
+const agenceCenters: Record<string, { lat: number; lng: number; zoom: number }> = tenantId === 'ppe'
+  ? {
+      'all': { lat: 46.603354, lng: 1.888334, zoom: 6 },
+      'FR': { lat: 46.603354, lng: 1.888334, zoom: 6 },
+    }
+  : {
+      'all': { lat: -21.115, lng: 55.536, zoom: 10 },
+      'FR': { lat: 46.603354, lng: 1.888334, zoom: 6 },
+      '971': { lat: 16.265, lng: -61.551, zoom: 10 },
+      '972': { lat: 14.636, lng: -61.024, zoom: 10 },
+      '973': { lat: 3.933, lng: -53.125, zoom: 7 },
+      '974': { lat: -21.115, lng: 55.536, zoom: 10 },
+    }
 
 // Couleurs pour les marqueurs
 const COLORS = {
@@ -143,6 +160,13 @@ export default function MapPage() {
   const [showHorsZone, setShowHorsZone] = useState(true)
   const [reassigning, setReassigning] = useState(false)
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null)
+
+  // Mode simulation
+  const [simulationMode, setSimulationMode] = useState(false)
+  const [simulationPos, setSimulationPos] = useState<{ lat: number; lng: number } | null>(null)
+  const [simulationRayon, setSimulationRayon] = useState(30)
+  const [simulationResult, setSimulationResult] = useState<any | null>(null)
+  const [simulationLoading, setSimulationLoading] = useState(false)
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
@@ -313,6 +337,52 @@ export default function MapPage() {
     }
   }
 
+  // Simulation : appeler l'API quand la position ou le rayon change
+  const runSimulation = useCallback(async (lat: number, lng: number, rayon: number) => {
+    setSimulationLoading(true)
+    try {
+      const response = await fetch('/api/admin/depots/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ latitude: lat, longitude: lng, rayonKm: rayon }),
+      })
+      const data = await response.json()
+      if (!data.error) {
+        setSimulationResult(data)
+      } else {
+        console.error('Erreur simulation:', data.error)
+      }
+    } catch (error) {
+      console.error('Erreur simulation:', error)
+    }
+    setSimulationLoading(false)
+  }, [])
+
+  // Debounce simulation
+  useEffect(() => {
+    if (!simulationMode || !simulationPos) return
+    const timer = setTimeout(() => {
+      runSimulation(simulationPos.lat, simulationPos.lng, simulationRayon)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [simulationPos, simulationRayon, simulationMode, runSimulation])
+
+  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
+    if (!simulationMode || !e.latLng) return
+    setSimulationPos({ lat: e.latLng.lat(), lng: e.latLng.lng() })
+  }, [simulationMode])
+
+  const toggleSimulation = () => {
+    if (simulationMode) {
+      // Désactiver la simulation
+      setSimulationMode(false)
+      setSimulationPos(null)
+      setSimulationResult(null)
+    } else {
+      setSimulationMode(true)
+    }
+  }
+
   const mapNotAvailable = loadError || !isLoaded
   const mapErrorMessage = loadError
     ? "Erreur de chargement de la carte. Vérifiez la clé API Google Maps."
@@ -347,6 +417,14 @@ export default function MapPage() {
           <p className="text-muted-foreground">Vue d'ensemble des dépôts et clients</p>
         </div>
         <div className="flex gap-2">
+          <Button
+            onClick={toggleSimulation}
+            variant={simulationMode ? 'default' : 'outline'}
+            size="sm"
+          >
+            <Crosshair className="h-4 w-4 mr-2" />
+            {simulationMode ? 'Quitter simulation' : 'Simuler un dépôt'}
+          </Button>
           <Button onClick={handleReassignClients} variant="outline" size="sm" disabled={reassigning}>
             {reassigning ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -542,6 +620,87 @@ export default function MapPage() {
             <Button onClick={resetFilters} variant="outline" className="w-full">
               Réinitialiser
             </Button>
+
+            {/* Panneau simulation */}
+            {simulationMode && (
+              <div className="mt-4 pt-4 border-t space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Crosshair className="h-4 w-4 text-primary" />
+                  Simulation
+                </Label>
+                {!simulationPos ? (
+                  <p className="text-xs text-muted-foreground">
+                    Cliquez sur la carte pour placer un dépôt virtuel
+                  </p>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span>Rayon de couverture</span>
+                        <span className="font-medium">{simulationRayon} km</span>
+                      </div>
+                      <Slider
+                        value={[simulationRayon]}
+                        onValueChange={([v]) => setSimulationRayon(v)}
+                        min={5}
+                        max={150}
+                        step={5}
+                      />
+                    </div>
+
+                    {simulationLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <span className="text-xs">Calcul en cours...</span>
+                      </div>
+                    ) : simulationResult ? (
+                      <div className="space-y-2 text-sm">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-primary/10 rounded p-2 text-center">
+                            <p className="text-lg font-bold">{simulationResult.clientsAbsorbed}</p>
+                            <p className="text-xs text-muted-foreground">Clients</p>
+                          </div>
+                          <div className="bg-primary/10 rounded p-2 text-center">
+                            <p className="text-lg font-bold">{simulationResult.velosAbsorbed}</p>
+                            <p className="text-xs text-muted-foreground">Vélos</p>
+                          </div>
+                        </div>
+                        {simulationResult.clientsCurrentlyUnassigned > 0 && (
+                          <p className="text-xs text-green-600">
+                            dont {simulationResult.clientsCurrentlyUnassigned} actuellement sans dépôt
+                          </p>
+                        )}
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium">Par distance :</p>
+                          {simulationResult.clientsByDistance
+                            ?.filter((d: any) => d.count > 0)
+                            .map((d: any) => (
+                              <div key={d.range} className="flex justify-between text-xs">
+                                <span>{d.range}</span>
+                                <span>{d.count} clients ({d.velos} vélos)</span>
+                              </div>
+                            ))
+                          }
+                        </div>
+                        <Button
+                          size="sm"
+                          className="w-full mt-2"
+                          onClick={() => {
+                            window.open(
+                              `/admin/depots?lat=${simulationPos.lat}&lng=${simulationPos.lng}&rayon=${simulationRayon}`,
+                              '_blank'
+                            )
+                          }}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Créer un dépôt ici
+                        </Button>
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -565,7 +724,9 @@ export default function MapPage() {
                 center={{ lat: defaultCenter.lat, lng: defaultCenter.lng }}
                 zoom={defaultCenter.zoom}
                 onLoad={onMapLoad}
+                onClick={handleMapClick}
                 options={{
+                  draggableCursor: simulationMode ? 'crosshair' : undefined,
                   styles: [
                     {
                       featureType: 'poi',
@@ -633,6 +794,41 @@ export default function MapPage() {
                     />
                   )
                 })}
+
+                {/* Marqueur et cercle de simulation */}
+                {simulationMode && simulationPos && (
+                  <>
+                    <Marker
+                      position={simulationPos}
+                      icon={{
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10,
+                        fillColor: '#8B5CF6',
+                        fillOpacity: 1,
+                        strokeColor: '#fff',
+                        strokeWeight: 3,
+                      }}
+                      draggable={true}
+                      onDragEnd={(e) => {
+                        if (e.latLng) {
+                          setSimulationPos({ lat: e.latLng.lat(), lng: e.latLng.lng() })
+                        }
+                      }}
+                      title="Dépôt simulé (déplaçable)"
+                    />
+                    <Circle
+                      center={simulationPos}
+                      radius={simulationRayon * 1000}
+                      options={{
+                        fillColor: '#8B5CF6',
+                        fillOpacity: 0.1,
+                        strokeColor: '#8B5CF6',
+                        strokeOpacity: 0.8,
+                        strokeWeight: 2,
+                      }}
+                    />
+                  </>
+                )}
 
                 {/* InfoWindow */}
                 {selectedMarker && (

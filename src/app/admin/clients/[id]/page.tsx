@@ -217,11 +217,15 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           setDataSource('monday')
           console.log('✓ Client chargé depuis Monday (source de vérité)')
 
-          // Les livraisons restent dans Supabase pour l'instant
+          // Les livraisons et dépôts restent dans Supabase
           const supabaseResponse = await fetch(`/api/admin/clients/${resolvedParams.id}`)
           if (supabaseResponse.ok) {
             const supabaseData = await supabaseResponse.json()
             setLivraisons(supabaseData.livraisons || [])
+            // Charger les dépôts depuis Supabase
+            if (supabaseData.depotRetrait) setDepotRetrait(supabaseData.depotRetrait)
+            if (supabaseData.depotLogistique) setDepotLogistique(supabaseData.depotLogistique)
+            if (supabaseData.distanceKm) setDistanceKm(supabaseData.distanceKm)
           }
         } else {
           // Fallback vers Supabase si Monday échoue
@@ -237,6 +241,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
           setClient(data.client)
           setLivraisons(data.livraisons || [])
+          // Charger les dépôts depuis Supabase
+          if (data.depotRetrait) setDepotRetrait(data.depotRetrait)
+          if (data.depotLogistique) setDepotLogistique(data.depotLogistique)
+          if (data.distanceKm) setDistanceKm(data.distanceKm)
           setDataSource('supabase')
         }
 
@@ -378,52 +386,51 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   const handleResetForm = async () => {
     if (!client) return
+    console.log('handleResetForm called for client:', client.id)
     setActionLoading(true)
     setError(null)
 
     try {
+      console.log('Calling reset-formulaire API...')
+      // Utiliser la nouvelle API de réinitialisation complète
+      const response = await fetch('/api/admin/clients/reset-formulaire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: client.id,
+          sendNewCode: true  // Envoyer un nouveau code par email
+        }),
+      })
+
+      console.log('API response status:', response.status)
+      const data = await response.json()
+      console.log('API response data:', data)
+      if (!response.ok) throw new Error(data.error || 'Erreur API')
+
+      // Logger la transition
       const supabase = createClient()
-
-      // Générer un nouveau token
-      const token = crypto.randomUUID()
-
-      const { error: updateError } = await supabase
-        .from('clients')
-        .update({
-          statut_formulaire: 'formulaire_envoye',
-          token_formulaire: token,
-          code_enemat_valide: false,
-          code_enemat_tentatives: 0,
-          code_enemat_bloque: false,
-          code_enemat_saisi: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', client.id)
-
-      if (updateError) throw updateError
-
       await supabase.from('workflow_transitions').insert({
         entity_type: 'client',
         entity_id: client.id,
         statut_avant: client.statut_formulaire,
         statut_apres: 'formulaire_envoye',
         effectue_par: user?.id,
-        raison: 'Réinitialisation du formulaire par admin',
+        raison: 'Réinitialisation complète du formulaire par admin',
       })
 
-      setSuccess('Formulaire réinitialisé. Le client peut recommencer.')
-      setClient({
-        ...client,
-        statut_formulaire: 'formulaire_envoye',
-        token_formulaire: token,
-        code_enemat_valide: false,
-        code_enemat_tentatives: 0,
-        code_enemat_bloque: false,
-        code_enemat_saisi: null,
-      })
+      // Afficher le message approprié selon les erreurs d'email
+      if (data.emailErrors && data.emailErrors.length > 0) {
+        setError(`Client réinitialisé, mais erreur d'envoi email: ${data.emailErrors.join(', ')}`)
+      } else {
+        setSuccess('Client réinitialisé ! Un nouveau code et formulaire ont été envoyés par email.')
+      }
       setResetFormOpen(false)
-    } catch (err: any) {
-      setError(err.message)
+
+      // Recharger la page pour obtenir les données fraîches
+      window.location.reload()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur inconnue'
+      setError(message)
     } finally {
       setActionLoading(false)
     }
@@ -596,31 +603,38 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </DialogContent>
             </Dialog>
 
-            {formulaireComplete && (
-              <Dialog open={resetFormOpen} onOpenChange={setResetFormOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-orange-300 hover:bg-orange-500/20">
-                    <RotateCcw className="mr-2 h-4 w-4" />
+            {/* Bouton Réinitialiser - toujours visible pour permettre les tests */}
+            <Dialog open={resetFormOpen} onOpenChange={setResetFormOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-orange-300 hover:bg-orange-500/20">
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Réinitialiser
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Réinitialiser le formulaire</DialogTitle>
+                  <DialogDescription asChild>
+                    <div>
+                      <p>Cette action va :</p>
+                      <ul className="list-disc list-inside mt-2 space-y-1">
+                        <li>Générer un nouveau code de validation</li>
+                        <li>Envoyer le code par email au bénéficiaire</li>
+                        <li>Réinitialiser toutes les étapes du formulaire</li>
+                        <li>Effacer le choix de livraison/dépôt et l&apos;adresse</li>
+                      </ul>
+                    </div>
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setResetFormOpen(false)}>Annuler</Button>
+                  <Button variant="destructive" onClick={handleResetForm} disabled={actionLoading}>
+                    {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Réinitialiser
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Réinitialiser le formulaire</DialogTitle>
-                    <DialogDescription>
-                      Le client pourra recommencer le formulaire depuis le début. L'ancien code sera invalidé.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setResetFormOpen(false)}>Annuler</Button>
-                    <Button variant="destructive" onClick={handleResetForm} disabled={actionLoading}>
-                      {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Réinitialiser
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            )}
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {client.code_enemat_bloque && (
               <Button
@@ -894,6 +908,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 {(client.adresse_livraison_ligne1 || livraison?.adresse_livraison_ligne1) ? (
                   <>
                     <p className="font-medium">{livraison?.adresse_livraison_ligne1 || client.adresse_livraison_ligne1}</p>
+                    {(livraison?.adresse_livraison_ligne2 || client.adresse_livraison_ligne2) && (
+                      <p className="text-muted-foreground">{livraison?.adresse_livraison_ligne2 || client.adresse_livraison_ligne2}</p>
+                    )}
                     <p className="font-semibold">
                       {livraison?.adresse_livraison_cp || client.adresse_livraison_cp}{' '}
                       {livraison?.adresse_livraison_ville || client.adresse_livraison_ville}

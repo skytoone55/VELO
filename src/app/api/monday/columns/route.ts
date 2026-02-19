@@ -4,6 +4,9 @@ import { MONDAY_CONFIG } from '@/lib/monday/config'
 /**
  * API pour créer une nouvelle colonne dans Monday
  * POST /api/monday/columns
+ *
+ * En multi-board, le boardId est obligatoire dans le body
+ * En single-board, il utilise MONDAY_CONFIG.boardIds.clients par défaut
  */
 export async function POST(request: NextRequest) {
   const apiKey = process.env.MONDAY_API_KEY
@@ -17,7 +20,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { title, columnType = 'text', description } = body
+    const { title, columnType = 'text', description, boardId: requestedBoardId } = body
 
     if (!title) {
       return NextResponse.json(
@@ -43,11 +46,20 @@ export async function POST(request: NextRequest) {
 
     const mondayType = mondayColumnTypes[columnType] || 'text'
 
+    // Déterminer le board ID
+    const boardId = requestedBoardId || MONDAY_CONFIG.boardIds.clients
+    if (!boardId) {
+      return NextResponse.json(
+        { error: 'Board ID non spécifié' },
+        { status: 400 }
+      )
+    }
+
     // Mutation pour créer une colonne
     const mutation = `
       mutation {
         create_column(
-          board_id: ${MONDAY_CONFIG.boardIds.clients},
+          board_id: ${boardId},
           title: "${title}",
           column_type: ${mondayType}
           ${description ? `, description: "${description}"` : ''}
@@ -88,6 +100,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       column: newColumn,
+      boardId,
     })
 
   } catch (error: any) {

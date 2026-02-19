@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TenantTheme } from "@/components/tenant-theme";
+import { getTenantConfig } from "@/lib/tenants";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,24 +16,29 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "ECO-VOLT | Livraison vélos cargo électriques",
-  description: "Plateforme de gestion des livraisons de vélos cargo électriques dans les DOM-TOM",
-  icons: {
-    icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico', sizes: 'any' }
-    ],
-    apple: [
-      { url: '/apple-icon.png', type: 'image/png', sizes: '180x180' }
-    ],
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'ECO-VOLT',
-  },
-};
+// Génération dynamique des métadonnées selon le tenant
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = getTenantConfig();
+
+  return {
+    title: tenant.metadata.title,
+    description: tenant.metadata.description,
+    icons: {
+      icon: [
+        { url: tenant.branding.logo, type: 'image/png' },
+        { url: '/favicon.ico', sizes: 'any' }
+      ],
+      apple: [
+        { url: '/apple-icon.png', type: 'image/png', sizes: '180x180' }
+      ],
+    },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'black-translucent',
+      title: tenant.name,
+    },
+  };
+}
 
 export default function RootLayout({
   children,
@@ -49,6 +56,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <TenantTheme />
           {children}
           <Toaster richColors position="top-right" />
         </ThemeProvider>

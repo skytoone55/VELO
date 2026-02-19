@@ -1,7 +1,7 @@
 import { Depot } from '@/lib/types/database'
 
-// Étapes: 1=ENEMAT, 2=Infos, 3=Adresse, 4=Préférence retrait/livraison, 5=Confirmation
-export type FormulaireStep = 1 | 2 | 3 | 4 | 5
+// Étapes: 1=ENEMAT, 2=Infos, 3=Adresse, 4=Préférence retrait/livraison, 5=FNUCI/Bicycode, 6=Confirmation
+export type FormulaireStep = 1 | 2 | 3 | 4 | 5 | 6
 
 export interface FormulaireData {
   // Étape 1 - Code ENEMAT
@@ -69,5 +69,6 @@ export const STEP_NAMES: Record<FormulaireStep, string> = {
   2: 'Vos informations',
   3: 'Adresse livraison',
   4: 'Mode de réception',
-  5: 'Confirmation',
+  5: 'Identification vélo',
+  6: 'Confirmation',
 }

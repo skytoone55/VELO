@@ -25,6 +25,7 @@ export function Step4Preference() {
   const depotRetrait = data.depotRetrait
   const zoneLivraison = data.zoneLivraison || 'gratuite'
   const depotType = data.depotType || 'logistique' // Type du dépôt le plus proche
+  const prixLivraison = data.prixLivraisonPayante || 0
 
   // Logique des options selon le type de dépôt et la zone:
   //
@@ -99,8 +100,8 @@ export function Step4Preference() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-          <Truck className="w-8 h-8 text-primary" />
+        <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+          <Truck className="w-8 h-8 text-foreground" />
         </div>
         <CardTitle>Préférence de réception</CardTitle>
         <CardDescription>
@@ -116,10 +117,10 @@ export function Step4Preference() {
           </Alert>
         )}
 
-        {/* Info sur l'adresse sélectionnée */}
-        {data.adresseLivraison && (
+        {/* Info sur l'adresse sélectionnée - masquée en mode retrait seul */}
+        {data.adresseLivraison && !isRetraitSeul && (
           <div className="bg-muted/50 rounded-lg p-4 border">
-            <p className="text-sm font-medium text-muted-foreground mb-1">Adresse de livraison enregistrée :</p>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Adresse de livraison :</p>
             <p className="font-medium">{data.adresseLivraison.ligne1}</p>
             {data.adresseLivraison.ligne2 && <p className="text-sm text-muted-foreground">{data.adresseLivraison.ligne2}</p>}
             <p>{data.adresseLivraison.codePostal} {data.adresseLivraison.ville}</p>
@@ -135,11 +136,11 @@ export function Step4Preference() {
           {/* CAS 1: Dépôt retrait - Zone gratuite (retrait seul) */}
           {isRetraitSeul && (
             <>
-              <div className={`flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${preference === 'retrait' ? 'border-primary bg-primary/5' : ''}`}>
+              <div className={`flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${preference === 'retrait' ? 'border-foreground bg-muted' : ''}`}>
                 <RadioGroupItem value="retrait" id="retrait" className="mt-1" />
                 <Label htmlFor="retrait" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2 mb-1">
-                    <Store className="h-4 w-4 text-primary" />
+                    <Store className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Retrait au point relais</span>
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gratuit</span>
                   </div>
@@ -148,7 +149,7 @@ export function Step4Preference() {
                       <p className="font-medium text-foreground">{depotRetrait.nom}</p>
                       <p>{depotRetrait.adresse}</p>
                       <p>{depotRetrait.code_postal} {depotRetrait.ville}</p>
-                      <p className="text-primary mt-1">Distance : {depotRetrait.distance} km</p>
+                      <p className="text-muted-foreground mt-1">Distance : {depotRetrait.distance} km</p>
                     </div>
                   )}
                 </Label>
@@ -168,11 +169,11 @@ export function Step4Preference() {
           {isRetraitOuLivraisonPayante && (
             <>
               {/* Option 1: Retrait gratuit */}
-              <div className={`flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${preference === 'retrait' ? 'border-primary bg-primary/5' : ''}`}>
+              <div className={`flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${preference === 'retrait' ? 'border-foreground bg-muted' : ''}`}>
                 <RadioGroupItem value="retrait" id="retrait" className="mt-1" />
                 <Label htmlFor="retrait" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2 mb-1">
-                    <Store className="h-4 w-4 text-primary" />
+                    <Store className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Retrait au point relais</span>
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gratuit</span>
                   </div>
@@ -181,26 +182,26 @@ export function Step4Preference() {
                       <p className="font-medium text-foreground">{depotRetrait.nom}</p>
                       <p>{depotRetrait.adresse}</p>
                       <p>{depotRetrait.code_postal} {depotRetrait.ville}</p>
-                      <p className="text-primary mt-1">Distance : {depotRetrait.distance} km</p>
+                      <p className="text-muted-foreground mt-1">Distance : {depotRetrait.distance} km</p>
                     </div>
                   )}
                 </Label>
               </div>
 
               {/* Option 2: Livraison payante */}
-              <div className={`flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${preference === 'livraison_payante' ? 'border-primary bg-primary/5' : ''}`}>
+              <div className={`flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${preference === 'livraison_payante' ? 'border-foreground bg-muted' : ''}`}>
                 <RadioGroupItem value="livraison_payante" id="livraison_payante" className="mt-1" />
                 <Label htmlFor="livraison_payante" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2 mb-1">
-                    <Truck className="h-4 w-4 text-orange-500" />
+                    <Truck className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Livraison à domicile</span>
-                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1 border">
                       <Euro className="h-3 w-3" />
                       Payant
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Vous préférez être livré à domicile ? C'est possible moyennant des frais de livraison.
+                    La livraison à domicile est payante. Notre équipe vous contactera pour vous communiquer le montant exact.
                   </p>
                 </Label>
               </div>
@@ -208,8 +209,7 @@ export function Step4Preference() {
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  Vous êtes entre la zone de retrait gratuit et la zone de livraison payante.
-                  Vous pouvez choisir de venir retirer gratuitement votre vélo ou opter pour une livraison avec frais.
+                  Vous avez le choix entre le retrait gratuit au point relais ou la livraison payante à domicile.
                 </AlertDescription>
               </Alert>
             </>
@@ -218,7 +218,7 @@ export function Step4Preference() {
           {/* CAS 3: Dépôt logistique - Zone gratuite (livraison gratuite) */}
           {isLivraisonGratuite && (
             <>
-              <div className={`flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${preference === 'livraison_gratuite' ? 'border-primary bg-primary/5' : ''}`}>
+              <div className={`flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${preference === 'livraison_gratuite' ? 'border-foreground bg-muted' : ''}`}>
                 <RadioGroupItem value="livraison_gratuite" id="livraison_gratuite" className="mt-1" />
                 <Label htmlFor="livraison_gratuite" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2 mb-1">
@@ -244,20 +244,19 @@ export function Step4Preference() {
           {/* CAS 4: Dépôt logistique - Zone payante (livraison payante seule) */}
           {isLivraisonPayanteSeule && (
             <>
-              <div className={`flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${preference === 'livraison_payante' ? 'border-primary bg-primary/5' : ''}`}>
+              <div className={`flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${preference === 'livraison_payante' ? 'border-foreground bg-muted' : ''}`}>
                 <RadioGroupItem value="livraison_payante" id="livraison_payante" className="mt-1" />
                 <Label htmlFor="livraison_payante" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2 mb-1">
-                    <Truck className="h-4 w-4 text-orange-500" />
+                    <Truck className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Livraison à domicile</span>
-                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1 border">
                       <Euro className="h-3 w-3" />
                       Payant
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Votre vélo cargo sera livré directement à l'adresse indiquée.
-                    Des frais de livraison seront appliqués.
+                    La livraison à domicile est payante. Notre équipe vous contactera pour vous communiquer le montant exact.
                   </p>
                 </Label>
               </div>
@@ -265,8 +264,7 @@ export function Step4Preference() {
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  Votre adresse est dans notre zone de livraison étendue.
-                  Des frais de livraison supplémentaires seront à votre charge.
+                  Votre adresse est dans notre zone de livraison étendue. Notre équipe vous contactera pour les frais de livraison.
                 </AlertDescription>
               </Alert>
             </>
@@ -275,18 +273,18 @@ export function Step4Preference() {
           {/* CAS 5: Hors zone */}
           {isHorsZone && (
             <>
-              <div className={`flex items-start space-x-3 p-4 border rounded-lg bg-orange-50 border-orange-200`}>
-                <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5" />
+              <div className={`flex items-start space-x-3 p-4 border rounded-lg bg-muted/50 border-border`}>
+                <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-medium text-orange-800">Zone non couverte</p>
-                  <p className="text-sm text-orange-700 mt-1">
+                  <p className="font-medium text-foreground">Zone non couverte</p>
+                  <p className="text-sm text-muted-foreground mt-1">
                     Votre adresse est située en dehors de notre zone de couverture.
                     Un conseiller vous contactera pour étudier les options disponibles.
                   </p>
                 </div>
               </div>
 
-              <Alert variant="destructive" className="bg-orange-50 border-orange-300">
+              <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
                   Nous avons bien enregistré votre demande. Notre équipe reviendra vers vous
@@ -306,7 +304,7 @@ export function Step4Preference() {
           <Button
             onClick={handleSubmit}
             disabled={loading || !preference}
-            className="flex-1"
+            className="flex-1 bg-green-600 hover:bg-green-700"
           >
             {loading ? (
               <>

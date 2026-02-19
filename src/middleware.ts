@@ -27,70 +27,27 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // IMPORTANT: Ne faire QUE la vérification d'auth ici
+  // Le layout se charge de récupérer le profil utilisateur
+  const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
 
-  // Routes protégées admin
-  if (pathname.startsWith('/admin')) {
-    if (!user) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/auth/login'
-      url.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(url)
-    }
+  // Routes protégées - simplement vérifier si connecté
+  const isProtectedRoute = pathname.startsWith('/admin') || pathname.startsWith('/client')
 
-    // Vérifier le profil utilisateur
-    const { data: profile } = await supabase
-      .from('users_profile')
-      .select('role, actif')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/auth/complete-profile'
-      return NextResponse.redirect(url)
-    }
-
-    if (!profile.actif) {
-      await supabase.auth.signOut()
-      const url = request.nextUrl.clone()
-      url.pathname = '/auth/login'
-      url.searchParams.set('error', 'account_disabled')
-      return NextResponse.redirect(url)
-    }
-
-    // Seuls les non-clients peuvent accéder à /admin
-    if (profile.role === 'client') {
-      const url = request.nextUrl.clone()
-      url.pathname = '/client/dashboard'
-      return NextResponse.redirect(url)
-    }
-  }
-
-  // Routes protégées client
-  if (pathname.startsWith('/client')) {
-    if (!user) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/auth/login'
-      url.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(url)
-    }
-  }
-
-  // Si connecté et sur login → redirection
-  if (user && pathname === '/auth/login') {
-    const { data: profile } = await supabase
-      .from('users_profile')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
+  if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
-    url.pathname = profile?.role === 'client' ? '/client/dashboard' : '/admin/dashboard'
+    url.pathname = '/auth/login'
+    url.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(url)
+  }
+
+  // Si connecté et sur login → redirection simple vers dashboard
+  // Le bon dashboard sera déterminé côté client ou par le layout
+  if (user && pathname === '/auth/login') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/admin/dashboard'
     return NextResponse.redirect(url)
   }
 

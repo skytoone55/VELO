@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAdminUser } from '@/components/admin/admin-user-provider'
 import { Card, CardContent } from '@/components/ui/card'
@@ -499,9 +499,32 @@ export default function AdminClientsPage() {
     fetchStats()
   }, [dataSource])
 
+  // Liste des statuts disponibles (dynamique depuis l'API stats)
+  const availableStatuts = useMemo(() => {
+    if (!globalStats?.statsByStatut) return []
+    return Object.keys(globalStats.statsByStatut).sort((a, b) => {
+      // Trier par nombre de clients décroissant
+      const countA = globalStats.statsByStatut[a]?.clients || 0
+      const countB = globalStats.statsByStatut[b]?.clients || 0
+      return countB - countA
+    })
+  }, [globalStats])
+
   // Statuts sélectionnés pour les stats dynamiques (2 sélecteurs indépendants)
-  const [selectedStatutClients, setSelectedStatutClients] = useState('DOSSIER COMPLET')
-  const [selectedStatutVelos, setSelectedStatutVelos] = useState('DOSSIER COMPLET')
+  const [selectedStatutClients, setSelectedStatutClients] = useState('')
+  const [selectedStatutVelos, setSelectedStatutVelos] = useState('')
+
+  // Initialiser les sélecteurs quand les statuts sont chargés
+  useEffect(() => {
+    if (availableStatuts.length > 0) {
+      if (!selectedStatutClients || !globalStats?.statsByStatut?.[selectedStatutClients]) {
+        setSelectedStatutClients(availableStatuts[0])
+      }
+      if (!selectedStatutVelos || !globalStats?.statsByStatut?.[selectedStatutVelos]) {
+        setSelectedStatutVelos(availableStatuts[0])
+      }
+    }
+  }, [availableStatuts])
 
   // Stats basées sur les données globales ou les données paginées
   const stats = {
@@ -598,12 +621,12 @@ export default function AdminClientsPage() {
           <CardContent className="pt-3 pb-3">
             <Select value={selectedStatutClients} onValueChange={setSelectedStatutClients}>
               <SelectTrigger className="h-7 text-xs mb-2">
-                <SelectValue />
+                <SelectValue placeholder="Choisir un statut" />
               </SelectTrigger>
               <SelectContent>
-                {statutOptions.filter(o => o.value !== 'all').map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                {availableStatuts.map((statut) => (
+                  <SelectItem key={statut} value={statut}>
+                    {statut} ({globalStats?.statsByStatut?.[statut]?.clients || 0})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -618,18 +641,18 @@ export default function AdminClientsPage() {
           <CardContent className="pt-3 pb-3">
             <Select value={selectedStatutVelos} onValueChange={setSelectedStatutVelos}>
               <SelectTrigger className="h-7 text-xs mb-2">
-                <SelectValue />
+                <SelectValue placeholder="Choisir un statut" />
               </SelectTrigger>
               <SelectContent>
-                {statutOptions.filter(o => o.value !== 'all').map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                {availableStatuts.map((statut) => (
+                  <SelectItem key={statut} value={statut}>
+                    {statut} ({globalStats?.statsByStatut?.[statut]?.velos || 0})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <div className="text-2xl font-bold text-amber-600">{stats.velosStatut}</div>
-            <div className="text-sm text-muted-foreground">Vélos validés</div>
+            <div className="text-sm text-muted-foreground">Vélos</div>
           </CardContent>
         </Card>
       </div>
@@ -973,7 +996,7 @@ export default function AdminClientsPage() {
               <div className="text-sm text-muted-foreground">
                 {selectedClient.contact_prenom} {selectedClient.contact_nom}
               </div>
-              <div className="text-sm text-primary">{selectedClient.email}</div>
+              <div className="text-sm text-primary">{selectedClient.email_beneficiaire || selectedClient.email}</div>
             </div>
           )}
 

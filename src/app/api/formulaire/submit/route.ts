@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     // Vérifier que le client existe et récupérer ses infos
     const { data: client, error: clientCheckError } = await adminClient
       .from('clients')
-      .select('id, email, raison_sociale, contact_nom, contact_prenom, statut_formulaire, depot_retrait_id, depot_logistique_id, monday_item_id')
+      .select('id, email, email_beneficiaire, raison_sociale, contact_nom, contact_prenom, statut_formulaire, depot_retrait_id, depot_logistique_id, monday_item_id')
       .eq('id', clientId)
       .single()
 
@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
       .from('clients')
       .update({
         statut_formulaire: 'formulaire_complete',
+        statut_commercial: 'formulaire_valide',
         updated_at: new Date().toISOString(),
       })
       .eq('id', clientId)
@@ -173,7 +174,9 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      await sendFormulaireRecapEmail(client.email, clientName, {
+      // Envoyer l'email au bénéficiaire en priorité, sinon au commercial
+      const emailDestinataire = client.email_beneficiaire || client.email
+      await sendFormulaireRecapEmail(emailDestinataire, clientName, {
         raisonSociale: client.raison_sociale,
         siret: data.siret || '',
         modeLivraison: modeLivraison as 'domicile' | 'retrait',
@@ -181,20 +184,65 @@ export async function POST(request: NextRequest) {
         depotRetrait: depotRetraitInfo || undefined,
         userCreated: !!userId,
       })
-      console.log(`Email récapitulatif envoyé à ${client.email}`)
+      console.log(`Email récapitulatif envoyé à ${emailDestinataire}`)
     } catch (emailError) {
       console.error('Erreur envoi email récapitulatif:', emailError)
       // Ne pas bloquer si l'email échoue
     }
 
-    // 7. Sync vers Monday - mettre le statut "FORMULAIRE VALIDÉ"
+    // 7. Sync vers Monday - statut + adresse livraison + type livraison
     if (client.monday_item_id && isMondayConfigured()) {
       try {
-        await syncClientToMonday(
-          { monday_item_id: client.monday_item_id, statut_commercial: 'formulaire_valide' },
-          ['statut_commercial']
-        )
-        console.log(`Statut FORMULAIRE VALIDÉ sync vers Monday pour ${client.raison_sociale}`)
+        // Déterminer le type de livraison pour Monday
+        let typeLivraison: string
+        if (modeLivraison === 'retrait') {
+          typeLivraison = 'retrait_depot'
+        } else if (data.livraisonPayante || data.preferenceMode === 'livraison_payante') {
+          typeLivraison = 'livraison_payante'
+        } else {
+          typeLivraison = 'livraison_gratuite'
+        }
+
+        // Préparer les données à synchroniser
+        const syncData: { monday_item_id: string | number } & Record<string, any> = {
+          monday_item_id: client.monday_item_id,
+          statut_commercial: 'formulaire_valide',
+          type_livraison: typeLivraison,
+        }
+
+        // Ajouter l'adresse de livraison
+        if (modeLivraison === 'domicile' && data.adresseLivraison) {
+          // Livraison à domicile: utiliser l'adresse saisie
+          syncData.adresse_livraison_ligne1 = data.adresseLivraison.ligne1 || ''
+          syncData.adresse_livraison_ligne2 = data.adresseLivraison.ligne2 || ''
+          syncData.adresse_livraison_cp = data.adresseLivraison.codePostal || ''
+          syncData.adresse_livraison_ville = data.adresseLivraison.ville || ''
+        } else if (modeLivraison === 'retrait' && client.depot_retrait_id) {
+          // Retrait en dépôt: utiliser l'adresse du dépôt
+          const { data: depot } = await adminClient
+            .from('depots')
+            .select('adresse, code_postal, ville, nom')
+            .eq('id', client.depot_retrait_id)
+            .single()
+          if (depot) {
+            syncData.adresse_livraison_ligne1 = `${depot.nom} - ${depot.adresse}`
+            syncData.adresse_livraison_ligne2 = ''
+            syncData.adresse_livraison_cp = depot.code_postal || ''
+            syncData.adresse_livraison_ville = depot.ville || ''
+          }
+        }
+
+        const fieldsToSync = [
+          'statut_commercial',
+          'type_livraison',
+          'adresse_livraison_ligne1',
+          'adresse_livraison_ligne2',
+          'adresse_livraison_cp',
+          'adresse_livraison_ville',
+        ]
+
+        await syncClientToMonday(syncData, fieldsToSync)
+        console.log(`Sync Monday pour ${client.raison_sociale}: statut=FORMULAIRE VALIDÉ, type=${typeLivraison}`)
       } catch (syncError) {
         console.error('Erreur sync Monday:', syncError)
         // Ne pas bloquer si la sync échoue

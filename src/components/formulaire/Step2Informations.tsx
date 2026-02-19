@@ -7,8 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Building2, Info, ArrowLeft, CheckCircle, Mail, Phone, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getTenantConfig } from '@/lib/tenants'
 
 export function Step2Informations() {
+  const tenant = getTenantConfig()
   const { clientId, data, updateData, nextStep, prevStep } = useFormulaireStore()
   const [localLoading, setLocalLoading] = useState(true)
 
@@ -52,7 +54,7 @@ export function Step2Informations() {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
     )
@@ -61,8 +63,8 @@ export function Step2Informations() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-          <Building2 className="w-8 h-8 text-primary" />
+        <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+          <Building2 className="w-8 h-8 text-foreground" />
         </div>
         <CardTitle>Vérification de vos informations</CardTitle>
         <CardDescription>
@@ -119,8 +121,11 @@ export function Step2Informations() {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Si ces informations sont incorrectes, veuillez contacter ECO-VOLT au 07 57 99 11 25
-            avant de continuer.
+            Si ces informations sont incorrectes, veuillez contacter {tenant.name} au{' '}
+            <a href={`tel:${tenant.phone}`} className="font-semibold hover:underline">{tenant.phoneFormatted}</a>
+            {' '}ou par email à{' '}
+            <a href={`mailto:${tenant.email}`} className="font-semibold hover:underline">{tenant.email}</a>
+            {' '}avant de continuer.
           </AlertDescription>
         </Alert>
 

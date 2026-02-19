@@ -34,34 +34,53 @@ async function executeMondayQuery(query: string, variables?: Record<string, any>
   return data.data
 }
 
-// GET: Liste les webhooks du board
-export async function GET() {
+// GET: Liste les webhooks de tous les boards (ou d'un board spécifique)
+export async function GET(request: NextRequest) {
   try {
-    const boardId = MONDAY_CONFIG.boardIds.clients
+    const { searchParams } = new URL(request.url)
+    const requestedBoardId = searchParams.get('boardId')
 
-    // Utiliser la query webhooks au niveau racine (API 2024+)
-    const query = `
-      query {
-        webhooks(board_id: ${boardId}) {
-          id
-          event
-          board_id
-          config
+    // En multi-board, lister les webhooks de tous les boards ou d'un board spécifique
+    const boardIds = requestedBoardId
+      ? [requestedBoardId]
+      : MONDAY_CONFIG.allBoardIds
+
+    const allWebhooks: any[] = []
+    const boardNames: Record<string, string> = {}
+
+    for (const boardId of boardIds) {
+      const query = `
+        query {
+          webhooks(board_id: ${boardId}) {
+            id
+            event
+            board_id
+            config
+          }
+          boards(ids: [${boardId}]) {
+            id
+            name
+          }
         }
-        boards(ids: [${boardId}]) {
-          id
-          name
+      `
+
+      try {
+        const data = await executeMondayQuery(query)
+        const webhooks = data.webhooks || []
+        allWebhooks.push(...webhooks.map((w: any) => ({ ...w, boardId })))
+        if (data.boards?.[0]?.name) {
+          boardNames[boardId] = data.boards[0].name
         }
+      } catch (err: any) {
+        console.warn(`Error listing webhooks for board ${boardId}:`, err.message)
       }
-    `
-
-    const data = await executeMondayQuery(query)
-    const webhooks = data.webhooks || []
+    }
 
     return NextResponse.json({
-      boardId,
-      boardName: data.boards?.[0]?.name,
-      webhooks,
+      boardIds,
+      boardNames,
+      isMultiBoard: MONDAY_CONFIG.isMultiBoard,
+      webhooks: allWebhooks,
       webhookUrl: getWebhookUrl(),
     })
   } catch (error: any) {
@@ -70,11 +89,12 @@ export async function GET() {
   }
 }
 
-// POST: Crée les webhooks nécessaires
+// POST: Crée les webhooks nécessaires (pour tous les boards en multi-board)
 export async function POST(request: NextRequest) {
   try {
     const webhookUrl = getWebhookUrl()
-    const boardId = MONDAY_CONFIG.boardIds.clients
+    const body = await request.json().catch(() => ({}))
+    const requestedBoardId = body.boardId
 
     if (!webhookUrl.startsWith('http')) {
       return NextResponse.json(
@@ -82,6 +102,11 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Boards à configurer
+    const boardIds = requestedBoardId
+      ? [requestedBoardId]
+      : MONDAY_CONFIG.allBoardIds
 
     // Types d'événements à écouter
     const eventTypes = [
@@ -93,42 +118,47 @@ export async function POST(request: NextRequest) {
 
     const results = []
 
-    for (const eventType of eventTypes) {
-      try {
-        const mutation = `
-          mutation {
-            create_webhook(
-              board_id: ${boardId},
-              url: "${webhookUrl}",
-              event: ${eventType}
-            ) {
-              id
-              board_id
-              event
+    for (const boardId of boardIds) {
+      for (const eventType of eventTypes) {
+        try {
+          const mutation = `
+            mutation {
+              create_webhook(
+                board_id: ${boardId},
+                url: "${webhookUrl}",
+                event: ${eventType}
+              ) {
+                id
+                board_id
+                event
+              }
             }
-          }
-        `
+          `
 
-        const data = await executeMondayQuery(mutation)
-        results.push({
-          event: eventType,
-          success: true,
-          webhook: data.create_webhook,
-        })
-      } catch (err: any) {
-        // Si le webhook existe déjà, on continue
-        if (err.message?.includes('already exists')) {
+          const data = await executeMondayQuery(mutation)
           results.push({
+            boardId,
             event: eventType,
             success: true,
-            message: 'Webhook déjà existant',
+            webhook: data.create_webhook,
           })
-        } else {
-          results.push({
-            event: eventType,
-            success: false,
-            error: err.message,
-          })
+        } catch (err: any) {
+          // Si le webhook existe déjà, on continue
+          if (err.message?.includes('already exists')) {
+            results.push({
+              boardId,
+              event: eventType,
+              success: true,
+              message: 'Webhook déjà existant',
+            })
+          } else {
+            results.push({
+              boardId,
+              event: eventType,
+              success: false,
+              error: err.message,
+            })
+          }
         }
       }
     }
@@ -136,7 +166,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: 'Configuration des webhooks terminée',
       webhookUrl,
-      boardId,
+      boardIds,
+      isMultiBoard: MONDAY_CONFIG.isMultiBoard,
       results,
     })
   } catch (error: any) {

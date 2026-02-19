@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,8 +11,10 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Zap, AlertCircle } from 'lucide-react'
+import { getTenantConfig } from '@/lib/tenants'
 
 function LoginForm() {
+  const tenant = getTenantConfig()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect')
@@ -78,10 +81,16 @@ function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
-          <Zap className="w-8 h-8 text-primary-foreground" />
+        <div className="mx-auto mb-4">
+          <Image
+            src={tenant.branding.logo}
+            alt={tenant.branding.logoAlt}
+            width={64}
+            height={64}
+            className="h-16 w-auto mx-auto"
+          />
         </div>
-        <CardTitle className="text-2xl font-bold">ECO-VOLT</CardTitle>
+        <CardTitle className="text-2xl font-bold">{tenant.name}</CardTitle>
         <CardDescription>
           Connectez-vous à votre espace
         </CardDescription>
