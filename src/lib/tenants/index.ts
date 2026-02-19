@@ -11,7 +11,8 @@ import { TENANTS, DEFAULT_TENANT, type TenantId, type TenantConfig } from './con
  * Récupère l'ID du tenant actif depuis les variables d'environnement
  */
 export function getTenantId(): TenantId {
-  const tenantId = process.env.NEXT_PUBLIC_TENANT_ID as TenantId | undefined
+  const rawTenantId = process.env.NEXT_PUBLIC_TENANT_ID
+  const tenantId = (rawTenantId?.trim() || undefined) as TenantId | undefined
 
   if (!tenantId || !TENANTS[tenantId]) {
     console.warn(
@@ -43,7 +44,7 @@ export function getTenantConfigById(tenantId: TenantId): TenantConfig {
  * Vérifie si un tenant existe
  */
 export function isValidTenant(tenantId: string): tenantId is TenantId {
-  return tenantId in TENANTS
+  return tenantId.trim() in TENANTS
 }
 
 /**
