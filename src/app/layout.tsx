@@ -26,11 +26,18 @@ export async function generateMetadata(): Promise<Metadata> {
     icons: {
       icon: [
         { url: tenant.branding.logo, type: 'image/png' },
-        { url: '/favicon.ico', sizes: 'any' }
+        { url: tenant.branding.favicon, sizes: 'any' }
       ],
       apple: [
-        { url: '/apple-icon.png', type: 'image/png', sizes: '180x180' }
+        { url: tenant.branding.appleIcon, type: 'image/png', sizes: '180x180' }
       ],
+    },
+    openGraph: {
+      title: tenant.metadata.title,
+      description: tenant.metadata.description,
+      images: [{ url: tenant.branding.ogImage, width: 1200, height: 630, alt: tenant.name }],
+      siteName: tenant.name,
+      type: 'website',
     },
     appleWebApp: {
       capable: true,

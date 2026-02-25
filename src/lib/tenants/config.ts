@@ -50,6 +50,8 @@ export interface TenantConfig {
       secondaryDark: string
     }
     emailEmoji: string
+    appleIcon: string
+    ogImage: string
   }
 
   // Métadonnées SEO
@@ -104,6 +106,8 @@ const ecovoltConfig: TenantConfig = {
       secondaryDark: '#2E7D32',
     },
     emailEmoji: '⚡',
+    appleIcon: '/icons/ecovolt-apple-icon.png',
+    ogImage: '/icons/ecovolt-og.png',
   },
 
   metadata: {
@@ -156,6 +160,8 @@ const ppeConfig: TenantConfig = {
       secondaryDark: '#000000',
     },
     emailEmoji: '🚲',
+    appleIcon: '/icons/ppe-apple-icon.png',
+    ogImage: '/icons/ppe-og.png',
   },
 
   metadata: {
