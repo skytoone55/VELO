@@ -61,7 +61,6 @@ const COMMON_COLUMNS: Record<string, string> = {
   adresse_societe_ville:   'text_mkvjgcp9',      // VILLE
   nb_salaries:             'numeric_mkvjefda',    // NB SALARIE
   velo_devis:              'numeric_mkvj879j',    // VELO VOULU → velo_devis (vélos demandés)
-  velo_valide:             'numeric_mkvj6e60',    // VELO VALIDE → velo_valide (vélos validés)
   statut_commercial:       'status',              // Statut (status column)
 }
 
@@ -130,6 +129,15 @@ const VARYING_COLUMNS: Record<string, Record<BoardName, string>> = {
     SALIH:    'text_mkvk64jp',
     ALEX:     'text_mkvk64jp',
     DIZIEN:   'text_mkvk64jp',
+  },
+  velo_valide: {  // VELO CONTROL (vélos validés)
+    ATHOME:   'numeric_mkwcgzy8',
+    STELLARS: 'numeric_mkwfe62z',
+    EKL:      'numeric_mkwfb6vm',
+    JM:       'numeric_mkwfqtes',
+    SALIH:    'numeric_mkwfv21t',
+    ALEX:     'numeric_mkwfjvay',
+    DIZIEN:   'numeric_mkwfr2ss',
   },
   // Newly created columns (session précédente) — all have DIFFERENT IDs per board
   adresse_livraison_ligne1: {
