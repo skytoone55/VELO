@@ -62,28 +62,8 @@ const nafOptions = [
   { value: 'en_attente', label: 'NAF En attente' },
 ]
 
-// Statuts pour filtre - clés Supabase (snake_case)
-const statutOptions = [
-  { value: 'all', label: 'Tous les statuts' },
-  { value: 'dossier_complet', label: 'Dossier complet' },
-  { value: 'devis_signe', label: 'Devis signé' },
-  { value: 'devis_cree', label: 'Devis créé' },
-  { value: 'controle_valide', label: 'Contrôle validé' },
-  { value: 'controle_a_regulariser', label: 'Contrôle à régulariser' },
-  { value: 'controle_a_jour', label: 'Contrôle à jour' },
-  { value: 'client_contacte', label: 'Client contacté' },
-  { value: 'client_injoignable', label: 'Client injoignable' },
-  { value: 'client_hs', label: 'Client HS' },
-  { value: 'ah_signee', label: 'AH signée' },
-  { value: 'livre', label: 'Livré' },
-  { value: 'paye', label: 'Payé' },
-  { value: 'doublon', label: 'Doublon' },
-  { value: 'franck', label: 'Franck' },
-  { value: 'code_envoye', label: 'Code envoyé' },
-  { value: 'formulaire_envoye', label: 'Formulaire envoyé' },
-  { value: 'formulaire_valide', label: 'Formulaire validé' },
-  { value: 'inconnu', label: 'Inconnu' },
-]
+// Statuts pour filtre - chargés dynamiquement depuis l'API
+const defaultStatutOptions = [{ value: 'all', label: 'Tous les statuts' }]
 
 // Départements - clés Supabase (codes postaux DOM-TOM)
 const departementOptions = [
@@ -151,6 +131,7 @@ export default function AdminClientsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statutFilter, setStatutFilter] = useState('all')
+  const [statutOptions, setStatutOptions] = useState(defaultStatutOptions)
   const [nafFilter, setNafFilter] = useState('all')
   const [departementFilter, setDepartementFilter] = useState('all')
 
@@ -198,6 +179,22 @@ export default function AdminClientsPage() {
     cacheAge: number
     cacheExpiresIn: number
   } | null>(null)
+
+  // Charger les statuts dynamiquement depuis l'API
+  useEffect(() => {
+    fetch('/api/clients/statuses')
+      .then(res => res.json())
+      .then((statuses: string[]) => {
+        if (Array.isArray(statuses)) {
+          const options = statuses.map(s => ({
+            value: s,
+            label: statutConfig[s]?.label ?? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          }))
+          setStatutOptions([{ value: 'all', label: 'Tous les statuts' }, ...options])
+        }
+      })
+      .catch(() => {}) // Keep defaults on error
+  }, [])
 
   // Debounce pour la recherche (éviter trop de requêtes)
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
