@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, RefreshCw, Eye, Shuffle, Crosshair, Plus, Search } from 'lucide-react'
+import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, RefreshCw, Eye, Shuffle, Crosshair, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Slider } from '@/components/ui/slider'
@@ -221,13 +221,9 @@ export default function MapPage() {
   const [simulationResult, setSimulationResult] = useState<any | null>(null)
   const [simulationLoading, setSimulationLoading] = useState(false)
 
-  // Recherche d'adresse avec autocomplétion
-  const [searchAddress, setSearchAddress] = useState('')
-  const [searchLoading, setSearchLoading] = useState(false)
+  // Google services refs
   const geocoderRef = useRef<google.maps.Geocoder | null>(null)
   const autocompleteRef = useRef<google.maps.places.AutocompleteService | null>(null)
-  const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
 
   // Simulation address autocomplete
   const [simAddress, setSimAddress] = useState('')
@@ -288,26 +284,6 @@ export default function MapPage() {
     setSelectedDepots([])
   }, [selectedAgence, mapInstance])
 
-  // Centrer sur les dépôts sélectionnés
-  useEffect(() => {
-    if (mapInstance && selectedDepots.length > 0) {
-      if (selectedDepots.length === 1) {
-        const depot = depots.find(d => d.id === selectedDepots[0])
-        if (depot) {
-          mapInstance.setCenter({ lat: depot.latitude, lng: depot.longitude })
-          mapInstance.setZoom(10)
-        }
-      } else {
-        // Fit bounds pour plusieurs dépôts
-        const bounds = new google.maps.LatLngBounds()
-        selectedDepots.forEach(id => {
-          const depot = depots.find(d => d.id === id)
-          if (depot) bounds.extend({ lat: depot.latitude, lng: depot.longitude })
-        })
-        mapInstance.fitBounds(bounds, 80)
-      }
-    }
-  }, [selectedDepots, mapInstance, depots])
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     setMapInstance(map)
@@ -354,55 +330,38 @@ export default function MapPage() {
     return CLIENT_DEFAULT_COLOR
   }, [depotColorMap, horsZoneDepotMap])
 
-  // Autocomplétion d'adresse
-  const handleAddressInput = useCallback((text: string, target: 'search' | 'sim') => {
-    if (target === 'search') {
-      setSearchAddress(text)
-      setShowSuggestions(true)
-    } else {
-      setSimAddress(text)
-      setShowSimSuggestions(true)
-    }
+  // Autocomplétion d'adresse (simulation uniquement)
+  const handleSimAddressInput = useCallback((text: string) => {
+    setSimAddress(text)
+    setShowSimSuggestions(true)
     if (!text.trim() || !autocompleteRef.current) {
-      if (target === 'search') setSuggestions([])
-      else setSimSuggestions([])
+      setSimSuggestions([])
       return
     }
     autocompleteRef.current.getPlacePredictions(
       { input: text, componentRestrictions: { country: 'fr' } },
       (predictions) => {
-        if (target === 'search') setSuggestions(predictions || [])
-        else setSimSuggestions(predictions || [])
+        setSimSuggestions(predictions || [])
       }
     )
   }, [])
 
-  // Sélection d'une suggestion (geocode puis action)
-  const handleSelectSuggestion = useCallback((placeId: string, target: 'search' | 'sim') => {
+  // Sélection d'une suggestion simulation (geocode puis placement)
+  const handleSimSelectSuggestion = useCallback((placeId: string) => {
     if (!geocoderRef.current) return
-    if (target === 'search') { setShowSuggestions(false); setSuggestions([]) }
-    else { setShowSimSuggestions(false); setSimSuggestions([]) }
+    setShowSimSuggestions(false)
+    setSimSuggestions([])
 
     geocoderRef.current.geocode({ placeId }, (results, status) => {
       if (status === 'OK' && results && results[0]) {
         const loc = results[0].geometry.location
-        const lat = loc.lat()
-        const lng = loc.lng()
-        if (target === 'search') {
-          setSearchAddress(results[0].formatted_address || '')
-          if (mapInstance) {
-            mapInstance.setCenter({ lat, lng })
-            mapInstance.setZoom(14)
-          }
-        } else {
-          setSimAddress(results[0].formatted_address || '')
-          setSimulationPos({ lat, lng })
-        }
+        setSimAddress(results[0].formatted_address || '')
+        setSimulationPos({ lat: loc.lat(), lng: loc.lng() })
       } else {
         toast.error('Adresse non trouvée')
       }
     })
-  }, [mapInstance])
+  }, [])
 
   // Dépôts filtrés par agence (pour le sélecteur)
   const depotsForSelector = useMemo(() => {
@@ -416,11 +375,12 @@ export default function MapPage() {
   const filteredDepots = useMemo(() => {
     return depots.filter(depot => {
       if (selectedAgence !== 'all' && depot.agence !== selectedAgence) return false
+      if (selectedDepots.length > 0 && !selectedDepots.includes(depot.id)) return false
       if (depot.type === 'logistique' && !showLogistique) return false
       if (depot.type === 'retrait' && !showRetrait) return false
       return true
     })
-  }, [depots, selectedAgence, showLogistique, showRetrait])
+  }, [depots, selectedAgence, selectedDepots, showLogistique, showRetrait])
 
   // Clients filtrés par agence + filtres multi-select (pour stats)
   const clientsParAgence = useMemo(() => {
@@ -434,7 +394,7 @@ export default function MapPage() {
       }
       // Filtre NAF
       if (selectedNaf.length > 0) {
-        const nafLabel = client.code_enemat_valide === true ? 'Validé' : client.code_enemat_valide === false ? 'Bloqué' : 'Non vérifié'
+        const nafLabel = client.code_enemat_valide === true ? 'OUI' : client.code_enemat_valide === false ? 'NON' : 'A vérifier'
         if (!selectedNaf.includes(nafLabel)) return false
       }
       // Filtre commercial (board)
@@ -521,7 +481,6 @@ export default function MapPage() {
     setShowRetrait(true)
     setShowHorsZone(true)
     setDepotVisualRayon(null)
-    setSearchAddress('')
     setSelectedStatuts([])
     setSelectedNaf([])
     setSelectedCommerciaux([])
@@ -781,34 +740,6 @@ export default function MapPage() {
               </Popover>
             </div>
 
-            {/* Recherche d'adresse avec autocomplétion */}
-            <div className="space-y-2 relative">
-              <Label>Rechercher une adresse</Label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  value={searchAddress}
-                  onChange={(e) => handleAddressInput(e.target.value, 'search')}
-                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  placeholder="Tapez une adresse..."
-                  className="pl-8"
-                />
-              </div>
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute z-50 w-full bg-popover border rounded-md shadow-md mt-1 max-h-48 overflow-y-auto">
-                  {suggestions.map(s => (
-                    <button
-                      key={s.place_id}
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-accent transition-colors"
-                      onMouseDown={() => handleSelectSuggestion(s.place_id, 'search')}
-                    >
-                      {s.description}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
             {/* Slider rayon visuel — affiché uniquement quand un dépôt est sélectionné */}
             {selectedDepots.length === 1 && (() => {
@@ -902,7 +833,7 @@ export default function MapPage() {
                 </PopoverTrigger>
                 <PopoverContent className="w-48 p-2" align="start">
                   <div className="space-y-0.5">
-                    {['Validé', 'Bloqué', 'Non vérifié'].map(label => (
+                    {['OUI', 'NON', 'A vérifier'].map(label => (
                       <label key={label} className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent text-xs">
                         <Checkbox
                           checked={selectedNaf.includes(label)}
@@ -912,7 +843,7 @@ export default function MapPage() {
                             )
                           }}
                         />
-                        <span>{label === 'Validé' ? 'Validé' : label === 'Bloqué' ? 'Bloqué' : 'Non vérifié'}</span>
+                        <span>{label}</span>
                       </label>
                     ))}
                   </div>
@@ -1066,7 +997,7 @@ export default function MapPage() {
                   <Label className="text-xs">Adresse du dépôt virtuel</Label>
                   <Input
                     value={simAddress}
-                    onChange={(e) => handleAddressInput(e.target.value, 'sim')}
+                    onChange={(e) => handleSimAddressInput(e.target.value)}
                     onFocus={() => simSuggestions.length > 0 && setShowSimSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowSimSuggestions(false), 200)}
                     placeholder="Tapez une adresse..."
@@ -1078,7 +1009,7 @@ export default function MapPage() {
                         <button
                           key={s.place_id}
                           className="w-full text-left px-3 py-2 text-xs hover:bg-accent transition-colors"
-                          onMouseDown={() => handleSelectSuggestion(s.place_id, 'sim')}
+                          onMouseDown={() => handleSimSelectSuggestion(s.place_id)}
                         >
                           {s.description}
                         </button>

@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       return {
         ...depot,
         clients_count: depotClients.length,
-        velos_count: depotClients.reduce((sum, c) => sum + (c.velo_valide || 0), 0),
+        velos_count: depotClients.reduce((sum: number, c: any) => sum + (c.velo_valide || 0), 0),
       }
     })
 
