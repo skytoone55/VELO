@@ -253,10 +253,10 @@ export default function AdminClientsPage() {
       }
 
       const sourceLabel = result.source === 'supabase' ? 'Supabase' : 'Monday'
-      console.log(`✓ ${result.pagination?.totalFiltered || result.clients?.length} clients chargés depuis ${sourceLabel}`)
+      console.log(`\u2713 ${result.pagination?.totalFiltered || result.clients?.length} clients charg\u00e9s depuis ${sourceLabel}`)
 
       if (forceRefresh && dataSource === 'monday') {
-        toast.success('Données rafraîchies depuis Monday')
+        toast.success('Donn\u00e9es rafra\u00eechies depuis Monday')
       }
     } catch (error: any) {
       console.error('Erreur:', error)
@@ -319,12 +319,12 @@ export default function AdminClientsPage() {
         throw new Error(result.error || 'Erreur lors de l\'envoi')
       }
 
-      toast.success(`Email envoyé à ${client.email}`)
+      toast.success(`Email envoy\u00e9 \u00e0 ${client.email}`)
 
-      // Rafraîchir la liste
+      // Rafra\u00eechir la liste
       await fetchClients()
 
-      // Afficher le lien généré
+      // Afficher le lien g\u00e9n\u00e9r\u00e9
       setGeneratedLink(result.formulaireUrl)
       setShowLinkDialog(true)
 
@@ -340,7 +340,7 @@ export default function AdminClientsPage() {
   const handleCopyLink = () => {
     navigator.clipboard.writeText(generatedLink)
     setCopied(true)
-    toast.success('Lien copié !')
+    toast.success('Lien copi\u00e9 !')
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -366,7 +366,7 @@ export default function AdminClientsPage() {
         throw new Error(result.error || 'Erreur lors de la modification')
       }
 
-      toast.success('Client modifié avec succès')
+      toast.success('Client modifi\u00e9 avec succ\u00e8s')
       setShowEditDialog(false)
       setEditingClient(null)
       fetchClients()
@@ -393,7 +393,7 @@ export default function AdminClientsPage() {
         throw new Error(result.error || 'Erreur lors de la suppression')
       }
 
-      toast.success('Client supprimé')
+      toast.success('Client supprim\u00e9')
       setShowDeleteDialog(false)
       setClientToDelete(null)
       fetchClients()
@@ -405,7 +405,7 @@ export default function AdminClientsPage() {
     }
   }
 
-  // === Sélection multiple ===
+  // === S\u00e9lection multiple ===
   const handleToggleSelect = (clientId: string) => {
     const newSelected = new Set(selectedClients)
     if (newSelected.has(clientId)) {
@@ -428,7 +428,7 @@ export default function AdminClientsPage() {
     setSelectedClients(new Set())
   }
 
-  // === Actions groupées ===
+  // === Actions group\u00e9es ===
   const handleBulkAction = async (action: 'send_code' | 'send_form' | 'change_status', data?: { statut?: string }) => {
     if (selectedClients.size === 0) return
     setBulkActionLoading(true)
@@ -447,38 +447,38 @@ export default function AdminClientsPage() {
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erreur lors de l\'action groupée')
+        throw new Error(result.error || 'Erreur lors de l\'action group\u00e9e')
       }
 
-      // Afficher le résultat
+      // Afficher le r\u00e9sultat
       if (result.failed === 0) {
-        toast.success(`Action réussie pour ${result.success} client(s)`)
+        toast.success(`Action r\u00e9ussie pour ${result.success} client(s)`)
       } else {
-        toast.warning(`${result.success} réussi(s), ${result.failed} échec(s)`)
+        toast.warning(`${result.success} r\u00e9ussi(s), ${result.failed} \u00e9chec(s)`)
       }
 
-      // Rafraîchir et effacer la sélection
+      // Rafra\u00eechir et effacer la s\u00e9lection
       await fetchClients()
       setSelectedClients(new Set())
     } catch (error: any) {
       console.error('Erreur bulk action:', error)
-      toast.error(error.message || 'Erreur lors de l\'action groupée')
+      toast.error(error.message || 'Erreur lors de l\'action group\u00e9e')
     } finally {
       setBulkActionLoading(false)
     }
   }
 
-  // Les clients sont déjà filtrés et paginés côté serveur
-  // On utilise directement la liste reçue
+  // Les clients sont d\u00e9j\u00e0 filtr\u00e9s et pagin\u00e9s c\u00f4t\u00e9 serveur
+  // On utilise directement la liste re\u00e7ue
   const paginatedClients = clients
 
-  // Valeurs de pagination (depuis l'API ou valeurs par défaut)
+  // Valeurs de pagination (depuis l'API ou valeurs par d\u00e9faut)
   const totalPages = pagination?.totalPages || 1
   const totalFiltered = pagination?.totalFiltered || clients.length
   const startIndex = pagination?.startIndex || 1
   const endIndex = pagination?.endIndex || clients.length
 
-  // Stats globales (chargées une fois séparément)
+  // Stats globales (charg\u00e9es une fois s\u00e9par\u00e9ment)
   const [globalStats, setGlobalStats] = useState<{
     total: number
     velosValides: number
@@ -513,18 +513,18 @@ export default function AdminClientsPage() {
   const availableStatuts = useMemo(() => {
     if (!globalStats?.statsByStatut) return []
     return Object.keys(globalStats.statsByStatut).sort((a, b) => {
-      // Trier par nombre de clients décroissant
+      // Trier par nombre de clients d\u00e9croissant
       const countA = globalStats.statsByStatut[a]?.clients || 0
       const countB = globalStats.statsByStatut[b]?.clients || 0
       return countB - countA
     })
   }, [globalStats])
 
-  // Statuts sélectionnés pour les stats dynamiques (2 sélecteurs indépendants)
+  // Statuts s\u00e9lectionn\u00e9s pour les stats dynamiques (2 s\u00e9lecteurs ind\u00e9pendants)
   const [selectedStatutClients, setSelectedStatutClients] = useState('')
   const [selectedStatutVelos, setSelectedStatutVelos] = useState('')
 
-  // Initialiser les sélecteurs quand les statuts sont chargés
+  // Initialiser les s\u00e9lecteurs quand les statuts sont charg\u00e9s
   useEffect(() => {
     if (availableStatuts.length > 0) {
       if (!selectedStatutClients || !globalStats?.statsByStatut?.[selectedStatutClients]) {
@@ -536,14 +536,14 @@ export default function AdminClientsPage() {
     }
   }, [availableStatuts])
 
-  // Stats basées sur les données globales ou les données paginées
+  // Stats bas\u00e9es sur les donn\u00e9es globales ou les donn\u00e9es pagin\u00e9es
   const stats = {
     total: pagination?.totalClients || globalStats?.total || 0,
     velosValides: globalStats?.velosValides || 0,
     velosLivres: globalStats?.velosLivres || 0,
     // Stats dynamiques - clients par statut
     clientsStatut: globalStats?.statsByStatut?.[selectedStatutClients]?.clients || 0,
-    // Stats dynamiques - vélos par statut (sélecteur indépendant)
+    // Stats dynamiques - v\u00e9los par statut (s\u00e9lecteur ind\u00e9pendant)
     velosStatut: globalStats?.statsByStatut?.[selectedStatutVelos]?.velos || 0,
   }
 
@@ -570,11 +570,11 @@ export default function AdminClientsPage() {
         <div>
           <h1 className="text-2xl font-bold">Clients</h1>
           <p className="text-muted-foreground">
-            Gérez les dossiers clients et envoyez les formulaires
+            G\u00e9rez les dossiers clients et envoyez les formulaires
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Indicateur source de données et cache */}
+          {/* Indicateur source de donn\u00e9es et cache */}
           {dataSource === 'monday' && cacheInfo && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               {cacheInfo.cached ? (
@@ -593,7 +593,7 @@ export default function AdminClientsPage() {
             size="sm"
             onClick={handleForceRefresh}
             disabled={loading}
-            title="Rafraîchir depuis Monday"
+            title="Rafra\u00eechir depuis Monday"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
@@ -610,23 +610,23 @@ export default function AdminClientsPage() {
           </CardContent>
         </Card>
 
-        {/* Vélos validés (total) */}
+        {/* V\u00e9los valid\u00e9s (total) */}
         <Card>
           <CardContent className="pt-4 pb-4">
             <div className="text-2xl font-bold text-blue-600">{stats.velosValides}</div>
-            <div className="text-sm text-muted-foreground">Vélos validés</div>
+            <div className="text-sm text-muted-foreground">V\u00e9los valid\u00e9s</div>
           </CardContent>
         </Card>
 
-        {/* Vélos livrés (total) */}
+        {/* V\u00e9los livr\u00e9s (total) */}
         <Card>
           <CardContent className="pt-4 pb-4">
             <div className="text-2xl font-bold text-emerald-600">{stats.velosLivres}</div>
-            <div className="text-sm text-muted-foreground">Vélos livrés</div>
+            <div className="text-sm text-muted-foreground">V\u00e9los livr\u00e9s</div>
           </CardContent>
         </Card>
 
-        {/* Sélecteur de statut + Clients de ce statut */}
+        {/* S\u00e9lecteur de statut + Clients de ce statut */}
         <Card>
           <CardContent className="pt-3 pb-3">
             <Select value={selectedStatutClients} onValueChange={setSelectedStatutClients}>
@@ -646,7 +646,7 @@ export default function AdminClientsPage() {
           </CardContent>
         </Card>
 
-        {/* Sélecteur de statut + Vélos de ce statut */}
+        {/* S\u00e9lecteur de statut + V\u00e9los de ce statut */}
         <Card>
           <CardContent className="pt-3 pb-3">
             <Select value={selectedStatutVelos} onValueChange={setSelectedStatutVelos}>
@@ -662,7 +662,7 @@ export default function AdminClientsPage() {
               </SelectContent>
             </Select>
             <div className="text-2xl font-bold text-amber-600">{stats.velosStatut}</div>
-            <div className="text-sm text-muted-foreground">Vélos</div>
+            <div className="text-sm text-muted-foreground">V\u00e9los</div>
           </CardContent>
         </Card>
       </div>
@@ -696,7 +696,7 @@ export default function AdminClientsPage() {
             <Select value={departementFilter} onValueChange={setDepartementFilter}>
               <SelectTrigger className="w-full lg:w-56">
                 <MapPin className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Département" />
+                <SelectValue placeholder="D\u00e9partement" />
               </SelectTrigger>
               <SelectContent>
                 {departementOptions.map((option) => (
@@ -719,7 +719,7 @@ export default function AdminClientsPage() {
                 ))}
               </SelectContent>
             </Select>
-            {/* Sélecteur nombre par page */}
+            {/* S\u00e9lecteur nombre par page */}
             <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
               <SelectTrigger className="w-full lg:w-40">
                 <SelectValue />
@@ -745,8 +745,8 @@ export default function AdminClientsPage() {
               <h3 className="font-medium mb-1">Aucun client</h3>
               <p className="text-muted-foreground text-sm">
                 {searchQuery || statutFilter !== 'all' || departementFilter !== 'all'
-                  ? 'Aucun client ne correspond à vos critères'
-                  : 'Les clients apparaîtront ici après synchronisation avec Monday'}
+                  ? 'Aucun client ne correspond \u00e0 vos crit\u00e8res'
+                  : 'Les clients appara\u00eetront ici apr\u00e8s synchronisation avec Monday'}
               </p>
             </div>
           ) : (
@@ -754,7 +754,7 @@ export default function AdminClientsPage() {
             {/* Info pagination */}
             <div className="px-4 py-3 border-b flex items-center justify-between text-sm text-muted-foreground">
               <span>
-                {totalFiltered} client{totalFiltered > 1 ? 's' : ''} trouvé{totalFiltered > 1 ? 's' : ''}
+                {totalFiltered} client{totalFiltered > 1 ? 's' : ''} trouv\u00e9{totalFiltered > 1 ? 's' : ''}
                 {pagination && totalFiltered !== pagination.totalClients && ` (sur ${pagination.totalClients} total)`}
               </span>
               <span>
@@ -768,13 +768,13 @@ export default function AdminClientsPage() {
                     <Checkbox
                       checked={paginatedClients.length > 0 && selectedClients.size === paginatedClients.length}
                       onCheckedChange={handleSelectAll}
-                      aria-label="Tout sélectionner"
+                      aria-label="Tout s\u00e9lectionner"
                     />
                   </TableHead>
-                  <TableHead>Société</TableHead>
+                  <TableHead>Soci\u00e9t\u00e9</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Département</TableHead>
-                  <TableHead>Vélos</TableHead>
+                  <TableHead>D\u00e9partement</TableHead>
+                  <TableHead>V\u00e9los</TableHead>
                   <TableHead>NAF</TableHead>
                   <TableHead>Statut commercial</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -794,7 +794,7 @@ export default function AdminClientsPage() {
                       <Checkbox
                         checked={selectedClients.has(client.id)}
                         onCheckedChange={() => handleToggleSelect(client.id)}
-                        aria-label={`Sélectionner ${client.raison_sociale}`}
+                        aria-label={`S\u00e9lectionner ${client.raison_sociale}`}
                       />
                     </TableCell>
                     <TableCell>
@@ -836,7 +836,7 @@ export default function AdminClientsPage() {
                       {(() => {
                         if (client.validation_naf === 'OUI') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OUI</Badge>
                         if (client.validation_naf === 'NON') return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">NON</Badge>
-                        return <Badge variant="outline" className="text-muted-foreground">A vérifier</Badge>
+                        return <Badge variant="outline" className="text-muted-foreground">A v\u00e9rifier</Badge>
                       })()}
                     </TableCell>
                     <TableCell>
@@ -904,7 +904,7 @@ export default function AdminClientsPage() {
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Précédent
+                    Pr\u00e9c\u00e9dent
                   </Button>
                   <div className="flex items-center gap-1">
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -948,13 +948,13 @@ export default function AdminClientsPage() {
         </CardContent>
       </Card>
 
-      {/* Barre d'actions groupées flottante */}
+      {/* Barre d'actions group\u00e9es flottante */}
       {selectedClients.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <Card className="shadow-lg border-2">
             <CardContent className="flex items-center gap-4 py-3 px-4">
               <span className="font-medium text-sm">
-                {selectedClients.size} client{selectedClients.size > 1 ? 's' : ''} sélectionné{selectedClients.size > 1 ? 's' : ''}
+                {selectedClients.size} client{selectedClients.size > 1 ? 's' : ''} s\u00e9lectionn\u00e9{selectedClients.size > 1 ? 's' : ''}
               </span>
               <div className="h-6 w-px bg-border" />
               <Button
@@ -984,15 +984,15 @@ export default function AdminClientsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="dossier_complet">Dossier complet</SelectItem>
-                  <SelectItem value="devis_signe">Devis signé</SelectItem>
-                  <SelectItem value="controle_valide">Contrôle validé</SelectItem>
-                  <SelectItem value="controle_a_regulariser">Contrôle à régulariser</SelectItem>
-                  <SelectItem value="client_contacte">Client contacté</SelectItem>
+                  <SelectItem value="devis_signe">Devis sign\u00e9</SelectItem>
+                  <SelectItem value="controle_valide">Contr\u00f4le valid\u00e9</SelectItem>
+                  <SelectItem value="controle_a_regulariser">Contr\u00f4le \u00e0 r\u00e9gulariser</SelectItem>
+                  <SelectItem value="client_contacte">Client contact\u00e9</SelectItem>
                   <SelectItem value="client_injoignable">Client injoignable</SelectItem>
-                  <SelectItem value="code_envoye">Code envoyé</SelectItem>
-                  <SelectItem value="formulaire_envoye">Formulaire envoyé</SelectItem>
-                  <SelectItem value="formulaire_valide">Formulaire validé</SelectItem>
-                  <SelectItem value="livre">Livré</SelectItem>
+                  <SelectItem value="code_envoye">Code envoy\u00e9</SelectItem>
+                  <SelectItem value="formulaire_envoye">Formulaire envoy\u00e9</SelectItem>
+                  <SelectItem value="formulaire_valide">Formulaire valid\u00e9</SelectItem>
+                  <SelectItem value="livre">Livr\u00e9</SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -1017,7 +1017,7 @@ export default function AdminClientsPage() {
           <DialogHeader>
             <DialogTitle>Envoyer le formulaire</DialogTitle>
             <DialogDescription>
-              Un email avec le lien du formulaire sera envoyé à :
+              Un email avec le lien du formulaire sera envoy\u00e9 \u00e0 :
             </DialogDescription>
           </DialogHeader>
 
@@ -1120,7 +1120,7 @@ export default function AdminClientsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit_email_beneficiaire">Email bénéficiaire *</Label>
+                  <Label htmlFor="edit_email_beneficiaire">Email b\u00e9n\u00e9ficiaire *</Label>
                   <Input
                     id="edit_email_beneficiaire"
                     type="email"
@@ -1141,7 +1141,7 @@ export default function AdminClientsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit_telephone">Téléphone</Label>
+                  <Label htmlFor="edit_telephone">T\u00e9l\u00e9phone</Label>
                   <Input
                     id="edit_telephone"
                     value={editingClient.telephone || ''}
@@ -1152,7 +1152,7 @@ export default function AdminClientsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit_contact_prenom">Prénom du contact</Label>
+                  <Label htmlFor="edit_contact_prenom">Pr\u00e9nom du contact</Label>
                   <Input
                     id="edit_contact_prenom"
                     value={editingClient.contact_prenom || ''}
@@ -1184,7 +1184,7 @@ export default function AdminClientsPage() {
                       agence: agence,
                     })
                   }}
-                  placeholder="Commencez à taper l'adresse..."
+                  placeholder="Commencez \u00e0 taper l'adresse..."
                 />
               </div>
 
@@ -1213,14 +1213,14 @@ export default function AdminClientsPage() {
                     onValueChange={(value) => setEditingClient({ ...editingClient, agence: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
+                      <SelectValue placeholder="S\u00e9lectionner" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="reunion">La Réunion</SelectItem>
+                      <SelectItem value="reunion">La R\u00e9union</SelectItem>
                       <SelectItem value="martinique">Martinique</SelectItem>
                       <SelectItem value="guadeloupe">Guadeloupe</SelectItem>
                       <SelectItem value="guyane">Guyane</SelectItem>
-                      <SelectItem value="france_metro">France Métro</SelectItem>
+                      <SelectItem value="france_metro">France M\u00e9tro</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1228,7 +1228,7 @@ export default function AdminClientsPage() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit_velo_devis">Nb vélos *</Label>
+                  <Label htmlFor="edit_velo_devis">Nb v\u00e9los *</Label>
                   <Input
                     id="edit_velo_devis"
                     type="number"
@@ -1256,21 +1256,21 @@ export default function AdminClientsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="dossier_complet">Dossier complet</SelectItem>
-                      <SelectItem value="devis_signe">Devis signé</SelectItem>
-                      <SelectItem value="devis_cree">Devis créé</SelectItem>
-                      <SelectItem value="controle_valide">Contrôle validé</SelectItem>
-                      <SelectItem value="controle_a_regulariser">Contrôle à régulariser</SelectItem>
-                      <SelectItem value="controle_a_jour">Contrôle à jour</SelectItem>
-                      <SelectItem value="client_contacte">Client contacté</SelectItem>
+                      <SelectItem value="devis_signe">Devis sign\u00e9</SelectItem>
+                      <SelectItem value="devis_cree">Devis cr\u00e9\u00e9</SelectItem>
+                      <SelectItem value="controle_valide">Contr\u00f4le valid\u00e9</SelectItem>
+                      <SelectItem value="controle_a_regulariser">Contr\u00f4le \u00e0 r\u00e9gulariser</SelectItem>
+                      <SelectItem value="controle_a_jour">Contr\u00f4le \u00e0 jour</SelectItem>
+                      <SelectItem value="client_contacte">Client contact\u00e9</SelectItem>
                       <SelectItem value="client_injoignable">Client injoignable</SelectItem>
                       <SelectItem value="client_hs">Client HS</SelectItem>
-                      <SelectItem value="ah_signee">AH signée</SelectItem>
-                      <SelectItem value="livre">Livré</SelectItem>
-                      <SelectItem value="paye">Payé</SelectItem>
+                      <SelectItem value="ah_signee">AH sign\u00e9e</SelectItem>
+                      <SelectItem value="livre">Livr\u00e9</SelectItem>
+                      <SelectItem value="paye">Pay\u00e9</SelectItem>
                       <SelectItem value="doublon">Doublon</SelectItem>
-                      <SelectItem value="code_envoye">Code envoyé</SelectItem>
-                      <SelectItem value="formulaire_envoye">Formulaire envoyé</SelectItem>
-                      <SelectItem value="formulaire_valide">Formulaire validé</SelectItem>
+                      <SelectItem value="code_envoye">Code envoy\u00e9</SelectItem>
+                      <SelectItem value="formulaire_envoye">Formulaire envoy\u00e9</SelectItem>
+                      <SelectItem value="formulaire_valide">Formulaire valid\u00e9</SelectItem>
                       <SelectItem value="inconnu">Inconnu</SelectItem>
                     </SelectContent>
                   </Select>
@@ -1309,7 +1309,7 @@ export default function AdminClientsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer ce client ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Le client &quot;{clientToDelete?.raison_sociale}&quot; sera définitivement supprimé ainsi que toutes ses données associées.
+              Cette action est irr\u00e9versible. Le client &quot;{clientToDelete?.raison_sociale}&quot; sera d\u00e9finitivement supprim\u00e9 ainsi que toutes ses donn\u00e9es associ\u00e9es.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
