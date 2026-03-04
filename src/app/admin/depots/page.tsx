@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAdminUser } from '@/components/admin/admin-user-provider'
@@ -56,28 +56,27 @@ import {
 import { toast } from 'sonner'
 import { Depot } from '@/lib/types/database'
 import { getTenantId } from '@/lib/tenants'
-
-const tenantId = getTenantId()
-
 const typeOptions = [
   { value: 'all', label: 'Tous les types' },
   { value: 'retrait', label: 'Point de retrait' },
   { value: 'logistique', label: 'Dépôt logistique' },
 ]
 
-const agenceOptions = tenantId === 'ppe'
-  ? [
-      { value: 'all', label: 'Toutes les agences' },
-      { value: 'france_metro', label: 'France Métropolitaine' },
-    ]
-  : [
-      { value: 'all', label: 'Toutes les agences' },
-      { value: 'reunion', label: 'La Réunion' },
-      { value: 'martinique', label: 'Martinique' },
-      { value: 'guadeloupe', label: 'Guadeloupe' },
-      { value: 'guyane', label: 'Guyane' },
-      { value: 'france_metro', label: 'France Métropolitaine' },
-    ]
+function getAgenceOptionsDepots(tid: string) {
+  return tid === 'ppe'
+    ? [
+        { value: 'all', label: 'Toutes les agences' },
+        { value: 'france_metro', label: 'France Métropolitaine' },
+      ]
+    : [
+        { value: 'all', label: 'Toutes les agences' },
+        { value: 'reunion', label: 'La Réunion' },
+        { value: 'martinique', label: 'Martinique' },
+        { value: 'guadeloupe', label: 'Guadeloupe' },
+        { value: 'guyane', label: 'Guyane' },
+        { value: 'france_metro', label: 'France Métropolitaine' },
+      ]
+}
 
 // Convertir un code département en agence
 function getAgenceFromTerritoire(territoire: string): string {
@@ -113,24 +112,30 @@ interface DepotForm {
   actif: boolean
 }
 
-const initialForm: DepotForm = {
-  nom: '',
-  type: 'retrait',
-  adresse: '',
-  code_postal: '',
-  ville: '',
-  agence: tenantId === 'ppe' ? 'france_metro' : 'reunion',
-  latitude: tenantId === 'ppe' ? 46.603354 : -21.1151,
-  longitude: tenantId === 'ppe' ? 1.888334 : 55.5364,
-  rayon_couverture_km: 30,
-  rayon_livraison_payant_km: 50,
-  prix_livraison_payante: 0,
-  telephone: '',
-  email: '',
-  actif: true,
+function getInitialForm(tid: string): DepotForm {
+  return {
+    nom: '',
+    type: 'retrait',
+    adresse: '',
+    code_postal: '',
+    ville: '',
+    agence: tid === 'ppe' ? 'france_metro' : 'reunion',
+    latitude: tid === 'ppe' ? 46.603354 : -21.1151,
+    longitude: tid === 'ppe' ? 1.888334 : 55.5364,
+    rayon_couverture_km: 30,
+    rayon_livraison_payant_km: 50,
+    prix_livraison_payante: 0,
+    telephone: '',
+    email: '',
+    actif: true,
+  }
 }
 
 export default function AdminDepotsPage() {
+  const tenantId = getTenantId()
+  const agenceOptions = useMemo(() => getAgenceOptionsDepots(tenantId), [tenantId])
+  const initialForm = useMemo(() => getInitialForm(tenantId), [tenantId])
+
   const user = useAdminUser()
   const [depots, setDepots] = useState<Depot[]>([])
   const [loading, setLoading] = useState(true)

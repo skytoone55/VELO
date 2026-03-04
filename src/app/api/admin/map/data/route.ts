@@ -43,15 +43,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Erreur lors du chargement des dépôts' }, { status: 500 })
     }
 
-    // Récupérer tous les clients
-    const { data: clients, error: clientsError } = await adminClient
-      .from('clients')
-      .select('id, raison_sociale, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville, latitude, longitude, agence, departement, depot_retrait_id, depot_logistique_id, velo_devis, velo_valide')
+    // Récupérer TOUS les clients par batches (Supabase limite à 1000 par défaut)
+    const BATCH_SIZE = 1000
+    const clientFields = 'id, raison_sociale, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville, latitude, longitude, agence, departement, depot_retrait_id, depot_logistique_id, velo_devis, velo_valide'
+    let allClients: any[] = []
+    let offset = 0
+    let hasMore = true
 
-    if (clientsError) {
-      console.error('Erreur chargement clients:', clientsError)
-      return NextResponse.json({ error: 'Erreur lors du chargement des clients' }, { status: 500 })
+    while (hasMore) {
+      const { data: batch, error: clientsError } = await adminClient
+        .from('clients')
+        .select(clientFields)
+        .range(offset, offset + BATCH_SIZE - 1)
+
+      if (clientsError) {
+        console.error('Erreur chargement clients:', clientsError)
+        return NextResponse.json({ error: 'Erreur lors du chargement des clients' }, { status: 500 })
+      }
+
+      allClients = allClients.concat(batch || [])
+      hasMore = (batch?.length || 0) === BATCH_SIZE
+      offset += BATCH_SIZE
     }
+
+    const clients = allClients
 
     // Calculer le nombre de clients et vélos par dépôt
     const depotsWithCounts = (depots || []).map(depot => {

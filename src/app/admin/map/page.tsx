@@ -1,19 +1,18 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Circle } from '@react-google-maps/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, RefreshCw, Eye, Shuffle, Crosshair, Plus } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, RefreshCw, Eye, Shuffle, Crosshair, Plus, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Slider } from '@/components/ui/slider'
 import { getTenantId } from '@/lib/tenants'
-
-const tenantId = getTenantId()
 
 interface Depot {
   id: string
@@ -47,19 +46,21 @@ interface Client {
   velo_valide: number | null
 }
 
-const agenceOptions = tenantId === 'ppe'
-  ? [
-      { value: 'all', label: 'Toutes les agences' },
-      { value: 'FR', label: 'France Métropolitaine' },
-    ]
-  : [
-      { value: 'all', label: 'Toutes les agences' },
-      { value: 'FR', label: 'France' },
-      { value: '971', label: 'Guadeloupe' },
-      { value: '972', label: 'Martinique' },
-      { value: '973', label: 'Guyane' },
-      { value: '974', label: 'La Réunion' },
-    ]
+function getAgenceOptions(tid: string) {
+  return tid === 'ppe'
+    ? [
+        { value: 'all', label: 'Toutes les agences' },
+        { value: 'FR', label: 'France Métropolitaine' },
+      ]
+    : [
+        { value: 'all', label: 'Toutes les agences' },
+        { value: 'FR', label: 'France' },
+        { value: '971', label: 'Guadeloupe' },
+        { value: '972', label: 'Martinique' },
+        { value: '973', label: 'Guyane' },
+        { value: '974', label: 'La Réunion' },
+      ]
+}
 
 // Mapping des noms d'agence vers les codes (pour correspondre aux filtres)
 const agenceNameToCode: Record<string, string> = {
@@ -120,32 +121,62 @@ function normalizeAgence(agence: string | null | undefined): string {
 }
 
 // Centres géographiques par agence
-const agenceCenters: Record<string, { lat: number; lng: number; zoom: number }> = tenantId === 'ppe'
-  ? {
-      'all': { lat: 46.603354, lng: 1.888334, zoom: 6 },
-      'FR': { lat: 46.603354, lng: 1.888334, zoom: 6 },
-    }
-  : {
-      'all': { lat: -21.115, lng: 55.536, zoom: 10 },
-      'FR': { lat: 46.603354, lng: 1.888334, zoom: 6 },
-      '971': { lat: 16.265, lng: -61.551, zoom: 10 },
-      '972': { lat: 14.636, lng: -61.024, zoom: 10 },
-      '973': { lat: 3.933, lng: -53.125, zoom: 7 },
-      '974': { lat: -21.115, lng: 55.536, zoom: 10 },
-    }
-
-// Couleurs pour les marqueurs
-const COLORS = {
-  depotLogistique: '#F5D100',
-  depotRetrait: '#4CAF50',
-  client: '#3B82F6',
-  clientHorsZone: '#EF4444',
+function getAgenceCenters(tid: string): Record<string, { lat: number; lng: number; zoom: number }> {
+  return tid === 'ppe'
+    ? {
+        'all': { lat: 46.603354, lng: 1.888334, zoom: 6 },
+        'FR': { lat: 46.603354, lng: 1.888334, zoom: 6 },
+      }
+    : {
+        'all': { lat: -21.115, lng: 55.536, zoom: 10 },
+        'FR': { lat: 46.603354, lng: 1.888334, zoom: 6 },
+        '971': { lat: 16.265, lng: -61.551, zoom: 10 },
+        '972': { lat: 14.636, lng: -61.024, zoom: 10 },
+        '973': { lat: 3.933, lng: -53.125, zoom: 7 },
+        '974': { lat: -21.115, lng: 55.536, zoom: 10 },
+      }
 }
 
+// Palette de 12+ couleurs bien contrastées pour les dépôts
+const DEPOT_COLOR_PALETTE = [
+  '#E63946', // rouge
+  '#2196F3', // bleu
+  '#4CAF50', // vert
+  '#FF9800', // orange
+  '#9C27B0', // violet
+  '#00BCD4', // cyan
+  '#F5D100', // jaune
+  '#795548', // marron
+  '#E91E63', // rose
+  '#009688', // teal
+  '#FF5722', // orange foncé
+  '#3F51B5', // indigo
+  '#8BC34A', // vert clair
+  '#FF4081', // rose vif
+]
+
+// Couleurs fallback pour clients sans dépôt rattaché
+const CLIENT_DEFAULT_COLOR = '#3B82F6'
+
 const MARKER_SIZE = 6
-const DEPOT_MARKER_SIZE = 8
+const DEPOT_MARKER_SIZE = 9
+
+// Fonction haversine pour calculer la distance entre deux points GPS
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng/2) * Math.sin(dLng/2)
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
 
 export default function MapPage() {
+  const tenantId = getTenantId()
+  const agenceOptions = useMemo(() => getAgenceOptions(tenantId), [tenantId])
+  const agenceCenters = useMemo(() => getAgenceCenters(tenantId), [tenantId])
+
   const [depots, setDepots] = useState<Depot[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
@@ -167,6 +198,14 @@ export default function MapPage() {
   const [simulationRayon, setSimulationRayon] = useState(30)
   const [simulationResult, setSimulationResult] = useState<any | null>(null)
   const [simulationLoading, setSimulationLoading] = useState(false)
+
+  // Recherche d'adresse
+  const [searchAddress, setSearchAddress] = useState('')
+  const [searchLoading, setSearchLoading] = useState(false)
+  const geocoderRef = useRef<google.maps.Geocoder | null>(null)
+
+  // Slider rayon visuel par dépôt (uniquement visuel, non sauvegardé)
+  const [depotVisualRayon, setDepotVisualRayon] = useState<number | null>(null)
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
@@ -231,7 +270,63 @@ export default function MapPage() {
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     setMapInstance(map)
+    geocoderRef.current = new google.maps.Geocoder()
   }, [])
+
+  // Assigner une couleur unique à chaque dépôt
+  const depotColorMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    depots.forEach((depot, index) => {
+      map[depot.id] = DEPOT_COLOR_PALETTE[index % DEPOT_COLOR_PALETTE.length]
+    })
+    return map
+  }, [depots])
+
+  // Pour chaque client hors-zone, trouver le dépôt le plus proche
+  const horsZoneDepotMap = useMemo(() => {
+    const map: Record<string, string> = {} // clientId -> depotId
+    if (depots.length === 0) return map
+    clients.forEach(client => {
+      const isHorsZone = !client.depot_retrait_id && !client.depot_logistique_id
+      if (!isHorsZone || !client.latitude || !client.longitude) return
+      let minDist = Infinity
+      let closestDepotId = depots[0].id
+      depots.forEach(depot => {
+        const dist = haversineDistance(client.latitude!, client.longitude!, depot.latitude, depot.longitude)
+        if (dist < minDist) {
+          minDist = dist
+          closestDepotId = depot.id
+        }
+      })
+      map[client.id] = closestDepotId
+    })
+    return map
+  }, [clients, depots])
+
+  // horsZoneByDepot et horsZoneCountByDepot déclarés après clientsHorsZoneParAgence (voir plus bas)
+
+  // Fonction pour obtenir la couleur d'un client
+  const getClientColor = useCallback((client: Client): string => {
+    const depotId = client.depot_retrait_id || client.depot_logistique_id || horsZoneDepotMap[client.id]
+    if (depotId && depotColorMap[depotId]) return depotColorMap[depotId]
+    return CLIENT_DEFAULT_COLOR
+  }, [depotColorMap, horsZoneDepotMap])
+
+  // Recherche d'adresse via Geocoder Google Maps
+  const handleSearchAddress = useCallback(async () => {
+    if (!searchAddress.trim() || !geocoderRef.current || !mapInstance) return
+    setSearchLoading(true)
+    geocoderRef.current.geocode({ address: searchAddress }, (results, status) => {
+      setSearchLoading(false)
+      if (status === 'OK' && results && results[0]) {
+        const loc = results[0].geometry.location
+        mapInstance.setCenter({ lat: loc.lat(), lng: loc.lng() })
+        mapInstance.setZoom(14)
+      } else {
+        toast.error('Adresse non trouvée')
+      }
+    })
+  }, [searchAddress, mapInstance])
 
   // Dépôts filtrés par agence (pour le sélecteur)
   const depotsForSelector = useMemo(() => {
@@ -266,6 +361,25 @@ export default function MapPage() {
     return clientsParAgence.filter(c => !c.depot_retrait_id && !c.depot_logistique_id)
   }, [clientsParAgence])
 
+  // Compteur de clients et vélos hors-zone par dépôt le plus proche
+  const horsZoneByDepot = useMemo(() => {
+    const data: Record<string, { clients: number; velos: number }> = {}
+    clientsHorsZoneParAgence.forEach(client => {
+      const depotId = horsZoneDepotMap[client.id]
+      if (depotId) {
+        if (!data[depotId]) data[depotId] = { clients: 0, velos: 0 }
+        data[depotId].clients++
+        data[depotId].velos += client.velo_valide || 0
+      }
+    })
+    return data
+  }, [horsZoneDepotMap, clientsHorsZoneParAgence])
+  const horsZoneCountByDepot = useMemo(() => {
+    const counts: Record<string, number> = {}
+    Object.entries(horsZoneByDepot).forEach(([id, d]) => { counts[id] = d.clients })
+    return counts
+  }, [horsZoneByDepot])
+
   // Clients filtrés pour l'affichage sur la carte (avec filtres visuels supplémentaires)
   const filteredClients = useMemo(() => {
     return clientsParAgence.filter(client => {
@@ -282,17 +396,20 @@ export default function MapPage() {
 
   // Stats réactives - basées sur les données filtrées par agence (pas les filtres visuels)
   const stats = useMemo(() => {
-    const totalClients = clientsParAgence.length
-    const totalVelos = clientsParAgence.reduce((sum, c) => sum + (c.velo_valide || 0), 0)
     const totalDepotsLogistique = filteredDepots.filter(d => d.type === 'logistique').length
     const totalDepotsRetrait = filteredDepots.filter(d => d.type === 'retrait').length
-    const totalHorsZone = clientsHorsZoneParAgence.length
-    const clientsSansCoords = clientsParAgence.filter(c => !c.latitude || !c.longitude).length
-    return { totalClients, totalVelos, totalDepotsLogistique, totalDepotsRetrait, totalHorsZone, clientsSansCoords }
-  }, [clientsParAgence, filteredDepots, clientsHorsZoneParAgence])
+    const clientsEnZone = clientsParAgence.filter(c => c.depot_retrait_id || c.depot_logistique_id)
+    const clientsHorsZone = clientsParAgence.filter(c => !c.depot_retrait_id && !c.depot_logistique_id)
+    const clientsZone = clientsEnZone.length
+    const velosZone = clientsEnZone.reduce((sum, c) => sum + (c.velo_valide || 0), 0)
+    const clientsHZ = clientsHorsZone.length
+    const velosHZ = clientsHorsZone.reduce((sum, c) => sum + (c.velo_valide || 0), 0)
+    return { totalDepotsLogistique, totalDepotsRetrait, clientsZone, velosZone, clientsHZ, velosHZ }
+  }, [clientsParAgence, filteredDepots])
 
   const handleSelectDepot = (depotId: string | null) => {
     setSelectedDepot(depotId)
+    setDepotVisualRayon(null) // reset le slider visuel à chaque changement de dépôt
   }
 
   const resetFilters = () => {
@@ -301,6 +418,8 @@ export default function MapPage() {
     setShowLogistique(true)
     setShowRetrait(true)
     setShowHorsZone(true)
+    setDepotVisualRayon(null)
+    setSearchAddress('')
     if (mapInstance) {
       const center = agenceCenters['all']
       mapInstance.setCenter({ lat: center.lat, lng: center.lng })
@@ -440,67 +559,50 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Warehouse className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.totalDepotsLogistique}</p>
-                <p className="text-xs text-muted-foreground">Dépôts logistique</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-secondary/10 rounded-lg">
-                <Package className="h-5 w-5 text-secondary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.totalDepotsRetrait}</p>
-                <p className="text-xs text-muted-foreground">Points retrait</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Users className="h-5 w-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {stats.totalClients}
-                  {stats.clientsSansCoords > 0 && (
-                    <span className="text-sm font-normal text-muted-foreground ml-1" title="Clients sans coordonnées GPS">
-                      ({stats.clientsSansCoords} sans GPS)
-                    </span>
-                  )}
-                </p>
-                <p className="text-xs text-muted-foreground">Clients</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className={stats.totalHorsZone > 0 ? 'border-destructive/50' : ''}>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <div className={`p-2 rounded-lg ${stats.totalHorsZone > 0 ? 'bg-destructive/10' : 'bg-muted'}`}>
-                <MapPin className={`h-5 w-5 ${stats.totalHorsZone > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.totalHorsZone}</p>
-                <p className="text-xs text-muted-foreground">Hors zone</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats compactes */}
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+        <div className="flex items-center gap-2 bg-card border rounded-lg px-3 py-2">
+          <Warehouse className="h-4 w-4 text-primary shrink-0" />
+          <div>
+            <p className="text-lg font-bold leading-tight">{stats.totalDepotsLogistique}</p>
+            <p className="text-[10px] text-muted-foreground">Dépôts logistique</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 bg-card border rounded-lg px-3 py-2">
+          <Package className="h-4 w-4 text-green-600 shrink-0" />
+          <div>
+            <p className="text-lg font-bold leading-tight">{stats.totalDepotsRetrait}</p>
+            <p className="text-[10px] text-muted-foreground">Points retrait</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 bg-card border rounded-lg px-3 py-2">
+          <Users className="h-4 w-4 text-blue-500 shrink-0" />
+          <div>
+            <p className="text-lg font-bold leading-tight">{stats.clientsZone}</p>
+            <p className="text-[10px] text-muted-foreground">Clients zone</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 bg-card border rounded-lg px-3 py-2">
+          <Bike className="h-4 w-4 text-blue-500 shrink-0" />
+          <div>
+            <p className="text-lg font-bold leading-tight">{stats.velosZone}</p>
+            <p className="text-[10px] text-muted-foreground">Vélos zone</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 bg-card border border-orange-200 rounded-lg px-3 py-2">
+          <Users className="h-4 w-4 text-orange-500 shrink-0" />
+          <div>
+            <p className="text-lg font-bold leading-tight text-orange-600">{stats.clientsHZ}</p>
+            <p className="text-[10px] text-muted-foreground">Clients hors zone</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 bg-card border border-orange-200 rounded-lg px-3 py-2">
+          <Bike className="h-4 w-4 text-orange-500 shrink-0" />
+          <div>
+            <p className="text-lg font-bold leading-tight text-orange-600">{stats.velosHZ}</p>
+            <p className="text-[10px] text-muted-foreground">Vélos hors zone</p>
+          </div>
+        </div>
       </div>
 
       {/* Filtres et Carte */}
@@ -548,6 +650,68 @@ export default function MapPage() {
               </Select>
             </div>
 
+            {/* Recherche d'adresse */}
+            <div className="space-y-2">
+              <Label>Rechercher une adresse</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={searchAddress}
+                  onChange={(e) => setSearchAddress(e.target.value)}
+                  placeholder="Ex: 75001 Paris..."
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearchAddress()}
+                  className="flex-1"
+                />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={handleSearchAddress}
+                  disabled={searchLoading || !searchAddress.trim()}
+                  title="Rechercher"
+                >
+                  {searchLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Slider rayon visuel — affiché uniquement quand un dépôt est sélectionné */}
+            {selectedDepot && (() => {
+              const depot = depots.find(d => d.id === selectedDepot)
+              if (!depot) return null
+              const currentRayon = depotVisualRayon ?? depot.rayon_couverture_km ?? 10
+              return (
+                <div className="space-y-2 p-3 bg-muted/40 rounded-lg border">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: depotColorMap[depot.id] || '#3B82F6' }}
+                    />
+                    <Label className="text-xs font-medium truncate">{depot.nom}</Label>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Rayon visuel</span>
+                    <span className="font-medium text-foreground">{currentRayon} km</span>
+                  </div>
+                  <Slider
+                    value={[currentRayon]}
+                    onValueChange={([v]) => setDepotVisualRayon(v)}
+                    min={1}
+                    max={200}
+                    step={1}
+                  />
+                  {depotVisualRayon !== null && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="w-full h-6 text-xs"
+                      onClick={() => setDepotVisualRayon(null)}
+                    >
+                      Réinitialiser ({depot.rayon_couverture_km} km)
+                    </Button>
+                  )}
+                </div>
+              )
+            })()}
+
             <div className="space-y-2">
               <Label>Afficher</Label>
               <div className="space-y-2">
@@ -557,9 +721,8 @@ export default function MapPage() {
                     checked={showLogistique}
                     onCheckedChange={(checked) => setShowLogistique(checked as boolean)}
                   />
-                  <label htmlFor="logistique" className="text-sm flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.depotLogistique }} />
-                    Logistique
+                  <label htmlFor="logistique" className="text-sm">
+                    Dépôts logistique
                   </label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -568,9 +731,8 @@ export default function MapPage() {
                     checked={showRetrait}
                     onCheckedChange={(checked) => setShowRetrait(checked as boolean)}
                   />
-                  <label htmlFor="retrait" className="text-sm flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.depotRetrait }} />
-                    Point retrait
+                  <label htmlFor="retrait" className="text-sm">
+                    Points retrait
                   </label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -579,11 +741,30 @@ export default function MapPage() {
                     checked={showHorsZone}
                     onCheckedChange={(checked) => setShowHorsZone(checked as boolean)}
                   />
-                  <label htmlFor="horsZone" className="text-sm flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.clientHorsZone }} />
+                  <label htmlFor="horsZone" className="text-sm">
                     Hors zone ({clientsHorsZoneParAgence.length})
                   </label>
                 </div>
+                {/* Légende couleurs par dépôt */}
+                {filteredDepots.length > 0 && (
+                  <div className="mt-3 pt-3 border-t space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Couleurs par dépôt</p>
+                    {filteredDepots.map(depot => (
+                      <div key={`legend-${depot.id}`} className="flex items-center gap-2 text-xs">
+                        <div
+                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: depotColorMap[depot.id] || '#3B82F6' }}
+                        />
+                        <span className="truncate" title={depot.nom}>{depot.nom}</span>
+                        {horsZoneCountByDepot[depot.id] > 0 && (
+                          <span className="text-orange-500 text-xs flex-shrink-0">
+                            +{horsZoneCountByDepot[depot.id]}hz
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -706,7 +887,7 @@ export default function MapPage() {
 
         {/* Carte - sans padding, bords arrondis intégrés */}
         <Card className="lg:col-span-3 overflow-hidden rounded-lg">
-          <CardContent className="p-0 h-[600px]">
+          <CardContent className="p-0 h-[calc(100vh-320px)] min-h-[500px]">
             {mapNotAvailable ? (
               <div className="h-full flex flex-col items-center justify-center bg-muted/30">
                 <MapPin className="h-16 w-16 text-muted-foreground mb-4" />
@@ -740,56 +921,67 @@ export default function MapPage() {
                 }}
               >
                 {/* Rayons de couverture - conditionnels */}
-                {showRayons && showDepots && filteredDepots.map(depot => (
-                  <Circle
-                    key={`circle-${depot.id}`}
-                    center={{ lat: depot.latitude, lng: depot.longitude }}
-                    radius={(depot.rayon_couverture_km || 10) * 1000}
-                    options={{
-                      fillColor: depot.type === 'logistique' ? COLORS.depotLogistique : COLORS.depotRetrait,
-                      fillOpacity: 0.15,
-                      strokeColor: depot.type === 'logistique' ? COLORS.depotLogistique : COLORS.depotRetrait,
-                      strokeOpacity: 0.6,
-                      strokeWeight: 2,
-                    }}
-                  />
-                ))}
+                {showRayons && showDepots && filteredDepots.map(depot => {
+                  const depotColor = depotColorMap[depot.id] || '#3B82F6'
+                  const rayon = (selectedDepot === depot.id && depotVisualRayon !== null)
+                    ? depotVisualRayon
+                    : (depot.rayon_couverture_km || 10)
+                  return (
+                    <Circle
+                      key={`circle-${depot.id}`}
+                      center={{ lat: depot.latitude, lng: depot.longitude }}
+                      radius={rayon * 1000}
+                      options={{
+                        fillColor: depotColor,
+                        fillOpacity: 0.15,
+                        strokeColor: depotColor,
+                        strokeOpacity: 0.7,
+                        strokeWeight: 2,
+                      }}
+                    />
+                  )
+                })}
 
                 {/* Marqueurs Dépôts */}
-                {showDepots && filteredDepots.map(depot => (
-                  <Marker
-                    key={`depot-${depot.id}`}
-                    position={{ lat: depot.latitude, lng: depot.longitude }}
-                    icon={{
-                      path: google.maps.SymbolPath.CIRCLE,
-                      scale: DEPOT_MARKER_SIZE,
-                      fillColor: depot.type === 'logistique' ? COLORS.depotLogistique : COLORS.depotRetrait,
-                      fillOpacity: 1,
-                      strokeColor: '#fff',
-                      strokeWeight: 2,
-                    }}
-                    title={depot.nom}
-                    onClick={() => setSelectedMarker({ type: 'depot', data: depot })}
-                  />
-                ))}
+                {showDepots && filteredDepots.map(depot => {
+                  const depotColor = depotColorMap[depot.id] || '#3B82F6'
+                  const isSelected = selectedDepot === depot.id
+                  return (
+                    <Marker
+                      key={`depot-${depot.id}`}
+                      position={{ lat: depot.latitude, lng: depot.longitude }}
+                      icon={{
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: isSelected ? DEPOT_MARKER_SIZE + 3 : DEPOT_MARKER_SIZE,
+                        fillColor: depotColor,
+                        fillOpacity: 1,
+                        strokeColor: '#fff',
+                        strokeWeight: isSelected ? 3 : 2,
+                      }}
+                      title={depot.nom}
+                      onClick={() => setSelectedMarker({ type: 'depot', data: depot })}
+                    />
+                  )
+                })}
 
                 {/* Marqueurs Clients */}
                 {showClients && filteredClients.map(client => {
                   if (!client.latitude || !client.longitude) return null
                   const isHorsZone = !client.depot_retrait_id && !client.depot_logistique_id
+                  const clientColor = getClientColor(client)
                   return (
                     <Marker
                       key={`client-${client.id}`}
                       position={{ lat: client.latitude, lng: client.longitude }}
                       icon={{
                         path: google.maps.SymbolPath.CIRCLE,
-                        scale: MARKER_SIZE,
-                        fillColor: isHorsZone ? COLORS.clientHorsZone : COLORS.client,
-                        fillOpacity: 0.9,
+                        scale: isHorsZone ? MARKER_SIZE - 1 : MARKER_SIZE,
+                        fillColor: clientColor,
+                        fillOpacity: isHorsZone ? 0.5 : 0.85,
                         strokeColor: '#fff',
-                        strokeWeight: 2,
+                        strokeWeight: isHorsZone ? 1 : 2,
                       }}
-                      title={client.raison_sociale}
+                      title={client.raison_sociale + (isHorsZone ? ' (hors zone)' : '')}
                       onClick={() => setSelectedMarker({ type: 'client', data: client })}
                     />
                   )
@@ -856,9 +1048,17 @@ export default function MapPage() {
                             {(selectedMarker.data as Depot).adresse}<br />
                             {(selectedMarker.data as Depot).code_postal} {(selectedMarker.data as Depot).ville}
                           </p>
-                          <div className="mt-2 pt-2 border-t flex gap-4 text-xs">
-                            <span><strong>{(selectedMarker.data as Depot).clients_count}</strong> clients</span>
-                            <span><strong>{(selectedMarker.data as Depot).velos_count}</strong> vélos</span>
+                          <div className="mt-2 pt-2 border-t text-xs space-y-1">
+                            <div className="flex gap-3">
+                              <span><strong>{(selectedMarker.data as Depot).clients_count}</strong> clients</span>
+                              <span><strong>{(selectedMarker.data as Depot).velos_count}</strong> vélos</span>
+                            </div>
+                            {horsZoneByDepot[(selectedMarker.data as Depot).id]?.clients > 0 && (
+                              <div className="flex gap-3 text-orange-600">
+                                <span><strong>{horsZoneByDepot[(selectedMarker.data as Depot).id].clients}</strong> cli. hors zone</span>
+                                <span><strong>{horsZoneByDepot[(selectedMarker.data as Depot).id].velos}</strong> vélos hors zone</span>
+                              </div>
+                            )}
                           </div>
                           <Button
                             size="sm"
@@ -918,26 +1118,45 @@ export default function MapPage() {
                 className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
                   selectedDepot === depot.id ? 'ring-2 ring-primary' : ''
                 }`}
+                style={selectedDepot === depot.id ? { borderColor: depotColorMap[depot.id] } : {}}
                 onClick={() => handleSelectDepot(depot.id)}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h4 className="font-medium">{depot.nom}</h4>
-                    <p className="text-xs text-muted-foreground">{depot.ville}</p>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0 mt-0.5"
+                      style={{ backgroundColor: depotColorMap[depot.id] || '#3B82F6' }}
+                    />
+                    <div>
+                      <h4 className="font-medium">{depot.nom}</h4>
+                      <p className="text-xs text-muted-foreground">{depot.ville}</p>
+                    </div>
                   </div>
                   <Badge variant={depot.type === 'logistique' ? 'default' : 'secondary'}>
                     {depot.type === 'logistique' ? 'Logistique' : 'Retrait'}
                   </Badge>
                 </div>
-                <div className="flex gap-4 text-sm">
+                <div className="flex gap-3 text-xs flex-wrap">
                   <span className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
+                    <Users className="h-3 w-3 text-blue-500" />
                     {depot.clients_count} clients
                   </span>
                   <span className="flex items-center gap-1">
-                    <Bike className="h-3 w-3" />
+                    <Bike className="h-3 w-3 text-blue-500" />
                     {depot.velos_count} vélos
                   </span>
+                  {horsZoneByDepot[depot.id] && horsZoneByDepot[depot.id].clients > 0 && (
+                    <>
+                      <span className="flex items-center gap-1 text-orange-500">
+                        <Users className="h-3 w-3" />
+                        {horsZoneByDepot[depot.id].clients} cli. hors zone
+                      </span>
+                      <span className="flex items-center gap-1 text-orange-500">
+                        <Bike className="h-3 w-3" />
+                        {horsZoneByDepot[depot.id].velos} vélos hors zone
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
