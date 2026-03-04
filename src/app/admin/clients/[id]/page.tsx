@@ -754,7 +754,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
             <div className="text-lg font-mono font-bold">
               {codeEnematSaisi || '------'}
-              {client.code_enemat_valide && <CheckCircle className="inline ml-2 h-4 w-4 text-emerald-400" />}
+              {client.validation_naf === 'OUI' && <CheckCircle className="inline ml-2 h-4 w-4 text-emerald-400" />}
             </div>
           </div>
           <div className="text-center">
@@ -850,18 +850,18 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         </Card>
 
         {/* Colonne 3 - Code ENEMAT */}
-        <Card className={`shadow-sm border-2 ${client.code_enemat_bloque ? 'border-red-300' : client.code_enemat_valide ? 'border-emerald-300' : ''}`}>
+        <Card className={`shadow-sm border-2 ${client.validation_naf === 'NON' ? 'border-red-300' : client.validation_naf === 'OUI' ? 'border-emerald-300' : ''}`}>
           <CardContent className="px-5 py-3.5">
             <SectionTitle
               icon={KeyRound}
               title="Code ENEMAT"
               badge={
-                client.code_enemat_valide ? (
-                  <Badge className="bg-emerald-500">Validé</Badge>
-                ) : client.code_enemat_bloque ? (
-                  <Badge variant="destructive">Bloqué</Badge>
+                client.validation_naf === 'OUI' ? (
+                  <Badge className="bg-emerald-500">NAF OUI</Badge>
+                ) : client.validation_naf === 'NON' ? (
+                  <Badge variant="destructive">NAF NON</Badge>
                 ) : (
-                  <Badge variant="outline">En attente</Badge>
+                  <Badge variant="outline">A vérifier</Badge>
                 )
               }
             />

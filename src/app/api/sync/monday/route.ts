@@ -393,6 +393,8 @@ function convertValueHardcoded(columnId: string, value: any): any {
       return fuzzyLookup(MONDAY_CONFIG.mondayToSupabaseStatutAnomalie as Record<string, string>, value) || value
     case 'color_mkvn1kg0': // doublon_RETINA
       return fuzzyLookup(MONDAY_CONFIG.mondayToSupabaseStatutDoublon as Record<string, string>, value) || value
+    case 'color_mm0vxv46': // Validation NAF (Ecovolt)
+      return fuzzyLookup(MONDAY_CONFIG.mondayToSupabaseValidationNaf as Record<string, string>, value) || value
     default:
       return value
   }

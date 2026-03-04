@@ -68,14 +68,14 @@ export async function GET(request: NextRequest) {
       query = query.eq('departement', departementFilter)
     }
 
-    // Filtre par statut NAF (ENEMAT)
+    // Filtre par validation NAF
     if (nafFilter && nafFilter !== 'all') {
       if (nafFilter === 'valide') {
-        query = query.eq('code_enemat_valide', true)
+        query = query.eq('validation_naf', 'OUI')
       } else if (nafFilter === 'bloque') {
-        query = query.eq('code_enemat_bloque', true)
+        query = query.eq('validation_naf', 'NON')
       } else if (nafFilter === 'en_attente') {
-        query = query.neq('code_enemat_valide', true).neq('code_enemat_bloque', true)
+        query = query.eq('validation_naf', 'A VERIFIER')
       }
     }
 

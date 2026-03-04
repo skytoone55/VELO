@@ -47,7 +47,7 @@ interface Client {
   velo_devis: number
   velo_valide: number | null
   statut_commercial: string | null
-  code_enemat_valide: boolean | null
+  validation_naf: string | null
   monday_board_id: string | null
 }
 
@@ -403,7 +403,7 @@ export default function MapPage() {
       }
       // Filtre NAF
       if (selectedNaf.length > 0) {
-        const nafLabel = client.code_enemat_valide === true ? 'OUI' : client.code_enemat_valide === false ? 'NON' : 'A vérifier'
+        const nafLabel = client.validation_naf || 'A vérifier'
         if (!selectedNaf.includes(nafLabel)) return false
       }
       // Filtre commercial (board)

@@ -200,6 +200,7 @@ export async function PUT(
       'code_enemat_saisi',
       'code_enemat_valide',
       'date_validation_code',
+      'validation_naf',
       // Notes
       'notes_internes',
     ]

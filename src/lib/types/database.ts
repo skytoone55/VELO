@@ -112,6 +112,7 @@ export type Database = {
           telephone: string | null
           token_formulaire: string | null
           updated_at: string
+          validation_naf: string | null
           velo_devis: number
           velo_valide: number | null
         }
@@ -176,6 +177,7 @@ export type Database = {
           telephone?: string | null
           token_formulaire?: string | null
           updated_at?: string
+          validation_naf?: string | null
           velo_devis?: number
           velo_valide?: number | null
         }
@@ -240,6 +242,7 @@ export type Database = {
           telephone?: string | null
           token_formulaire?: string | null
           updated_at?: string
+          validation_naf?: string | null
           velo_devis?: number
           velo_valide?: number | null
         }

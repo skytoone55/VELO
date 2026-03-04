@@ -834,9 +834,9 @@ export default function AdminClientsPage() {
                     </TableCell>
                     <TableCell>
                       {(() => {
-                        if (client.code_enemat_valide) return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Validé</Badge>
-                        if (client.code_enemat_bloque) return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Bloqué</Badge>
-                        return <Badge variant="outline" className="text-muted-foreground">En attente</Badge>
+                        if (client.validation_naf === 'OUI') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OUI</Badge>
+                        if (client.validation_naf === 'NON') return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">NON</Badge>
+                        return <Badge variant="outline" className="text-muted-foreground">A vérifier</Badge>
                       })()}
                     </TableCell>
                     <TableCell>

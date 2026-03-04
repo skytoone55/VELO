@@ -157,6 +157,7 @@ export async function convertValueToMonday(interfaceField: string, supabaseValue
     'statut_anomalie',
     'statut_doublon',
     'type_livraison',
+    'validation_naf',
   ]
 
   if (fieldsWithValueMapping.includes(interfaceField)) {
@@ -182,6 +183,7 @@ export async function convertValueToSupabase(interfaceField: string, mondayValue
     'statut_anomalie',
     'statut_doublon',
     'type_livraison',
+    'validation_naf',
   ]
 
   if (fieldsWithValueMapping.includes(interfaceField)) {

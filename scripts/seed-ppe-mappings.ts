@@ -212,6 +212,15 @@ const VARYING_COLUMNS: Record<string, Record<BoardName, string>> = {
     ALEX:     'date_mm0nbhf4',
     DIZIEN:   'date_mm0nh233',
   },
+  validation_naf: {
+    ATHOME:   'color_mm0vrhdk',
+    JM:       'color_mm0vgkmf',
+    SALIH:    'color_mm0vf9d2',
+    STELLARS: 'color_mm0vq45a',
+    ALEX:     'color_mm0vz342',
+    EKL:      'color_mm0v8049',
+    DIZIEN:   'color_mm0v75kg',
+  },
 }
 
 // ===================================================================
@@ -242,6 +251,7 @@ const FIELD_META: Record<string, { label: string; type: string; section: string;
   code_enemat_saisi:       { label: 'Code ENEMAT saisi', type: 'text', section: 'validation' },
   code_enemat_valide:      { label: 'Code ENEMAT validé', type: 'checkbox', section: 'validation' },
   date_validation_code:    { label: 'Date validation code', type: 'date', section: 'validation' },
+  validation_naf:          { label: 'Validation NAF', type: 'status', section: 'validation' },
 }
 
 // Value mappings for status fields (Supabase value → Monday label)
@@ -270,6 +280,11 @@ const VALUE_MAPPINGS: Record<string, Record<string, string>> = {
     livraison_gratuite: 'Livraison gratuite',
     retrait_depot: 'Retrait depot',
     livraison_payante: 'Livraison payante',
+  },
+  validation_naf: {
+    'OUI': 'OUI',
+    'NON': 'NON',
+    'A VERIFIER': 'A VERIFIER',
   },
 }
 

@@ -90,6 +90,8 @@ export const MONDAY_CONFIG = {
 
     // --- Code ENEMAT (code de livraison client) ---
     'text_mkzvqk4s': 'code_enemat_saisi',           // Code ENEMAT saisi par le client
+    // --- Validation NAF ---
+    'color_mm0vxv46': 'validation_naf',              // Validation NAF (Ecovolt)
     // --- Statuts (le principal est statut_commercial) ---
     'color_mkvfws5n': 'statut_commercial',           // Statut commercial (PRINCIPAL)
     'color_mkvgsswc': 'statut_retina',               // StatutRETINA
@@ -162,6 +164,9 @@ export const MONDAY_CONFIG = {
 
     // Code ENEMAT
     code_enemat_saisi: 'text_mkzvqk4s',
+
+    // Validation NAF
+    validation_naf: 'color_mm0vxv46',
   },
 
   // =================================================================
@@ -211,6 +216,33 @@ export const MONDAY_CONFIG = {
     code_envoye: 'CODE ENVOYÉ',
     formulaire_envoye: 'FORMULAIRE ENVOYÉ',
     formulaire_valide: 'FORMULAIRE VALIDÉ',
+  },
+
+  // =================================================================
+  // MAPPING VALIDATION NAF: Monday label -> Supabase value
+  // Ecovolt: Fait/Bloqué/En cours → OUI/NON/A VERIFIER
+  // PPE: OUI/NON/A VERIFIER → identité (via dynamic mapping)
+  // =================================================================
+  mondayToSupabaseValidationNaf: {
+    'Fait': 'OUI',
+    'OUI': 'OUI',
+    'Bloqué': 'NON',
+    'NON': 'NON',
+    'En cours': 'A VERIFIER',
+    'A VERIFIER': 'A VERIFIER',
+    'À VÉRIFIER': 'A VERIFIER',
+  },
+
+  supabaseToMondayValidationNafEcovolt: {
+    'OUI': 'Fait',
+    'NON': 'Bloqué',
+    'A VERIFIER': 'En cours',
+  },
+
+  supabaseToMondayValidationNafPPE: {
+    'OUI': 'OUI',
+    'NON': 'NON',
+    'A VERIFIER': 'A VERIFIER',
   },
 
   // =================================================================
