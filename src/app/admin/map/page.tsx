@@ -1252,11 +1252,11 @@ export default function MapPage() {
                       position={{ lat: client.latitude, lng: client.longitude }}
                       icon={{
                         path: google.maps.SymbolPath.CIRCLE,
-                        scale: isHorsZone ? MARKER_SIZE - 1 : MARKER_SIZE,
+                        scale: MARKER_SIZE,
                         fillColor: clientColor,
-                        fillOpacity: isHorsZone ? 0.5 : 0.85,
+                        fillOpacity: 0.85,
                         strokeColor: '#fff',
-                        strokeWeight: isHorsZone ? 1 : 2,
+                        strokeWeight: 1,
                       }}
                       title={client.raison_sociale + (isHorsZone ? ' (hors zone)' : '')}
                       onClick={() => setSelectedMarker({ type: 'client', data: client })}
