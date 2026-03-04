@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buildClientAddress } from '@/lib/geo/utils'
+import { buildClientAddress, geocodeAddress } from '@/lib/geo/utils'
 
 /**
  * API de géocodage batch des clients
@@ -104,18 +104,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Préparer les clients avec adresses
+    // Séparer : clients avec adresse complète (batch CSV) vs CP-only (geocoding individuel)
     const clientsToGeocode: { id: string; adresse: string; cp: string; ville: string; source: string }[] = []
+    const clientsCpOnly: { id: string; cp: string; ville: string }[] = []
     let noAddressCount = 0
 
     for (const client of allClients) {
       const addr = buildClientAddress(client)
-      if (addr) {
+      if (addr && addr.adresse) {
         clientsToGeocode.push({
           id: client.id,
           adresse: addr.adresse,
           cp: addr.codePostal,
           ville: addr.ville,
           source: addr.source,
+        })
+      } else if (addr && addr.codePostal) {
+        // CP-only : pas d'adresse complète mais un code postal
+        clientsCpOnly.push({
+          id: client.id,
+          cp: addr.codePostal,
+          ville: addr.ville,
         })
       } else {
         noAddressCount++
@@ -127,6 +136,7 @@ export async function POST(request: NextRequest) {
         dryRun: true,
         totalWithoutCoords: allClients.length,
         geocodable: clientsToGeocode.length,
+        cpOnly: clientsCpOnly.length,
         noAddress: noAddressCount,
         batchesRequired: Math.ceil(clientsToGeocode.length / BATCH_SIZE),
       })
@@ -137,6 +147,9 @@ export async function POST(request: NextRequest) {
     let failedCount = 0
     let lowConfidenceCount = 0
     const batchCount = Math.ceil(clientsToGeocode.length / BATCH_SIZE)
+
+    // Collecter les items qui échouent au CSV pour retry en Pass 3
+    const csvFailedItems: { id: string; cp: string; ville: string }[] = []
 
     for (let i = 0; i < batchCount; i++) {
       const batch = clientsToGeocode.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE)
@@ -164,15 +177,26 @@ export async function POST(request: NextRequest) {
             } else {
               failedCount++
             }
-          } else if (item.lat && item.lng && item.score < MIN_SCORE_THRESHOLD) {
-            lowConfidenceCount++
           } else {
-            failedCount++
+            // Échec CSV → collecter pour retry Pass 3 (centroïde CP)
+            const original = batch.find((b) => b.id === item.id)
+            if (original?.cp) {
+              csvFailedItems.push({ id: item.id, cp: original.cp, ville: original.ville })
+            } else {
+              failedCount++
+            }
           }
         }
       } catch (batchError) {
         console.error(`Erreur batch ${i + 1}/${batchCount}:`, batchError)
-        failedCount += batch.length
+        // Collecter tout le batch pour retry
+        for (const item of batch) {
+          if (item.cp) {
+            csvFailedItems.push({ id: item.id, cp: item.cp, ville: item.ville })
+          } else {
+            failedCount++
+          }
+        }
       }
 
       // Délai entre les batchs
@@ -181,12 +205,53 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Pass 3 retry : items qui ont échoué au CSV → geocoding individuel centroïde
+    // Fusionner avec les clients CP-only
+    const allCpFallback = [...csvFailedItems, ...clientsCpOnly]
+
+    // ─── Pass 3 : fallback centroïde CP (CP-only + échecs CSV) ───
+    let cpOnlyGeocodedCount = 0
+    let cpOnlyFailedCount = 0
+
+    for (const client of allCpFallback) {
+      try {
+        const result = await geocodeAddress('', client.cp, client.ville, 0.1)
+        if (result) {
+          const { error: updateError } = await adminClient
+            .from('clients')
+            .update({
+              latitude: result.lat,
+              longitude: result.lng,
+              geocoding_score: result.score,
+              geocoding_source: 'batch-cp-centroid',
+              address_used_for_geocoding: `CP ${client.cp}`,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', client.id)
+
+          if (!updateError) {
+            cpOnlyGeocodedCount++
+          } else {
+            cpOnlyFailedCount++
+          }
+        } else {
+          cpOnlyFailedCount++
+        }
+        // Petit délai pour ne pas surcharger l'API
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      } catch {
+        cpOnlyFailedCount++
+      }
+    }
+
     return NextResponse.json({
       success: true,
       totalWithoutCoords: allClients.length,
-      geocoded: geocodedCount,
-      failed: failedCount,
-      lowConfidence: lowConfidenceCount,
+      geocoded: geocodedCount + cpOnlyGeocodedCount,
+      geocodedFullAddress: geocodedCount,
+      geocodedCpCentroid: cpOnlyGeocodedCount,
+      failed: failedCount + cpOnlyFailedCount,
+      retriedViaCpCentroid: allCpFallback.length,
       noAddress: noAddressCount,
       batchesProcessed: batchCount,
     })

@@ -76,10 +76,12 @@ export function calculateHaversineDistance(
  * Géocode une adresse via l'API gouvernementale française (api-adresse.data.gouv.fr)
  * Retourne les coordonnées GPS ou null si l'adresse n'est pas trouvée
  *
- * Stratégie en 2 passes :
+ * Stratégie en 3 passes :
  * 1. Adresse complète (adresse + CP + ville) → score précis
  * 2. Fallback CP + ville seulement → pour les lieux-dits, hameaux, ZI, etc.
  *    Le score est plafonné à 0.5 car c'est un géocodage au niveau commune
+ * 3. Fallback code postal seul → centroïde de la commune (type=municipality)
+ *    Le score est plafonné à 0.3 car c'est un géocodage très approximatif
  */
 export async function geocodeAddress(
   adresse: string,
@@ -94,12 +96,25 @@ export async function geocodeAddress(
   }
 
   // Passe 2 : fallback CP + ville (lieux-dits, hameaux, ZI, adresses mal formatées)
-  const fallbackResult = await _geocodeQuery(`${codePostal} ${ville}`)
-  if (fallbackResult) {
-    // Plafonner le score à 0.5 car c'est un géocodage au niveau commune, pas adresse
-    return {
-      ...fallbackResult,
-      score: Math.min(fallbackResult.score, 0.5),
+  if (ville) {
+    const fallbackResult = await _geocodeQuery(`${codePostal} ${ville}`)
+    if (fallbackResult) {
+      // Plafonner le score à 0.5 car c'est un géocodage au niveau commune, pas adresse
+      return {
+        ...fallbackResult,
+        score: Math.min(fallbackResult.score, 0.5),
+      }
+    }
+  }
+
+  // Passe 3 : fallback code postal seul → centroïde municipality
+  if (codePostal) {
+    const centroidResult = await _geocodeMunicipality(codePostal)
+    if (centroidResult) {
+      return {
+        ...centroidResult,
+        score: Math.min(centroidResult.score, 0.3),
+      }
     }
   }
 
@@ -131,6 +146,36 @@ async function _geocodeQuery(
     return null
   } catch (error) {
     console.error('Erreur géocodage:', error)
+    return null
+  }
+}
+
+/**
+ * Appel à l'API de géocodage pour obtenir le centroïde d'une commune via son code postal
+ * Utilise type=municipality pour récupérer le centre de la commune
+ */
+async function _geocodeMunicipality(
+  codePostal: string
+): Promise<(GeoCoords & { score: number }) | null> {
+  try {
+    const cp = encodeURIComponent(codePostal.trim())
+    const response = await fetch(
+      `https://api-adresse.data.gouv.fr/search/?q=${cp}&type=municipality&postcode=${cp}&limit=1`
+    )
+
+    if (!response.ok) return null
+
+    const data = await response.json()
+
+    if (data.features && data.features.length > 0) {
+      const feature = data.features[0]
+      const [lng, lat] = feature.geometry.coordinates
+      const score = feature.properties?.score || 0
+      return { lat, lng, score }
+    }
+    return null
+  } catch (error) {
+    console.error('Erreur géocodage municipality:', error)
     return null
   }
 }
@@ -175,6 +220,20 @@ export function buildClientAddress(client: {
       adresse: client.adresse_societe_ligne1,
       codePostal: client.adresse_societe_cp,
       ville: client.adresse_societe_ville,
+      source: 'societe',
+    }
+  }
+
+  // Priorité 3 : code postal seul (centroïde commune)
+  const cp =
+    client.adresse_livraison_cp || client.adresse_societe_cp
+  const ville =
+    client.adresse_livraison_ville || client.adresse_societe_ville
+  if (cp) {
+    return {
+      adresse: '',
+      codePostal: cp,
+      ville: ville || '',
       source: 'societe',
     }
   }
