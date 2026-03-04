@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     // Récupérer TOUS les clients par batches (Supabase limite à 1000 par défaut)
     const BATCH_SIZE = 1000
-    const clientFields = 'id, raison_sociale, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville, latitude, longitude, agence, departement, depot_retrait_id, depot_logistique_id, velo_devis, velo_valide'
+    const clientFields = 'id, raison_sociale, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville, latitude, longitude, agence, departement, depot_retrait_id, depot_logistique_id, velo_devis, velo_valide, statut_commercial, code_enemat_valide, monday_board_id'
     let allClients: any[] = []
     let offset = 0
     let hasMore = true

@@ -259,6 +259,7 @@ export default function AdminDepotsPage() {
 
     setSaving(true)
     setError(null)
+    let hasError = false
 
     try {
       const supabase = createClient()
@@ -333,12 +334,14 @@ export default function AdminDepotsPage() {
           console.error('Erreur réassignation:', reassignErr)
         }
       }
-
-      setDialogOpen(false)
     } catch (err: any) {
+      hasError = true
       setError(err.message || 'Erreur lors de la sauvegarde')
     } finally {
       setSaving(false)
+      if (!hasError) {
+        setDialogOpen(false)
+      }
     }
   }
 
