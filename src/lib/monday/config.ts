@@ -90,7 +90,6 @@ export const MONDAY_CONFIG = {
 
     // --- Code ENEMAT (code de livraison client) ---
     'text_mkzvqk4s': 'code_enemat_saisi',           // Code ENEMAT saisi par le client
-
     // --- Statuts (le principal est statut_commercial) ---
     'color_mkvfws5n': 'statut_commercial',           // Statut commercial (PRINCIPAL)
     'color_mkvgsswc': 'statut_retina',               // StatutRETINA

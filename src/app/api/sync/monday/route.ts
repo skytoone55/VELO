@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}))
-    const { fullSync = false, boardId: specificBoardId } = body
+    const { fullSync = false, boardId: specificBoardId, purge = false } = body
 
     const result: SyncResult = {
       success: true,
@@ -48,9 +48,12 @@ export async function POST(request: NextRequest) {
       ? [specificBoardId]
       : MONDAY_CONFIG.allBoardIds
 
+    // Collecter tous les monday_item_id synchronisés (pour la purge)
+    const allSyncedMondayIds: number[] = []
+
     // Synchroniser chaque board
     for (const boardId of boardIds) {
-      await syncBoardToSupabase(boardId, result, fullSync)
+      await syncBoardToSupabase(boardId, result, fullSync, allSyncedMondayIds)
     }
 
     // Géocodage incrémental post-sync
@@ -58,6 +61,17 @@ export async function POST(request: NextRequest) {
     const geocodingResult = await geocodeNewClients(100)
     if (geocodingResult) {
       ;(result as any).geocoding = geocodingResult
+    }
+
+    // --- Purge des clients orphelins (opt-in via purge=true) ---
+    // Supprime les clients présents dans Supabase mais absents de Monday
+    // Les tables liées (distances_cache, formulaires_log, email_alerts, etc.)
+    // n'ont pas de FK CASCADE → nettoyées manuellement avant suppression
+    if (purge && allSyncedMondayIds.length > 0) {
+      const purgeResult = await purgeOrphanedClients(allSyncedMondayIds)
+      if (purgeResult) {
+        ;(result as any).purge = purgeResult
+      }
     }
 
     // Log l'opération
@@ -88,7 +102,7 @@ export async function POST(request: NextRequest) {
  * Synchronise un board Monday vers Supabase
  * Utilise le mapping dynamique si disponible, sinon le mapping hardcodé (ECO-VOLT)
  */
-async function syncBoardToSupabase(boardId: string, result: SyncResult, fullSync: boolean = false) {
+async function syncBoardToSupabase(boardId: string, result: SyncResult, fullSync: boolean = false, syncedMondayIds?: number[]) {
   const apiKey = getMondayApiKey()
   if (!apiKey) {
     result.success = false
@@ -169,6 +183,11 @@ async function syncBoardToSupabase(boardId: string, result: SyncResult, fullSync
 
         try {
           const mondayItemId = parseInt(item.id)
+
+          // Collecter l'ID pour la purge post-sync
+          if (syncedMondayIds) {
+            syncedMondayIds.push(mondayItemId)
+          }
 
           // Vérifier si ce client existe déjà dans Supabase
           const { data: existingClient } = await adminClient
@@ -442,6 +461,95 @@ function extractColumnValue(col: any): any {
   }
 
   return null
+}
+
+/**
+ * Purge des clients orphelins
+ *
+ * Supprime les clients Supabase dont le monday_item_id n'existe plus
+ * dans aucun board Monday synchronisé.
+ *
+ * Les tables liées (distances_cache, formulaires_log, email_alerts,
+ * livraisons, user_societes, contrats) n'ont pas de FK CASCADE,
+ * elles sont donc nettoyées manuellement avant la suppression du client.
+ */
+async function purgeOrphanedClients(syncedMondayIds: number[]) {
+  const adminClient = createAdminClient()
+
+  try {
+    // Récupérer tous les clients Supabase ayant un monday_item_id
+    const { data: allClients, error: fetchError } = await adminClient
+      .from('clients')
+      .select('id, monday_item_id, raison_sociale')
+      .not('monday_item_id', 'is', null)
+
+    if (fetchError) {
+      console.error('Erreur fetch clients pour purge:', fetchError)
+      return null
+    }
+
+    if (!allClients || allClients.length === 0) {
+      return { orphansFound: 0, purged: 0, errors: 0 }
+    }
+
+    // Identifier les orphelins : présents dans Supabase mais absents de Monday
+    const syncedSet = new Set(syncedMondayIds)
+    const orphans = allClients.filter(c => !syncedSet.has(c.monday_item_id))
+
+    if (orphans.length === 0) {
+      console.log('Purge post-sync: aucun client orphelin détecté')
+      return { orphansFound: 0, purged: 0, errors: 0 }
+    }
+
+    console.log(`Purge post-sync: ${orphans.length} client(s) orphelin(s) détecté(s)`)
+
+    let purged = 0
+    let errors = 0
+    const orphanIds = orphans.map(o => o.id)
+
+    // Nettoyer les tables liées AVANT de supprimer les clients
+    // (pas de FK CASCADE en place)
+    const linkedTables = [
+      'distances_cache',
+      'formulaires_log',
+      'email_alerts',
+      'livraisons',
+      'user_societes',
+      'contrats',
+    ]
+
+    for (const table of linkedTables) {
+      const { error: cleanError } = await adminClient
+        .from(table)
+        .delete()
+        .in('client_id', orphanIds)
+
+      if (cleanError) {
+        // Log mais ne bloque pas — certaines tables peuvent ne pas exister
+        console.warn(`Purge: erreur nettoyage ${table}:`, cleanError.message)
+      }
+    }
+
+    // Supprimer les clients orphelins
+    const { error: deleteError } = await adminClient
+      .from('clients')
+      .delete()
+      .in('id', orphanIds)
+
+    if (deleteError) {
+      console.error('Erreur suppression clients orphelins:', deleteError)
+      errors = orphans.length
+    } else {
+      purged = orphans.length
+    }
+
+    console.log(`Purge post-sync: ${purged} client(s) supprimé(s), ${errors} erreur(s)`)
+
+    return { orphansFound: orphans.length, purged, errors }
+  } catch (error) {
+    console.error('Erreur purge clients orphelins:', error)
+    return null
+  }
 }
 
 /**

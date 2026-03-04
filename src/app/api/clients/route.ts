@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     // Filtres
     const statutFilter = searchParams.get('statut')
     const departementFilter = searchParams.get('departement')
+    const nafFilter = searchParams.get('naf')
 
     const adminClient = createAdminClient()
 
@@ -65,6 +66,17 @@ export async function GET(request: NextRequest) {
     // Filtre par département
     if (departementFilter && departementFilter !== 'all') {
       query = query.eq('departement', departementFilter)
+    }
+
+    // Filtre par statut NAF (ENEMAT)
+    if (nafFilter && nafFilter !== 'all') {
+      if (nafFilter === 'valide') {
+        query = query.eq('code_enemat_valide', true)
+      } else if (nafFilter === 'bloque') {
+        query = query.eq('code_enemat_bloque', true)
+      } else if (nafFilter === 'en_attente') {
+        query = query.neq('code_enemat_valide', true).neq('code_enemat_bloque', true)
+      }
     }
 
     // Compter le total avant pagination

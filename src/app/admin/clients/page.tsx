@@ -54,6 +54,14 @@ import {
 import { Client } from '@/lib/types/database'
 import { toast } from 'sonner'
 
+// Options filtre NAF (ENEMAT)
+const nafOptions = [
+  { value: 'all', label: 'Tous les NAF' },
+  { value: 'valide', label: 'NAF Validé' },
+  { value: 'bloque', label: 'NAF Bloqué' },
+  { value: 'en_attente', label: 'NAF En attente' },
+]
+
 // Statuts pour filtre - clés Supabase (snake_case)
 const statutOptions = [
   { value: 'all', label: 'Tous les statuts' },
@@ -143,6 +151,7 @@ export default function AdminClientsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statutFilter, setStatutFilter] = useState('all')
+  const [nafFilter, setNafFilter] = useState('all')
   const [departementFilter, setDepartementFilter] = useState('all')
 
   // Pagination côté serveur
@@ -212,6 +221,7 @@ export default function AdminClientsPage() {
       if (debouncedSearch) params.set('search', debouncedSearch)
       if (statutFilter !== 'all') params.set('statut', statutFilter)
       if (departementFilter !== 'all') params.set('departement', departementFilter)
+      if (nafFilter !== 'all') params.set('naf', nafFilter)
 
       // Choisir l'API selon la source de données
       // - supabase: /api/clients (cache local, rapide)
@@ -275,23 +285,26 @@ export default function AdminClientsPage() {
   const [prevStatut, setPrevStatut] = useState(statutFilter)
   const [prevDept, setPrevDept] = useState(departementFilter)
   const [prevPageSize, setPrevPageSize] = useState(pageSize)
+  const [prevNaf, setPrevNaf] = useState(nafFilter)
 
   useEffect(() => {
     // Détecter si un filtre a changé (pas la page)
     if (debouncedSearch !== prevSearch || statutFilter !== prevStatut ||
-        departementFilter !== prevDept || pageSize !== prevPageSize) {
+        departementFilter !== prevDept || pageSize !== prevPageSize ||
+        nafFilter !== prevNaf) {
       setCurrentPage(1) // Reset to page 1
       setPrevSearch(debouncedSearch)
       setPrevStatut(statutFilter)
       setPrevDept(departementFilter)
       setPrevPageSize(pageSize)
+      setPrevNaf(nafFilter)
     }
-  }, [debouncedSearch, statutFilter, departementFilter, pageSize])
+  }, [debouncedSearch, statutFilter, departementFilter, pageSize, nafFilter])
 
   // Charger les clients quand les paramètres changent
   useEffect(() => {
     fetchClients(false, currentPage, pageSize)
-  }, [dataSource, currentPage, pageSize, debouncedSearch, statutFilter, departementFilter])
+  }, [dataSource, currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter])
 
   const handleSendForm = async (client: Client) => {
     setSendingEmail(true)
@@ -696,6 +709,19 @@ export default function AdminClientsPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={nafFilter} onValueChange={setNafFilter}>
+              <SelectTrigger className="w-full lg:w-48">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="NAF" />
+              </SelectTrigger>
+              <SelectContent>
+                {nafOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {/* Sélecteur nombre par page */}
             <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
               <SelectTrigger className="w-full lg:w-40">
@@ -752,6 +778,7 @@ export default function AdminClientsPage() {
                   <TableHead>Email</TableHead>
                   <TableHead>Département</TableHead>
                   <TableHead>Vélos</TableHead>
+                  <TableHead>NAF</TableHead>
                   <TableHead>Statut commercial</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -759,7 +786,7 @@ export default function AdminClientsPage() {
               <TableBody className={loading ? 'opacity-50' : ''}>
                 {loading && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                     </TableCell>
                   </TableRow>
@@ -807,6 +834,13 @@ export default function AdminClientsPage() {
                         <span className="font-medium">{client.velo_valide || client.velo_confirme || 0}</span>
                         <span className="text-muted-foreground"> / {client.velo_devis || 0}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        if (client.code_enemat_valide) return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Validé</Badge>
+                        if (client.code_enemat_bloque) return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Bloqué</Badge>
+                        return <Badge variant="outline" className="text-muted-foreground">En attente</Badge>
+                      })()}
                     </TableCell>
                     <TableCell>
                       {(() => {
