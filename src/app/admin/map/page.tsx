@@ -291,13 +291,37 @@ export default function MapPage() {
     autocompleteRef.current = new google.maps.places.AutocompleteService()
   }, [])
 
-  // Empêcher Google Maps de bloquer la navigation (supprime le beforeunload)
+  // Empêcher Google Maps de bloquer la navigation
+  // Patch addEventListener pour intercepter et bloquer tout ajout de beforeunload
   useEffect(() => {
-    const removeBeforeUnload = () => {
+    window.onbeforeunload = null
+
+    const originalAddEventListener = window.addEventListener.bind(window)
+    const originalRemoveEventListener = window.removeEventListener.bind(window)
+    const blockedHandlers: EventListenerOrEventListenerObject[] = []
+
+    window.addEventListener = function (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
+      if (type === 'beforeunload') {
+        blockedHandlers.push(listener)
+        return // silently block
+      }
+      return originalAddEventListener(type, listener, options)
+    } as typeof window.addEventListener
+
+    window.removeEventListener = function (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions) {
+      if (type === 'beforeunload') {
+        const idx = blockedHandlers.indexOf(listener)
+        if (idx !== -1) blockedHandlers.splice(idx, 1)
+        return
+      }
+      return originalRemoveEventListener(type, listener, options)
+    } as typeof window.removeEventListener
+
+    return () => {
+      window.addEventListener = originalAddEventListener as typeof window.addEventListener
+      window.removeEventListener = originalRemoveEventListener as typeof window.removeEventListener
       window.onbeforeunload = null
     }
-    const interval = setInterval(removeBeforeUnload, 1000)
-    return () => clearInterval(interval)
   }, [])
 
   // Assigner une couleur unique à chaque dépôt
@@ -473,7 +497,9 @@ export default function MapPage() {
     const velosZone = clientsEnZone.reduce((sum, c) => sum + (c.velo_valide || 0), 0)
     const clientsHZ = clientsHorsZone.length
     const velosHZ = clientsHorsZone.reduce((sum, c) => sum + (c.velo_valide || 0), 0)
-    return { totalDepotsLogistique, totalDepotsRetrait, clientsZone, velosZone, clientsHZ, velosHZ }
+    const totalClients = clientsParAgence.length
+    const totalVelos = clientsParAgence.reduce((sum, c) => sum + (c.velo_valide || 0), 0)
+    return { totalDepotsLogistique, totalDepotsRetrait, clientsZone, velosZone, clientsHZ, velosHZ, totalClients, totalVelos }
   }, [clientsParAgence, filteredDepots])
 
   const handleToggleDepot = (depotId: string) => {
@@ -635,7 +661,7 @@ export default function MapPage() {
       </div>
 
       {/* Stats compactes */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+      <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
         <div className="flex items-center gap-2 bg-card border rounded-lg px-3 py-2">
           <Warehouse className="h-4 w-4 text-primary shrink-0" />
           <div>
@@ -676,6 +702,20 @@ export default function MapPage() {
           <div>
             <p className="text-lg font-bold leading-tight text-orange-600">{stats.velosHZ}</p>
             <p className="text-[10px] text-muted-foreground">Vélos hors zone</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 bg-card border border-primary/30 rounded-lg px-3 py-2">
+          <Users className="h-4 w-4 text-primary shrink-0" />
+          <div>
+            <p className="text-lg font-bold leading-tight">{stats.totalClients}</p>
+            <p className="text-[10px] text-muted-foreground">TOTAL clients</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 bg-card border border-primary/30 rounded-lg px-3 py-2">
+          <Bike className="h-4 w-4 text-primary shrink-0" />
+          <div>
+            <p className="text-lg font-bold leading-tight">{stats.totalVelos}</p>
+            <p className="text-[10px] text-muted-foreground">TOTAL vélos</p>
           </div>
         </div>
       </div>
