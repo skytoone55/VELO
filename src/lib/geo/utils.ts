@@ -5,7 +5,7 @@
  * et logique de proximité des dépôts.
  */
 
-// ─── Types ──────────────────────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────────
 
 export interface GeoCoords {
   lat: number
@@ -46,7 +46,7 @@ export interface ZoneClassification {
   horsZone: boolean
 }
 
-// ─── Calcul de distance Haversine ───────────────────────────────────────
+// ─── Calcul de distance Haversine ─────────────────────────────────────────
 
 /**
  * Calcule la distance en km entre deux points GPS via la formule Haversine
@@ -70,7 +70,7 @@ export function calculateHaversineDistance(
   return R * c
 }
 
-// ─── Géocodage ──────────────────────────────────────────────────────────
+// ─── Géocodage ──────────────────────────────────────────────────────────────────
 
 /**
  * Géocode une adresse via l'API gouvernementale française (api-adresse.data.gouv.fr)
@@ -241,7 +241,7 @@ export function buildClientAddress(client: {
   return null
 }
 
-// ─── Proximité dépôts ───────────────────────────────────────────────────
+// ─── Proximité dépôts ─────────────────────────────────────────────────────
 
 /**
  * Trouve le dépôt le plus proche d'un point GPS parmi une liste de dépôts
