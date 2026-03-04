@@ -364,20 +364,35 @@ async function mapMondayItemToClient(
  * Conversion des valeurs en mode hardcodé (ECO-VOLT / fallback)
  * Utilise les mappings de MONDAY_CONFIG
  */
+/**
+ * Lookup insensible à la casse et aux accents
+ */
+function fuzzyLookup(mapping: Record<string, string>, value: string): string | null {
+  // Match exact d'abord
+  if (mapping[value]) return mapping[value]
+  // Match insensible casse + accents
+  const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+  const normalizedValue = normalize(value)
+  for (const [key, mapped] of Object.entries(mapping)) {
+    if (normalize(key) === normalizedValue) return mapped
+  }
+  return null
+}
+
 function convertValueHardcoded(columnId: string, value: any): any {
   switch (columnId) {
     case 'color_mkvfws5n': // Statut commercial (PRINCIPAL)
-      return (MONDAY_CONFIG.mondayToSupabaseStatutCommercial as Record<string, string>)[value] || value
+      return fuzzyLookup(MONDAY_CONFIG.mondayToSupabaseStatutCommercial as Record<string, string>, value) || value
     case 'color_mkvdkzxh': // Département
-      return (MONDAY_CONFIG.mondayToSupabaseDepartement as Record<string, string>)[value] || value
+      return fuzzyLookup(MONDAY_CONFIG.mondayToSupabaseDepartement as Record<string, string>, value) || value
     case 'color_mkvgsswc': // StatutRETINA
-      return (MONDAY_CONFIG.mondayToSupabaseStatutRetina as Record<string, string>)[value] || value
+      return fuzzyLookup(MONDAY_CONFIG.mondayToSupabaseStatutRetina as Record<string, string>, value) || value
     case 'color_mkyqn153': // statut mail
-      return (MONDAY_CONFIG.mondayToSupabaseStatutMail as Record<string, string>)[value] || value
+      return fuzzyLookup(MONDAY_CONFIG.mondayToSupabaseStatutMail as Record<string, string>, value) || value
     case 'color_mkvp4dmz': // StatutAnomalie
-      return (MONDAY_CONFIG.mondayToSupabaseStatutAnomalie as Record<string, string>)[value] || value
+      return fuzzyLookup(MONDAY_CONFIG.mondayToSupabaseStatutAnomalie as Record<string, string>, value) || value
     case 'color_mkvn1kg0': // doublon_RETINA
-      return (MONDAY_CONFIG.mondayToSupabaseStatutDoublon as Record<string, string>)[value] || value
+      return fuzzyLookup(MONDAY_CONFIG.mondayToSupabaseStatutDoublon as Record<string, string>, value) || value
     default:
       return value
   }

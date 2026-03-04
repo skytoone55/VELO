@@ -291,6 +291,15 @@ export default function MapPage() {
     autocompleteRef.current = new google.maps.places.AutocompleteService()
   }, [])
 
+  // Empêcher Google Maps de bloquer la navigation (supprime le beforeunload)
+  useEffect(() => {
+    const removeBeforeUnload = () => {
+      window.onbeforeunload = null
+    }
+    const interval = setInterval(removeBeforeUnload, 1000)
+    return () => clearInterval(interval)
+  }, [])
+
   // Assigner une couleur unique à chaque dépôt
   const depotColorMap = useMemo(() => {
     const map: Record<string, string> = {}
