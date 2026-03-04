@@ -12,6 +12,8 @@ import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, Re
 import { toast } from 'sonner'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Slider } from '@/components/ui/slider'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ChevronDown } from 'lucide-react'
 import { getTenantId } from '@/lib/tenants'
 
 interface Depot {
@@ -735,38 +737,48 @@ export default function MapPage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Dépôts {selectedDepots.length > 0 && `(${selectedDepots.length})`}</Label>
-              <div className="border rounded-md max-h-40 overflow-y-auto p-1.5 space-y-0.5">
-                {depotsForSelector.map(depot => (
-                  <label
-                    key={depot.id}
-                    className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-accent text-xs ${
-                      selectedDepots.includes(depot.id) ? 'bg-accent/60' : ''
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedDepots.includes(depot.id)}
-                      onChange={() => handleToggleDepot(depot.id)}
-                      className="rounded border-gray-300"
-                    />
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: depotColorMap[depot.id] || '#3B82F6' }}
-                    />
-                    <span className="truncate">{depot.nom} ({depot.clients_count})</span>
-                  </label>
-                ))}
-              </div>
-              {selectedDepots.length > 0 && (
-                <button
-                  onClick={() => setSelectedDepots([])}
-                  className="text-xs text-muted-foreground hover:text-foreground underline"
-                >
-                  Tout désélectionner
-                </button>
-              )}
+            <div className="space-y-1">
+              <Label className="text-xs">Dépôts</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full justify-between h-8 text-xs">
+                    <span className="truncate">
+                      {selectedDepots.length === 0 ? 'Tous les dépôts' : `${selectedDepots.length} sélectionné${selectedDepots.length > 1 ? 's' : ''}`}
+                    </span>
+                    <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2" align="start">
+                  <div className="max-h-48 overflow-y-auto space-y-0.5">
+                    {depotsForSelector.map(depot => (
+                      <label
+                        key={depot.id}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent text-xs ${
+                          selectedDepots.includes(depot.id) ? 'bg-accent/60' : ''
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selectedDepots.includes(depot.id)}
+                          onCheckedChange={() => handleToggleDepot(depot.id)}
+                        />
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: depotColorMap[depot.id] || '#3B82F6' }}
+                        />
+                        <span className="truncate">{depot.nom} ({depot.clients_count})</span>
+                      </label>
+                    ))}
+                  </div>
+                  {selectedDepots.length > 0 && (
+                    <button
+                      onClick={() => setSelectedDepots([])}
+                      className="w-full text-xs text-muted-foreground hover:text-foreground underline mt-2 pt-2 border-t"
+                    >
+                      Tout désélectionner
+                    </button>
+                  )}
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Recherche d'adresse avec autocomplétion */}
@@ -839,89 +851,116 @@ export default function MapPage() {
 
             {/* Filtre Statut commercial */}
             {uniqueStatuts.length > 0 && (
-              <div className="space-y-2">
-                <Label className="flex items-center justify-between">
-                  <span>Statut commercial</span>
-                  {selectedStatuts.length > 0 && (
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{selectedStatuts.length}</Badge>
-                  )}
-                </Label>
-                <div className="max-h-32 overflow-y-auto space-y-1.5 border rounded-md p-2">
-                  {uniqueStatuts.map(statut => (
-                    <div key={statut} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`statut-${statut}`}
-                        checked={selectedStatuts.includes(statut)}
-                        onCheckedChange={(checked) => {
-                          setSelectedStatuts(prev =>
-                            checked ? [...prev, statut] : prev.filter(s => s !== statut)
-                          )
-                        }}
-                      />
-                      <label htmlFor={`statut-${statut}`} className="text-xs cursor-pointer truncate">
-                        {statut}
-                      </label>
+              <div className="space-y-1">
+                <Label className="text-xs">Statut commercial</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full justify-between h-8 text-xs">
+                      <span className="truncate">
+                        {selectedStatuts.length === 0 ? 'Tous' : `${selectedStatuts.length} sélectionné${selectedStatuts.length > 1 ? 's' : ''}`}
+                      </span>
+                      <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2" align="start">
+                    <div className="max-h-48 overflow-y-auto space-y-0.5">
+                      {uniqueStatuts.map(statut => (
+                        <label key={statut} className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent text-xs">
+                          <Checkbox
+                            checked={selectedStatuts.includes(statut)}
+                            onCheckedChange={(checked) => {
+                              setSelectedStatuts(prev =>
+                                checked ? [...prev, statut] : prev.filter(s => s !== statut)
+                              )
+                            }}
+                          />
+                          <span className="truncate">{statut}</span>
+                        </label>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                    {selectedStatuts.length > 0 && (
+                      <button onClick={() => setSelectedStatuts([])} className="w-full text-xs text-muted-foreground hover:text-foreground underline mt-2 pt-2 border-t">
+                        Tout désélectionner
+                      </button>
+                    )}
+                  </PopoverContent>
+                </Popover>
               </div>
             )}
 
             {/* Filtre NAF */}
-            <div className="space-y-2">
-              <Label className="flex items-center justify-between">
-                <span>NAF ENEMAT</span>
-                {selectedNaf.length > 0 && (
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{selectedNaf.length}</Badge>
-                )}
-              </Label>
-              <div className="space-y-1.5 border rounded-md p-2">
-                {['Validé', 'Bloqué', 'Non vérifié'].map(label => (
-                  <div key={label} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`naf-${label}`}
-                      checked={selectedNaf.includes(label)}
-                      onCheckedChange={(checked) => {
-                        setSelectedNaf(prev =>
-                          checked ? [...prev, label] : prev.filter(s => s !== label)
-                        )
-                      }}
-                    />
-                    <label htmlFor={`naf-${label}`} className="text-xs cursor-pointer">
-                      {label === 'Validé' ? '✓ Validé' : label === 'Bloqué' ? '✗ Bloqué' : '? Non vérifié'}
-                    </label>
+            <div className="space-y-1">
+              <Label className="text-xs">NAF ENEMAT</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full justify-between h-8 text-xs">
+                    <span className="truncate">
+                      {selectedNaf.length === 0 ? 'Tous' : `${selectedNaf.length} sélectionné${selectedNaf.length > 1 ? 's' : ''}`}
+                    </span>
+                    <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-2" align="start">
+                  <div className="space-y-0.5">
+                    {['Validé', 'Bloqué', 'Non vérifié'].map(label => (
+                      <label key={label} className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent text-xs">
+                        <Checkbox
+                          checked={selectedNaf.includes(label)}
+                          onCheckedChange={(checked) => {
+                            setSelectedNaf(prev =>
+                              checked ? [...prev, label] : prev.filter(s => s !== label)
+                            )
+                          }}
+                        />
+                        <span>{label === 'Validé' ? 'Validé' : label === 'Bloqué' ? 'Bloqué' : 'Non vérifié'}</span>
+                      </label>
+                    ))}
                   </div>
-                ))}
-              </div>
+                  {selectedNaf.length > 0 && (
+                    <button onClick={() => setSelectedNaf([])} className="w-full text-xs text-muted-foreground hover:text-foreground underline mt-2 pt-2 border-t">
+                      Tout désélectionner
+                    </button>
+                  )}
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Filtre Commercial (board) */}
             {uniqueCommerciaux.length > 0 && (
-              <div className="space-y-2">
-                <Label className="flex items-center justify-between">
-                  <span>Commercial</span>
-                  {selectedCommerciaux.length > 0 && (
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{selectedCommerciaux.length}</Badge>
-                  )}
-                </Label>
-                <div className="max-h-40 overflow-y-auto space-y-1.5 border rounded-md p-2">
-                  {uniqueCommerciaux.map(name => (
-                    <div key={name} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`comm-${name}`}
-                        checked={selectedCommerciaux.includes(name)}
-                        onCheckedChange={(checked) => {
-                          setSelectedCommerciaux(prev =>
-                            checked ? [...prev, name] : prev.filter(s => s !== name)
-                          )
-                        }}
-                      />
-                      <label htmlFor={`comm-${name}`} className="text-xs cursor-pointer">
-                        {name}
-                      </label>
+              <div className="space-y-1">
+                <Label className="text-xs">Commercial</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full justify-between h-8 text-xs">
+                      <span className="truncate">
+                        {selectedCommerciaux.length === 0 ? 'Tous' : `${selectedCommerciaux.length} sélectionné${selectedCommerciaux.length > 1 ? 's' : ''}`}
+                      </span>
+                      <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48 p-2" align="start">
+                    <div className="max-h-48 overflow-y-auto space-y-0.5">
+                      {uniqueCommerciaux.map(name => (
+                        <label key={name} className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent text-xs">
+                          <Checkbox
+                            checked={selectedCommerciaux.includes(name)}
+                            onCheckedChange={(checked) => {
+                              setSelectedCommerciaux(prev =>
+                                checked ? [...prev, name] : prev.filter(s => s !== name)
+                              )
+                            }}
+                          />
+                          <span className="truncate">{name}</span>
+                        </label>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                    {selectedCommerciaux.length > 0 && (
+                      <button onClick={() => setSelectedCommerciaux([])} className="w-full text-xs text-muted-foreground hover:text-foreground underline mt-2 pt-2 border-t">
+                        Tout désélectionner
+                      </button>
+                    )}
+                  </PopoverContent>
+                </Popover>
               </div>
             )}
 
