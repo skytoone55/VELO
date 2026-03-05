@@ -98,6 +98,8 @@ const statutConfig: Record<string, { label: string; color: string }> = {
   code_envoye: { label: 'CODE ENVOYÉ', color: 'bg-indigo-100 text-indigo-800' },
   formulaire_envoye: { label: 'FORMULAIRE ENVOYÉ', color: 'bg-cyan-100 text-cyan-800' },
   formulaire_valide: { label: 'FORMULAIRE VALIDÉ', color: 'bg-teal-100 text-teal-800' },
+  a_livrer: { label: 'À LIVRER', color: 'bg-orange-100 text-orange-800' },
+  en_livraison: { label: 'EN LIVRAISON', color: 'bg-blue-200 text-blue-900' },
 }
 
 // Helper pour obtenir le label et la couleur d'un statut
@@ -158,7 +160,7 @@ export default function AdminClientsPage() {
   const [commercialFilter, setCommercialFilter] = useState('all')
   const [sortBy, setSortBy] = useState('updated_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Tous' }])
+  const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Tous les commerciaux' }])
   const [dynamicDeptOptions, setDynamicDeptOptions] = useState<{value: string; label: string}[] | null>(null)
   const tenantId = getTenantId()
 
@@ -227,14 +229,14 @@ export default function AdminClientsPage() {
   useEffect(() => {
     const staticOpts = getStaticCommercialOptions()
     if (staticOpts) {
-      setCommercialOptions([{ value: 'all', label: 'Tous' }, ...staticOpts])
+      setCommercialOptions([{ value: 'all', label: 'Tous les commerciaux' }, ...staticOpts])
     } else {
       fetch('/api/clients/commercials')
         .then(res => res.json())
         .then((emails: string[]) => {
           if (Array.isArray(emails)) {
             setCommercialOptions([
-              { value: 'all', label: 'Tous' },
+              { value: 'all', label: 'Tous les commerciaux' },
               ...emails.map(e => ({ value: e, label: e }))
             ])
           }
@@ -247,14 +249,14 @@ export default function AdminClientsPage() {
   useEffect(() => {
     const staticDepts = getStaticDepartementOptions()
     if (staticDepts) {
-      setDynamicDeptOptions([{ value: 'all', label: 'Tous' }, ...staticDepts])
+      setDynamicDeptOptions([{ value: 'all', label: 'Tous les departements' }, ...staticDepts])
     } else {
       fetch('/api/clients/departements')
         .then(res => res.json())
         .then((depts: string[]) => {
           if (Array.isArray(depts)) {
             setDynamicDeptOptions([
-              { value: 'all', label: 'Tous' },
+              { value: 'all', label: 'Tous les departements' },
               ...depts.map(d => ({ value: d, label: d }))
             ])
           }
@@ -789,7 +791,7 @@ export default function AdminClientsPage() {
                 <SelectValue placeholder="Département" />
               </SelectTrigger>
               <SelectContent>
-                {(dynamicDeptOptions || [{ value: 'all', label: 'Tous' }]).map((opt) => (
+                {(dynamicDeptOptions || [{ value: 'all', label: 'Tous les departements' }]).map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
               </SelectContent>
@@ -883,12 +885,12 @@ export default function AdminClientsPage() {
                   <SortableHeader label="Société" column="raison_sociale" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <SortableHeader label="Email client" column="email_beneficiaire" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <SortableHeader label="Téléphone" column="telephone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <TableHead>Commercial</TableHead>
-                  <SortableHeader label="Département" column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="Vélos" column="velo_devis" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Commercial" column="monday_board_id" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Departement" column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Velos" column="velo_devis" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <SortableHeader label="NAF" column="validation_naf" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <SortableHeader label="Statut" column="statut_commercial" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <TableHead>Zone</TableHead>
+                  <SortableHeader label="Zone" column="type_de_zone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
