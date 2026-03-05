@@ -42,6 +42,7 @@ interface LivraisonRow {
     email_beneficiaire: string | null
     telephone: string | null
     departement: string | null
+    adresse_societe_cp: string | null
     monday_board_id: string | null
     statut_commercial: string | null
     velo_devis: number
@@ -369,7 +370,7 @@ export default function AdminLivraisonsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">
-                      {getDepartementLabel(liv.client?.departement)}
+                      {getDepartementLabel(liv.client?.departement, liv.client?.adresse_societe_cp)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">

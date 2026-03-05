@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
         *,
         client:clients!inner(
           id, raison_sociale, siret, email, email_beneficiaire, telephone,
-          departement, commercial_assigne, monday_board_id,
+          departement, adresse_societe_cp, commercial_assigne, monday_board_id,
           statut_commercial, validation_naf, type_de_zone, velo_devis, agence
         ),
         depot:depots(id, nom)

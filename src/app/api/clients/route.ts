@@ -76,9 +76,11 @@ export async function GET(request: NextRequest) {
       query = query.eq('statut_commercial', statutFilter)
     }
 
-    // Filtre par département
+    // Filtre par departement (ou derive du code postal pour PPE)
     if (departementFilter && departementFilter !== 'all') {
-      query = query.eq('departement', departementFilter)
+      query = query.or(
+        `departement.eq.${departementFilter},adresse_societe_cp.like.${departementFilter}%`
+      )
     }
 
     // Filtre par validation NAF

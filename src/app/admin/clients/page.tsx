@@ -949,7 +949,7 @@ export default function AdminClientsPage() {
                     <TableCell>
                       {client.departement ? (
                         <Badge variant="outline">
-                          {getDepartementLabel(client.departement)}
+                          {getDepartementLabel(client.departement, client.adresse_societe_cp)}
                         </Badge>
                       ) : (
                         <span className="text-muted-foreground text-sm">-</span>
@@ -979,9 +979,9 @@ export default function AdminClientsPage() {
                       })()}
                     </TableCell>
                     <TableCell>
-                      {client.dans_la_zone === true ? (
+                      {client.type_de_zone === 'dans_la_zone' ? (
                         <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">Zone</Badge>
-                      ) : client.dans_la_zone === false ? (
+                      ) : client.type_de_zone === 'hors_zone' ? (
                         <Badge variant="outline" className="text-xs text-muted-foreground">Hors zone</Badge>
                       ) : (
                         <span className="text-sm text-muted-foreground">-</span>

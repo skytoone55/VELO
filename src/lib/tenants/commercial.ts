@@ -60,14 +60,19 @@ export const ECOVOLT_DEPARTEMENT_LABELS: Record<string, string> = {
  * Label d'affichage pour un code département.
  * - Ecovolt : nom de région (974 → "La Réunion")
  * - PPE : code brut tel quel (75, 93, etc.)
+ * Si département vide, dérive du code postal (2 premiers chiffres).
  */
-export function getDepartementLabel(code: string | null | undefined): string {
-  if (!code) return '-'
+export function getDepartementLabel(
+  code: string | null | undefined,
+  codePostal?: string | null
+): string {
+  const dept = code || (codePostal ? codePostal.substring(0, 2) : null)
+  if (!dept) return '-'
   const tenant = getTenantId()
   if (tenant === 'ecovolt') {
-    return ECOVOLT_DEPARTEMENT_LABELS[code] || code
+    return ECOVOLT_DEPARTEMENT_LABELS[dept] || dept
   }
-  return code
+  return dept
 }
 
 /**

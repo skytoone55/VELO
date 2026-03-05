@@ -3,9 +3,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
  * GET /api/clients/departements
- * Retourne les valeurs distinctes de départements pour le filtre dropdown.
- * PPE : codes département français (75, 93, 44, etc.) — dynamique
- * Ecovolt : n'utilise pas cette route (options statiques côté client)
+ * Retourne les valeurs distinctes de departements pour le filtre dropdown.
+ * PPE : codes departement francais (75, 93, 44, etc.)
+ * Si departement vide, derive du code postal (2 premiers chiffres).
  */
 export async function GET() {
   try {
@@ -13,17 +13,20 @@ export async function GET() {
 
     const { data, error } = await adminClient
       .from('clients')
-      .select('departement')
-      .not('departement', 'is', null)
+      .select('departement, adresse_societe_cp')
       .not('monday_sync_status', 'eq', 'deleted')
 
     if (error) throw error
 
-    const depts = [...new Set(data?.map(d => d.departement).filter(Boolean))].sort()
+    const depts = new Set<string>()
+    data?.forEach(d => {
+      const dept = d.departement || (d.adresse_societe_cp ? d.adresse_societe_cp.substring(0, 2) : null)
+      if (dept) depts.add(dept)
+    })
 
-    return NextResponse.json(depts)
+    return NextResponse.json([...depts].sort())
   } catch (error) {
-    console.error('Erreur récupération départements:', error)
+    console.error('Erreur recuperation departements:', error)
     return NextResponse.json([], { status: 500 })
   }
 }
