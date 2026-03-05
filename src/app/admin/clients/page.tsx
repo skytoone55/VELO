@@ -55,6 +55,7 @@ import { Client } from '@/lib/types/database'
 import { toast } from 'sonner'
 import { getTenantId } from '@/lib/tenants'
 import { getCommercialName, getDepartementLabel, getStaticDepartementOptions, getStaticCommercialOptions } from '@/lib/tenants/commercial'
+import { getSimpleZoneStatus, type DepotWithCoords } from '@/lib/geo/utils'
 
 // Options filtre NAF (ENEMAT)
 const nafOptions = [
@@ -162,6 +163,7 @@ export default function AdminClientsPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Tous les commerciaux' }])
   const [dynamicDeptOptions, setDynamicDeptOptions] = useState<{value: string; label: string}[] | null>(null)
+  const [depots, setDepots] = useState<DepotWithCoords[]>([])
   const tenantId = getTenantId()
 
   // Pagination côté serveur
@@ -263,6 +265,17 @@ export default function AdminClientsPage() {
         })
         .catch(() => {})
     }
+  }, [])
+
+  // Load depots for zone calculation
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from('depots')
+      .select('id, nom, latitude, longitude, rayon_couverture_km, rayon_livraison_payant_km, prix_livraison_payante, type, agence')
+      .then(({ data }) => {
+        if (data) setDepots(data as DepotWithCoords[])
+      })
   }, [])
 
   // Debounce pour la recherche (éviter trop de requêtes)
@@ -979,13 +992,12 @@ export default function AdminClientsPage() {
                       })()}
                     </TableCell>
                     <TableCell>
-                      {client.type_de_zone === 'dans_la_zone' ? (
-                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">Zone</Badge>
-                      ) : client.type_de_zone === 'hors_zone' ? (
-                        <Badge variant="outline" className="text-xs text-muted-foreground">Hors zone</Badge>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">-</span>
-                      )}
+                      {(() => {
+                        const zone = client.type_de_zone || getSimpleZoneStatus(client, depots)
+                        if (zone === 'dans_la_zone') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">Zone</Badge>
+                        if (zone === 'hors_zone') return <Badge variant="outline" className="text-xs text-muted-foreground">Hors zone</Badge>
+                        return <span className="text-sm text-muted-foreground">-</span>
+                      })()}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">

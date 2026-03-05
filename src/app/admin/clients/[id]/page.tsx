@@ -189,6 +189,15 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [newStatut, setNewStatut] = useState<string>('')
   const [commentaire, setCommentaire] = useState('')
 
+  // Zone calculée à partir de la distance au dépôt
+  const computedZone = (() => {
+    if (!distanceKm) return null
+    const depot = depotRetrait || depotLogistique
+    if (!depot) return null
+    const rayon = (depot as any).rayon_couverture_km || 30
+    return distanceKm <= rayon ? 'dans_la_zone' : 'hors_zone'
+  })()
+
   // Source de données
   const [dataSource, setDataSource] = useState<'monday' | 'supabase'>('monday')
 
@@ -726,15 +735,19 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <Badge className={`${statutCommercialColors[client.statut_commercial || 'inconnu']} text-sm px-3 py-1 ml-2`}>
               {statutCommercialLabels[client.statut_commercial || 'inconnu']}
             </Badge>
-            {client.type_de_zone && (
-              <Badge className={`text-sm px-3 py-1 ml-2 ${
-                client.type_de_zone === 'dans_la_zone'
-                  ? 'bg-green-600 hover:bg-green-700'
-                  : 'bg-orange-500 hover:bg-orange-600'
-              }`}>
-                {client.type_de_zone === 'dans_la_zone' ? 'Dans la zone' : 'Hors zone'}
-              </Badge>
-            )}
+            {(() => {
+              const zone = client.type_de_zone || computedZone
+              if (!zone) return null
+              return (
+                <Badge className={`text-sm px-3 py-1 ml-2 ${
+                  zone === 'dans_la_zone'
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-orange-500 hover:bg-orange-600'
+                }`}>
+                  {zone === 'dans_la_zone' ? 'Dans la zone' : 'Hors zone'}
+                </Badge>
+              )
+            })()}
           </div>
         </div>
 
@@ -902,9 +915,18 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               icon={Truck}
               title="Livraison"
               badge={
-                <Badge variant="outline">
-                  {modeLivraison === 'retrait' ? 'Point relais' : 'À domicile'}
-                </Badge>
+                <div className="flex gap-2">
+                  <Badge variant="outline">
+                    {modeLivraison === 'retrait' ? 'Point relais' : 'À domicile'}
+                  </Badge>
+                  {(() => {
+                    const zone = client.type_de_zone || computedZone
+                    if (!zone) return null
+                    return zone === 'dans_la_zone'
+                      ? <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Dans la zone</Badge>
+                      : <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Hors zone</Badge>
+                  })()}
+                </div>
               }
             />
             <div className="grid md:grid-cols-2 gap-4">
