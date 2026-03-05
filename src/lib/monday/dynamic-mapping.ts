@@ -157,6 +157,7 @@ export async function convertValueToMonday(interfaceField: string, supabaseValue
     'statut_anomalie',
     'statut_doublon',
     'type_livraison',
+    'type_de_zone',
     'validation_naf',
   ]
 
@@ -183,6 +184,7 @@ export async function convertValueToSupabase(interfaceField: string, mondayValue
     'statut_anomalie',
     'statut_doublon',
     'type_livraison',
+    'type_de_zone',
     'validation_naf',
   ]
 
@@ -248,6 +250,9 @@ export async function initializeMappingsFromConfig(boardId?: string): Promise<{ 
       commercial_assigne: { label: 'Commercial assigné', type: 'people', section: 'assignation' },
       equipe_ids: { label: 'Équipe', type: 'people', section: 'assignation' },
       code_enemat_saisi: { label: 'Code ENEMAT saisi', type: 'text', section: 'validation' },
+      preferences_livraison: { label: 'Préférences livraison', type: 'text', section: 'livraison' },
+      type_de_zone: { label: 'Type de zone', type: 'status', section: 'livraison' },
+      validation_naf: { label: 'Validation NAF', type: 'status', section: 'validation' },
     }
 
     // Mappings de valeurs pour les champs status (Supabase → Monday)
@@ -277,6 +282,8 @@ export async function initializeMappingsFromConfig(boardId?: string): Promise<{ 
         Object.entries(MONDAY_CONFIG.mondayToSupabaseStatutDoublon as Record<string, string>)
           .map(([k, v]) => [v, k])
       ),
+      type_de_zone: MONDAY_CONFIG.supabaseToMondayTypeDeZone as Record<string, string>,
+      validation_naf: MONDAY_CONFIG.supabaseToMondayValidationNafEcovolt as Record<string, string>,
     }
 
     let count = 0
