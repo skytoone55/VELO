@@ -39,12 +39,9 @@ export function Step2Informations() {
       setLocalLoading(false)
     }
 
-    if (!data.raisonSociale) {
-      loadClientData()
-    } else {
-      setLocalLoading(false)
-    }
-  }, [clientId, data.raisonSociale, updateData])
+    // Toujours re-fetcher quand clientId change — ignorer le cache Zustand
+    loadClientData()
+  }, [clientId, updateData])
 
   const handleValidate = () => {
     nextStep()

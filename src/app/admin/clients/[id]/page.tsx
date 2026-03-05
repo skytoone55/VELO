@@ -726,6 +726,15 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <Badge className={`${statutCommercialColors[client.statut_commercial || 'inconnu']} text-sm px-3 py-1 ml-2`}>
               {statutCommercialLabels[client.statut_commercial || 'inconnu']}
             </Badge>
+            {client.type_de_zone && (
+              <Badge className={`text-sm px-3 py-1 ml-2 ${
+                client.type_de_zone === 'dans_la_zone'
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : 'bg-orange-500 hover:bg-orange-600'
+              }`}>
+                {client.type_de_zone === 'dans_la_zone' ? 'Dans la zone' : 'Hors zone'}
+              </Badge>
+            )}
           </div>
         </div>
 

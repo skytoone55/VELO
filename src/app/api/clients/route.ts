@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
     const statutFilter = searchParams.get('statut')
     const departementFilter = searchParams.get('departement')
     const nafFilter = searchParams.get('naf')
+    const zoneFilter = searchParams.get('zone')
 
     const adminClient = createAdminClient()
 
@@ -77,6 +78,11 @@ export async function GET(request: NextRequest) {
       } else if (nafFilter === 'en_attente') {
         query = query.eq('validation_naf', 'A VERIFIER')
       }
+    }
+
+    // Filtre par type de zone
+    if (zoneFilter && zoneFilter !== 'all') {
+      query = query.eq('type_de_zone', zoneFilter)
     }
 
     // Compter le total avant pagination

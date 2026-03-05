@@ -23,6 +23,10 @@ import {
   Mail,
   Calendar,
   Phone,
+  CreditCard,
+  BookOpen,
+  Car,
+  FileText,
 } from 'lucide-react'
 import { getTenantConfig } from '@/lib/tenants'
 
@@ -294,8 +298,24 @@ export function Step6Confirmation() {
               htmlFor="confirmIdentite"
               className="flex flex-col p-4 border rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
             >
-              <div className="flex justify-center mb-3">
-                <IdCard className="h-12 w-12 text-foreground" />
+              {/* Icônes des documents acceptés */}
+              <div className="flex justify-center gap-4 mb-3">
+                <div className="flex flex-col items-center gap-1">
+                  <CreditCard className="h-8 w-8 text-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Carte d'identité</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <BookOpen className="h-8 w-8 text-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Passeport</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <Car className="h-8 w-8 text-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Permis</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <FileText className="h-8 w-8 text-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Titre de séjour</span>
+                </div>
               </div>
               <div className="flex items-start gap-3">
                 <Checkbox
@@ -307,11 +327,11 @@ export function Step6Confirmation() {
                 <span className="text-sm leading-relaxed">
                   {isRetrait ? (
                     <>
-                      Je comprends qu'une <span className="font-semibold">pièce d'identité</span> sera demandée lors du retrait. *
+                      Je comprends qu'une <span className="font-semibold">pièce d'identité</span> (l'un de ces documents) sera demandée lors du retrait. *
                     </>
                   ) : (
                     <>
-                      Je comprends qu'une <span className="font-semibold">pièce d'identité</span> sera demandée à la livraison. *
+                      Je comprends qu'une <span className="font-semibold">pièce d'identité</span> (l'un de ces documents) sera demandée à la livraison. *
                     </>
                   )}
                 </span>

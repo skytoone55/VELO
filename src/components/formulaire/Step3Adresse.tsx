@@ -7,13 +7,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
-import { Loader2, MapPin, ArrowLeft, ArrowRight, AlertCircle, Info, Building2, MapPinned, CheckCircle, Truck, Store } from 'lucide-react'
+import { Loader2, MapPin, ArrowLeft, ArrowRight, AlertCircle, Info, CheckCircle, Truck, Store } from 'lucide-react'
 import { Depot } from '@/lib/types/database'
 
-type AddressChoice = 'facturation' | 'autre'
-type ViewState = 'address_choice' | 'result'
+type ViewState = 'address_confirm' | 'result'
 
 interface ValidationResult {
   modeLivraison: 'domicile' | 'retrait'
@@ -28,9 +25,7 @@ interface ValidationResult {
 export function Step3Adresse() {
   const { clientId, data, updateData, nextStep, prevStep, setHorsZone } = useFormulaireStore()
 
-  const [viewState, setViewState] = useState<ViewState>('address_choice')
-  const [addressChoice, setAddressChoice] = useState<AddressChoice>('facturation')
-  const [showNewAddressForm, setShowNewAddressForm] = useState(false)
+  const [viewState, setViewState] = useState<ViewState>('address_confirm')
   const [facturationAddress, setFacturationAddress] = useState<{
     ligne1: string
     ligne2: string
@@ -38,15 +33,7 @@ export function Step3Adresse() {
     ville: string
   } | null>(null)
 
-  const [newAdresse, setNewAdresse] = useState({
-    ligne1: '',
-    ligne2: '',
-    codePostal: '',
-    ville: '',
-    latitude: 0,
-    longitude: 0,
-  })
-  const [addressConfirmed, setAddressConfirmed] = useState(false)
+  const [complementAdresse, setComplementAdresse] = useState(data.complementAdresse || '')
 
   const [loading, setLoading] = useState(true)
   const [validating, setValidating] = useState(false)
@@ -80,22 +67,7 @@ export function Step3Adresse() {
     loadClientAddress()
   }, [clientId])
 
-  // Gestion du choix d'adresse
-  const handleChoiceChange = (value: AddressChoice) => {
-    setAddressChoice(value)
-    setError(null)
-    setShowNewAddressForm(value === 'autre')
-  }
-
   const validateAddress = async () => {
-    // Si nouvelle adresse, valider les champs
-    if (addressChoice === 'autre') {
-      if (!newAdresse.ligne1.trim() || !newAdresse.codePostal.trim() || !newAdresse.ville.trim()) {
-        setError('Veuillez remplir tous les champs obligatoires')
-        return
-      }
-    }
-
     setValidating(true)
     setError(null)
 
@@ -105,8 +77,9 @@ export function Step3Adresse() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId,
-          useSocieteAddress: addressChoice === 'facturation',
-          address: addressChoice === 'autre' ? newAdresse : null,
+          useSocieteAddress: true,
+          address: null,
+          complementAdresse: complementAdresse.trim() || null,
         }),
       })
 
@@ -117,9 +90,6 @@ export function Step3Adresse() {
         setValidating(false)
         return
       }
-
-      // Sauvegarder l'adresse dans le store
-      const finalAddress = addressChoice === 'facturation' ? facturationAddress : newAdresse
 
       // Stocker le résultat
       setValidationResult({
@@ -134,7 +104,8 @@ export function Step3Adresse() {
 
       // Mettre à jour le store avec l'adresse, le mode et les infos de zone
       updateData({
-        adresseLivraison: finalAddress!,
+        adresseLivraison: facturationAddress!,
+        complementAdresse: complementAdresse.trim() || undefined,
         modeLivraison: result.modeLivraison,
         zoneLivraison: result.zoneLivraison,
         depotType: result.depotType,
@@ -155,13 +126,9 @@ export function Step3Adresse() {
     }
   }
 
-  const handleContinue = () => {
-    nextStep()
-  }
-
   const handleBack = () => {
     if (viewState === 'result') {
-      setViewState('address_choice')
+      setViewState('address_confirm')
       setValidationResult(null)
     } else {
       prevStep()
@@ -183,8 +150,7 @@ export function Step3Adresse() {
     const { modeLivraison, depotRetrait, depotLogistique, horsZone } = validationResult
     const finalAddress = data.adresseLivraison
 
-    // Si hors zone, on affiche quand même une confirmation de livraison à domicile
-    // L'alerte admin a déjà été créée côté serveur
+    // Si hors zone
     if (horsZone) {
       return (
         <Card>
@@ -209,7 +175,9 @@ export function Step3Adresse() {
             <div className="bg-muted/50 rounded-lg p-4 border">
               <p className="text-sm font-medium text-muted-foreground mb-2">Adresse de livraison finale :</p>
               <p className="font-medium">{finalAddress?.ligne1}</p>
-              {finalAddress?.ligne2 && <p className="text-sm text-muted-foreground">{finalAddress.ligne2}</p>}
+              {(finalAddress?.ligne2 || data.complementAdresse) && (
+                <p className="text-sm text-muted-foreground">{data.complementAdresse || finalAddress?.ligne2}</p>
+              )}
               <p>{finalAddress?.codePostal} {finalAddress?.ville}</p>
             </div>
 
@@ -271,7 +239,7 @@ export function Step3Adresse() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Modifier l'adresse
               </Button>
-              <Button onClick={handleContinue} className="flex-1 bg-green-600 hover:bg-green-700">
+              <Button onClick={nextStep} className="flex-1 bg-green-600 hover:bg-green-700">
                 Continuer
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -310,7 +278,9 @@ export function Step3Adresse() {
               <div>
                 <p className="font-semibold">Adresse de livraison finale</p>
                 <p className="text-muted-foreground">{finalAddress?.ligne1}</p>
-                {finalAddress?.ligne2 && <p className="text-muted-foreground">{finalAddress.ligne2}</p>}
+                {(finalAddress?.ligne2 || data.complementAdresse) && (
+                  <p className="text-muted-foreground">{data.complementAdresse || finalAddress?.ligne2}</p>
+                )}
                 <p className="text-muted-foreground">{finalAddress?.codePostal} {finalAddress?.ville}</p>
               </div>
             </div>
@@ -321,7 +291,7 @@ export function Step3Adresse() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Modifier l'adresse
             </Button>
-            <Button onClick={handleContinue} className="flex-1 bg-green-600 hover:bg-green-700">
+            <Button onClick={nextStep} className="flex-1 bg-green-600 hover:bg-green-700">
               Continuer
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -331,21 +301,21 @@ export function Step3Adresse() {
     )
   }
 
-  // Vue choix d'adresse
+  // Vue confirmation d'adresse — toujours l'adresse société
   return (
     <Card>
       <CardHeader className="text-center">
         <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
           <MapPin className="w-8 h-8 text-foreground" />
         </div>
-        <CardTitle>Adresse livraison finale</CardTitle>
+        <CardTitle>Adresse de livraison</CardTitle>
         <CardDescription>
-          Confirmez l'adresse où vous souhaitez recevoir votre vélo cargo
+          Vérifiez l'adresse de livraison de votre vélo cargo
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Info importante en haut */}
+        {/* Info */}
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
@@ -361,124 +331,54 @@ export function Step3Adresse() {
           </Alert>
         )}
 
-        {/* Choix de l'adresse */}
-        <RadioGroup value={addressChoice} onValueChange={(v) => handleChoiceChange(v as AddressChoice)} className="space-y-3">
-          {/* Option 1: Utiliser l'adresse de facturation */}
-          <div className={`p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${addressChoice === 'facturation' ? 'border-foreground bg-muted' : ''}`}>
-            <div className="flex items-start space-x-3">
-              <RadioGroupItem value="facturation" id="facturation" className="mt-1" />
-              <Label htmlFor="facturation" className="flex-1 cursor-pointer">
-                <div className="flex items-center gap-2 mb-1">
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Utiliser mon adresse de facturation</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  L'adresse enregistrée dans votre dossier
-                </p>
-              </Label>
+        {/* Adresse société (non modifiable) */}
+        {facturationAddress && facturationAddress.ligne1 ? (
+          <div className="bg-muted/30 rounded-xl p-6 space-y-4 border">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+              <MapPin className="h-4 w-4" />
+              Adresse de votre entreprise
             </div>
-
-            {/* Afficher l'adresse de facturation juste en dessous de ce choix */}
-            {facturationAddress && facturationAddress.ligne1 && (
-              <div className="mt-3 ml-7 bg-muted/50 rounded-lg p-3 border">
-                <p className="font-medium">{facturationAddress.ligne1}</p>
-                {facturationAddress.ligne2 && <p className="text-sm text-muted-foreground">{facturationAddress.ligne2}</p>}
-                <p className="text-sm">{facturationAddress.codePostal} {facturationAddress.ville}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Option 2: Autre adresse */}
-          <div className={`p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${addressChoice === 'autre' ? 'border-foreground bg-muted' : ''}`}>
-            <div className="flex items-start space-x-3">
-              <RadioGroupItem value="autre" id="autre" className="mt-1" />
-              <Label htmlFor="autre" className="flex-1 cursor-pointer">
-                <div className="flex items-center gap-2 mb-1">
-                  <MapPinned className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Utiliser une autre adresse</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Je souhaite indiquer une adresse différente
-                </p>
-              </Label>
-            </div>
-          </div>
-        </RadioGroup>
-
-        {/* Formulaire nouvelle adresse */}
-        {showNewAddressForm && (
-          <div className="grid gap-4 pt-4 border-t">
-            <p className="text-sm font-medium">Nouvelle adresse de livraison :</p>
-
-            <div className="space-y-2">
-              <Label htmlFor="ligne1">Adresse *</Label>
-              <AddressAutocomplete
-                value={newAdresse.ligne1}
-                onChange={(value) => {
-                  setNewAdresse({ ...newAdresse, ligne1: value })
-                  setAddressConfirmed(false)
-                }}
-                onSelect={(address) => {
-                  setNewAdresse({
-                    ...newAdresse,
-                    ligne1: address.ligne1,
-                    codePostal: address.codePostal,
-                    ville: address.ville,
-                    latitude: address.latitude,
-                    longitude: address.longitude,
-                  })
-                  setAddressConfirmed(true)
-                }}
-                placeholder="Commencez à taper votre adresse..."
-              />
-              {addressConfirmed && (
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <CheckCircle className="h-4 w-4" />
-                  Adresse validée et géolocalisée
-                </div>
+            <div>
+              <p className="text-lg font-medium">{facturationAddress.ligne1}</p>
+              {facturationAddress.ligne2 && (
+                <p className="text-muted-foreground">{facturationAddress.ligne2}</p>
               )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ligne2">Complément d'adresse</Label>
-              <Input
-                id="ligne2"
-                placeholder="Bâtiment, étage, etc."
-                value={newAdresse.ligne2}
-                onChange={(e) => setNewAdresse({ ...newAdresse, ligne2: e.target.value })}
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="cp">Code postal *</Label>
-                <Input
-                  id="cp"
-                  placeholder="97400"
-                  value={newAdresse.codePostal}
-                  onChange={(e) => setNewAdresse({ ...newAdresse, codePostal: e.target.value })}
-                  maxLength={5}
-                />
-              </div>
-              <div className="col-span-2 space-y-2">
-                <Label htmlFor="ville">Ville *</Label>
-                <Input
-                  id="ville"
-                  placeholder="Saint-Denis"
-                  value={newAdresse.ville}
-                  onChange={(e) => setNewAdresse({ ...newAdresse, ville: e.target.value })}
-                />
-              </div>
+              <p className="text-muted-foreground">{facturationAddress.codePostal} {facturationAddress.ville}</p>
             </div>
           </div>
+        ) : (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Aucune adresse trouvée dans votre dossier. Veuillez contacter votre conseiller.
+            </AlertDescription>
+          </Alert>
         )}
+
+        {/* Complément d'adresse */}
+        <div className="space-y-2">
+          <Label htmlFor="complement">Complément d'adresse (optionnel)</Label>
+          <Input
+            id="complement"
+            placeholder="Bâtiment, étage, digicode, interphone..."
+            value={complementAdresse}
+            onChange={(e) => setComplementAdresse(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Précisez les informations utiles pour le livreur
+          </p>
+        </div>
 
         <div className="flex gap-4">
           <Button variant="outline" onClick={prevStep} className="flex-1">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Retour
           </Button>
-          <Button onClick={validateAddress} disabled={validating} className="flex-1 bg-green-600 hover:bg-green-700">
+          <Button
+            onClick={validateAddress}
+            disabled={validating || !facturationAddress?.ligne1}
+            className="flex-1 bg-green-600 hover:bg-green-700"
+          >
             {validating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -486,8 +386,8 @@ export function Step3Adresse() {
               </>
             ) : (
               <>
-                Valider
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Je confirme cette adresse
               </>
             )}
           </Button>

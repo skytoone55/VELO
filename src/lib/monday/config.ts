@@ -90,6 +90,10 @@ export const MONDAY_CONFIG = {
 
     // --- Code ENEMAT (code de livraison client) ---
     'text_mkzvqk4s': 'code_enemat_saisi',           // Code ENEMAT saisi par le client
+    // --- Livraison ---
+    'text_mm15wbyj': 'preferences_livraison',        // PREFERENCES LIVRAISON (Ecovolt)
+    'color_mm15xs7w': 'type_de_zone',                // TYPE DE ZONE (Ecovolt)
+
     // --- Validation NAF ---
     'color_mm0vxv46': 'validation_naf',              // Validation NAF (Ecovolt)
     // --- Statuts (le principal est statut_commercial) ---
@@ -165,8 +169,25 @@ export const MONDAY_CONFIG = {
     // Code ENEMAT
     code_enemat_saisi: 'text_mkzvqk4s',
 
+    // Livraison
+    preferences_livraison: 'text_mm15wbyj',
+    type_de_zone: 'color_mm15xs7w',
+
     // Validation NAF
     validation_naf: 'color_mm0vxv46',
+  },
+
+  // =================================================================
+  // MAPPING TYPE DE ZONE: Monday label -> Supabase value
+  // =================================================================
+  mondayToSupabaseTypeDeZone: {
+    'DANS LA ZONE': 'dans_la_zone',
+    'HORS ZONE': 'hors_zone',
+  },
+
+  supabaseToMondayTypeDeZone: {
+    dans_la_zone: 'DANS LA ZONE',
+    hors_zone: 'HORS ZONE',
   },
 
   // =================================================================
@@ -193,6 +214,8 @@ export const MONDAY_CONFIG = {
     'CODE ENVOYÉ': 'code_envoye',
     'FORMULAIRE ENVOYÉ': 'formulaire_envoye',
     'FORMULAIRE VALIDÉ': 'formulaire_valide',
+    'À LIVRER': 'a_livrer',
+    'EN LIVRAISON': 'en_livraison',
   },
 
   // Mapping inverse statut commercial
@@ -216,6 +239,8 @@ export const MONDAY_CONFIG = {
     code_envoye: 'CODE ENVOYÉ',
     formulaire_envoye: 'FORMULAIRE ENVOYÉ',
     formulaire_valide: 'FORMULAIRE VALIDÉ',
+    a_livrer: 'À LIVRER',
+    en_livraison: 'EN LIVRAISON',
   },
 
   // =================================================================

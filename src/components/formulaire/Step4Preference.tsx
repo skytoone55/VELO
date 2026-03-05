@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Loader2, ArrowLeft, ArrowRight, AlertCircle, Info, Store, Truck, CheckCircle, Euro } from 'lucide-react'
 
 type PreferenceMode = 'retrait' | 'livraison_gratuite' | 'livraison_payante'
@@ -17,6 +18,7 @@ export function Step4Preference() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [preference, setPreference] = useState<PreferenceMode | null>(null)
+  const [preferencesLivraison, setPreferencesLivraison] = useState(data.preferencesLivraison || '')
 
   // Déterminer les options disponibles selon le mode de livraison défini à l'étape 3
   // data.modeLivraison est défini par l'API save-address à l'étape 3
@@ -84,6 +86,7 @@ export function Step4Preference() {
         preferenceMode: preference,
         modeLivraisonFinal: preference === 'retrait' ? 'retrait' : 'domicile',
         livraisonPayante: preference === 'livraison_payante',
+        preferencesLivraison: preference !== 'retrait' ? preferencesLivraison.trim() || undefined : undefined,
       })
 
       // TODO: Appeler une API pour sauvegarder la préférence si nécessaire
@@ -294,6 +297,25 @@ export function Step4Preference() {
             </>
           )}
         </RadioGroup>
+
+        {/* Préférences de livraison — visible uniquement pour livraison domicile */}
+        {preference && preference !== 'retrait' && (
+          <div className="space-y-2 pt-2 border-t">
+            <Label htmlFor="preferencesLivraison" className="text-sm font-medium">
+              Préférences de livraison (optionnel)
+            </Label>
+            <Textarea
+              id="preferencesLivraison"
+              placeholder="Ex : Je suis disponible le matin entre 8h et 12h. Merci de m'appeler 30 min avant."
+              value={preferencesLivraison}
+              onChange={(e) => setPreferencesLivraison(e.target.value)}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              Notre équipe vous recontactera pour confirmer le créneau définitif de livraison.
+            </p>
+          </div>
+        )}
 
         {/* Boutons */}
         <div className="flex gap-4">

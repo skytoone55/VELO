@@ -115,6 +115,8 @@ export type Database = {
           validation_naf: string | null
           velo_devis: number
           velo_valide: number | null
+          preferences_livraison: string | null
+          type_de_zone: string | null
         }
         Insert: {
           adresse_livraison_cp?: string | null
@@ -180,6 +182,8 @@ export type Database = {
           validation_naf?: string | null
           velo_devis?: number
           velo_valide?: number | null
+          preferences_livraison?: string | null
+          type_de_zone?: string | null
         }
         Update: {
           adresse_livraison_cp?: string | null
@@ -245,6 +249,8 @@ export type Database = {
           validation_naf?: string | null
           velo_devis?: number
           velo_valide?: number | null
+          preferences_livraison?: string | null
+          type_de_zone?: string | null
         }
         Relationships: []
       }

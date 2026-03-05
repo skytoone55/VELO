@@ -39,6 +39,11 @@ export interface FormulaireData {
   modeLivraisonFinal?: 'domicile' | 'retrait'
   livraisonPayante?: boolean
 
+  // Complément d'adresse (bâtiment, étage, digicode)
+  complementAdresse?: string
+  // Préférences de livraison (texte libre)
+  preferencesLivraison?: string
+
   // Étape 5 - Confirmation
   accepteCGV?: boolean
   acceptePolitique?: boolean
