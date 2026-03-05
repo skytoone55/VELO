@@ -90,6 +90,7 @@ export type Database = {
           id: string
           latitude: number | null
           longitude: number | null
+          monday_board_id: string | null
           monday_item_id: number | null
           monday_sync_status: string | null
           monday_synced_at: string | null
@@ -157,6 +158,7 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          monday_board_id?: string | null
           monday_item_id?: number | null
           monday_sync_status?: string | null
           monday_synced_at?: string | null
@@ -224,6 +226,7 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          monday_board_id?: string | null
           monday_item_id?: number | null
           monday_sync_status?: string | null
           monday_synced_at?: string | null

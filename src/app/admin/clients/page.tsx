@@ -31,7 +31,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Pencil, Trash2, MoreHorizontal, Navigation, Eye, Phone, KeyRound, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Pencil, Trash2, MoreHorizontal, Navigation, Eye, Phone, KeyRound, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import {
@@ -53,6 +53,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Client } from '@/lib/types/database'
 import { toast } from 'sonner'
+import { getTenantId } from '@/lib/tenants'
+import { getCommercialName, getDepartementLabel, getStaticDepartementOptions, getStaticCommercialOptions } from '@/lib/tenants/commercial'
 
 // Options filtre NAF (ENEMAT)
 const nafOptions = [
@@ -125,6 +127,24 @@ function getAgenceFromCodePostal(codePostal: string): string {
   }
 }
 
+function SortableHeader({ label, column, currentSort, currentOrder, onSort }: {
+  label: string; column: string; currentSort: string; currentOrder: 'asc' | 'desc'; onSort: (col: string) => void
+}) {
+  const isActive = currentSort === column
+  return (
+    <TableHead className="cursor-pointer select-none hover:bg-muted/50" onClick={() => onSort(column)}>
+      <div className="flex items-center gap-1">
+        {label}
+        {isActive ? (
+          currentOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-30" />
+        )}
+      </div>
+    </TableHead>
+  )
+}
+
 export default function AdminClientsPage() {
   const user = useAdminUser()
   const [clients, setClients] = useState<Client[]>([])
@@ -135,6 +155,12 @@ export default function AdminClientsPage() {
   const [nafFilter, setNafFilter] = useState('all')
   const [departementFilter, setDepartementFilter] = useState('all')
   const [zoneFilter, setZoneFilter] = useState('all')
+  const [commercialFilter, setCommercialFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('updated_at')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Tous' }])
+  const [dynamicDeptOptions, setDynamicDeptOptions] = useState<{value: string; label: string}[] | null>(null)
+  const tenantId = getTenantId()
 
   // Pagination côté serveur
   const [currentPage, setCurrentPage] = useState(1)
@@ -197,6 +223,46 @@ export default function AdminClientsPage() {
       .catch(() => {}) // Keep defaults on error
   }, [])
 
+  // Load commercial options
+  useEffect(() => {
+    const staticOpts = getStaticCommercialOptions()
+    if (staticOpts) {
+      setCommercialOptions([{ value: 'all', label: 'Tous' }, ...staticOpts])
+    } else {
+      fetch('/api/clients/commercials')
+        .then(res => res.json())
+        .then((emails: string[]) => {
+          if (Array.isArray(emails)) {
+            setCommercialOptions([
+              { value: 'all', label: 'Tous' },
+              ...emails.map(e => ({ value: e, label: e }))
+            ])
+          }
+        })
+        .catch(() => {})
+    }
+  }, [])
+
+  // Load dynamic department options
+  useEffect(() => {
+    const staticDepts = getStaticDepartementOptions()
+    if (staticDepts) {
+      setDynamicDeptOptions([{ value: 'all', label: 'Tous' }, ...staticDepts])
+    } else {
+      fetch('/api/clients/departements')
+        .then(res => res.json())
+        .then((depts: string[]) => {
+          if (Array.isArray(depts)) {
+            setDynamicDeptOptions([
+              { value: 'all', label: 'Tous' },
+              ...depts.map(d => ({ value: d, label: d }))
+            ])
+          }
+        })
+        .catch(() => {})
+    }
+  }, [])
+
   // Debounce pour la recherche (éviter trop de requêtes)
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
 
@@ -221,6 +287,11 @@ export default function AdminClientsPage() {
       if (departementFilter !== 'all') params.set('departement', departementFilter)
       if (nafFilter !== 'all') params.set('naf', nafFilter)
       if (zoneFilter !== 'all') params.set('zone', zoneFilter)
+      if (commercialFilter !== 'all') params.set('commercial', commercialFilter)
+      if (sortBy !== 'updated_at' || sortOrder !== 'desc') {
+        params.set('sortBy', sortBy)
+        params.set('sortOrder', sortOrder)
+      }
 
       // Choisir l'API selon la source de données
       // - supabase: /api/clients (cache local, rapide)
@@ -286,12 +357,16 @@ export default function AdminClientsPage() {
   const [prevPageSize, setPrevPageSize] = useState(pageSize)
   const [prevNaf, setPrevNaf] = useState(nafFilter)
   const [prevZone, setPrevZone] = useState(zoneFilter)
+  const [prevCommercial, setPrevCommercial] = useState(commercialFilter)
+  const [prevSortBy, setPrevSortBy] = useState(sortBy)
+  const [prevSortOrder, setPrevSortOrder] = useState(sortOrder)
 
   useEffect(() => {
-    // Détecter si un filtre a changé (pas la page)
+    // Detect filter change (not page)
     if (debouncedSearch !== prevSearch || statutFilter !== prevStatut ||
         departementFilter !== prevDept || pageSize !== prevPageSize ||
-        nafFilter !== prevNaf || zoneFilter !== prevZone) {
+        nafFilter !== prevNaf || zoneFilter !== prevZone ||
+        commercialFilter !== prevCommercial || sortBy !== prevSortBy || sortOrder !== prevSortOrder) {
       setCurrentPage(1) // Reset to page 1
       setPrevSearch(debouncedSearch)
       setPrevStatut(statutFilter)
@@ -299,13 +374,16 @@ export default function AdminClientsPage() {
       setPrevPageSize(pageSize)
       setPrevNaf(nafFilter)
       setPrevZone(zoneFilter)
+      setPrevCommercial(commercialFilter)
+      setPrevSortBy(sortBy)
+      setPrevSortOrder(sortOrder)
     }
-  }, [debouncedSearch, statutFilter, departementFilter, pageSize, nafFilter, zoneFilter])
+  }, [debouncedSearch, statutFilter, departementFilter, pageSize, nafFilter, zoneFilter, commercialFilter, sortBy, sortOrder])
 
   // Charger les clients quand les paramètres changent
   useEffect(() => {
     fetchClients(false, currentPage, pageSize)
-  }, [dataSource, currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter])
+  }, [dataSource, currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter, commercialFilter, sortBy, sortOrder])
 
   const handleSendForm = async (client: Client) => {
     setSendingEmail(true)
@@ -560,6 +638,15 @@ export default function AdminClientsPage() {
     }
   }, [loading, initialLoad])
 
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(column)
+      setSortOrder('asc')
+    }
+  }
+
   if (initialLoad && loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -698,15 +785,12 @@ export default function AdminClientsPage() {
               </SelectContent>
             </Select>
             <Select value={departementFilter} onValueChange={setDepartementFilter}>
-              <SelectTrigger className="w-full lg:w-56">
-                <MapPin className="h-4 w-4 mr-2" />
+              <SelectTrigger className="w-full lg:w-44">
                 <SelectValue placeholder="Département" />
               </SelectTrigger>
               <SelectContent>
-                {departementOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
+                {(dynamicDeptOptions || [{ value: 'all', label: 'Tous' }]).map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -734,7 +818,17 @@ export default function AdminClientsPage() {
                 <SelectItem value="hors_zone">Hors zone</SelectItem>
               </SelectContent>
             </Select>
-            {/* Sélecteur nombre par page */}
+            <Select value={commercialFilter} onValueChange={setCommercialFilter}>
+              <SelectTrigger className="w-full lg:w-48">
+                <SelectValue placeholder="Commercial" />
+              </SelectTrigger>
+              <SelectContent>
+                {commercialOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* Selecteur nombre par page */}
             <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
               <SelectTrigger className="w-full lg:w-40">
                 <SelectValue />
@@ -786,19 +880,22 @@ export default function AdminClientsPage() {
                       aria-label="Tout sélectionner"
                     />
                   </TableHead>
-                  <TableHead>Société</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Département</TableHead>
-                  <TableHead>Vélos</TableHead>
-                  <TableHead>NAF</TableHead>
-                  <TableHead>Statut commercial</TableHead>
+                  <SortableHeader label="Société" column="raison_sociale" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Email client" column="email_beneficiaire" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Téléphone" column="telephone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <TableHead>Commercial</TableHead>
+                  <SortableHeader label="Département" column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Vélos" column="velo_devis" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="NAF" column="validation_naf" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Statut" column="statut_commercial" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <TableHead>Zone</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className={loading ? 'opacity-50' : ''}>
                 {loading && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
+                    <TableCell colSpan={11} className="text-center py-8">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                     </TableCell>
                   </TableRow>
@@ -833,9 +930,24 @@ export default function AdminClientsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
+                      {client.telephone ? (
+                        <a href={`tel:${client.telephone}`} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {client.telephone}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs font-normal">
+                        {getCommercialName(client)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
                       {client.departement ? (
                         <Badge variant="outline">
-                          {client.departement}
+                          {getDepartementLabel(client.departement)}
                         </Badge>
                       ) : (
                         <span className="text-muted-foreground text-sm">-</span>
@@ -863,6 +975,15 @@ export default function AdminClientsPage() {
                           </Badge>
                         )
                       })()}
+                    </TableCell>
+                    <TableCell>
+                      {client.dans_la_zone === true ? (
+                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">Zone</Badge>
+                      ) : client.dans_la_zone === false ? (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">Hors zone</Badge>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">

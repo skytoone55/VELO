@@ -37,6 +37,18 @@ export async function GET(request: NextRequest) {
     const departementFilter = searchParams.get('departement')
     const nafFilter = searchParams.get('naf')
     const zoneFilter = searchParams.get('zone')
+    const commercialFilter = searchParams.get('commercial')
+
+    // Tri serveur
+    const sortByParam = searchParams.get('sortBy') || 'updated_at'
+    const sortOrderParam = searchParams.get('sortOrder') || 'desc'
+    const SORTABLE_COLUMNS = [
+      'raison_sociale', 'email', 'email_beneficiaire', 'departement',
+      'velo_devis', 'statut_commercial', 'validation_naf', 'telephone',
+      'updated_at', 'created_at', 'monday_board_id', 'type_de_zone',
+    ]
+    const safeSortBy = SORTABLE_COLUMNS.includes(sortByParam) ? sortByParam : 'updated_at'
+    const ascending = sortOrderParam === 'asc'
 
     const adminClient = createAdminClient()
 
@@ -85,13 +97,25 @@ export async function GET(request: NextRequest) {
       query = query.eq('type_de_zone', zoneFilter)
     }
 
+    // Filtre par commercial (tenant-aware)
+    if (commercialFilter && commercialFilter !== 'all') {
+      const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
+      if (tenantId === 'ppe') {
+        // PPE : commercial = board Monday → filtrer par monday_board_id
+        query = query.eq('monday_board_id', commercialFilter)
+      } else {
+        // Ecovolt : commercial = email agent → filtrer par email
+        query = query.eq('email', commercialFilter)
+      }
+    }
+
     // Compter le total avant pagination
     const { count: totalFiltered } = await query
 
     // Appliquer la pagination
     const startIndex = (page - 1) * pageSize
     query = query
-      .order('updated_at', { ascending: false })
+      .order(safeSortBy, { ascending })
       .range(startIndex, startIndex + pageSize - 1)
 
     const { data: clients, error } = await query

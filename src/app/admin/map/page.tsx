@@ -51,16 +51,8 @@ interface Client {
   monday_board_id: string | null
 }
 
-const BOARD_NAMES: Record<string, string> = {
-  '2144986053': 'ATHOME',
-  '5002798369': 'ALEX',
-  '2146667697': 'DIZIEN',
-  '2140187165': 'EKL',
-  '2137662048': 'JM',
-  '5013455904': 'SALIH',
-  '5001072451': 'STELLARS',
-  '9990833105': 'ECOVOLT',
-}
+// Import centralisé — voir src/lib/tenants/commercial.ts
+import { ALL_BOARD_NAMES as BOARD_NAMES } from '@/lib/tenants/commercial'
 
 function getAgenceOptions(tid: string) {
   return tid === 'ppe'
