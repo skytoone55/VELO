@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useFormulaireStore } from '@/lib/formulaire/store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, KeyRound, AlertCircle, CheckCircle, Info } from 'lucide-react'
+import { Loader2, KeyRound, AlertCircle, CheckCircle, Info, MailIcon } from 'lucide-react'
 import { getTenantConfig } from '@/lib/tenants'
 
 export function Step1CodeEnemat() {
@@ -18,6 +18,57 @@ export function Step1CodeEnemat() {
   const [localError, setLocalError] = useState<string | null>(null)
   const [tentativesRestantes, setTentativesRestantes] = useState<number | null>(null)
   const [bloque, setBloque] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
+
+  const handleResendCode = useCallback(async () => {
+    if (!clientId || resending || resendCooldown > 0) return
+
+    setResending(true)
+    setResendSuccess(false)
+    setLocalError(null)
+
+    try {
+      const response = await fetch('/api/formulaire/resend-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId }),
+      })
+
+      const result = await response.json()
+
+      if (response.status === 429) {
+        // Cooldown actif
+        setResendCooldown(result.cooldown || 120)
+        const timer = setInterval(() => {
+          setResendCooldown(prev => {
+            if (prev <= 1) { clearInterval(timer); return 0 }
+            return prev - 1
+          })
+        }, 1000)
+        setLocalError(result.error)
+      } else if (result.success) {
+        setResendSuccess(true)
+        setBloque(false)
+        setTentativesRestantes(null)
+        // Cooldown de 120s après envoi réussi
+        setResendCooldown(120)
+        const timer = setInterval(() => {
+          setResendCooldown(prev => {
+            if (prev <= 1) { clearInterval(timer); return 0 }
+            return prev - 1
+          })
+        }, 1000)
+      } else {
+        setLocalError(result.error || 'Erreur lors du renvoi')
+      }
+    } catch {
+      setLocalError('Erreur réseau. Réessayez.')
+    } finally {
+      setResending(false)
+    }
+  }, [clientId, resending, resendCooldown])
 
   const handleValidate = async () => {
     if (!code.trim()) {
@@ -133,16 +184,50 @@ export function Step1CodeEnemat() {
           )}
         </Button>
 
-        <p className="text-xs text-muted-foreground text-center">
-          Vous n'avez pas reçu votre code ?{' '}
-          <a href={`tel:${tenant.phone}`} className="text-foreground font-medium hover:underline">
-            {tenant.phoneFormatted}
-          </a>
-          {' '}ou{' '}
-          <a href={`mailto:${tenant.email}`} className="text-foreground font-medium hover:underline">
-            {tenant.email}
-          </a>
-        </p>
+        {resendSuccess && (
+          <Alert className="bg-green-50 text-green-800 border-green-200">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription>
+              Un nouveau code a été envoyé à votre adresse email. Vérifiez aussi vos spams.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="text-center space-y-2 pt-2 border-t">
+          <p className="text-sm text-muted-foreground">
+            Code perdu ou email supprimé ?
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResendCode}
+            disabled={resending || resendCooldown > 0}
+          >
+            {resending ? (
+              <>
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                Envoi en cours...
+              </>
+            ) : resendCooldown > 0 ? (
+              `Renvoyer le code (${resendCooldown}s)`
+            ) : (
+              <>
+                <MailIcon className="mr-2 h-3 w-3" />
+                Renvoyer mon code par email
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Besoin d'aide ?{' '}
+            <a href={`tel:${tenant.phone}`} className="text-foreground font-medium hover:underline">
+              {tenant.phoneFormatted}
+            </a>
+            {' '}ou{' '}
+            <a href={`mailto:${tenant.email}`} className="text-foreground font-medium hover:underline">
+              {tenant.email}
+            </a>
+          </p>
+        </div>
       </CardContent>
     </Card>
   )

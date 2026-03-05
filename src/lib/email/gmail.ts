@@ -165,7 +165,7 @@ export async function sendCodeValidationEmail(
               </p>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Voici votre <strong>code de validation personnel</strong> à conserver précieusement :
+                Voici votre <strong>code de validation personnel</strong> :
               </p>
 
               <!-- Code Box -->
@@ -182,13 +182,19 @@ export async function sendCodeValidationEmail(
               </table>
 
               <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0 0 10px 0; color: #92400e; font-size: 14px; font-weight: bold; line-height: 1.5;">
+                  ⚠️ CONSERVEZ PRÉCIEUSEMENT CE CODE — NE SUPPRIMEZ PAS CET EMAIL
+                </p>
                 <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
-                  <strong>⚠️ Important :</strong> Ce code est personnel et confidentiel. Il vous sera demandé lors du remplissage du formulaire de livraison pour valider votre identité. Ne le partagez avec personne.
+                  Vous allez recevoir un <strong>second email</strong> contenant un lien vers un formulaire de livraison. Ce code vous sera demandé pour y accéder et valider vos coordonnées de livraison.
+                </p>
+                <p style="margin: 8px 0 0 0; color: #92400e; font-size: 14px; line-height: 1.5;">
+                  Ce code est personnel et confidentiel. Ne le partagez avec personne.
                 </p>
               </div>
 
               <p style="margin: 30px 0 0 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Vous recevrez prochainement un email avec le lien vers le formulaire de livraison.
+                <strong>Prochaine étape :</strong> vous recevrez prochainement un second email avec le lien vers votre formulaire de livraison. Vous aurez besoin de ce code pour y accéder.
               </p>
 
               <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
