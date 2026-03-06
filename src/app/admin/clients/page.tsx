@@ -111,11 +111,11 @@ function getStatutDisplay(statut: string | null | undefined): { label: string; c
 
 // Options de pagination
 const pageSizeOptions = [
-  { value: 20, label: '20 par page' },
-  { value: 50, label: '50 par page' },
-  { value: 100, label: '100 par page' },
-  { value: 250, label: '250 par page' },
-  { value: 500, label: '500 par page' },
+  { value: 20, label: '20' },
+  { value: 50, label: '50' },
+  { value: 100, label: '100' },
+  { value: 250, label: '250' },
+  { value: 500, label: '500' },
 ]
 
 // Déterminer l'agence à partir du code postal
@@ -743,18 +743,18 @@ export default function AdminClientsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        <div className="relative min-w-[140px] flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             placeholder="Rechercher..."
-            className="pl-9 h-9"
+            className="pl-8 h-8 text-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <Select value={statutFilter} onValueChange={setStatutFilter}>
-          <SelectTrigger className="w-36 h-9">
+          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
             <SelectValue placeholder="Statut" />
           </SelectTrigger>
           <SelectContent>
@@ -766,8 +766,8 @@ export default function AdminClientsPage() {
           </SelectContent>
         </Select>
         <Select value={departementFilter} onValueChange={setDepartementFilter}>
-          <SelectTrigger className="w-36 h-9">
-            <SelectValue placeholder="Département" />
+          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
+            <SelectValue placeholder="Dép." />
           </SelectTrigger>
           <SelectContent>
             {(dynamicDeptOptions || [{ value: 'all', label: 'Départements' }]).map((opt) => (
@@ -776,7 +776,7 @@ export default function AdminClientsPage() {
           </SelectContent>
         </Select>
         <Select value={nafFilter} onValueChange={setNafFilter}>
-          <SelectTrigger className="w-32 h-9">
+          <SelectTrigger className="h-8 w-auto min-w-[60px] text-xs px-2 shrink-0">
             <SelectValue placeholder="NAF" />
           </SelectTrigger>
           <SelectContent>
@@ -788,7 +788,7 @@ export default function AdminClientsPage() {
           </SelectContent>
         </Select>
         <Select value={zoneFilter} onValueChange={setZoneFilter}>
-          <SelectTrigger className="w-32 h-9">
+          <SelectTrigger className="h-8 w-auto min-w-[60px] text-xs px-2 shrink-0">
             <SelectValue placeholder="Zone" />
           </SelectTrigger>
           <SelectContent>
@@ -798,7 +798,7 @@ export default function AdminClientsPage() {
           </SelectContent>
         </Select>
         <Select value={commercialFilter} onValueChange={setCommercialFilter}>
-          <SelectTrigger className="w-36 h-9">
+          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
             <SelectValue placeholder="Commercial" />
           </SelectTrigger>
           <SelectContent>
@@ -808,7 +808,7 @@ export default function AdminClientsPage() {
           </SelectContent>
         </Select>
         <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
-          <SelectTrigger className="w-28 h-9">
+          <SelectTrigger className="h-8 w-[52px] text-xs px-2 shrink-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -823,7 +823,7 @@ export default function AdminClientsPage() {
 
       {/* Table */}
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           {paginatedClients.length === 0 ? (
             <div className="text-center py-12">
               <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
