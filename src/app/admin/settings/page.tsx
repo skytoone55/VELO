@@ -2,164 +2,88 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  RefreshCcw,
-  Loader2,
-  Webhook,
-  Copy,
-  Check,
-} from 'lucide-react'
-import { toast } from 'sonner'
-import { formatDistanceToNow } from 'date-fns'
-import { fr } from 'date-fns/locale'
+import { ArrowRight, Loader2 } from 'lucide-react'
+import Link from 'next/link'
 
 interface SyncStatus {
   configured: boolean
-  lastSync: string | null
-  lastSyncResult: { success: boolean } | null
+  sourceOfTruth: string
+  syncDirection: string
   stats: {
     totalClients: number
-    syncedFromMonday: number
-    pendingSync: number
   }
 }
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<SyncStatus | null>(null)
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    loadSyncStatus()
+    fetch('/api/sync/monday')
+      .then(res => res.json())
+      .then(data => setStatus(data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
-
-  const loadSyncStatus = async () => {
-    try {
-      const res = await fetch('/api/sync/monday')
-      const data = await res.json()
-      setStatus(data)
-    } catch {
-      // Silently fail - sync status is optional
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const copyWebhookUrl = () => {
-    const baseUrl = window.location.origin
-    const webhookUrl = `${baseUrl}/api/webhooks/monday`
-    navigator.clipboard.writeText(webhookUrl)
-    setCopied(true)
-    toast.success('URL copiée!')
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const webhookUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/api/webhooks/monday`
-    : '/api/webhooks/monday'
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Monday</h1>
         <p className="text-muted-foreground">
-          Connexion et synchronisation avec Monday.com
+          Integration Monday.com — push Supabase vers Monday
         </p>
       </div>
 
       <div className="grid gap-6">
-        {/* Statut Synchronisation Monday */}
+        {/* Statut connexion */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <RefreshCcw className="h-5 w-5 text-primary" />
-                <CardTitle>Synchronisation Monday</CardTitle>
-              </div>
+              <CardTitle>Connexion Monday</CardTitle>
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Badge variant={status?.configured ? 'default' : 'outline'}>
-                  {status?.configured ? 'Connecté' : 'Non configuré'}
+                  {status?.configured ? 'Connecte' : 'Non configure'}
                 </Badge>
               )}
             </div>
             <CardDescription>
-              Synchronisation automatique via webhook
+              Supabase est la source de verite. Les changements sont pushes vers Monday automatiquement.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Stats */}
-            {status?.configured && (
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div className="text-center p-3 bg-muted rounded-lg">
-                  <div className="text-2xl font-bold">{status.stats.totalClients}</div>
-                  <div className="text-muted-foreground">Total</div>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{status.stats.syncedFromMonday}</div>
-                  <div className="text-muted-foreground">Synchronisés</div>
-                </div>
-                <div className="text-center p-3 bg-orange-50 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-600">{status.stats.pendingSync}</div>
-                  <div className="text-muted-foreground">En attente</div>
-                </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="p-3 bg-muted rounded-lg">
+                <div className="text-2xl font-bold">{status?.stats?.totalClients ?? 0}</div>
+                <div className="text-muted-foreground">Clients en base</div>
               </div>
-            )}
-
-            {/* Last sync info */}
-            {status?.lastSync && (
-              <div className="flex items-center justify-between text-sm p-3 bg-muted/50 rounded-lg">
-                <span className="text-muted-foreground">Dernière synchronisation</span>
-                <span className="font-medium">
-                  {formatDistanceToNow(new Date(status.lastSync), { addSuffix: true, locale: fr })}
-                  {status.lastSyncResult && (
-                    <Badge
-                      variant={status.lastSyncResult.success ? 'default' : 'destructive'}
-                      className={`ml-2 ${status.lastSyncResult.success ? 'bg-green-100 text-green-800' : ''}`}
-                    >
-                      {status.lastSyncResult.success ? 'OK' : 'Erreur'}
-                    </Badge>
-                  )}
-                </span>
+              <div className="p-3 bg-muted rounded-lg">
+                <div className="text-sm font-medium">Direction du sync</div>
+                <div className="text-muted-foreground mt-1">Supabase → Monday uniquement</div>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Webhook configuration */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Webhook className="h-5 w-5 text-primary" />
-              <CardTitle>Webhook Monday</CardTitle>
-            </div>
-            <CardDescription>
-              URL à configurer dans Monday.com pour la synchronisation temps réel
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono truncate">
-                {webhookUrl}
-              </code>
-              <Button variant="outline" size="sm" onClick={copyWebhookUrl}>
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-            <details className="text-sm text-muted-foreground">
-              <summary className="cursor-pointer font-medium">Instructions Monday.com</summary>
-              <ol className="list-decimal list-inside space-y-1 mt-2 ml-2">
-                <li>Allez dans les paramètres de votre board Monday</li>
-                <li>Cliquez sur "Integrations" puis "Webhooks"</li>
-                <li>Créez un nouveau webhook avec l'URL ci-dessus</li>
-                <li>Sélectionnez: create_item, change_column_value, change_name</li>
-              </ol>
-            </details>
-          </CardContent>
-        </Card>
+        {/* Lien vers les mappings */}
+        <Link href="/admin/settings/monday">
+          <Card className="hover:border-primary transition-colors cursor-pointer">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Mappings Supabase → Monday</CardTitle>
+                  <CardDescription>
+                    Configurer quels champs Supabase sont pushes vers quelles colonnes Monday
+                  </CardDescription>
+                </div>
+                <ArrowRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardHeader>
+          </Card>
+        </Link>
       </div>
     </div>
   )
