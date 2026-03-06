@@ -722,7 +722,7 @@ export default function AdminClientsPage() {
               ))}
             </SelectContent>
           </Select>
-          <span className="font-semibold text-purple-600">{stats.clientsStatut}</span>
+          <span className="font-semibold text-purple-600">{stats.clientsStatut} <span className="text-muted-foreground font-normal">clients</span></span>
         </span>
         <span className="text-muted-foreground hidden md:inline">|</span>
         <span className="hidden md:inline-flex items-center gap-1">
