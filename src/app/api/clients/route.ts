@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
     const nafFilter = searchParams.get('naf')
     const zoneFilter = searchParams.get('zone')
     const commercialFilter = searchParams.get('commercial')
+    const depotFilter = searchParams.get('depot')
 
     // Tri serveur
     const sortByParam = searchParams.get('sortBy') || 'updated_at'
@@ -120,6 +121,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Filtre par dépôt (retrait)
+    if (depotFilter && depotFilter !== 'all') {
+      query = query.eq('depot_retrait_id', depotFilter)
+    }
+
     // Compter le total avant pagination
     const { count: totalFiltered } = await query
 
@@ -166,6 +172,9 @@ export async function GET(request: NextRequest) {
       } else {
         velosQuery = velosQuery.eq('email', commercialFilter)
       }
+    }
+    if (depotFilter && depotFilter !== 'all') {
+      velosQuery = velosQuery.eq('depot_retrait_id', depotFilter)
     }
 
     const { data: velosData } = await velosQuery
