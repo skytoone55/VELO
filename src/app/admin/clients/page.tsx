@@ -671,14 +671,9 @@ export default function AdminClientsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Clients</h1>
-          <p className="text-muted-foreground">
-            Gérez les dossiers clients et envoyez les formulaires
-          </p>
-        </div>
+        <h1 className="text-xl font-bold">Clients</h1>
         <div className="flex items-center gap-2">
           {/* Indicateur source de données et cache */}
           {dataSource === 'monday' && cacheInfo && (
@@ -707,37 +702,30 @@ export default function AdminClientsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {/* Total clients */}
+      <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
         <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <div className="text-sm text-muted-foreground">Total clients</div>
+          <CardContent className="px-3 py-2">
+            <div className="text-lg font-bold">{stats.total}</div>
+            <div className="text-xs text-muted-foreground">Total</div>
           </CardContent>
         </Card>
-
-        {/* Vélos validés (total) */}
         <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-blue-600">{stats.velosValides}</div>
-            <div className="text-sm text-muted-foreground">Vélos validés</div>
+          <CardContent className="px-3 py-2">
+            <div className="text-lg font-bold text-blue-600">{stats.velosValides}</div>
+            <div className="text-xs text-muted-foreground">Validés</div>
           </CardContent>
         </Card>
-
-        {/* Vélos livrés (total) */}
         <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-emerald-600">{stats.velosLivres}</div>
-            <div className="text-sm text-muted-foreground">Vélos livrés</div>
+          <CardContent className="px-3 py-2">
+            <div className="text-lg font-bold text-emerald-600">{stats.velosLivres}</div>
+            <div className="text-xs text-muted-foreground">Livrés</div>
           </CardContent>
         </Card>
-
-        {/* Sélecteur de statut + Clients de ce statut */}
         <Card>
-          <CardContent className="pt-3 pb-3">
+          <CardContent className="px-3 py-2">
             <Select value={selectedStatutClients} onValueChange={setSelectedStatutClients}>
-              <SelectTrigger className="h-7 text-xs mb-2">
-                <SelectValue placeholder="Choisir un statut" />
+              <SelectTrigger className="h-6 text-xs mb-1 px-2">
+                <SelectValue placeholder="Statut" />
               </SelectTrigger>
               <SelectContent>
                 {availableStatuts.map((statut) => (
@@ -747,17 +735,15 @@ export default function AdminClientsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="text-2xl font-bold text-purple-600">{stats.clientsStatut}</div>
-            <div className="text-sm text-muted-foreground">Clients</div>
+            <div className="text-lg font-bold text-purple-600">{stats.clientsStatut}</div>
+            <div className="text-xs text-muted-foreground">Clients</div>
           </CardContent>
         </Card>
-
-        {/* Sélecteur de statut + Vélos de ce statut */}
         <Card>
-          <CardContent className="pt-3 pb-3">
+          <CardContent className="px-3 py-2">
             <Select value={selectedStatutVelos} onValueChange={setSelectedStatutVelos}>
-              <SelectTrigger className="h-7 text-xs mb-2">
-                <SelectValue placeholder="Choisir un statut" />
+              <SelectTrigger className="h-6 text-xs mb-1 px-2">
+                <SelectValue placeholder="Statut" />
               </SelectTrigger>
               <SelectContent>
                 {availableStatuts.map((statut) => (
@@ -767,98 +753,90 @@ export default function AdminClientsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="text-2xl font-bold text-amber-600">{stats.velosStatut}</div>
-            <div className="text-sm text-muted-foreground">Vélos</div>
+            <div className="text-lg font-bold text-amber-600">{stats.velosStatut}</div>
+            <div className="text-xs text-muted-foreground">Vélos</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par nom, SIRET ou email..."
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Select value={statutFilter} onValueChange={setStatutFilter}>
-              <SelectTrigger className="w-full lg:w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Statut" />
-              </SelectTrigger>
-              <SelectContent>
-                {statutOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={departementFilter} onValueChange={setDepartementFilter}>
-              <SelectTrigger className="w-full lg:w-44">
-                <SelectValue placeholder="Département" />
-              </SelectTrigger>
-              <SelectContent>
-                {(dynamicDeptOptions || [{ value: 'all', label: 'Tous les departements' }]).map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={nafFilter} onValueChange={setNafFilter}>
-              <SelectTrigger className="w-full lg:w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="NAF" />
-              </SelectTrigger>
-              <SelectContent>
-                {nafOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={zoneFilter} onValueChange={setZoneFilter}>
-              <SelectTrigger className="w-full lg:w-48">
-                <MapPin className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Zone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les zones</SelectItem>
-                <SelectItem value="dans_la_zone">Dans la zone</SelectItem>
-                <SelectItem value="hors_zone">Hors zone</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={commercialFilter} onValueChange={setCommercialFilter}>
-              <SelectTrigger className="w-full lg:w-48">
-                <SelectValue placeholder="Commercial" />
-              </SelectTrigger>
-              <SelectContent>
-                {commercialOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {/* Selecteur nombre par page */}
-            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
-              <SelectTrigger className="w-full lg:w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {pageSizeOptions.map((option) => (
-                  <SelectItem key={option.value} value={String(option.value)}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher..."
+            className="pl-9 h-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Select value={statutFilter} onValueChange={setStatutFilter}>
+          <SelectTrigger className="w-36 h-9">
+            <SelectValue placeholder="Statut" />
+          </SelectTrigger>
+          <SelectContent>
+            {statutOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={departementFilter} onValueChange={setDepartementFilter}>
+          <SelectTrigger className="w-36 h-9">
+            <SelectValue placeholder="Département" />
+          </SelectTrigger>
+          <SelectContent>
+            {(dynamicDeptOptions || [{ value: 'all', label: 'Tous les departements' }]).map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={nafFilter} onValueChange={setNafFilter}>
+          <SelectTrigger className="w-32 h-9">
+            <SelectValue placeholder="NAF" />
+          </SelectTrigger>
+          <SelectContent>
+            {nafOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={zoneFilter} onValueChange={setZoneFilter}>
+          <SelectTrigger className="w-32 h-9">
+            <SelectValue placeholder="Zone" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes les zones</SelectItem>
+            <SelectItem value="dans_la_zone">Dans la zone</SelectItem>
+            <SelectItem value="hors_zone">Hors zone</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={commercialFilter} onValueChange={setCommercialFilter}>
+          <SelectTrigger className="w-36 h-9">
+            <SelectValue placeholder="Commercial" />
+          </SelectTrigger>
+          <SelectContent>
+            {commercialOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+          <SelectTrigger className="w-28 h-9">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {pageSizeOptions.map((option) => (
+              <SelectItem key={option.value} value={String(option.value)}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Table */}
       <Card>
