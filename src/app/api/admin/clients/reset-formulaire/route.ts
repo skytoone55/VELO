@@ -6,35 +6,35 @@ import { sendCodeValidationEmail, sendFormulaireLinkEmail } from '@/lib/email/gm
 import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
 
 export async function POST(request: NextRequest) {
-  console.log('=== API reset-formulaire called ===')
+  // console.log('=== API reset-formulaire called ===')
   try {
     // Vérifier l'authentification
-    console.log('Checking authentication...')
+    // console.log('Checking authentication...')
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    console.log('User:', user?.id || 'No user')
+    // console.log('User:', user?.id || 'No user')
     if (!user) {
-      console.log('ERROR: No user authenticated')
+      // console.log('ERROR: No user authenticated')
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
     // Vérifier les permissions
-    console.log('Checking permissions for user:', user.id)
+    // console.log('Checking permissions for user:', user.id)
     const { data: profile } = await supabase
       .from('users_profile')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    console.log('Profile:', profile)
+    // console.log('Profile:', profile)
     if (!profile || !['admin_general', 'admin_regional', 'agent_regional'].includes(profile.role)) {
-      console.log('ERROR: User not authorized, role:', profile?.role)
+      // console.log('ERROR: User not authorized, role:', profile?.role)
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
     const body = await request.json()
-    console.log('Request body:', body)
+    // console.log('Request body:', body)
     const { clientId, sendNewCode = true } = body
 
     if (!clientId) {
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     // Récupérer le client
     const { data: client, error: fetchError } = await adminClient
       .from('clients')
-      .select('id, email, email_beneficiaire, raison_sociale, contact_prenom, contact_nom, monday_item_id')
+      .select('id, email, email_beneficiaire, raison_sociale, contact_prenom, contact_nom, monday_item_id, monday_board_id')
       .eq('id', clientId)
       .single()
 
@@ -72,8 +72,7 @@ export async function POST(request: NextRequest) {
         code_enemat_valide: false,
         code_enemat_saisi: null,
 
-        // Reset statut formulaire
-        statut_formulaire: 'code_envoye',
+        // Reset token (sera régénéré après)
         token_formulaire: null,
 
         // Reset choix livraison/retrait
@@ -100,7 +99,7 @@ export async function POST(request: NextRequest) {
       console.error('Erreur suppression livraisons:', deleteLivraisonsError)
       // On continue même si la suppression échoue
     } else {
-      console.log(`Livraisons supprimées pour le client ${clientId}`)
+      // console.log(`Livraisons supprimées pour le client ${clientId}`)
     }
 
     // Préparer les infos pour les emails
@@ -119,7 +118,7 @@ export async function POST(request: NextRequest) {
       if (sendNewCode) {
         try {
           await sendCodeValidationEmail(recipientEmail, clientName, newCode)
-          console.log(`Nouveau code de validation envoyé à ${recipientEmail}`)
+          // console.log(`Nouveau code de validation envoyé à ${recipientEmail}`)
           codeSent = true
         } catch (emailError: any) {
           console.error('Erreur envoi email code:', emailError)
@@ -135,8 +134,7 @@ export async function POST(request: NextRequest) {
         .from('clients')
         .update({
           token_formulaire: token,
-          statut_formulaire: 'formulaire_envoye',
-          statut_commercial: 'formulaire_envoye', // Mettre à jour le statut commercial aussi
+          statut_commercial: 'formulaire_envoye',
           date_envoi_formulaire: new Date().toISOString(),
         })
         .eq('id', clientId)
@@ -150,7 +148,7 @@ export async function POST(request: NextRequest) {
       // Envoyer l'email du formulaire
       try {
         await sendFormulaireLinkEmail(recipientEmail, clientName, formulaireUrl)
-        console.log(`Lien formulaire envoyé à ${recipientEmail}`)
+        // console.log(`Lien formulaire envoyé à ${recipientEmail}`)
         formulaireSent = true
       } catch (emailError: any) {
         console.error('Erreur envoi email formulaire:', emailError)
@@ -164,10 +162,10 @@ export async function POST(request: NextRequest) {
     if (client.monday_item_id && isMondayConfigured()) {
       try {
         await syncClientToMonday(
-          { monday_item_id: client.monday_item_id, statut_commercial: 'formulaire_envoye' },
+          { monday_item_id: client.monday_item_id, monday_board_id: client.monday_board_id, statut_commercial: 'formulaire_envoye' },
           ['statut_commercial']
         )
-        console.log(`Statut FORMULAIRE ENVOYÉ sync vers Monday pour ${client.raison_sociale}`)
+        // console.log(`Statut FORMULAIRE ENVOYÉ sync vers Monday pour ${client.raison_sociale}`)
       } catch (syncError) {
         console.error('Erreur sync Monday:', syncError)
       }

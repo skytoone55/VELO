@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -19,18 +18,10 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Loader2,
   ArrowLeft,
   Building2,
   Truck,
-  FileText,
   CheckCircle,
   AlertCircle,
   Mail,
@@ -44,7 +35,6 @@ import {
   Warehouse,
   RotateCcw,
   Copy,
-  RefreshCw,
   Calendar,
   Bike,
   Shield,
@@ -117,6 +107,8 @@ const statutCommercialColors: Record<string, string> = {
   controle_a_jour: 'bg-teal-100 text-teal-800',
   controle_valide: 'bg-green-100 text-green-800',
   ah_signee: 'bg-indigo-100 text-indigo-800',
+  a_livrer: 'bg-orange-100 text-orange-800',
+  en_livraison: 'bg-amber-100 text-amber-800',
   livre: 'bg-purple-100 text-purple-800',
   paye: 'bg-emerald-200 text-emerald-900',
   doublon: 'bg-slate-100 text-slate-600',
@@ -138,28 +130,13 @@ const statutCommercialLabels: Record<string, string> = {
   controle_a_jour: 'Contrôle à jour',
   controle_valide: 'Contrôle validé',
   ah_signee: 'AH signée',
+  a_livrer: 'À livrer',
+  en_livraison: 'En livraison',
   livre: 'Livré',
   paye: 'Payé',
   doublon: 'Doublon',
   franck: 'Franck',
   inconnu: 'Inconnu',
-}
-
-// Ancien système de statuts formulaire (pour rétrocompatibilité)
-const statutFormulaireColors: Record<string, string> = {
-  en_attente: 'bg-slate-100 text-slate-700',
-  formulaire_envoye: 'bg-amber-100 text-amber-800',
-  formulaire_complete: 'bg-blue-100 text-blue-800',
-  formulaire_bloque: 'bg-red-100 text-red-800',
-  valide: 'bg-emerald-100 text-emerald-800',
-}
-
-const statutFormulaireLabels: Record<string, string> = {
-  en_attente: 'En attente',
-  formulaire_envoye: 'Formulaire envoyé',
-  formulaire_complete: 'Formulaire complété',
-  formulaire_bloque: 'Bloqué',
-  valide: 'Validé',
 }
 
 const getDepartementLabel = (dept: string) => {
@@ -189,7 +166,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   // Dialogs
   const [sendEmailOpen, setSendEmailOpen] = useState(false)
   const [resetFormOpen, setResetFormOpen] = useState(false)
-  const [resendCodeOpen, setResendCodeOpen] = useState(false)
 
   // Zone calculée à partir de la distance au dépôt
   const computedZone = (() => {
@@ -203,22 +179,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   // Source de données
   const [dataSource, setDataSource] = useState<'monday' | 'supabase'>('monday')
 
-  // Statuts Monday chargés dynamiquement
-  const [mondayStatuts, setMondayStatuts] = useState<{ key: string; label: string }[]>([])
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Charger les statuts Monday en parallèle
-        const statutsPromise = fetch('/api/monday/statuts')
-          .then(r => r.json())
-          .then(data => {
-            if (data.statuts) {
-              setMondayStatuts(data.statuts)
-            }
-          })
-          .catch(e => console.error('Erreur chargement statuts Monday:', e))
-
         // Essayer d'abord Monday (source de vérité)
         const mondayResponse = await fetch(`/api/monday/clients/${resolvedParams.id}`)
         const mondayData = await mondayResponse.json()
@@ -259,9 +222,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           setDataSource('supabase')
         }
 
-        // Attendre que les statuts soient chargés
-        await statutsPromise
-
       } catch (err) {
         setError('Erreur lors du chargement')
       } finally {
@@ -278,67 +238,24 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     setError(null)
 
     try {
-      const supabase = createClient()
-      const token = crypto.randomUUID()
-
-      const { error: updateError } = await supabase
-        .from('clients')
-        .update({
-          token_formulaire: token,
-          statut_formulaire: 'formulaire_envoye',
-          date_envoi_formulaire: new Date().toISOString(),
-        })
-        .eq('id', client.id)
-
-      if (updateError) throw updateError
-
-      await supabase.from('workflow_transitions').insert({
-        entity_type: 'client',
-        entity_id: client.id,
-        statut_avant: client.statut_formulaire,
-        statut_apres: 'formulaire_envoye',
-        effectue_par: user?.id,
-        raison: 'Envoi du formulaire par admin',
+      const response = await fetch('/api/admin/clients/send-formulaire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id }),
       })
 
-      setSuccess(`Formulaire envoyé ! Lien: /formulaire?token=${token}`)
-      setClient({ ...client, statut_formulaire: 'formulaire_envoye', token_formulaire: token })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error)
+
+      if (data.emailErrors?.length > 0) {
+        setError(`Envoyé avec erreurs email : ${data.emailErrors.join(', ')}`)
+      } else {
+        setSuccess('Code + formulaire envoyés par email')
+      }
+      setClient({ ...client, statut_commercial: 'formulaire_envoye' })
       setSendEmailOpen(false)
     } catch (err: any) {
       setError(err.message || 'Erreur lors de l\'envoi')
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  const handleUnblockCode = async () => {
-    if (!client) return
-    setActionLoading(true)
-    setError(null)
-
-    try {
-      const supabase = createClient()
-
-      const { error: updateError } = await supabase
-        .from('clients')
-        .update({
-          code_enemat_bloque: false,
-          code_enemat_tentatives: 0,
-          statut_formulaire: 'formulaire_envoye',
-        })
-        .eq('id', client.id)
-
-      if (updateError) throw updateError
-
-      setSuccess('Code débloqué')
-      setClient({
-        ...client,
-        code_enemat_bloque: false,
-        code_enemat_tentatives: 0,
-        statut_formulaire: 'formulaire_envoye',
-      })
-    } catch (err: any) {
-      setError(err.message)
     } finally {
       setActionLoading(false)
     }
@@ -372,7 +289,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       await supabase.from('workflow_transitions').insert({
         entity_type: 'client',
         entity_id: client.id,
-        statut_avant: client.statut_formulaire,
+        statut_avant: client.statut_commercial,
         statut_apres: 'formulaire_envoye',
         effectue_par: user?.id,
         raison: 'Réinitialisation complète du formulaire par admin',
@@ -391,30 +308,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Erreur inconnue'
       setError(message)
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  const handleResendCode = async () => {
-    if (!client) return
-    setActionLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/admin/clients/resend-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: client.id }),
-      })
-
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error)
-
-      setSuccess('Code de validation renvoyé par email')
-      setResendCodeOpen(false)
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de l\'envoi')
     } finally {
       setActionLoading(false)
     }
@@ -469,7 +362,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const livraison = livraisons[0]
   const modeLivraison = livraison?.mode_livraison || (client.depot_retrait_id ? 'retrait' : 'domicile')
   const codeEnematSaisi = client.code_enemat_saisi || livraison?.code_enemat_saisi
-  const formulaireComplete = client.statut_formulaire === 'formulaire_complete' || client.statut_formulaire === 'valide'
+  const formulaireComplete = ['formulaire_valide', 'a_livrer', 'en_livraison', 'livre', 'paye'].includes(client.statut_commercial || '')
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-8">
@@ -500,7 +393,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
           {/* Actions rapides dans le header */}
           <div className="flex flex-wrap items-center gap-2">
-            {client.statut_formulaire === 'en_attente' && (
+            {/* Envoyer formulaire — visible seulement si controle_valide + NAF OUI */}
+            {client.statut_commercial === 'controle_valide' && client.validation_naf === 'OUI' && (
               <Dialog open={sendEmailOpen} onOpenChange={setSendEmailOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white border-0">
@@ -510,8 +404,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Envoyer le formulaire</DialogTitle>
-                    <DialogDescription>Email: {client.email_beneficiaire || client.email}</DialogDescription>
+                    <DialogTitle>Envoyer le code + formulaire</DialogTitle>
+                    <DialogDescription>
+                      Un code de validation et le lien du formulaire seront envoyés à {client.email_beneficiaire || client.email}
+                    </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setSendEmailOpen(false)}>Annuler</Button>
@@ -524,6 +420,12 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </Dialog>
             )}
 
+            {/* Alerte si controle_valide mais NAF bloqué */}
+            {client.statut_commercial === 'controle_valide' && client.validation_naf !== 'OUI' && (
+              <Badge className="bg-red-500/20 text-red-200 text-xs">NAF non validé</Badge>
+            )}
+
+            {/* Copier lien formulaire — visible si formulaire envoyé et pas encore complété */}
             {client.token_formulaire && !formulaireComplete && (
               <Button
                 variant="ghost"
@@ -539,74 +441,39 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </Button>
             )}
 
-            <Dialog open={resendCodeOpen} onOpenChange={setResendCodeOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Renvoyer code
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Renvoyer le code de validation</DialogTitle>
-                  <DialogDescription>
-                    Un nouveau code sera généré et envoyé à {client.email_beneficiaire || client.email}
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setResendCodeOpen(false)}>Annuler</Button>
-                  <Button onClick={handleResendCode} disabled={actionLoading}>
-                    {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Envoyer
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Bouton Réinitialiser - toujours visible pour permettre les tests */}
-            <Dialog open={resetFormOpen} onOpenChange={setResetFormOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-orange-300 hover:bg-orange-500/20">
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Réinitialiser
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Réinitialiser le formulaire</DialogTitle>
-                  <DialogDescription asChild>
-                    <div>
-                      <p>Cette action va :</p>
-                      <ul className="list-disc list-inside mt-2 space-y-1">
-                        <li>Générer un nouveau code de validation</li>
-                        <li>Envoyer le code par email au bénéficiaire</li>
-                        <li>Réinitialiser toutes les étapes du formulaire</li>
-                        <li>Effacer le choix de livraison/dépôt et l&apos;adresse</li>
-                      </ul>
-                    </div>
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setResetFormOpen(false)}>Annuler</Button>
-                  <Button variant="destructive" onClick={handleResetForm} disabled={actionLoading}>
-                    {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {/* Réinitialiser — visible quand le process formulaire est en cours */}
+            {['formulaire_envoye', 'formulaire_valide', 'code_envoye'].includes(client.statut_commercial || '') && (
+              <Dialog open={resetFormOpen} onOpenChange={setResetFormOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-orange-300 hover:bg-orange-500/20">
+                    <RotateCcw className="mr-2 h-4 w-4" />
                     Réinitialiser
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {client.code_enemat_bloque && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleUnblockCode}
-                disabled={actionLoading}
-                className="text-red-300 hover:bg-red-500/20"
-              >
-                <KeyRound className="mr-2 h-4 w-4" />
-                Débloquer
-              </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Réinitialiser le formulaire</DialogTitle>
+                    <DialogDescription asChild>
+                      <div>
+                        <p>Cette action va :</p>
+                        <ul className="list-disc list-inside mt-2 space-y-1">
+                          <li>Générer un nouveau code de validation</li>
+                          <li>Renvoyer le code + formulaire par email</li>
+                          <li>Réinitialiser toutes les étapes du formulaire</li>
+                          <li>Effacer le choix de livraison/dépôt et l&apos;adresse</li>
+                        </ul>
+                      </div>
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setResetFormOpen(false)}>Annuler</Button>
+                    <Button variant="destructive" onClick={handleResetForm} disabled={actionLoading}>
+                      {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Réinitialiser
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             )}
 
             {/* Bouton Sync vers Monday */}

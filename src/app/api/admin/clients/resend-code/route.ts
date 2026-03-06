@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Récupérer le client
     const { data: client, error: fetchError } = await adminClient
       .from('clients')
-      .select('id, email, email_beneficiaire, raison_sociale, contact_prenom, contact_nom, monday_item_id')
+      .select('id, email, email_beneficiaire, raison_sociale, contact_prenom, contact_nom, monday_item_id, monday_board_id')
       .eq('id', clientId)
       .single()
 
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     if (client.monday_item_id && isMondayConfigured()) {
       try {
         await syncClientToMonday(
-          { monday_item_id: client.monday_item_id, statut_commercial: 'code_envoye' },
+          { monday_item_id: client.monday_item_id, monday_board_id: client.monday_board_id, statut_commercial: 'code_envoye' },
           ['statut_commercial']
         )
         console.log(`Statut CODE ENVOYÉ sync vers Monday pour ${client.raison_sociale}`)
