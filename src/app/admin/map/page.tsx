@@ -646,16 +646,7 @@ export default function MapPage() {
     : "Chargement de la carte..."
 
   if (loading) {
-    return (
-      <div className="p-8">
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2">Chargement des données...</span>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    return null
   }
 
   const defaultCenter = agenceCenters['all']
