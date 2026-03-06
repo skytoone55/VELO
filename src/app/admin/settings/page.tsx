@@ -42,9 +42,7 @@ export default function AdminSettingsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Connexion Monday</CardTitle>
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
+              {loading ? null : (
                 <Badge variant={status?.configured ? 'default' : 'outline'}>
                   {status?.configured ? 'Connecte' : 'Non configure'}
                 </Badge>

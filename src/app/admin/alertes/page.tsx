@@ -260,9 +260,7 @@ export default function AdminAlertesPage() {
 
             <TabsContent value={activeTab} className="mt-4">
               {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <div className="py-12" />
               ) : alerts.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
