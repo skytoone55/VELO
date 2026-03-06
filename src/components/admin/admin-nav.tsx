@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useTheme } from 'next-themes'
@@ -38,6 +38,11 @@ import {
 import { cn } from '@/lib/utils'
 import { UserRole } from '@/lib/types/database'
 import { createClient } from '@/lib/supabase/client'
+
+const SIDEBAR_MIN = 180
+const SIDEBAR_MAX = 320
+const SIDEBAR_DEFAULT = 208
+const SIDEBAR_STORAGE_KEY = 'admin-sidebar-width'
 
 interface NavItem {
   href: string
@@ -136,6 +141,45 @@ export function AdminNav({ user }: AdminNavProps) {
   )
   const { theme, setTheme } = useTheme()
 
+  // Resizable sidebar
+  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT)
+  const isResizing = useRef(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY)
+    if (saved) {
+      const w = parseInt(saved, 10)
+      if (w >= SIDEBAR_MIN && w <= SIDEBAR_MAX) setSidebarWidth(w)
+    }
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`)
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarWidth))
+  }, [sidebarWidth])
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    isResizing.current = true
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!isResizing.current) return
+      const newWidth = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, ev.clientX))
+      setSidebarWidth(newWidth)
+    }
+    const onMouseUp = () => {
+      isResizing.current = false
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+  }, [])
+
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark')
   }
@@ -154,7 +198,10 @@ export function AdminNav({ user }: AdminNavProps) {
   return (
     <>
       {/* Sidebar for desktop */}
-      <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
+      <aside
+        className="hidden md:fixed md:inset-y-0 md:flex md:flex-col"
+        style={{ width: sidebarWidth }}
+      >
         <div className="flex flex-col flex-grow bg-sidebar text-sidebar-foreground overflow-y-auto">
           {/* Logo + Theme Toggle */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
@@ -276,6 +323,11 @@ export function AdminNav({ user }: AdminNavProps) {
             </div>
           </div>
         </div>
+        {/* Drag handle */}
+        <div
+          onMouseDown={handleMouseDown}
+          className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors z-10"
+        />
       </aside>
 
       {/* Mobile sidebar */}

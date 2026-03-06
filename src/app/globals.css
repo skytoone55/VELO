@@ -2,7 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@media (min-width: 768px) {
+  .sidebar-offset {
+    padding-left: var(--sidebar-width, 208px);
+  }
+}
+
 :root {
+  --sidebar-width: 208px;
   --radius: 0.625rem;
 
   /* ECOVOLT Theme - Yellow/Green Electric */

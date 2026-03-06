@@ -72,7 +72,7 @@ export default async function AdminLayout({
     <AdminUserProvider user={adminUser}>
       <div className="min-h-screen bg-background">
         <AdminNav user={adminUser} />
-        <main className="md:pl-64 pt-16 md:pt-0">
+        <main className="pt-16 md:pt-0 sidebar-offset">
           <div className="p-6">
             {children}
           </div>
