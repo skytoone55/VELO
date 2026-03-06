@@ -53,7 +53,12 @@ import {
 } from 'lucide-react'
 import { Client, Livraison, Depot } from '@/lib/types/database'
 import { createClient } from '@/lib/supabase/client'
-import { MiniMap } from '@/components/ui/mini-map'
+import dynamic from 'next/dynamic'
+
+const MiniMap = dynamic(() => import('@/components/ui/mini-map').then(m => ({ default: m.MiniMap })), {
+  ssr: false,
+  loading: () => <div className="h-[200px] w-full bg-muted/30 rounded animate-pulse" />,
+})
 
 // Composant pour les titres de section - design épuré
 function SectionTitle({
