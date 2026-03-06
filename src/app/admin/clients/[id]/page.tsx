@@ -92,7 +92,7 @@ function InfoRow({
   )
 }
 
-// Statuts commerciaux Monday (source de vérité)
+// Statuts commerciaux
 const statutCommercialColors: Record<string, string> = {
   devis_cree: 'bg-sky-100 text-sky-800',
   devis_signe: 'bg-blue-100 text-blue-800',
@@ -176,52 +176,23 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     return distanceKm <= rayon ? 'dans_la_zone' : 'hors_zone'
   })()
 
-  // Source de données
-  const [dataSource, setDataSource] = useState<'monday' | 'supabase'>('monday')
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Essayer d'abord Monday (source de vérité)
-        const mondayResponse = await fetch(`/api/monday/clients/${resolvedParams.id}`)
-        const mondayData = await mondayResponse.json()
+        const response = await fetch(`/api/admin/clients/${resolvedParams.id}`)
+        const data = await response.json()
 
-        if (mondayResponse.ok && mondayData.client) {
-          setClient(mondayData.client)
-          setDataSource('monday')
-          console.log('✓ Client chargé depuis Monday (source de vérité)')
-
-          // Les livraisons et dépôts restent dans Supabase
-          const supabaseResponse = await fetch(`/api/admin/clients/${resolvedParams.id}`)
-          if (supabaseResponse.ok) {
-            const supabaseData = await supabaseResponse.json()
-            setLivraisons(supabaseData.livraisons || [])
-            // Charger les dépôts depuis Supabase
-            if (supabaseData.depotRetrait) setDepotRetrait(supabaseData.depotRetrait)
-            if (supabaseData.depotLogistique) setDepotLogistique(supabaseData.depotLogistique)
-            if (supabaseData.distanceKm) setDistanceKm(supabaseData.distanceKm)
-          }
-        } else {
-          // Fallback vers Supabase si Monday échoue
-          console.log('Monday non disponible, fallback vers Supabase')
-          const response = await fetch(`/api/admin/clients/${resolvedParams.id}`)
-          const data = await response.json()
-
-          if (!response.ok) {
-            setError(data.error || 'Client introuvable')
-            setLoading(false)
-            return
-          }
-
-          setClient(data.client)
-          setLivraisons(data.livraisons || [])
-          // Charger les dépôts depuis Supabase
-          if (data.depotRetrait) setDepotRetrait(data.depotRetrait)
-          if (data.depotLogistique) setDepotLogistique(data.depotLogistique)
-          if (data.distanceKm) setDistanceKm(data.distanceKm)
-          setDataSource('supabase')
+        if (!response.ok) {
+          setError(data.error || 'Client introuvable')
+          setLoading(false)
+          return
         }
 
+        setClient(data.client)
+        setLivraisons(data.livraisons || [])
+        if (data.depotRetrait) setDepotRetrait(data.depotRetrait)
+        if (data.depotLogistique) setDepotLogistique(data.depotLogistique)
+        if (data.distanceKm) setDistanceKm(data.distanceKm)
       } catch (err) {
         setError('Erreur lors du chargement')
       } finally {
@@ -379,14 +350,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">{client.raison_sociale}</h1>
-                <Badge
-                  className={dataSource === 'monday' ? 'bg-blue-500' : 'bg-slate-500'}
-                >
-                  {dataSource === 'monday' ? '● Monday' : '○ Cache'}
-                </Badge>
-              </div>
+              <h1 className="text-2xl font-bold">{client.raison_sociale}</h1>
               <p className="text-slate-300 mt-1">{getDepartementLabel(client.departement || '')}</p>
             </div>
           </div>
