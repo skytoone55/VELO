@@ -59,18 +59,18 @@ import { getSimpleZoneStatus, type DepotWithCoords } from '@/lib/geo/utils'
 
 // Options filtre NAF (ENEMAT)
 const nafOptions = [
-  { value: 'all', label: 'Tous les NAF' },
+  { value: 'all', label: 'NAF' },
   { value: 'valide', label: 'NAF Validé' },
   { value: 'bloque', label: 'NAF Bloqué' },
   { value: 'en_attente', label: 'NAF En attente' },
 ]
 
 // Statuts pour filtre - chargés dynamiquement depuis l'API
-const defaultStatutOptions = [{ value: 'all', label: 'Tous les statuts' }]
+const defaultStatutOptions = [{ value: 'all', label: 'Statut' }]
 
 // Départements - clés Supabase (codes postaux DOM-TOM)
 const departementOptions = [
-  { value: 'all', label: 'Tous les départements' },
+  { value: 'all', label: 'Départements' },
   { value: '974', label: 'La Réunion (974)' },
   { value: '972', label: 'Martinique (972)' },
   { value: '971', label: 'Guadeloupe (971)' },
@@ -161,7 +161,7 @@ export default function AdminClientsPage() {
   const [commercialFilter, setCommercialFilter] = useState('all')
   const [sortBy, setSortBy] = useState('updated_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Tous les commerciaux' }])
+  const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
   const [dynamicDeptOptions, setDynamicDeptOptions] = useState<{value: string; label: string}[] | null>(null)
   const [depots, setDepots] = useState<DepotWithCoords[]>([])
   const tenantId = getTenantId()
@@ -221,7 +221,7 @@ export default function AdminClientsPage() {
             value: s,
             label: statutConfig[s]?.label ?? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
           }))
-          setStatutOptions([{ value: 'all', label: 'Tous les statuts' }, ...options])
+          setStatutOptions([{ value: 'all', label: 'Statut' }, ...options])
         }
       })
       .catch(() => {}) // Keep defaults on error
@@ -231,14 +231,14 @@ export default function AdminClientsPage() {
   useEffect(() => {
     const staticOpts = getStaticCommercialOptions()
     if (staticOpts) {
-      setCommercialOptions([{ value: 'all', label: 'Tous les commerciaux' }, ...staticOpts])
+      setCommercialOptions([{ value: 'all', label: 'Commercial' }, ...staticOpts])
     } else {
       fetch('/api/clients/commercials')
         .then(res => res.json())
         .then((emails: string[]) => {
           if (Array.isArray(emails)) {
             setCommercialOptions([
-              { value: 'all', label: 'Tous les commerciaux' },
+              { value: 'all', label: 'Commercial' },
               ...emails.map(e => ({ value: e, label: e }))
             ])
           }
@@ -251,14 +251,14 @@ export default function AdminClientsPage() {
   useEffect(() => {
     const staticDepts = getStaticDepartementOptions()
     if (staticDepts) {
-      setDynamicDeptOptions([{ value: 'all', label: 'Tous les departements' }, ...staticDepts])
+      setDynamicDeptOptions([{ value: 'all', label: 'Départements' }, ...staticDepts])
     } else {
       fetch('/api/clients/departements')
         .then(res => res.json())
         .then((depts: string[]) => {
           if (Array.isArray(depts)) {
             setDynamicDeptOptions([
-              { value: 'all', label: 'Tous les departements' },
+              { value: 'all', label: 'Départements' },
               ...depts.map(d => ({ value: d, label: d }))
             ])
           }
@@ -770,7 +770,7 @@ export default function AdminClientsPage() {
             <SelectValue placeholder="Département" />
           </SelectTrigger>
           <SelectContent>
-            {(dynamicDeptOptions || [{ value: 'all', label: 'Tous les departements' }]).map((opt) => (
+            {(dynamicDeptOptions || [{ value: 'all', label: 'Départements' }]).map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
             ))}
           </SelectContent>
