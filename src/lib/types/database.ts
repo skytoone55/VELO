@@ -604,6 +604,7 @@ export type Database = {
           actif: boolean | null
           created_at: string | null
           depot_id: string | null
+          depot_ids: string[] | null
           email: string
           id: string
           nom: string | null
@@ -618,6 +619,7 @@ export type Database = {
           actif?: boolean | null
           created_at?: string | null
           depot_id?: string | null
+          depot_ids?: string[] | null
           email: string
           id: string
           nom?: string | null
@@ -632,6 +634,7 @@ export type Database = {
           actif?: boolean | null
           created_at?: string | null
           depot_id?: string | null
+          depot_ids?: string[] | null
           email?: string
           id?: string
           nom?: string | null

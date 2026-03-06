@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendUserInvitationEmail } from '@/lib/email/gmail'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
  * Génère un mot de passe temporaire sécurisé
@@ -20,8 +21,12 @@ function generateSecurePassword(length: number = 16): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Only admin_general can create users
+    const authResult = await requireRole(['admin_general'])
+    if (isAuthError(authResult)) return authResult
+
     const body = await request.json()
-    const { email, nom, prenom, role, territoire, telephone, actif } = body
+    const { email, nom, prenom, role, territoire, telephone, actif, depot_ids } = body
 
     if (!email || !nom || !prenom || !role) {
       return NextResponse.json(
@@ -73,6 +78,7 @@ export async function POST(request: NextRequest) {
         territoire: territoire || null,
         telephone: telephone || null,
         actif: actif ?? true,
+        depot_ids: depot_ids || [],
       })
       .select()
       .single()
@@ -112,6 +118,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: profile,
+      temporaryPassword: tempPassword,
       emailSent,
       message: emailSent
         ? 'Utilisateur créé. Un email d\'invitation a été envoyé.'

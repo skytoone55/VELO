@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validatePagination } from '@/lib/constants'
+import { requireRole, isAuthError, type AuthenticatedUser } from '@/lib/auth/require-role'
 
 /**
  * GET /api/livraisons
@@ -9,6 +10,11 @@ import { validatePagination } from '@/lib/constants'
  */
 export async function GET(request: NextRequest) {
   try {
+    // Livraisons accessible by all admin roles
+    const authResult = await requireRole(['admin_general', 'admin_regional', 'agent_regional', 'agent_depot', 'livreur'])
+    if (isAuthError(authResult)) return authResult
+    const currentUser = authResult as AuthenticatedUser
+
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')?.toLowerCase()
 
@@ -100,6 +106,13 @@ export async function GET(request: NextRequest) {
 
     if (depotFilter && depotFilter !== 'all') {
       query = query.eq('depot_id', depotFilter)
+    }
+
+    // Role-based data filtering
+    if (currentUser.role === 'agent_depot' && currentUser.depot_ids?.length) {
+      query = query.in('depot_id', currentUser.depot_ids)
+    } else if (currentUser.role === 'livreur') {
+      query = query.eq('livreur_id', currentUser.id)
     }
 
     // Pagination + tri

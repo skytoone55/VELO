@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validatePagination } from '@/lib/constants'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
  * API pour lire les clients depuis SUPABASE (cache local)
@@ -23,6 +24,10 @@ import { validatePagination } from '@/lib/constants'
 
 export async function GET(request: NextRequest) {
   try {
+    // Clients accessible by admin_general, admin_regional, agent_regional
+    const authResult = await requireRole(['admin_general', 'admin_regional', 'agent_regional'])
+    if (isAuthError(authResult)) return authResult
+
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')?.toLowerCase()
 

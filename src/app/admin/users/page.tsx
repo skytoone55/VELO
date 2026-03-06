@@ -50,7 +50,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Loader2, Search, Filter, Users, UserPlus, Check, X, AlertCircle, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import {
+  Loader2, Search, Filter, Users, UserPlus, Check, X, AlertCircle,
+  MoreHorizontal, Pencil, Trash2, KeyRound, LogIn, Copy, Building2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { UsersProfile, UserRole } from '@/lib/types/database'
 
@@ -95,6 +98,9 @@ const territoireOptions = [
   { value: '974', label: '974 - La Réunion' },
 ]
 
+// Rôles qui nécessitent une sélection de dépôts
+const rolesWithDepots: UserRole[] = ['agent_depot', 'livreur']
+
 interface UserForm {
   email: string
   nom: string
@@ -103,6 +109,7 @@ interface UserForm {
   territoire: string
   telephone: string
   actif: boolean
+  depot_ids: string[]
 }
 
 const initialForm: UserForm = {
@@ -113,11 +120,18 @@ const initialForm: UserForm = {
   territoire: '974',
   telephone: '',
   actif: true,
+  depot_ids: [],
+}
+
+interface DepotOption {
+  id: string
+  nom: string
 }
 
 export default function AdminUsersPage() {
   const user = useAdminUser()
   const [users, setUsers] = useState<UsersProfile[]>([])
+  const [depots, setDepots] = useState<DepotOption[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
@@ -134,33 +148,42 @@ export default function AdminUsersPage() {
   const [userToDelete, setUserToDelete] = useState<UsersProfile | null>(null)
   const [deleting, setDeleting] = useState(false)
 
+  // Password dialog state
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
+  const [shownPassword, setShownPassword] = useState('')
+  const [passwordUserName, setPasswordUserName] = useState('')
+  const [resettingPassword, setResettingPassword] = useState(false)
+
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchData = async () => {
       const supabase = createClient()
 
+      // Fetch users
       let query = supabase
         .from('users_profile')
         .select('*')
         .order('created_at', { ascending: false })
 
-      // Filtrer par territoire pour admin régional
       if (user?.role === 'admin_regional' && user.territoire) {
         query = query.eq('territoire', user.territoire)
       }
 
       const { data, error } = await query
+      if (!error) setUsers(data || [])
 
-      if (error) {
-        console.error('Erreur:', error)
-        setLoading(false)
-        return
-      }
+      // Fetch depots
+      const { data: depotsData } = await supabase
+        .from('depots')
+        .select('id, nom')
+        .eq('actif', true)
+        .order('nom')
 
-      setUsers(data || [])
+      if (depotsData) setDepots(depotsData)
+
       setLoading(false)
     }
 
-    fetchUsers()
+    fetchData()
   }, [])
 
   const filteredUsers = users.filter(u => {
@@ -192,6 +215,7 @@ export default function AdminUsersPage() {
       territoire: userProfile.territoire || 'none',
       telephone: userProfile.telephone || '',
       actif: userProfile.actif ?? true,
+      depot_ids: (userProfile as any).depot_ids || [],
     })
     setError(null)
     setDialogOpen(true)
@@ -208,31 +232,34 @@ export default function AdminUsersPage() {
       return
     }
 
+    if (rolesWithDepots.includes(form.role) && form.depot_ids.length === 0) {
+      setError('Veuillez sélectionner au moins un dépôt pour ce rôle')
+      return
+    }
+
     setSaving(true)
     setError(null)
 
     try {
-      const supabase = createClient()
-
-      // Convertir 'none' en null pour le territoire
       const territoireValue = form.territoire === 'none' ? null : form.territoire || null
 
       if (editingUser) {
-        // Update existing user profile
-        const { error: updateError } = await supabase
-          .from('users_profile')
-          .update({
+        const response = await fetch(`/api/admin/users/${editingUser.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             nom: form.nom,
             prenom: form.prenom,
             role: form.role,
             territoire: territoireValue,
             telephone: form.telephone || null,
             actif: form.actif,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', editingUser.id)
+            depot_ids: form.depot_ids,
+          }),
+        })
 
-        if (updateError) throw updateError
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error || 'Erreur lors de la mise à jour')
 
         setUsers(users.map(u => u.id === editingUser.id ? {
           ...u,
@@ -242,24 +269,28 @@ export default function AdminUsersPage() {
           territoire: territoireValue,
           telephone: form.telephone || null,
           actif: form.actif,
-        } : u))
-        toast.success('Utilisateur mis à jour avec succès')
+          depot_ids: form.depot_ids,
+        } as any : u))
+        toast.success('Utilisateur mis à jour')
       } else {
-        // Create new user - requires server-side API call
         const response = await fetch('/api/admin/users/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
+          body: JSON.stringify({
+            ...form,
+            territoire: territoireValue,
+          }),
         })
 
         const result = await response.json()
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Erreur lors de la création')
-        }
+        if (!response.ok) throw new Error(result.error || 'Erreur lors de la création')
 
         setUsers([result.user, ...users])
-        toast.success('Utilisateur créé avec succès')
+
+        // Show password dialog
+        setPasswordUserName(`${form.prenom} ${form.nom}`)
+        setShownPassword(result.temporaryPassword)
+        setPasswordDialogOpen(true)
       }
 
       setDialogOpen(false)
@@ -286,7 +317,7 @@ export default function AdminUsersPage() {
       }
 
       setUsers(users.filter(u => u.id !== userToDelete.id))
-      toast.success('Utilisateur supprimé avec succès')
+      toast.success('Utilisateur supprimé')
       setShowDeleteDialog(false)
       setUserToDelete(null)
     } catch (err) {
@@ -295,6 +326,64 @@ export default function AdminUsersPage() {
     } finally {
       setDeleting(false)
     }
+  }
+
+  const handleResetPassword = async (targetUser: UsersProfile) => {
+    setResettingPassword(true)
+    try {
+      const response = await fetch(`/api/admin/users/${targetUser.id}`, {
+        method: 'PUT',
+      })
+
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Erreur')
+
+      setPasswordUserName(`${targetUser.prenom} ${targetUser.nom}`)
+      setShownPassword(result.temporaryPassword)
+      setPasswordDialogOpen(true)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur lors du reset')
+    } finally {
+      setResettingPassword(false)
+    }
+  }
+
+  const handleImpersonate = async (targetUser: UsersProfile) => {
+    try {
+      const response = await fetch(`/api/admin/users/${targetUser.id}/impersonate`, {
+        method: 'POST',
+      })
+
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Erreur')
+
+      window.open(result.actionLink, '_blank')
+      toast.success(`Connexion en tant que ${targetUser.prenom} ${targetUser.nom} dans un nouvel onglet`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur d\'impersonation')
+    }
+  }
+
+  const copyPassword = () => {
+    navigator.clipboard.writeText(shownPassword)
+    toast.success('Mot de passe copié !')
+  }
+
+  const toggleDepot = (depotId: string) => {
+    setForm(prev => ({
+      ...prev,
+      depot_ids: prev.depot_ids.includes(depotId)
+        ? prev.depot_ids.filter(id => id !== depotId)
+        : [...prev.depot_ids, depotId],
+    }))
+  }
+
+  // Get depot names for display
+  const getDepotNames = (depotIds: string[] | undefined): string => {
+    if (!depotIds || depotIds.length === 0) return '-'
+    return depotIds
+      .map(id => depots.find(d => d.id === id)?.nom || '?')
+      .join(', ')
   }
 
   if (loading) {
@@ -373,6 +462,7 @@ export default function AdminUsersPage() {
                   <TableHead>Email</TableHead>
                   <TableHead>Rôle</TableHead>
                   <TableHead>Territoire</TableHead>
+                  <TableHead>Dépôts</TableHead>
                   <TableHead>Actif</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -401,6 +491,11 @@ export default function AdminUsersPage() {
                       )}
                     </TableCell>
                     <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {getDepotNames((u as any).depot_ids)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
                       {u.actif ? (
                         <Check className="h-4 w-4 text-green-600" />
                       ) : (
@@ -419,19 +514,31 @@ export default function AdminUsersPage() {
                             <Pencil className="h-4 w-4 mr-2" />
                             Modifier
                           </DropdownMenuItem>
-                          {user?.role === 'admin_general' && u.id !== user.id && (
+                          {user?.role === 'admin_general' && (
                             <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => {
-                                  setUserToDelete(u)
-                                  setShowDeleteDialog(true)
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Supprimer
+                              <DropdownMenuItem onClick={() => handleResetPassword(u)}>
+                                <KeyRound className="h-4 w-4 mr-2" />
+                                Réinitialiser mot de passe
                               </DropdownMenuItem>
+                              {u.id !== user.id && (
+                                <DropdownMenuItem onClick={() => handleImpersonate(u)}>
+                                  <LogIn className="h-4 w-4 mr-2" />
+                                  Se connecter en tant que
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              {u.id !== user.id && (
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => {
+                                    setUserToDelete(u)
+                                    setShowDeleteDialog(true)
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Supprimer
+                                </DropdownMenuItem>
+                              )}
                             </>
                           )}
                         </DropdownMenuContent>
@@ -516,7 +623,7 @@ export default function AdminUsersPage() {
                 <Label htmlFor="role">Rôle *</Label>
                 <Select
                   value={form.role}
-                  onValueChange={(value) => setForm({ ...form, role: value as UserRole })}
+                  onValueChange={(value) => setForm({ ...form, role: value as UserRole, depot_ids: [] })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -550,6 +657,39 @@ export default function AdminUsersPage() {
               </div>
             </div>
 
+            {/* Depot selection — visible for agent_depot and livreur */}
+            {rolesWithDepots.includes(form.role) && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Dépôts rattachés *
+                </Label>
+                <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto border rounded-md p-3">
+                  {depots.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aucun dépôt actif</p>
+                  ) : (
+                    depots.map((depot) => (
+                      <div key={depot.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`depot-${depot.id}`}
+                          checked={form.depot_ids.includes(depot.id)}
+                          onCheckedChange={() => toggleDepot(depot.id)}
+                        />
+                        <Label htmlFor={`depot-${depot.id}`} className="cursor-pointer text-sm">
+                          {depot.nom}
+                        </Label>
+                      </div>
+                    ))
+                  )}
+                </div>
+                {form.depot_ids.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {form.depot_ids.length} dépôt(s) sélectionné(s)
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="actif"
@@ -572,13 +712,41 @@ export default function AdminUsersPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Password Display Dialog */}
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" />
+              Mot de passe
+            </DialogTitle>
+            <DialogDescription>
+              Mot de passe pour {passwordUserName}. Copiez-le maintenant, il ne sera plus affiché.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+            <code className="flex-1 font-mono text-sm select-all break-all">
+              {shownPassword}
+            </code>
+            <Button variant="outline" size="sm" onClick={copyPassword}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setPasswordDialogOpen(false)}>
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Le compte de "{userToDelete?.prenom} {userToDelete?.nom}" sera définitivement supprimé.
+              Cette action est irréversible. Le compte de &quot;{userToDelete?.prenom} {userToDelete?.nom}&quot; sera définitivement supprimé.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
