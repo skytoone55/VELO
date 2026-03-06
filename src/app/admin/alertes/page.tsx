@@ -76,17 +76,17 @@ const ALERT_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; 
     color: 'bg-orange-100 text-orange-800',
   },
   enemat_bloque: {
-    label: 'ENEMAT bloqué',
+    label: 'ENEMAT bloqu\u00e9',
     icon: <UserX className="h-4 w-4" />,
     color: 'bg-red-100 text-red-800',
   },
   formulaire_expire: {
-    label: 'Formulaire expiré',
+    label: 'Formulaire expir\u00e9',
     icon: <Clock className="h-4 w-4" />,
     color: 'bg-yellow-100 text-yellow-800',
   },
   livraison_echec: {
-    label: 'Échec livraison',
+    label: '\u00c9chec livraison',
     icon: <AlertCircle className="h-4 w-4" />,
     color: 'bg-red-100 text-red-800',
   },
@@ -176,7 +176,7 @@ export default function AdminAlertesPage() {
       <div>
         <h1 className="text-2xl font-bold">Alertes</h1>
         <p className="text-muted-foreground">
-          Gérez les alertes et notifications système
+          G\u00e9rez les alertes et notifications syst\u00e8me
         </p>
       </div>
 
@@ -215,7 +215,7 @@ export default function AdminAlertesPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">ENEMAT bloqués</p>
+                <p className="text-sm text-muted-foreground">ENEMAT bloqu\u00e9s</p>
                 <p className="text-2xl font-bold">{stats?.byType?.enemat_bloque || 0}</p>
               </div>
               <UserX className="h-8 w-8 text-red-500" />
@@ -226,7 +226,7 @@ export default function AdminAlertesPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Envoyées</p>
+                <p className="text-sm text-muted-foreground">Envoy\u00e9es</p>
                 <p className="text-2xl font-bold">{stats?.sent || 0}</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
@@ -240,7 +240,7 @@ export default function AdminAlertesPage() {
         <CardHeader>
           <CardTitle>Liste des alertes</CardTitle>
           <CardDescription>
-            Alertes nécessitant une action
+            Alertes n\u00e9cessitant une action
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -254,8 +254,8 @@ export default function AdminAlertesPage() {
                   </Badge>
                 ) : null}
               </TabsTrigger>
-              <TabsTrigger value="sent">Envoyées</TabsTrigger>
-              <TabsTrigger value="dismissed">Archivées</TabsTrigger>
+              <TabsTrigger value="sent">Envoy\u00e9es</TabsTrigger>
+              <TabsTrigger value="dismissed">Archiv\u00e9es</TabsTrigger>
             </TabsList>
 
             <TabsContent value={activeTab} className="mt-4">
@@ -264,7 +264,7 @@ export default function AdminAlertesPage() {
               ) : alerts.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Aucune alerte dans cette catégorie</p>
+                  <p>Aucune alerte dans cette cat\u00e9gorie</p>
                 </div>
               ) : (
                 <Table>
