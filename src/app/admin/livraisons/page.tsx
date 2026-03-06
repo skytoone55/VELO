@@ -12,8 +12,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Loader2, Search, Filter, Truck, MapPin, Calendar, Phone, RefreshCw,
-  ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Package,
+  Loader2, Search, Truck, MapPin, Calendar, Phone, RefreshCw,
+  ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { getTenantId } from '@/lib/tenants'
 import {
@@ -52,7 +52,7 @@ interface LivraisonRow {
 }
 
 const statutOptions = [
-  { value: 'all', label: 'Tous les statuts' },
+  { value: 'all', label: 'Statut' },
   { value: 'en_attente', label: 'En attente' },
   { value: 'programmee', label: 'Programmee' },
   { value: 'livree', label: 'Livree' },
@@ -75,12 +75,12 @@ const statutLabels: Record<string, string> = {
   annulee: 'Annulee',
 }
 
-function SortableHeader({ label, column, currentSort, currentOrder, onSort }: {
-  label: string; column: string; currentSort: string; currentOrder: 'asc' | 'desc'; onSort: (col: string) => void
+function SortableHeader({ label, column, currentSort, currentOrder, onSort, className }: {
+  label: string; column: string; currentSort: string; currentOrder: 'asc' | 'desc'; onSort: (col: string) => void; className?: string
 }) {
   const isActive = currentSort === column
   return (
-    <TableHead className="cursor-pointer select-none hover:bg-muted/50" onClick={() => onSort(column)}>
+    <TableHead className={`cursor-pointer select-none hover:bg-muted/50 ${className || ''}`} onClick={() => onSort(column)}>
       <div className="flex items-center gap-1">
         {label}
         {isActive ? (
@@ -109,9 +109,9 @@ export default function AdminLivraisonsPage() {
   const [pageSize, setPageSize] = useState(20)
   const [pagination, setPagination] = useState({ totalPages: 0, totalFiltered: 0, startIndex: 0, endIndex: 0 })
 
-  const [depotOptions, setDepotOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Tous les depots' }])
-  const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Tous' }])
-  const [deptOptions, setDeptOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Tous' }])
+  const [depotOptions, setDepotOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Dépôt' }])
+  const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
+  const [deptOptions, setDeptOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Départements' }])
 
   // Load filter options
   useEffect(() => {
@@ -119,7 +119,7 @@ export default function AdminLivraisonsPage() {
     fetch('/api/depots').then(r => r.json()).then(data => {
       const depots = Array.isArray(data) ? data : data.depots || []
       setDepotOptions([
-        { value: 'all', label: 'Tous les depots' },
+        { value: 'all', label: 'Dépôt' },
         ...depots.map((d: { id: string; nom: string }) => ({ value: d.id, label: d.nom }))
       ])
     }).catch(() => {})
@@ -127,11 +127,11 @@ export default function AdminLivraisonsPage() {
     // Commercials
     const staticCom = getStaticCommercialOptions()
     if (staticCom) {
-      setCommercialOptions([{ value: 'all', label: 'Tous' }, ...staticCom])
+      setCommercialOptions([{ value: 'all', label: 'Commercial' }, ...staticCom])
     } else {
       fetch('/api/clients/commercials').then(r => r.json()).then((emails: string[]) => {
         if (Array.isArray(emails)) {
-          setCommercialOptions([{ value: 'all', label: 'Tous' }, ...emails.map(e => ({ value: e, label: e }))])
+          setCommercialOptions([{ value: 'all', label: 'Commercial' }, ...emails.map(e => ({ value: e, label: e }))])
         }
       }).catch(() => {})
     }
@@ -139,11 +139,11 @@ export default function AdminLivraisonsPage() {
     // Departements
     const staticDept = getStaticDepartementOptions()
     if (staticDept) {
-      setDeptOptions([{ value: 'all', label: 'Tous' }, ...staticDept])
+      setDeptOptions([{ value: 'all', label: 'Départements' }, ...staticDept])
     } else {
       fetch('/api/clients/departements').then(r => r.json()).then((depts: string[]) => {
         if (Array.isArray(depts)) {
-          setDeptOptions([{ value: 'all', label: 'Tous' }, ...depts.map(d => ({ value: d, label: d }))])
+          setDeptOptions([{ value: 'all', label: 'Départements' }, ...depts.map(d => ({ value: d, label: d }))])
         }
       }).catch(() => {})
     }
@@ -234,86 +234,78 @@ export default function AdminLivraisonsPage() {
     commercialFilter !== 'all' || departementFilter !== 'all' || zoneFilter !== 'all'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Livraisons</h1>
-          <p className="text-muted-foreground">
-            {pagination.totalFiltered} livraison{pagination.totalFiltered !== 1 ? 's' : ''}
-            {hasActiveFilters ? ' (filtrees)' : ''}
-          </p>
-        </div>
+        <h1 className="text-xl font-bold">Livraisons</h1>
         <Button variant="outline" size="sm" onClick={fetchLivraisons} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Actualiser
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </Button>
       </div>
 
+      {/* Stats inline */}
+      <div className="flex items-center gap-3 text-sm">
+        <span className="font-semibold">{pagination.totalFiltered} <span className="text-muted-foreground font-normal">livraisons</span></span>
+      </div>
+
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="relative sm:col-span-2 lg:col-span-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher..."
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Select value={statutFilter} onValueChange={setStatutFilter}>
-              <SelectTrigger>
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Statut" />
-              </SelectTrigger>
-              <SelectContent>
-                {statutOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={depotFilter} onValueChange={setDepotFilter}>
-              <SelectTrigger>
-                <MapPin className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Depot" />
-              </SelectTrigger>
-              <SelectContent>
-                {depotOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={commercialFilter} onValueChange={setCommercialFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Commercial" />
-              </SelectTrigger>
-              <SelectContent>
-                {commercialOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={departementFilter} onValueChange={setDepartementFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Departement" />
-              </SelectTrigger>
-              <SelectContent>
-                {deptOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={zoneFilter} onValueChange={setZoneFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Zone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les zones</SelectItem>
-                <SelectItem value="dans_la_zone">Dans la zone</SelectItem>
-                <SelectItem value="hors_zone">Hors zone</SelectItem>
-              </SelectContent>
-            </Select>
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground">
-                Reinitialiser
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <div className="relative min-w-[140px] flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher..."
+            className="pl-8 h-8 text-sm"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Select value={statutFilter} onValueChange={setStatutFilter}>
+          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
+            <SelectValue placeholder="Statut" />
+          </SelectTrigger>
+          <SelectContent>
+            {statutOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={depotFilter} onValueChange={setDepotFilter}>
+          <SelectTrigger className="h-8 w-auto min-w-[70px] text-xs px-2 shrink-0">
+            <SelectValue placeholder="Dépôt" />
+          </SelectTrigger>
+          <SelectContent>
+            {depotOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={commercialFilter} onValueChange={setCommercialFilter}>
+          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
+            <SelectValue placeholder="Commercial" />
+          </SelectTrigger>
+          <SelectContent>
+            {commercialOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={departementFilter} onValueChange={setDepartementFilter}>
+          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
+            <SelectValue placeholder="Dép." />
+          </SelectTrigger>
+          <SelectContent>
+            {deptOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={zoneFilter} onValueChange={setZoneFilter}>
+          <SelectTrigger className="h-8 w-auto min-w-[60px] text-xs px-2 shrink-0">
+            <SelectValue placeholder="Zone" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Zone</SelectItem>
+            <SelectItem value="dans_la_zone">En zone</SelectItem>
+            <SelectItem value="hors_zone">Hors zone</SelectItem>
+          </SelectContent>
+        </Select>
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={resetFilters} className="h-8 text-xs text-muted-foreground px-2">
+            Réinitialiser
+          </Button>
+        )}
+      </div>
 
       {/* Table */}
       <Card>
@@ -334,13 +326,13 @@ export default function AdminLivraisonsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableHeader label="Societe" column="created_at" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <TableHead>Email client</TableHead>
-                  <TableHead>Telephone</TableHead>
-                  <TableHead>Commercial</TableHead>
-                  <TableHead>Departement</TableHead>
-                  <SortableHeader label="Mode" column="mode_livraison" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <TableHead>Adresse</TableHead>
+                  <SortableHeader label="Société" column="created_at" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <TableHead className="hidden xl:table-cell">Email</TableHead>
+                  <TableHead className="hidden xl:table-cell">Tél.</TableHead>
+                  <TableHead className="hidden lg:table-cell">Commercial</TableHead>
+                  <TableHead className="hidden md:table-cell">Dép.</TableHead>
+                  <SortableHeader label="Mode" column="mode_livraison" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
+                  <TableHead className="hidden lg:table-cell">Adresse</TableHead>
                   <SortableHeader label="Date" column="date_programmation" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <SortableHeader label="Statut" column="statut" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <TableHead className="text-right">Actions</TableHead>
@@ -353,10 +345,10 @@ export default function AdminLivraisonsPage() {
                       <div className="font-medium">{liv.client?.raison_sociale || 'N/A'}</div>
                       <div className="text-xs text-muted-foreground">{liv.client?.siret}</div>
                     </TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="hidden xl:table-cell text-sm">
                       {liv.client?.email_beneficiaire || liv.client?.email || '-'}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden xl:table-cell">
                       {liv.client?.telephone ? (
                         <a href={`tel:${liv.client.telephone}`} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
                           <Phone className="h-3 w-3" />
@@ -364,15 +356,15 @@ export default function AdminLivraisonsPage() {
                         </a>
                       ) : <span className="text-sm text-muted-foreground">-</span>}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <Badge variant="outline" className="text-xs font-normal">
                         {liv.client ? getCommercialName(liv.client) : '-'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="hidden md:table-cell text-sm">
                       {getDepartementLabel(liv.client?.departement, liv.client?.adresse_societe_cp)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <div className="flex items-center gap-1 text-sm">
                         {liv.mode_livraison === 'domicile' ? (
                           <><Truck className="h-3 w-3" /> Domicile</>
@@ -381,7 +373,7 @@ export default function AdminLivraisonsPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <div className="text-sm max-w-[200px] truncate">
                         {liv.adresse_livraison_ligne1 || '-'}
                         {liv.adresse_livraison_cp && (
@@ -419,24 +411,24 @@ export default function AdminLivraisonsPage() {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="text-sm text-muted-foreground">
             {pagination.startIndex}-{pagination.endIndex} sur {pagination.totalFiltered}
           </div>
           <div className="flex items-center gap-2">
             <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
-              <SelectTrigger className="w-20">
+              <SelectTrigger className="h-8 w-auto text-xs px-2">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {[20, 50, 100].map(n => <SelectItem key={n} value={n.toString()}>{n}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm">Page {page}/{pagination.totalPages}</span>
-            <Button variant="outline" size="sm" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>
+            <span className="text-xs">{page}/{pagination.totalPages}</span>
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
