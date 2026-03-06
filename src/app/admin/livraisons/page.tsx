@@ -311,9 +311,7 @@ export default function AdminLivraisonsPage() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <div className="py-12" />
           ) : livraisons.length === 0 ? (
             <div className="text-center py-12">
               <Truck className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
