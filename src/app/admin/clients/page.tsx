@@ -701,62 +701,45 @@ export default function AdminClientsPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-        <Card>
-          <CardContent className="px-3 py-2">
-            <div className="text-lg font-bold">{stats.total}</div>
-            <div className="text-xs text-muted-foreground">Total</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="px-3 py-2">
-            <div className="text-lg font-bold text-blue-600">{stats.velosValides}</div>
-            <div className="text-xs text-muted-foreground">Validés</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="px-3 py-2">
-            <div className="text-lg font-bold text-emerald-600">{stats.velosLivres}</div>
-            <div className="text-xs text-muted-foreground">Livrés</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="px-3 py-2">
-            <Select value={selectedStatutClients} onValueChange={setSelectedStatutClients}>
-              <SelectTrigger className="h-6 text-xs mb-1 px-2">
-                <SelectValue placeholder="Statut" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableStatuts.map((statut) => (
-                  <SelectItem key={statut} value={statut}>
-                    {statut} ({globalStats?.statsByStatut?.[statut]?.clients || 0})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="text-lg font-bold text-purple-600">{stats.clientsStatut}</div>
-            <div className="text-xs text-muted-foreground">Clients</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="px-3 py-2">
-            <Select value={selectedStatutVelos} onValueChange={setSelectedStatutVelos}>
-              <SelectTrigger className="h-6 text-xs mb-1 px-2">
-                <SelectValue placeholder="Statut" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableStatuts.map((statut) => (
-                  <SelectItem key={statut} value={statut}>
-                    {statut} ({globalStats?.statsByStatut?.[statut]?.velos || 0})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="text-lg font-bold text-amber-600">{stats.velosStatut}</div>
-            <div className="text-xs text-muted-foreground">Vélos</div>
-          </CardContent>
-        </Card>
+      {/* Stats inline */}
+      <div className="flex items-center gap-3 text-sm">
+        <span className="font-semibold">{stats.total} <span className="text-muted-foreground font-normal">clients</span></span>
+        <span className="text-muted-foreground">|</span>
+        <span className="font-semibold text-blue-600">{stats.velosValides} <span className="text-muted-foreground font-normal">validés</span></span>
+        <span className="text-muted-foreground">|</span>
+        <span className="font-semibold text-emerald-600">{stats.velosLivres} <span className="text-muted-foreground font-normal">livrés</span></span>
+        <span className="text-muted-foreground hidden md:inline">|</span>
+        <span className="hidden md:inline-flex items-center gap-1">
+          <Select value={selectedStatutClients} onValueChange={setSelectedStatutClients}>
+            <SelectTrigger className="h-6 w-auto text-xs px-2 gap-1 border-dashed">
+              <SelectValue placeholder="Statut" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableStatuts.map((statut) => (
+                <SelectItem key={statut} value={statut}>
+                  {statut} ({globalStats?.statsByStatut?.[statut]?.clients || 0})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="font-semibold text-purple-600">{stats.clientsStatut}</span>
+        </span>
+        <span className="text-muted-foreground hidden md:inline">|</span>
+        <span className="hidden md:inline-flex items-center gap-1">
+          <Select value={selectedStatutVelos} onValueChange={setSelectedStatutVelos}>
+            <SelectTrigger className="h-6 w-auto text-xs px-2 gap-1 border-dashed">
+              <SelectValue placeholder="Statut" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableStatuts.map((statut) => (
+                <SelectItem key={statut} value={statut}>
+                  {statut} ({globalStats?.statsByStatut?.[statut]?.velos || 0} vélos)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="font-semibold text-amber-600">{stats.velosStatut} <span className="text-muted-foreground font-normal">vélos</span></span>
+        </span>
       </div>
 
       {/* Filters */}
@@ -809,8 +792,8 @@ export default function AdminClientsPage() {
             <SelectValue placeholder="Zone" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Toutes les zones</SelectItem>
-            <SelectItem value="dans_la_zone">Dans la zone</SelectItem>
+            <SelectItem value="all">Zone</SelectItem>
+            <SelectItem value="dans_la_zone">En zone</SelectItem>
             <SelectItem value="hors_zone">Hors zone</SelectItem>
           </SelectContent>
         </Select>
@@ -854,13 +837,15 @@ export default function AdminClientsPage() {
           ) : (
             <>
             {/* Info pagination */}
-            <div className="px-4 py-3 border-b flex items-center justify-between text-sm text-muted-foreground">
+            <div className="px-4 py-2 border-b flex items-center justify-between text-xs text-muted-foreground">
               <span>
-                {totalFiltered} client{totalFiltered > 1 ? 's' : ''} trouvé{totalFiltered > 1 ? 's' : ''}
-                {pagination && totalFiltered !== pagination.totalClients && ` (sur ${pagination.totalClients} total)`}
+                <span className="font-medium text-foreground">{totalFiltered}</span> client{totalFiltered > 1 ? 's' : ''}
+                {pagination && totalFiltered !== pagination.totalClients && ` / ${pagination.totalClients}`}
+                {' · '}
+                <span className="font-medium text-blue-600">{paginatedClients.reduce((sum, c) => sum + (c.velo_valide || 0), 0)}</span> vélos validés
               </span>
               <span>
-                Page {currentPage} sur {totalPages}
+                {currentPage}/{totalPages}
               </span>
             </div>
             <Table>
