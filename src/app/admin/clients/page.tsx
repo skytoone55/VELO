@@ -130,12 +130,12 @@ function getAgenceFromCodePostal(codePostal: string): string {
   }
 }
 
-function SortableHeader({ label, column, currentSort, currentOrder, onSort }: {
-  label: string; column: string; currentSort: string; currentOrder: 'asc' | 'desc'; onSort: (col: string) => void
+function SortableHeader({ label, column, currentSort, currentOrder, onSort, className }: {
+  label: string; column: string; currentSort: string; currentOrder: 'asc' | 'desc'; onSort: (col: string) => void; className?: string
 }) {
   const isActive = currentSort === column
   return (
-    <TableHead className="cursor-pointer select-none hover:bg-muted/50" onClick={() => onSort(column)}>
+    <TableHead className={`cursor-pointer select-none hover:bg-muted/50 ${className || ''}`} onClick={() => onSort(column)}>
       <div className="flex items-center gap-1">
         {label}
         {isActive ? (
@@ -896,14 +896,14 @@ export default function AdminClientsPage() {
                     />
                   </TableHead>
                   <SortableHeader label="Société" column="raison_sociale" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="Email client" column="email_beneficiaire" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="Téléphone" column="telephone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="Commercial" column="monday_board_id" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="Departement" column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="Velos" column="velo_devis" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="NAF" column="validation_naf" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Email client" column="email_beneficiaire" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
+                  <SortableHeader label="Téléphone" column="telephone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
+                  <SortableHeader label="Commercial" column="monday_board_id" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
+                  <SortableHeader label="Dép." column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
+                  <SortableHeader label="Velos" column="velo_devis" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
+                  <SortableHeader label="NAF" column="validation_naf" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="Statut" column="statut_commercial" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="Zone" column="type_de_zone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Zone" column="type_de_zone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -932,7 +932,7 @@ export default function AdminClientsPage() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden xl:table-cell">
                       <div className="text-sm">
                         {(client.email_beneficiaire || client.email) ? (
                           <div className="text-muted-foreground flex items-center gap-1">
@@ -944,7 +944,7 @@ export default function AdminClientsPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden xl:table-cell">
                       {client.telephone ? (
                         <a href={`tel:${client.telephone}`} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
                           <Phone className="h-3 w-3" />
@@ -954,12 +954,12 @@ export default function AdminClientsPage() {
                         <span className="text-sm text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <Badge variant="outline" className="text-xs font-normal">
                         {getCommercialName(client)}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {client.departement ? (
                         <Badge variant="outline">
                           {getDepartementLabel(client.departement, client.adresse_societe_cp)}
@@ -968,13 +968,13 @@ export default function AdminClientsPage() {
                         <span className="text-muted-foreground text-sm">-</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <div className="text-sm">
                         <span className="font-medium">{client.velo_valide || client.velo_confirme || 0}</span>
                         <span className="text-muted-foreground"> / {client.velo_devis || 0}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {(() => {
                         if (client.validation_naf === 'OUI') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OUI</Badge>
                         if (client.validation_naf === 'NON') return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">NON</Badge>
@@ -991,7 +991,7 @@ export default function AdminClientsPage() {
                         )
                       })()}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       {(() => {
                         const zone = client.type_de_zone || getSimpleZoneStatus(client, depots)
                         if (zone === 'dans_la_zone') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">Zone</Badge>
