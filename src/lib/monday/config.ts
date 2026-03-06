@@ -1,6 +1,7 @@
 // Monday.com API Configuration
-// IMPORTANT: Monday.com est la SOURCE DE VÉRITÉ (SSOT)
-// Les données sont créées/modifiées dans Monday et synchronisées vers Supabase
+// ARCHITECTURE: Supabase est la SOURCE DE VÉRITÉ (SSOT)
+// Direction unique: Supabase → Monday (push automatique aux étapes clés)
+// Monday → Supabase: désactivé (mise à jour manuelle via JARVIS uniquement)
 //
 // Board: Vélos Cargos - Général (ID: 9990833105)
 // Documentation: /monday_velos_cargos_schema.md
