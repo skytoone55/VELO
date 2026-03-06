@@ -1,13 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
-  Link2,
-  ArrowRight,
   RefreshCcw,
   Loader2,
   Webhook,
@@ -66,47 +63,13 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Paramètres</h1>
+        <h1 className="text-2xl font-bold">Monday</h1>
         <p className="text-muted-foreground">
-          Configuration de la plateforme
+          Connexion et synchronisation avec Monday.com
         </p>
       </div>
 
       <div className="grid gap-6">
-        {/* Monday.com Mapping */}
-        <Card className="border-primary/50 bg-primary/5">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Link2 className="h-5 w-5 text-primary" />
-                <CardTitle>Mapping Monday.com</CardTitle>
-              </div>
-              <Link href="/admin/settings/monday">
-                <Button size="sm">
-                  Configurer
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Link>
-            </div>
-            <CardDescription>
-              Connectez les champs de l'interface avec les colonnes Monday.
-              Monday est la source de vérité pour toutes les données clients.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Board</span>
-                <span className="font-medium">Vélos Cargos - Général</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Board ID</span>
-                <span className="font-mono">9990833105</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Statut Synchronisation Monday */}
         <Card>
           <CardHeader>
