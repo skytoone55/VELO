@@ -177,6 +177,7 @@ export default function AdminClientsPage() {
     totalClients: number
     startIndex: number
     endIndex: number
+    velosValidesFiltered?: number
   } | null>(null)
 
   // Dialog states
@@ -219,7 +220,7 @@ export default function AdminClientsPage() {
         if (Array.isArray(statuses)) {
           const options = statuses.map(s => ({
             value: s,
-            label: statutConfig[s]?.label ?? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+            label: s === '__null__' ? 'Non défini' : (statutConfig[s]?.label ?? s),
           }))
           setStatutOptions([{ value: 'all', label: 'Statut' }, ...options])
         }
@@ -743,7 +744,7 @@ export default function AdminClientsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <div className="flex flex-wrap items-center gap-1.5">
         <div className="relative min-w-[140px] flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
@@ -842,7 +843,7 @@ export default function AdminClientsPage() {
                 <span className="font-medium text-foreground">{totalFiltered}</span> client{totalFiltered > 1 ? 's' : ''}
                 {pagination && totalFiltered !== pagination.totalClients && ` / ${pagination.totalClients}`}
                 {' · '}
-                <span className="font-medium text-blue-600">{paginatedClients.reduce((sum, c) => sum + (c.velo_valide || 0), 0)}</span> vélos validés
+                <span className="font-medium text-blue-600">{pagination?.velosValidesFiltered ?? 0}</span> vélos validés
               </span>
               <span>
                 {currentPage}/{totalPages}
@@ -958,7 +959,7 @@ export default function AdminClientsPage() {
                       {(() => {
                         const zone = client.type_de_zone || getSimpleZoneStatus(client, depots)
                         if (zone === 'dans_la_zone') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">Zone</Badge>
-                        if (zone === 'hors_zone') return <Badge variant="outline" className="text-xs text-muted-foreground">Hors zone</Badge>
+                        if (zone === 'hors_zone') return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 text-xs">Hors zone</Badge>
                         return <span className="text-sm text-muted-foreground">-</span>
                       })()}
                     </TableCell>

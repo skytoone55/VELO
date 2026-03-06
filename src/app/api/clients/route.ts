@@ -78,7 +78,11 @@ export async function GET(request: NextRequest) {
 
     // Filtre par statut commercial
     if (statutFilter && statutFilter !== 'all') {
-      query = query.eq('statut_commercial', statutFilter)
+      if (statutFilter === '__null__') {
+        query = query.is('statut_commercial', null)
+      } else {
+        query = query.eq('statut_commercial', statutFilter)
+      }
     }
 
     // Filtre par departement (ou derive du code postal pour PPE)
@@ -137,6 +141,9 @@ export async function GET(request: NextRequest) {
       .select('id', { count: 'exact', head: true })
       .not('monday_sync_status', 'eq', 'deleted')
 
+    // Compter les vélos validés pour les résultats filtrés
+    const velosValidesFiltered = (clients || []).reduce((sum, c: Record<string, unknown>) => sum + (Number(c.velo_valide) || 0), 0)
+
     const totalPages = Math.ceil((totalFiltered || 0) / pageSize)
 
     return NextResponse.json({
@@ -149,6 +156,7 @@ export async function GET(request: NextRequest) {
         totalClients: totalClients || 0,
         startIndex: startIndex + 1,
         endIndex: Math.min(startIndex + pageSize, totalFiltered || 0),
+        velosValidesFiltered,
       },
       source: 'supabase',
     })

@@ -747,7 +747,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 <Badge className={`text-sm px-3 py-1 ml-2 ${
                   zone === 'dans_la_zone'
                     ? 'bg-green-600 hover:bg-green-700'
-                    : 'bg-orange-500 hover:bg-orange-600'
+                    : 'bg-red-600 hover:bg-red-700'
                 }`}>
                   {zone === 'dans_la_zone' ? 'Dans la zone' : 'Hors zone'}
                 </Badge>
@@ -929,7 +929,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                     if (!zone) return null
                     return zone === 'dans_la_zone'
                       ? <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Dans la zone</Badge>
-                      : <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Hors zone</Badge>
+                      : <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Hors zone</Badge>
                   })()}
                 </div>
               }
