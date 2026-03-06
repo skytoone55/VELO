@@ -123,6 +123,54 @@ export async function GET(request: NextRequest) {
     // Compter le total avant pagination
     const { count: totalFiltered } = await query
 
+    // Requête séparée pour sommer les vélos validés sur TOUS les résultats filtrés (pas juste la page)
+    let velosQuery = adminClient
+      .from('clients')
+      .select('velo_valide')
+      .not('monday_sync_status', 'eq', 'deleted')
+
+    // Ré-appliquer les mêmes filtres
+    if (search) {
+      velosQuery = velosQuery.or(
+        `raison_sociale.ilike.%${search}%,` +
+        `siret.ilike.%${search}%,` +
+        `email.ilike.%${search}%,` +
+        `reference_dossier.ilike.%${search}%,` +
+        `telephone.ilike.%${search}%`
+      )
+    }
+    if (statutFilter && statutFilter !== 'all') {
+      if (statutFilter === '__null__') {
+        velosQuery = velosQuery.is('statut_commercial', null)
+      } else {
+        velosQuery = velosQuery.eq('statut_commercial', statutFilter)
+      }
+    }
+    if (departementFilter && departementFilter !== 'all') {
+      velosQuery = velosQuery.or(
+        `departement.eq.${departementFilter},adresse_societe_cp.like.${departementFilter}%`
+      )
+    }
+    if (nafFilter && nafFilter !== 'all') {
+      if (nafFilter === 'valide') velosQuery = velosQuery.eq('validation_naf', 'OUI')
+      else if (nafFilter === 'bloque') velosQuery = velosQuery.eq('validation_naf', 'NON')
+      else if (nafFilter === 'en_attente') velosQuery = velosQuery.eq('validation_naf', 'A VERIFIER')
+    }
+    if (zoneFilter && zoneFilter !== 'all') {
+      velosQuery = velosQuery.eq('type_de_zone', zoneFilter)
+    }
+    if (commercialFilter && commercialFilter !== 'all') {
+      const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
+      if (tenantId === 'ppe') {
+        velosQuery = velosQuery.eq('monday_board_id', commercialFilter)
+      } else {
+        velosQuery = velosQuery.eq('email', commercialFilter)
+      }
+    }
+
+    const { data: velosData } = await velosQuery
+    const velosValidesFiltered = (velosData || []).reduce((sum, c) => sum + (Number(c.velo_valide) || 0), 0)
+
     // Appliquer la pagination
     const startIndex = (page - 1) * pageSize
     query = query
@@ -140,9 +188,6 @@ export async function GET(request: NextRequest) {
       .from('clients')
       .select('id', { count: 'exact', head: true })
       .not('monday_sync_status', 'eq', 'deleted')
-
-    // Compter les vélos validés pour les résultats filtrés
-    const velosValidesFiltered = (clients || []).reduce((sum, c: Record<string, unknown>) => sum + (Number(c.velo_valide) || 0), 0)
 
     const totalPages = Math.ceil((totalFiltered || 0) / pageSize)
 

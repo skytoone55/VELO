@@ -399,261 +399,124 @@ export default function AdminClientsPage() {
   // Charger les clients quand les paramètres changent
   useEffect(() => {
     fetchClients(false, currentPage, pageSize)
-  }, [dataSource, currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter, commercialFilter, sortBy, sortOrder])
+  }, [currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, dataSource, nafFilter, zoneFilter, commercialFilter, sortBy, sortOrder])
 
-  const handleSendForm = async (client: Client) => {
-    setSendingEmail(true)
-
-    try {
-      const response = await fetch('/api/clients/send-form', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: client.id }),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erreur lors de l\'envoi')
-      }
-
-      toast.success(`Email envoyé à ${client.email}`)
-
-      // Rafraîchir la liste
-      await fetchClients()
-
-      // Afficher le lien généré
-      setGeneratedLink(result.formulaireUrl)
-      setShowLinkDialog(true)
-
-    } catch (error: any) {
-      console.error('Erreur:', error)
-      toast.error(error.message || 'Erreur lors de l\'envoi de l\'email')
-    } finally {
-      setSendingEmail(false)
-      setSelectedClient(null)
-    }
-  }
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(generatedLink)
-    setCopied(true)
-    toast.success('Lien copié !')
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const handleEditClient = (client: Client) => {
-    setEditingClient({ ...client })
-    setShowEditDialog(true)
-  }
-
+  // Sauvegarder un client (edit)
   const handleSaveClient = async () => {
     if (!editingClient) return
     setSavingClient(true)
-
     try {
-      const response = await fetch(`/api/admin/clients/${editingClient.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingClient),
-      })
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          raison_sociale: editingClient.raison_sociale,
+          email: editingClient.email,
+          telephone: editingClient.telephone,
+          adresse_societe_voie: editingClient.adresse_societe_voie,
+          adresse_societe_cp: editingClient.adresse_societe_cp,
+          adresse_societe_ville: editingClient.adresse_societe_ville,
+          nombre_salaries: editingClient.nombre_salaries,
+          siret: editingClient.siret,
+          code_naf: editingClient.code_naf,
+          nom_beneficiaire: editingClient.nom_beneficiaire,
+          prenom_beneficiaire: editingClient.prenom_beneficiaire,
+          email_beneficiaire: editingClient.email_beneficiaire,
+          telephone_beneficiaire: editingClient.telephone_beneficiaire,
+          velo_modele: editingClient.velo_modele,
+          velo_taille: editingClient.velo_taille,
+          velo_couleur: editingClient.velo_couleur,
+          velo_options: editingClient.velo_options,
+          velo_devis: editingClient.velo_devis,
+          statut_commercial: editingClient.statut_commercial,
+        })
+        .eq('id', editingClient.id)
 
-      const result = await response.json()
+      if (error) throw error
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Erreur lors de la modification')
-      }
-
-      toast.success('Client modifié avec succès')
+      toast.success('Client mis à jour')
       setShowEditDialog(false)
       setEditingClient(null)
-      fetchClients()
+      fetchClients(false, currentPage, pageSize)
     } catch (error: any) {
-      console.error('Erreur:', error)
-      toast.error(error.message || 'Erreur lors de la modification')
+      toast.error(error.message || 'Erreur lors de la sauvegarde')
     } finally {
       setSavingClient(false)
     }
   }
 
+  // Supprimer un client
   const handleDeleteClient = async () => {
     if (!clientToDelete) return
     setDeletingClient(true)
-
     try {
-      const response = await fetch(`/api/admin/clients/${clientToDelete.id}`, {
-        method: 'DELETE',
-      })
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientToDelete.id)
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erreur lors de la suppression')
-      }
+      if (error) throw error
 
       toast.success('Client supprimé')
       setShowDeleteDialog(false)
       setClientToDelete(null)
-      fetchClients()
+      fetchClients(false, currentPage, pageSize)
     } catch (error: any) {
-      console.error('Erreur:', error)
       toast.error(error.message || 'Erreur lors de la suppression')
     } finally {
       setDeletingClient(false)
     }
   }
 
-  // === Sélection multiple ===
-  const handleToggleSelect = (clientId: string) => {
-    const newSelected = new Set(selectedClients)
-    if (newSelected.has(clientId)) {
-      newSelected.delete(clientId)
-    } else {
-      newSelected.add(clientId)
+  // Envoyer l'email avec le formulaire
+  const handleSendEmail = async (client: Client) => {
+    const targetEmail = client.email || client.email_beneficiaire
+    if (!targetEmail) {
+      toast.error('Pas d\'email disponible pour ce client')
+      return
     }
-    setSelectedClients(newSelected)
-  }
 
-  const handleSelectAll = () => {
-    if (selectedClients.size === paginatedClients.length) {
-      setSelectedClients(new Set())
-    } else {
-      setSelectedClients(new Set(paginatedClients.map(c => c.id)))
-    }
-  }
-
-  const handleClearSelection = () => {
-    setSelectedClients(new Set())
-  }
-
-  // === Actions groupées ===
-  const handleBulkAction = async (action: 'send_code' | 'send_form' | 'change_status', data?: { statut?: string }) => {
-    if (selectedClients.size === 0) return
-    setBulkActionLoading(true)
-
+    setSendingEmail(true)
     try {
-      const response = await fetch('/api/admin/clients/bulk', {
+      const response = await fetch('/api/formulaire/send-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action,
-          clientIds: Array.from(selectedClients),
-          data,
+          clientId: client.id,
+          email: targetEmail,
         }),
       })
 
       const result = await response.json()
+      if (!response.ok) throw new Error(result.error)
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Erreur lors de l\'action groupée')
-      }
-
-      // Afficher le résultat
-      if (result.failed === 0) {
-        toast.success(`Action réussie pour ${result.success} client(s)`)
-      } else {
-        toast.warning(`${result.success} réussi(s), ${result.failed} échec(s)`)
-      }
-
-      // Rafraîchir et effacer la sélection
-      await fetchClients()
-      setSelectedClients(new Set())
+      toast.success(`Email envoyé à ${targetEmail}`)
     } catch (error: any) {
-      console.error('Erreur bulk action:', error)
-      toast.error(error.message || 'Erreur lors de l\'action groupée')
+      toast.error(error.message || 'Erreur lors de l\'envoi')
     } finally {
-      setBulkActionLoading(false)
+      setSendingEmail(false)
     }
   }
 
-  // Les clients sont déjà filtrés et paginés côté serveur
-  // On utilise directement la liste reçue
-  const paginatedClients = clients
-
-  // Valeurs de pagination (depuis l'API ou valeurs par défaut)
-  const totalPages = pagination?.totalPages || 1
-  const totalFiltered = pagination?.totalFiltered || clients.length
-  const startIndex = pagination?.startIndex || 1
-  const endIndex = pagination?.endIndex || clients.length
-
-  // Stats globales (chargées une fois séparément)
-  const [globalStats, setGlobalStats] = useState<{
-    total: number
-    velosValides: number
-    velosLivres: number
-    statsByStatut: Record<string, { clients: number, velos: number }>
-  } | null>(null)
-
-  // Charger les stats globales une seule fois (ou au refresh)
-  const fetchStats = async () => {
-    try {
-      // Utiliser l'API Supabase pour les stats (plus rapide)
-      // ou Monday si on est en mode Monday
-      const statsEndpoint = dataSource === 'supabase'
-        ? '/api/clients/stats'
-        : '/api/monday/clients/stats'
-
-      const response = await fetch(statsEndpoint)
-      if (response.ok) {
-        const stats = await response.json()
-        setGlobalStats(stats)
-      }
-    } catch (error) {
-      console.error('Erreur chargement stats:', error)
-    }
+  // Générer un lien formulaire
+  const handleGenerateLink = (client: Client) => {
+    const baseUrl = window.location.origin
+    const link = `${baseUrl}/formulaire?code=${client.code_enemat || ''}&client_id=${client.id}`
+    setGeneratedLink(link)
+    setShowLinkDialog(true)
+    setCopied(false)
   }
 
-  useEffect(() => {
-    fetchStats()
-  }, [dataSource])
-
-  // Liste des statuts disponibles (dynamique depuis l'API stats)
-  const availableStatuts = useMemo(() => {
-    if (!globalStats?.statsByStatut) return []
-    return Object.keys(globalStats.statsByStatut).sort((a, b) => {
-      // Trier par nombre de clients décroissant
-      const countA = globalStats.statsByStatut[a]?.clients || 0
-      const countB = globalStats.statsByStatut[b]?.clients || 0
-      return countB - countA
-    })
-  }, [globalStats])
-
-  // Statuts sélectionnés pour les stats dynamiques (2 sélecteurs indépendants)
-  const [selectedStatutClients, setSelectedStatutClients] = useState('')
-  const [selectedStatutVelos, setSelectedStatutVelos] = useState('')
-
-  // Initialiser les sélecteurs quand les statuts sont chargés
-  useEffect(() => {
-    if (availableStatuts.length > 0) {
-      if (!selectedStatutClients || !globalStats?.statsByStatut?.[selectedStatutClients]) {
-        setSelectedStatutClients(availableStatuts[0])
-      }
-      if (!selectedStatutVelos || !globalStats?.statsByStatut?.[selectedStatutVelos]) {
-        setSelectedStatutVelos(availableStatuts[0])
-      }
-    }
-  }, [availableStatuts])
-
-  // Stats basées sur les données globales ou les données paginées
-  const stats = {
-    total: pagination?.totalClients || globalStats?.total || 0,
-    velosValides: globalStats?.velosValides || 0,
-    velosLivres: globalStats?.velosLivres || 0,
-    // Stats dynamiques - clients par statut
-    clientsStatut: globalStats?.statsByStatut?.[selectedStatutClients]?.clients || 0,
-    // Stats dynamiques - vélos par statut (sélecteur indépendant)
-    velosStatut: globalStats?.statsByStatut?.[selectedStatutVelos]?.velos || 0,
+  // Copier le lien
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(generatedLink)
+    setCopied(true)
+    toast.success('Lien copié !')
+    setTimeout(() => setCopied(false), 2000)
   }
 
-  // Premier chargement seulement - afficher spinner pleine page
-  const [initialLoad, setInitialLoad] = useState(true)
-
-  useEffect(() => {
-    if (!loading && initialLoad) {
-      setInitialLoad(false)
-    }
-  }, [loading, initialLoad])
-
+  // Handle sort
   const handleSort = (column: string) => {
     if (sortBy === column) {
       setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
@@ -663,787 +526,743 @@ export default function AdminClientsPage() {
     }
   }
 
-  if (initialLoad && loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
+  // Vélos validés
+  const velosValidesFiltered = pagination?.velosValidesFiltered ?? clients.reduce((sum, c) => sum + (Number(c.velo_valide) || 0), 0)
+
+  // Préparer les options de département effectives
+  const effectiveDeptOptions = dynamicDeptOptions || departementOptions
+
+  // Zone options
+  const zoneOptions = [
+    { value: 'all', label: 'Zone' },
+    { value: 'Zone couverte', label: 'Zone couverte' },
+    { value: 'Zone payante', label: 'Zone payante' },
+    { value: 'Hors zone', label: 'Hors zone' },
+  ]
+
+  // Check if any filter is active
+  const hasActiveFilters = statutFilter !== 'all' || departementFilter !== 'all' || nafFilter !== 'all' || zoneFilter !== 'all' || commercialFilter !== 'all' || searchQuery !== ''
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setSearchQuery('')
+    setStatutFilter('all')
+    setDepartementFilter('all')
+    setNafFilter('all')
+    setZoneFilter('all')
+    setCommercialFilter('all')
+    setSortBy('updated_at')
+    setSortOrder('desc')
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Clients</h1>
-        <div className="flex items-center gap-2">
-          {/* Indicateur source de données et cache */}
-          {dataSource === 'monday' && cacheInfo && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {cacheInfo.cached ? (
-                <Badge variant="outline" className="text-xs">
-                  Cache ({Math.floor(cacheInfo.cacheAge / 60)}:{String(cacheInfo.cacheAge % 60).padStart(2, '0')})
-                </Badge>
-              ) : (
-                <Badge variant="default" className="bg-green-500 text-xs">
-                  Live
-                </Badge>
-              )}
+    <div className="space-y-4">
+      {/* Barre de stats */}
+      <div className="flex flex-wrap gap-3">
+        <Card className="flex-1 min-w-[140px]">
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">Total clients</div>
+            <div className="text-2xl font-bold">
+              {pagination?.totalClients ?? '...'}
             </div>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleForceRefresh}
-            disabled={loading}
-            title="Rafraîchir depuis Monday"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
+          </CardContent>
+        </Card>
+        <Card className="flex-1 min-w-[140px]">
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">
+              {hasActiveFilters ? 'Résultats filtrés' : 'Affichés'}
+            </div>
+            <div className="text-2xl font-bold">
+              {pagination?.totalFiltered ?? clients.length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="flex-1 min-w-[140px]">
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">Vélos validés</div>
+            <div className="text-2xl font-bold text-green-600">
+              {velosValidesFiltered}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Stats inline */}
-      <div className="flex items-center gap-3 text-sm">
-        <span className="font-semibold">{stats.total} <span className="text-muted-foreground font-normal">clients</span></span>
-        <span className="text-muted-foreground">|</span>
-        <span className="font-semibold text-blue-600">{stats.velosValides} <span className="text-muted-foreground font-normal">validés</span></span>
-        <span className="text-muted-foreground">|</span>
-        <span className="font-semibold text-emerald-600">{stats.velosLivres} <span className="text-muted-foreground font-normal">livrés</span></span>
-        <span className="text-muted-foreground hidden md:inline">|</span>
-        <span className="hidden md:inline-flex items-center gap-1">
-          <Select value={selectedStatutClients} onValueChange={setSelectedStatutClients}>
-            <SelectTrigger className="h-6 w-auto text-xs px-2 gap-1 border-dashed">
-              <SelectValue placeholder="Statut" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableStatuts.map((statut) => (
-                <SelectItem key={statut} value={statut}>
-                  {statut} ({globalStats?.statsByStatut?.[statut]?.clients || 0})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="font-semibold text-purple-600">{stats.clientsStatut} <span className="text-muted-foreground font-normal">clients</span></span>
-        </span>
-        <span className="text-muted-foreground hidden md:inline">|</span>
-        <span className="hidden md:inline-flex items-center gap-1">
-          <Select value={selectedStatutVelos} onValueChange={setSelectedStatutVelos}>
-            <SelectTrigger className="h-6 w-auto text-xs px-2 gap-1 border-dashed">
-              <SelectValue placeholder="Statut" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableStatuts.map((statut) => (
-                <SelectItem key={statut} value={statut}>
-                  {statut} ({globalStats?.statsByStatut?.[statut]?.velos || 0} vélos)
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="font-semibold text-amber-600">{stats.velosStatut} <span className="text-muted-foreground font-normal">vélos</span></span>
-        </span>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <div className="relative min-w-[140px] flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+      {/* Barre de recherche et filtres */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher..."
-            className="pl-8 h-8 text-sm"
+            placeholder="Rechercher (société, SIRET, email, tél)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 h-9"
           />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="absolute right-2 top-2">
+              <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
         </div>
+
         <Select value={statutFilter} onValueChange={setStatutFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
+          <SelectTrigger className="w-[160px] h-9">
             <SelectValue placeholder="Statut" />
           </SelectTrigger>
           <SelectContent>
-            {statutOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={departementFilter} onValueChange={setDepartementFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Dép." />
-          </SelectTrigger>
-          <SelectContent>
-            {(dynamicDeptOptions || [{ value: 'all', label: 'Départements' }]).map((opt) => (
+            {statutOptions.map(opt => (
               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
+
+        <Select value={departementFilter} onValueChange={setDepartementFilter}>
+          <SelectTrigger className="w-[160px] h-9">
+            <SelectValue placeholder="Département" />
+          </SelectTrigger>
+          <SelectContent>
+            {effectiveDeptOptions.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Select value={nafFilter} onValueChange={setNafFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[60px] text-xs px-2 shrink-0">
+          <SelectTrigger className="w-[140px] h-9">
             <SelectValue placeholder="NAF" />
           </SelectTrigger>
           <SelectContent>
-            {nafOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={zoneFilter} onValueChange={setZoneFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[60px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Zone" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Zone</SelectItem>
-            <SelectItem value="dans_la_zone">En zone</SelectItem>
-            <SelectItem value="hors_zone">Hors zone</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={commercialFilter} onValueChange={setCommercialFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Commercial" />
-          </SelectTrigger>
-          <SelectContent>
-            {commercialOptions.map((opt) => (
+            {nafOptions.map(opt => (
               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
-          <SelectTrigger className="h-8 w-[52px] text-xs px-2 shrink-0">
-            <SelectValue />
+
+        <Select value={zoneFilter} onValueChange={setZoneFilter}>
+          <SelectTrigger className="w-[140px] h-9">
+            <SelectValue placeholder="Zone" />
           </SelectTrigger>
           <SelectContent>
-            {pageSizeOptions.map((option) => (
-              <SelectItem key={option.value} value={String(option.value)}>
-                {option.label}
-              </SelectItem>
+            {zoneOptions.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
+
+        <Select value={commercialFilter} onValueChange={setCommercialFilter}>
+          <SelectTrigger className="w-[160px] h-9">
+            <SelectValue placeholder="Commercial" />
+          </SelectTrigger>
+          <SelectContent>
+            {commercialOptions.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={handleResetFilters} className="h-9 text-xs">
+            <X className="h-3 w-3 mr-1" /> Réinitialiser
+          </Button>
+        )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleForceRefresh}
+          disabled={loading}
+          className="h-9"
+        >
+          <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+          Sync
+        </Button>
       </div>
 
-      {/* Table */}
+      {/* Tableau clients */}
       <Card>
-        <CardContent className="p-0 overflow-x-auto">
-          {paginatedClients.length === 0 ? (
-            <div className="text-center py-12">
-              <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="font-medium mb-1">Aucun client</h3>
-              <p className="text-muted-foreground text-sm">
-                {searchQuery || statutFilter !== 'all' || departementFilter !== 'all'
-                  ? 'Aucun client ne correspond à vos critères'
-                  : 'Les clients apparaîtront ici après synchronisation avec Monday'}
-              </p>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex items-center justify-center p-12">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              Chargement...
+            </div>
+          ) : clients.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+              <Building2 className="h-8 w-8 mb-2" />
+              <p>Aucun client trouvé</p>
+              {hasActiveFilters && (
+                <Button variant="link" onClick={handleResetFilters} className="mt-2">
+                  Réinitialiser les filtres
+                </Button>
+              )}
             </div>
           ) : (
-            <>
-            {/* Info pagination */}
-            <div className="px-4 py-2 border-b flex items-center justify-between text-xs text-muted-foreground">
-              <span>
-                <span className="font-medium text-foreground">{totalFiltered}</span> client{totalFiltered > 1 ? 's' : ''}
-                {pagination && totalFiltered !== pagination.totalClients && ` / ${pagination.totalClients}`}
-                {' · '}
-                <span className="font-medium text-blue-600">{pagination?.velosValidesFiltered ?? 0}</span> vélos validés
-              </span>
-              <span>
-                {currentPage}/{totalPages}
-              </span>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={paginatedClients.length > 0 && selectedClients.size === paginatedClients.length}
-                      onCheckedChange={handleSelectAll}
-                      aria-label="Tout sélectionner"
-                    />
-                  </TableHead>
-                  <SortableHeader label="Société" column="raison_sociale" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="Email client" column="email_beneficiaire" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
-                  <SortableHeader label="Téléphone" column="telephone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
-                  <SortableHeader label="Commercial" column="monday_board_id" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
-                  <SortableHeader label="Dép." column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
-                  <SortableHeader label="Velos" column="velo_devis" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
-                  <SortableHeader label="NAF" column="validation_naf" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
-                  <SortableHeader label="Statut" column="statut_commercial" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="Zone" column="type_de_zone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className={loading ? 'opacity-50' : ''}>
-                {loading && (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
-                    </TableCell>
-                  </TableRow>
-                )}
-                {!loading && paginatedClients.map((client: any) => (
-                  <TableRow key={client.id} className={selectedClients.has(client.id) ? 'bg-muted/50' : ''}>
-                    <TableCell>
+                    <TableHead className="w-10">
                       <Checkbox
-                        checked={selectedClients.has(client.id)}
-                        onCheckedChange={() => handleToggleSelect(client.id)}
-                        aria-label={`Sélectionner ${client.raison_sociale}`}
+                        checked={selectedClients.size === clients.length && clients.length > 0}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedClients(new Set(clients.map(c => c.id)))
+                          } else {
+                            setSelectedClients(new Set())
+                          }
+                        }}
                       />
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{client.raison_sociale}</div>
-                        <div className="text-sm text-muted-foreground font-mono">
-                          {client.siret || '-'}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell">
-                      <div className="text-sm">
-                        {(client.email_beneficiaire || client.email) ? (
-                          <div className="text-muted-foreground flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            {client.email_beneficiaire || client.email}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell">
-                      {client.telephone ? (
-                        <a href={`tel:${client.telephone}`} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {client.telephone}
-                        </a>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge variant="outline" className="text-xs font-normal">
-                        {getCommercialName(client)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {client.departement ? (
-                        <Badge variant="outline">
-                          {getDepartementLabel(client.departement, client.adresse_societe_cp)}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <div className="text-sm">
-                        <span className="font-medium">{client.velo_valide || client.velo_confirme || 0}</span>
-                        <span className="text-muted-foreground"> / {client.velo_devis || 0}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {(() => {
-                        if (client.validation_naf === 'OUI') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OUI</Badge>
-                        if (client.validation_naf === 'NON') return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">NON</Badge>
-                        return <Badge variant="outline" className="text-muted-foreground">A vérifier</Badge>
-                      })()}
-                    </TableCell>
-                    <TableCell>
-                      {(() => {
-                        const display = getStatutDisplay(client.statut_commercial)
-                        return (
-                          <Badge className={display.color}>
-                            {display.label}
-                          </Badge>
-                        )
-                      })()}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      {(() => {
-                        const zone = client.type_de_zone || getSimpleZoneStatus(client, depots)
-                        if (zone === 'dans_la_zone') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">Zone</Badge>
-                        if (zone === 'hors_zone') return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 text-xs">Hors zone</Badge>
-                        return <span className="text-sm text-muted-foreground">-</span>
-                      })()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        {/* Voir la fiche */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.location.href = `/admin/clients/${client.id}`}
-                          title="Voir la fiche"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => window.location.href = `/admin/clients/${client.id}`}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Voir la fiche
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditClient(client)}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Modifier
-                            </DropdownMenuItem>
-                            {client.email && (
-                              <DropdownMenuItem onClick={() => setSelectedClient(client)}>
-                                <Send className="h-4 w-4 mr-2" />
-                                Envoyer formulaire
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
+                    </TableHead>
+                    <SortableHeader label="Société" column="raison_sociale" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="min-w-[200px]" />
+                    <SortableHeader label="Email" column="email" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                    <SortableHeader label="Tél" column="telephone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                    <SortableHeader label="Dép." column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                    {tenantId !== 'ppe' && (
+                      <SortableHeader label="Zone" column="type_de_zone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                    )}
+                    <SortableHeader label="Vélos" column="velo_devis" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                    <SortableHeader label="Statut" column="statut_commercial" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                    <SortableHeader label="NAF" column="validation_naf" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                    <SortableHeader label="Commercial" column="monday_board_id" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                    <TableHead className="w-10"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            {/* Pagination en bas du tableau */}
-            {totalPages > 1 && (
-              <div className="px-4 py-3 border-t flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Affichage {startIndex} - {endIndex} sur {totalFiltered}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Précédent
-                  </Button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum: number
-                      if (totalPages <= 5) {
-                        pageNum = i + 1
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i
-                      } else {
-                        pageNum = currentPage - 2 + i
-                      }
-                      return (
-                        <Button
-                          key={pageNum}
-                          variant={currentPage === pageNum ? 'default' : 'outline'}
-                          size="sm"
-                          className="w-9"
-                          onClick={() => setCurrentPage(pageNum)}
-                        >
-                          {pageNum}
-                        </Button>
-                      )
-                    })}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Suivant
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-            </>
+                </TableHeader>
+                <TableBody>
+                  {clients.map((client) => {
+                    const statutDisplay = getStatutDisplay(client.statut_commercial)
+                    // Zone: use stored value or compute on-the-fly
+                    const zoneStatus = client.type_de_zone
+                      ? { zone: client.type_de_zone as 'Zone couverte' | 'Zone payante' | 'Hors zone', depot: client.depot_le_plus_proche || undefined, distance: client.distance_depot_km || undefined, livraison_payante: undefined }
+                      : (client.latitude && client.longitude ? getSimpleZoneStatus(client.latitude, client.longitude, depots) : null)
+                    return (
+                      <TableRow
+                        key={client.id}
+                        className={`cursor-pointer hover:bg-muted/50 ${selectedClients.has(client.id) ? 'bg-blue-50' : ''}`}
+                        onClick={() => setSelectedClient(client)}
+                      >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedClients.has(client.id)}
+                            onCheckedChange={(checked) => {
+                              const newSet = new Set(selectedClients)
+                              if (checked) newSet.add(client.id)
+                              else newSet.delete(client.id)
+                              setSelectedClients(newSet)
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <div className="max-w-[200px] truncate" title={client.raison_sociale || ''}>
+                            {client.raison_sociale || '-'}
+                          </div>
+                          {client.siret && (
+                            <div className="text-xs text-muted-foreground">{client.siret}</div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-[180px] truncate text-xs" title={client.email || ''}>
+                            {client.email || '-'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-xs">{client.telephone || '-'}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-xs">
+                            {getDepartementLabel(client.departement || client.adresse_societe_cp?.substring(0, 3) || '-')}
+                          </div>
+                        </TableCell>
+                        {tenantId !== 'ppe' && (
+                          <TableCell>
+                            {zoneStatus ? (
+                              <Badge variant="outline" className={`text-xs whitespace-nowrap ${
+                                zoneStatus.zone === 'Zone couverte' ? 'border-green-300 text-green-700 bg-green-50' :
+                                zoneStatus.zone === 'Zone payante' ? 'border-orange-300 text-orange-700 bg-orange-50' :
+                                'border-red-300 text-red-700 bg-red-50'
+                              }`}>
+                                {zoneStatus.zone === 'Zone couverte' ? '✓' : zoneStatus.zone === 'Zone payante' ? '€' : '✗'}
+                                {zoneStatus.distance ? ` ${zoneStatus.distance}km` : ''}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                        )}
+                        <TableCell>
+                          <div className="text-xs">
+                            {client.velo_devis || '-'}
+                            {client.velo_valide ? (
+                              <span className="ml-1 text-green-600" title={`${client.velo_valide} validé(s)`}>✓{client.velo_valide}</span>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`text-xs ${statutDisplay.color}`}>
+                            {statutDisplay.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {client.validation_naf === 'OUI' ? (
+                            <Badge className="text-xs bg-green-100 text-green-800">✓</Badge>
+                          ) : client.validation_naf === 'NON' ? (
+                            <Badge className="text-xs bg-red-100 text-red-800">✗</Badge>
+                          ) : client.validation_naf === 'A VERIFIER' ? (
+                            <Badge className="text-xs bg-yellow-100 text-yellow-800">?</Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-xs text-muted-foreground truncate max-w-[100px]" title={getCommercialName(client.monday_board_id || client.email || '')}>
+                            {getCommercialName(client.monday_board_id || client.email || '') || '-'}
+                          </div>
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setSelectedClient(client)}>
+                                <Eye className="h-4 w-4 mr-2" /> Voir
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setEditingClient({ ...client })
+                                setShowEditDialog(true)
+                              }}>
+                                <Pencil className="h-4 w-4 mr-2" /> Modifier
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleGenerateLink(client)}>
+                                <ExternalLink className="h-4 w-4 mr-2" /> Lien formulaire
+                              </DropdownMenuItem>
+                              {(client.email || client.email_beneficiaire) && (
+                                <DropdownMenuItem onClick={() => handleSendEmail(client)}>
+                                  <Send className="h-4 w-4 mr-2" /> Envoyer formulaire
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => {
+                                  setClientToDelete(client)
+                                  setShowDeleteDialog(true)
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" /> Supprimer
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Barre d'actions groupées flottante */}
-      {selectedClients.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-          <Card className="shadow-lg border-2">
-            <CardContent className="flex items-center gap-4 py-3 px-4">
-              <span className="font-medium text-sm">
-                {selectedClients.size} client{selectedClients.size > 1 ? 's' : ''} sélectionné{selectedClients.size > 1 ? 's' : ''}
-              </span>
-              <div className="h-6 w-px bg-border" />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleBulkAction('send_code')}
-                disabled={bulkActionLoading}
-              >
-                <KeyRound className="h-4 w-4 mr-2" />
-                Envoyer codes
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleBulkAction('send_form')}
-                disabled={bulkActionLoading}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Envoyer formulaires
-              </Button>
-              <Select
-                onValueChange={(value) => handleBulkAction('change_status', { statut: value })}
-                disabled={bulkActionLoading}
-              >
-                <SelectTrigger className="w-52 h-9">
-                  <SelectValue placeholder="Changer statut" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="dossier_complet">Dossier complet</SelectItem>
-                  <SelectItem value="devis_signe">Devis signé</SelectItem>
-                  <SelectItem value="controle_valide">Contrôle validé</SelectItem>
-                  <SelectItem value="controle_a_regulariser">Contrôle à régulariser</SelectItem>
-                  <SelectItem value="client_contacte">Client contacté</SelectItem>
-                  <SelectItem value="client_injoignable">Client injoignable</SelectItem>
-                  <SelectItem value="code_envoye">Code envoyé</SelectItem>
-                  <SelectItem value="formulaire_envoye">Formulaire envoyé</SelectItem>
-                  <SelectItem value="formulaire_valide">Formulaire validé</SelectItem>
-                  <SelectItem value="livre">Livré</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleClearSelection}
-                disabled={bulkActionLoading}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-              {bulkActionLoading && (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              )}
-            </CardContent>
-          </Card>
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            {pagination.startIndex}-{pagination.endIndex} sur {pagination.totalFiltered}
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+              <SelectTrigger className="w-[80px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pageSizeOptions.map(opt => (
+                  <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage(p => p - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm">
+              {currentPage} / {pagination.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= pagination.totalPages}
+              onClick={() => setCurrentPage(p => p + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* Confirmation Dialog */}
-      <Dialog open={!!selectedClient && !showLinkDialog} onOpenChange={() => setSelectedClient(null)}>
-        <DialogContent>
+      {/* Dialog détail client */}
+      <Dialog open={!!selectedClient} onOpenChange={() => setSelectedClient(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Envoyer le formulaire</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              {selectedClient?.raison_sociale || 'Client'}
+            </DialogTitle>
             <DialogDescription>
-              Un email avec le lien du formulaire sera envoyé à :
+              {selectedClient?.siret && `SIRET: ${selectedClient.siret}`}
+              {selectedClient?.code_naf && ` — NAF: ${selectedClient.code_naf}`}
             </DialogDescription>
           </DialogHeader>
 
           {selectedClient && (
-            <div className="py-4">
-              <div className="font-medium">{selectedClient.raison_sociale}</div>
-              <div className="text-sm text-muted-foreground">
-                {selectedClient.contact_prenom} {selectedClient.contact_nom}
+            <div className="space-y-4">
+              {/* Infos société */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Email société</Label>
+                  <div className="text-sm flex items-center gap-1">
+                    <Mail className="h-3 w-3" />
+                    {selectedClient.email || '-'}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Téléphone</Label>
+                  <div className="text-sm flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    {selectedClient.telephone || '-'}
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs text-muted-foreground">Adresse</Label>
+                  <div className="text-sm flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {[selectedClient.adresse_societe_voie, selectedClient.adresse_societe_cp, selectedClient.adresse_societe_ville].filter(Boolean).join(', ') || '-'}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Validation NAF</Label>
+                  <div className="text-sm">
+                    {selectedClient.validation_naf === 'OUI' ? (
+                      <Badge className="bg-green-100 text-green-800">Validé</Badge>
+                    ) : selectedClient.validation_naf === 'NON' ? (
+                      <Badge className="bg-red-100 text-red-800">Bloqué</Badge>
+                    ) : selectedClient.validation_naf === 'A VERIFIER' ? (
+                      <Badge className="bg-yellow-100 text-yellow-800">À vérifier</Badge>
+                    ) : (
+                      '-'
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Statut commercial</Label>
+                  <div className="text-sm">
+                    <Badge className={getStatutDisplay(selectedClient.statut_commercial).color}>
+                      {getStatutDisplay(selectedClient.statut_commercial).label}
+                    </Badge>
+                  </div>
+                </div>
               </div>
-              <div className="text-sm text-primary">{selectedClient.email_beneficiaire || selectedClient.email}</div>
+
+              {/* Bénéficiaire */}
+              <div className="border-t pt-3">
+                <h4 className="text-sm font-medium mb-2">Bénéficiaire</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Nom</Label>
+                    <div className="text-sm">{selectedClient.nom_beneficiaire || '-'} {selectedClient.prenom_beneficiaire || ''}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Email</Label>
+                    <div className="text-sm">{selectedClient.email_beneficiaire || '-'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vélo */}
+              <div className="border-t pt-3">
+                <h4 className="text-sm font-medium mb-2">Vélo</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Modèle</Label>
+                    <div className="text-sm">{selectedClient.velo_modele || '-'}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Taille</Label>
+                    <div className="text-sm">{selectedClient.velo_taille || '-'}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Couleur</Label>
+                    <div className="text-sm">{selectedClient.velo_couleur || '-'}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Montant devis</Label>
+                    <div className="text-sm">{selectedClient.velo_devis ? `${selectedClient.velo_devis} €` : '-'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Codes et identifiants */}
+              <div className="border-t pt-3">
+                <h4 className="text-sm font-medium mb-2">Identifiants</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Code ENEMAT</Label>
+                    <div className="text-sm font-mono flex items-center gap-1">
+                      <KeyRound className="h-3 w-3" />
+                      {selectedClient.code_enemat || '-'}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Réf. dossier</Label>
+                    <div className="text-sm font-mono">{selectedClient.reference_dossier || '-'}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Monday Item ID</Label>
+                    <div className="text-sm font-mono">{selectedClient.monday_item_id || '-'}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Monday Board</Label>
+                    <div className="text-sm font-mono">
+                      {getCommercialName(selectedClient.monday_board_id || '')}
+                      {selectedClient.monday_board_id && (
+                        <span className="text-muted-foreground ml-1">({selectedClient.monday_board_id})</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="border-t pt-3 flex gap-2">
+                <Button size="sm" onClick={() => handleGenerateLink(selectedClient)}>
+                  <ExternalLink className="h-4 w-4 mr-1" /> Lien formulaire
+                </Button>
+                {(selectedClient.email || selectedClient.email_beneficiaire) && (
+                  <Button size="sm" variant="outline" onClick={() => handleSendEmail(selectedClient)} disabled={sendingEmail}>
+                    {sendingEmail ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+                    Envoyer email
+                  </Button>
+                )}
+                {selectedClient.monday_item_id && selectedClient.monday_board_id && (
+                  <Button size="sm" variant="outline" asChild>
+                    <a
+                      href={`https://crm-oreka.monday.com/boards/${selectedClient.monday_board_id}/pulses/${selectedClient.monday_item_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Navigation className="h-4 w-4 mr-1" /> Monday
+                    </a>
+                  </Button>
+                )}
+              </div>
             </div>
           )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedClient(null)}>
-              Annuler
-            </Button>
-            <Button
-              onClick={() => selectedClient && handleSendForm(selectedClient)}
-              disabled={sendingEmail}
-            >
-              {sendingEmail ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Envoi en cours...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Envoyer
-                </>
-              )}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Link Dialog */}
+      {/* Dialog lien formulaire */}
       <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Lien du formulaire</DialogTitle>
-            <DialogDescription>
-              Vous pouvez aussi copier ce lien et l&apos;envoyer manuellement au client.
-            </DialogDescription>
+            <DialogTitle>Lien formulaire</DialogTitle>
+            <DialogDescription>Copiez ce lien pour le partager au client</DialogDescription>
           </DialogHeader>
-
-          <div className="py-4">
-            <div className="flex gap-2">
-              <Input
-                value={generatedLink}
-                readOnly
-                className="font-mono text-sm"
-              />
-              <Button variant="outline" onClick={handleCopyLink}>
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button onClick={() => setShowLinkDialog(false)}>
-              Fermer
+          <div className="flex items-center gap-2">
+            <Input value={generatedLink} readOnly className="font-mono text-xs" />
+            <Button size="sm" onClick={handleCopy}>
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Client Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-[600px]">
+      {/* Dialog édition client */}
+      <Dialog open={showEditDialog} onOpenChange={(open) => { if (!open) { setShowEditDialog(false); setEditingClient(null) } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifier le client</DialogTitle>
-            <DialogDescription>
-              Modifiez les informations du client.
-            </DialogDescription>
+            <DialogDescription>Modifiez les informations du client</DialogDescription>
           </DialogHeader>
-
           {editingClient && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit_raison_sociale">Raison sociale *</Label>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Raison sociale</Label>
                   <Input
-                    id="edit_raison_sociale"
                     value={editingClient.raison_sociale || ''}
                     onChange={(e) => setEditingClient({ ...editingClient, raison_sociale: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit_siret">SIRET *</Label>
+                <div>
+                  <Label>SIRET</Label>
                   <Input
-                    id="edit_siret"
                     value={editingClient.siret || ''}
                     onChange={(e) => setEditingClient({ ...editingClient, siret: e.target.value })}
-                    maxLength={14}
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit_email_beneficiaire">Email bénéficiaire *</Label>
+                <div>
+                  <Label>Email</Label>
                   <Input
-                    id="edit_email_beneficiaire"
-                    type="email"
-                    value={editingClient.email_beneficiaire || ''}
-                    onChange={(e) => setEditingClient({ ...editingClient, email_beneficiaire: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit_email">Email agent</Label>
-                  <Input
-                    id="edit_email"
                     type="email"
                     value={editingClient.email || ''}
                     onChange={(e) => setEditingClient({ ...editingClient, email: e.target.value })}
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit_telephone">Téléphone</Label>
+                <div>
+                  <Label>Téléphone</Label>
                   <Input
-                    id="edit_telephone"
                     value={editingClient.telephone || ''}
                     onChange={(e) => setEditingClient({ ...editingClient, telephone: e.target.value })}
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit_contact_prenom">Prénom du contact</Label>
-                  <Input
-                    id="edit_contact_prenom"
-                    value={editingClient.contact_prenom || ''}
-                    onChange={(e) => setEditingClient({ ...editingClient, contact_prenom: e.target.value })}
+                <div className="col-span-2">
+                  <Label>Adresse</Label>
+                  <AddressAutocomplete
+                    defaultValue={[editingClient.adresse_societe_voie, editingClient.adresse_societe_cp, editingClient.adresse_societe_ville].filter(Boolean).join(', ')}
+                    onSelect={(address) => {
+                      setEditingClient({
+                        ...editingClient,
+                        adresse_societe_voie: address.voie,
+                        adresse_societe_cp: address.codePostal,
+                        adresse_societe_ville: address.ville,
+                      })
+                    }}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit_contact_nom">Nom du contact</Label>
+                <div>
+                  <Label>Code NAF</Label>
                   <Input
-                    id="edit_contact_nom"
-                    value={editingClient.contact_nom || ''}
-                    onChange={(e) => setEditingClient({ ...editingClient, contact_nom: e.target.value })}
+                    value={editingClient.code_naf || ''}
+                    onChange={(e) => setEditingClient({ ...editingClient, code_naf: e.target.value })}
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit_adresse">Adresse</Label>
-                <AddressAutocomplete
-                  value={editingClient.adresse_societe_ligne1 || ''}
-                  onChange={(value) => setEditingClient({ ...editingClient, adresse_societe_ligne1: value })}
-                  onSelect={(address) => {
-                    const agence = getAgenceFromCodePostal(address.codePostal)
-                    setEditingClient({
-                      ...editingClient,
-                      adresse_societe_ligne1: address.ligne1,
-                      adresse_societe_cp: address.codePostal,
-                      adresse_societe_ville: address.ville,
-                      agence: agence,
-                    })
-                  }}
-                  placeholder="Commencez à taper l'adresse..."
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit_cp">Code postal</Label>
+                <div>
+                  <Label>Nombre de salariés</Label>
                   <Input
-                    id="edit_cp"
-                    value={editingClient.adresse_societe_cp || ''}
-                    onChange={(e) => setEditingClient({ ...editingClient, adresse_societe_cp: e.target.value })}
-                    maxLength={5}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit_ville">Ville</Label>
-                  <Input
-                    id="edit_ville"
-                    value={editingClient.adresse_societe_ville || ''}
-                    onChange={(e) => setEditingClient({ ...editingClient, adresse_societe_ville: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit_agence">Agence *</Label>
-                  <Select
-                    value={editingClient.agence || ''}
-                    onValueChange={(value) => setEditingClient({ ...editingClient, agence: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="reunion">La Réunion</SelectItem>
-                      <SelectItem value="martinique">Martinique</SelectItem>
-                      <SelectItem value="guadeloupe">Guadeloupe</SelectItem>
-                      <SelectItem value="guyane">Guyane</SelectItem>
-                      <SelectItem value="france_metro">France Métro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit_velo_devis">Nb vélos *</Label>
-                  <Input
-                    id="edit_velo_devis"
                     type="number"
-                    min={1}
-                    value={editingClient.velo_devis === 0 ? '' : (editingClient.velo_devis || '')}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      setEditingClient({ ...editingClient, velo_devis: val === '' ? 0 : parseInt(val) || 0 })
-                    }}
-                    onBlur={(e) => {
-                      if (!e.target.value || parseInt(e.target.value) < 1) {
-                        setEditingClient({ ...editingClient, velo_devis: 1 })
-                      }
-                    }}
+                    value={editingClient.nombre_salaries || ''}
+                    onChange={(e) => setEditingClient({ ...editingClient, nombre_salaries: e.target.value ? Number(e.target.value) : null })}
                   />
                 </div>
-                <div className="col-span-2 space-y-2">
-                  <Label htmlFor="edit_statut">Statut commercial</Label>
-                  <Select
-                    value={editingClient.statut_commercial || 'inconnu'}
-                    onValueChange={(value) => setEditingClient({ ...editingClient, statut_commercial: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Statut" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="dossier_complet">Dossier complet</SelectItem>
-                      <SelectItem value="devis_signe">Devis signé</SelectItem>
-                      <SelectItem value="devis_cree">Devis créé</SelectItem>
-                      <SelectItem value="controle_valide">Contrôle validé</SelectItem>
-                      <SelectItem value="controle_a_regulariser">Contrôle à régulariser</SelectItem>
-                      <SelectItem value="controle_a_jour">Contrôle à jour</SelectItem>
-                      <SelectItem value="client_contacte">Client contacté</SelectItem>
-                      <SelectItem value="client_injoignable">Client injoignable</SelectItem>
-                      <SelectItem value="client_hs">Client HS</SelectItem>
-                      <SelectItem value="ah_signee">AH signée</SelectItem>
-                      <SelectItem value="livre">Livré</SelectItem>
-                      <SelectItem value="paye">Payé</SelectItem>
-                      <SelectItem value="doublon">Doublon</SelectItem>
-                      <SelectItem value="code_envoye">Code envoyé</SelectItem>
-                      <SelectItem value="formulaire_envoye">Formulaire envoyé</SelectItem>
-                      <SelectItem value="formulaire_valide">Formulaire validé</SelectItem>
-                      <SelectItem value="inconnu">Inconnu</SelectItem>
-                    </SelectContent>
-                  </Select>
+              </div>
+
+              <div className="border-t pt-3">
+                <h4 className="text-sm font-medium mb-2">Bénéficiaire</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Nom</Label>
+                    <Input
+                      value={editingClient.nom_beneficiaire || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, nom_beneficiaire: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Prénom</Label>
+                    <Input
+                      value={editingClient.prenom_beneficiaire || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, prenom_beneficiaire: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      value={editingClient.email_beneficiaire || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, email_beneficiaire: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Téléphone</Label>
+                    <Input
+                      value={editingClient.telephone_beneficiaire || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, telephone_beneficiaire: e.target.value })}
+                    />
+                  </div>
                 </div>
+              </div>
+
+              <div className="border-t pt-3">
+                <h4 className="text-sm font-medium mb-2">Vélo</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Modèle</Label>
+                    <Input
+                      value={editingClient.velo_modele || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, velo_modele: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Taille</Label>
+                    <Input
+                      value={editingClient.velo_taille || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, velo_taille: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Couleur</Label>
+                    <Input
+                      value={editingClient.velo_couleur || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, velo_couleur: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Montant devis (€)</Label>
+                    <Input
+                      type="number"
+                      value={editingClient.velo_devis || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, velo_devis: e.target.value ? Number(e.target.value) : null })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-3">
+                <Label>Statut commercial</Label>
+                <Select
+                  value={editingClient.statut_commercial || 'inconnu'}
+                  onValueChange={(v) => setEditingClient({ ...editingClient, statut_commercial: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(statutConfig).map(([key, config]) => (
+                      <SelectItem key={key} value={key}>{config.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              Annuler
-            </Button>
-            <Button
-              onClick={handleSaveClient}
-              disabled={savingClient || !editingClient?.raison_sociale || !editingClient?.siret || !editingClient?.email_beneficiaire}
-            >
-              {savingClient ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Enregistrement...
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Enregistrer
-                </>
-              )}
+            <Button variant="outline" onClick={() => { setShowEditDialog(false); setEditingClient(null) }}>Annuler</Button>
+            <Button onClick={handleSaveClient} disabled={savingClient}>
+              {savingClient ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+              Sauvegarder
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Dialog suppression */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer ce client ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Le client &quot;{clientToDelete?.raison_sociale}&quot; sera définitivement supprimé ainsi que toutes ses données associées.
+              Cette action est irréversible. Le client &quot;{clientToDelete?.raison_sociale}&quot; sera définitivement supprimé.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteClient}
-              disabled={deletingClient}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deletingClient ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Suppression...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Supprimer
-                </>
-              )}
+            <AlertDialogAction onClick={handleDeleteClient} disabled={deletingClient} className="bg-red-600 hover:bg-red-700">
+              {deletingClient ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />}
+              Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
