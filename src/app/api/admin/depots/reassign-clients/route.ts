@@ -129,11 +129,13 @@ export async function POST(request: NextRequest) {
 
       const newDepotRetraitId = classification.depotRetraitId || null
       const newDepotLogistiqueId = classification.depotLogistiqueId || null
+      const newTypeDeZone = classification.horsZone ? 'hors_zone' : 'dans_la_zone'
 
       // Vérifier si l'assignation a changé
       const changed =
         newDepotRetraitId !== client.depot_retrait_id ||
-        newDepotLogistiqueId !== client.depot_logistique_id
+        newDepotLogistiqueId !== client.depot_logistique_id ||
+        newTypeDeZone !== client.type_de_zone
 
       if (changed) {
         const { error: updateError } = await adminClient
@@ -141,6 +143,7 @@ export async function POST(request: NextRequest) {
           .update({
             depot_retrait_id: newDepotRetraitId,
             depot_logistique_id: newDepotLogistiqueId,
+            type_de_zone: newTypeDeZone,
             updated_at: new Date().toISOString(),
           })
           .eq('id', client.id)
