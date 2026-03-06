@@ -203,7 +203,7 @@ async function handleColumnChange(adminClient: any, event: any) {
   let rawValue = extractColumnValue(columnId, value)
 
   // Convertir la valeur selon le mapping de valeurs (ex: statuts)
-  const supabaseValue = await convertValueToSupabase(supabaseColumn, rawValue)
+  const supabaseValue = await convertValueToSupabase(supabaseColumn, rawValue, mappingBoardId)
 
   // Mettre à jour le client
   const updateData: Record<string, any> = {

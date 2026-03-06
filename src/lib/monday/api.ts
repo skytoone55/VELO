@@ -521,7 +521,7 @@ export async function syncClientToMonday(
       if (value === undefined) continue
 
       // Convertir la valeur selon le mapping de valeurs (ex: statuts)
-      const mondayValue = await convertValueToMonday(supabaseField, value)
+      const mondayValue = await convertValueToMonday(supabaseField, value, clientBoardId)
 
       if (mondayValue !== null && mondayValue !== undefined) {
         columnValues[mondayColumnId] = mondayValue

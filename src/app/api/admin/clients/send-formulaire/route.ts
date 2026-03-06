@@ -54,7 +54,13 @@ export async function POST(request: NextRequest) {
       }, { status: 422 })
     }
 
-    if (client.statut_commercial !== 'controle_valide') {
+    // Normaliser le statut (PPE peut stocker les labels Monday bruts avec accents)
+    const normalizedStatut = (client.statut_commercial || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Retirer les accents
+      .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+    const isControleValide = normalizedStatut === 'controle_valide' || normalizedStatut === 'control_valide'
+
+    if (!isControleValide) {
       return NextResponse.json({
         error: `Client non éligible : statut commercial doit être "Contrôle validé" (actuellement : ${client.statut_commercial || 'aucun'})`,
         guard: 'statut',

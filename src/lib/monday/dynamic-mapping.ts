@@ -121,8 +121,8 @@ export async function getMondayToSupabaseMapping(boardId?: string): Promise<Reco
  * Obtenir le mapping de valeurs pour un champ donné
  * (ex: statut_commercial: 'controle_valide' → 'CONTROLE VALIDÉ')
  */
-export async function getValueMapping(interfaceField: string): Promise<Record<string, string>> {
-  const mappings = await loadMappings()
+export async function getValueMapping(interfaceField: string, boardId?: string): Promise<Record<string, string>> {
+  const mappings = await loadMappings(false, boardId)
   const mapping = mappings.find(m => m.interface_field === interfaceField)
   return mapping?.value_mapping || {}
 }
@@ -131,8 +131,8 @@ export async function getValueMapping(interfaceField: string): Promise<Record<st
  * Obtenir le mapping de valeurs inversé pour un champ donné
  * (ex: statut_commercial: 'CONTROLE VALIDÉ' → 'controle_valide')
  */
-export async function getValueMappingReverse(interfaceField: string): Promise<Record<string, string>> {
-  const valueMapping = await getValueMapping(interfaceField)
+export async function getValueMappingReverse(interfaceField: string, boardId?: string): Promise<Record<string, string>> {
+  const valueMapping = await getValueMapping(interfaceField, boardId)
   const result: Record<string, string> = {}
 
   for (const [key, value] of Object.entries(valueMapping)) {
@@ -145,7 +145,7 @@ export async function getValueMappingReverse(interfaceField: string): Promise<Re
 /**
  * Convertir une valeur Supabase vers Monday pour un champ donné
  */
-export async function convertValueToMonday(interfaceField: string, supabaseValue: any): Promise<any> {
+export async function convertValueToMonday(interfaceField: string, supabaseValue: any, boardId?: string): Promise<any> {
   if (supabaseValue === null || supabaseValue === undefined) return null
 
   // Champs avec mapping de valeurs spécial
@@ -162,7 +162,7 @@ export async function convertValueToMonday(interfaceField: string, supabaseValue
   ]
 
   if (fieldsWithValueMapping.includes(interfaceField)) {
-    const valueMapping = await getValueMapping(interfaceField)
+    const valueMapping = await getValueMapping(interfaceField, boardId)
     return valueMapping[supabaseValue] || supabaseValue
   }
 
@@ -172,7 +172,7 @@ export async function convertValueToMonday(interfaceField: string, supabaseValue
 /**
  * Convertir une valeur Monday vers Supabase pour un champ donné
  */
-export async function convertValueToSupabase(interfaceField: string, mondayValue: any): Promise<any> {
+export async function convertValueToSupabase(interfaceField: string, mondayValue: any, boardId?: string): Promise<any> {
   if (mondayValue === null || mondayValue === undefined) return null
 
   // Champs avec mapping de valeurs spécial
@@ -189,7 +189,7 @@ export async function convertValueToSupabase(interfaceField: string, mondayValue
   ]
 
   if (fieldsWithValueMapping.includes(interfaceField)) {
-    const valueMapping = await getValueMappingReverse(interfaceField)
+    const valueMapping = await getValueMappingReverse(interfaceField, boardId)
     return valueMapping[mondayValue] || mondayValue
   }
 
