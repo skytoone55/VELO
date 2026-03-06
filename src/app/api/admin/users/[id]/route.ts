@@ -99,7 +99,21 @@ export async function PATCH(
 
     const adminClient = createAdminClient()
 
-    const { nom, prenom, role, territoire, telephone, actif, depot_ids } = body
+    const { nom, prenom, role, territoire, telephone, actif, depot_ids, password } = body
+
+    // Update password if provided
+    if (password && password.length >= 6) {
+      const { error: pwdError } = await adminClient.auth.admin.updateUserById(id, {
+        password,
+      })
+      if (pwdError) {
+        console.error('Error updating password:', pwdError)
+        return NextResponse.json(
+          { error: pwdError.message },
+          { status: 500 }
+        )
+      }
+    }
 
     const updateData: Record<string, unknown> = {
       nom,

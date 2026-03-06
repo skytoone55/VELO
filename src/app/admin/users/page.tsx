@@ -103,6 +103,7 @@ const rolesWithDepots: UserRole[] = ['agent_depot', 'livreur']
 
 interface UserForm {
   email: string
+  password: string
   nom: string
   prenom: string
   role: UserRole
@@ -114,6 +115,7 @@ interface UserForm {
 
 const initialForm: UserForm = {
   email: '',
+  password: '',
   nom: '',
   prenom: '',
   role: 'agent_regional',
@@ -209,6 +211,7 @@ export default function AdminUsersPage() {
     setEditingUser(userProfile)
     setForm({
       email: userProfile.email,
+      password: '',
       nom: userProfile.nom || '',
       prenom: userProfile.prenom || '',
       role: userProfile.role as UserRole,
@@ -232,6 +235,16 @@ export default function AdminUsersPage() {
       return
     }
 
+    if (!editingUser && (!form.password || form.password.length < 6)) {
+      setError('Le mot de passe doit contenir au moins 6 caractères')
+      return
+    }
+
+    if (editingUser && form.password && form.password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères')
+      return
+    }
+
     if (rolesWithDepots.includes(form.role) && form.depot_ids.length === 0) {
       setError('Veuillez sélectionner au moins un dépôt pour ce rôle')
       return
@@ -244,18 +257,21 @@ export default function AdminUsersPage() {
       const territoireValue = form.territoire === 'none' ? null : form.territoire || null
 
       if (editingUser) {
+        const patchBody: Record<string, unknown> = {
+          nom: form.nom,
+          prenom: form.prenom,
+          role: form.role,
+          territoire: territoireValue,
+          telephone: form.telephone || null,
+          actif: form.actif,
+          depot_ids: form.depot_ids,
+        }
+        if (form.password) patchBody.password = form.password
+
         const response = await fetch(`/api/admin/users/${editingUser.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nom: form.nom,
-            prenom: form.prenom,
-            role: form.role,
-            territoire: territoireValue,
-            telephone: form.telephone || null,
-            actif: form.actif,
-            depot_ids: form.depot_ids,
-          }),
+          body: JSON.stringify(patchBody),
         })
 
         const result = await response.json()
@@ -286,11 +302,7 @@ export default function AdminUsersPage() {
         if (!response.ok) throw new Error(result.error || 'Erreur lors de la création')
 
         setUsers([result.user, ...users])
-
-        // Show password dialog
-        setPasswordUserName(`${form.prenom} ${form.nom}`)
-        setShownPassword(result.temporaryPassword)
-        setPasswordDialogOpen(true)
+        toast.success('Utilisateur créé avec succès')
       }
 
       setDialogOpen(false)
@@ -586,6 +598,22 @@ export default function AdminUsersPage() {
                 />
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                {editingUser ? 'Nouveau mot de passe (laisser vide pour ne pas changer)' : 'Mot de passe *'}
+              </Label>
+              <Input
+                id="password"
+                type="text"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                placeholder={editingUser ? 'Laisser vide pour ne pas changer' : 'Mot de passe'}
+              />
+              {!editingUser && (
+                <p className="text-xs text-muted-foreground">Minimum 6 caractères</p>
+              )}
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     if (isAuthError(authResult)) return authResult
 
     const body = await request.json()
-    const { email, nom, prenom, role, territoire, telephone, actif, depot_ids } = body
+    const { email, nom, prenom, role, territoire, telephone, actif, depot_ids, password } = body
 
     if (!email || !nom || !prenom || !role) {
       return NextResponse.json(
@@ -35,14 +35,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!password || password.length < 6) {
+      return NextResponse.json(
+        { error: 'Le mot de passe doit contenir au moins 6 caractères' },
+        { status: 400 }
+      )
+    }
+
     const adminClient = createAdminClient()
 
-    // Create auth user with a cryptographically secure random password (user will reset it)
-    const tempPassword = generateSecurePassword()
+    // Use the password provided by admin
+    const userPassword = password
 
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email,
-      password: tempPassword,
+      password: userPassword,
       email_confirm: true,
       user_metadata: {
         nom,
@@ -118,7 +125,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: profile,
-      temporaryPassword: tempPassword,
+      temporaryPassword: userPassword,
       emailSent,
       message: emailSent
         ? 'Utilisateur créé. Un email d\'invitation a été envoyé.'
