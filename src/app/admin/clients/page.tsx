@@ -79,7 +79,7 @@ const departementOptions = [
   { value: 'hors_dom', label: 'Hors DOM' },
 ]
 
-// Mapping Supabase -> label Monday et couleur
+// Mapping statut Supabase -> label et couleur
 const statutConfig: Record<string, { label: string; color: string }> = {
   dossier_complet: { label: 'DOSSIER COMPLET', color: 'bg-lime-100 text-lime-800' },
   devis_signe: { label: 'DEVIS SIGNÉ', color: 'bg-green-100 text-green-800' },
@@ -202,16 +202,6 @@ export default function AdminClientsPage() {
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
 
-  // Source de données: Supabase (cache rapide) ou Monday (source de vérité)
-  // Par défaut Supabase car beaucoup plus rapide
-  const [dataSource, setDataSource] = useState<'monday' | 'supabase'>('supabase')
-
-  // Info cache
-  const [cacheInfo, setCacheInfo] = useState<{
-    cached: boolean
-    cacheAge: number
-    cacheExpiresIn: number
-  } | null>(null)
 
   // Charger les statuts dynamiquement depuis l'API
   useEffect(() => {
@@ -311,12 +301,7 @@ export default function AdminClientsPage() {
         params.set('sortOrder', sortOrder)
       }
 
-      // Choisir l'API selon la source de données
-      // - supabase: /api/clients (cache local, rapide)
-      // - monday: /api/monday/clients (source de vérité, plus lent)
-      const endpoint = dataSource === 'supabase'
-        ? `/api/clients?${params.toString()}`
-        : `/api/monday/clients?${params.toString()}`
+      const endpoint = `/api/clients?${params.toString()}`
 
       const response = await fetch(endpoint)
       const result = await response.json()
@@ -332,38 +317,15 @@ export default function AdminClientsPage() {
         setPagination(result.pagination)
       }
 
-      // Stocker les infos de cache (uniquement pour Monday)
-      if (result.cached !== undefined) {
-        setCacheInfo({
-          cached: result.cached,
-          cacheAge: result.cacheAge || 0,
-          cacheExpiresIn: result.cacheExpiresIn || 0,
-        })
-      } else {
-        setCacheInfo(null)
-      }
-
-      const sourceLabel = result.source === 'supabase' ? 'Supabase' : 'Monday'
-      console.log(`✓ ${result.pagination?.totalFiltered || result.clients?.length} clients chargés depuis ${sourceLabel}`)
-
-      if (forceRefresh && dataSource === 'monday') {
-        toast.success('Données rafraîchies depuis Monday')
-      }
     } catch (error: any) {
       console.error('Erreur:', error)
       toast.error(error.message || 'Erreur lors du chargement des clients')
-
-      // Fallback: si Supabase échoue, essayer Monday
-      if (dataSource === 'supabase') {
-        toast.info('Tentative de chargement depuis Monday...')
-        setDataSource('monday')
-      }
     } finally {
       setLoading(false)
     }
   }
 
-  // Rafraîchir depuis Monday (ignorer le cache)
+  // Rafraîchir les données
   const handleForceRefresh = () => {
     fetchClients(true)
   }
@@ -404,7 +366,7 @@ export default function AdminClientsPage() {
   // Charger les clients quand les paramètres changent
   useEffect(() => {
     fetchClients(false, currentPage, pageSize)
-  }, [dataSource, currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter, commercialFilter, depotFilter, sortBy, sortOrder])
+  }, [currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter, commercialFilter, depotFilter, sortBy, sortOrder])
 
   const handleSendForm = async (client: Client) => {
     setSendingEmail(true)
@@ -592,13 +554,7 @@ export default function AdminClientsPage() {
   // Charger les stats globales une seule fois (ou au refresh)
   const fetchStats = async () => {
     try {
-      // Utiliser l'API Supabase pour les stats (plus rapide)
-      // ou Monday si on est en mode Monday
-      const statsEndpoint = dataSource === 'supabase'
-        ? '/api/clients/stats'
-        : '/api/monday/clients/stats'
-
-      const response = await fetch(statsEndpoint)
+      const response = await fetch('/api/clients/stats')
       if (response.ok) {
         const stats = await response.json()
         setGlobalStats(stats)
@@ -610,7 +566,7 @@ export default function AdminClientsPage() {
 
   useEffect(() => {
     fetchStats()
-  }, [dataSource])
+  }, [])
 
   // Liste des statuts disponibles (dynamique depuis l'API stats)
   const availableStatuts = useMemo(() => {
@@ -681,26 +637,12 @@ export default function AdminClientsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Clients</h1>
         <div className="flex items-center gap-2">
-          {/* Indicateur source de données et cache */}
-          {dataSource === 'monday' && cacheInfo && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {cacheInfo.cached ? (
-                <Badge variant="outline" className="text-xs">
-                  Cache ({Math.floor(cacheInfo.cacheAge / 60)}:{String(cacheInfo.cacheAge % 60).padStart(2, '0')})
-                </Badge>
-              ) : (
-                <Badge variant="default" className="bg-green-500 text-xs">
-                  Live
-                </Badge>
-              )}
-            </div>
-          )}
           <Button
             variant="outline"
             size="sm"
             onClick={handleForceRefresh}
             disabled={loading}
-            title="Rafraîchir depuis Monday"
+            title="Rafraîchir"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
@@ -848,7 +790,7 @@ export default function AdminClientsPage() {
               <p className="text-muted-foreground text-sm">
                 {searchQuery || statutFilter !== 'all' || departementFilter !== 'all'
                   ? 'Aucun client ne correspond à vos critères'
-                  : 'Les clients apparaîtront ici après synchronisation avec Monday'}
+                  : 'Aucun client dans la base de données'}
               </p>
             </div>
           ) : (
