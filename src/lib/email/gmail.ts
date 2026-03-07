@@ -454,7 +454,8 @@ export async function sendUserInvitationEmail(
   userEmail: string,
   userName: string,
   role: string,
-  resetPasswordLink: string
+  loginUrl: string,
+  password: string
 ) {
   const tenant = getTenantConfig()
 
@@ -506,17 +507,31 @@ export async function sendUserInvitationEmail(
                 Un compte a été créé pour vous sur la plateforme ${tenant.name} avec le rôle <strong style="color: ${tenant.branding.colors.secondary};">${roleLabel}</strong>.
               </p>
 
-              <p style="margin: 0 0 30px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Pour activer votre compte et créer votre mot de passe, cliquez sur le bouton ci-dessous :
+              <p style="margin: 0 0 10px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Voici vos identifiants de connexion :
               </p>
+
+              <!-- Credentials box -->
+              <div style="background-color: #f4f4f5; border-radius: 8px; padding: 20px; margin: 0 0 30px 0;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding: 6px 0; color: #71717a; font-size: 14px;">Email :</td>
+                    <td style="padding: 6px 0; color: #18181b; font-size: 14px; font-weight: 600;">${userEmail}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #71717a; font-size: 14px;">Mot de passe :</td>
+                    <td style="padding: 6px 0; color: #18181b; font-size: 14px; font-weight: 600; font-family: monospace; letter-spacing: 1px;">${password}</td>
+                  </tr>
+                </table>
+              </div>
 
               <!-- CTA Button -->
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <a href="${resetPasswordLink}"
+                    <a href="${loginUrl}"
                        style="display: inline-block; background-color: ${tenant.branding.colors.secondary}; color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-                      Créer mon mot de passe
+                      Se connecter
                     </a>
                   </td>
                 </tr>
@@ -524,14 +539,14 @@ export async function sendUserInvitationEmail(
 
               <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 30px 0; border-radius: 0 8px 8px 0;">
                 <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
-                  <strong>⚠️ Important :</strong> Ce lien est valable pendant 24 heures. Passé ce délai, vous devrez utiliser la fonction "Mot de passe oublié" pour en obtenir un nouveau.
+                  <strong>⚠️ Important :</strong> Nous vous recommandons de changer votre mot de passe après votre première connexion. Si vous oubliez votre mot de passe, utilisez la fonction "Mot de passe oublié" sur la page de connexion.
                 </p>
               </div>
 
               <p style="margin: 30px 0 0 0; color: #71717a; font-size: 14px; line-height: 1.6;">
                 Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
-                <a href="${resetPasswordLink}" style="color: ${tenant.branding.colors.secondary}; word-break: break-all;">
-                  ${resetPasswordLink}
+                <a href="${loginUrl}" style="color: ${tenant.branding.colors.secondary}; word-break: break-all;">
+                  ${loginUrl}
                 </a>
               </p>
 

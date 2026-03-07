@@ -180,19 +180,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Envoyer l'email d'invitation
+    // Envoyer l'email d'invitation avec identifiants
     let emailSent = false
     try {
-      const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
-        type: 'recovery',
-        email,
-      })
-
-      if (!linkError && linkData?.properties?.action_link) {
-        const userName = `${prenom} ${nom}`
-        await sendUserInvitationEmail(email, userName, role, linkData.properties.action_link)
-        emailSent = true
-      }
+      const userName = `${prenom} ${nom}`
+      const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/auth/login`
+      await sendUserInvitationEmail(email, userName, role, loginUrl, password)
+      emailSent = true
     } catch (emailError) {
       console.error('Error sending invitation email:', emailError)
     }

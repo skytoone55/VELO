@@ -10,7 +10,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // ========== CONFIG ==========
 const SUPABASE_URL = 'https://zfpzhhdovxllchlsihcr.supabase.co'
-const SUPABASE_SERVICE_KEY = 'REDACTED'
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'REDACTED'
 
 const BATCH_SIZE = 500
 const BATCH_DELAY_MS = 300
