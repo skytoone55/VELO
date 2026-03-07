@@ -163,7 +163,7 @@ export default function AdminUsersPage() {
     const fetchData = async () => {
       const supabase = createClient()
 
-      // Fetch users
+      // Fetch users — filtré par hiérarchie
       let query = supabase
         .from('users_profile')
         .select('*')
@@ -171,6 +171,12 @@ export default function AdminUsersPage() {
 
       if (user?.role === 'admin' && user.territoire) {
         query = query.eq('territoire', user.territoire)
+      } else if (user?.role === 'agent_secteur') {
+        // Agent secteur ne voit que les livreurs (+ lui-même)
+        query = query.in('role', ['agent_secteur', 'livreur'])
+        if (user.departement) {
+          query = query.eq('departement', user.departement)
+        }
       }
 
       const { data, error } = await query
@@ -442,6 +448,8 @@ export default function AdminUsersPage() {
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                autoComplete="off"
+                name="search-users-list"
               />
             </div>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -596,11 +604,12 @@ export default function AdminUsersPage() {
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
                 <Input
-                  id="email"
+                  id="create-user-email"
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   placeholder="utilisateur@example.com"
+                  autoComplete="off"
                 />
               </div>
             )}

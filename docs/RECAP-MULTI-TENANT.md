@@ -90,7 +90,7 @@ NEXT_PUBLIC_APP_URL="https://velo-fawn.vercel.app"
 ```
 NEXT_PUBLIC_TENANT_ID="ppe"
 NEXT_PUBLIC_SUPABASE_URL="https://zfpzhhdovxllchlsihcr.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="sb_publishable_-eV40xJPpPxRA308jeoGzQ_oYR7jNio"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="REDACTED"
 SUPABASE_SERVICE_ROLE_KEY="REDACTED"
 SMTP_HOST="smtp.office365.com"
 SMTP_PORT="587"
