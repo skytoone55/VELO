@@ -2,7 +2,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-const API_KEY = 'REDACTED_MONDAY_PPE_TOKEN';
+const API_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjU2MDA3NDEzMiwiYWFpIjoxMSwidWlkIjo4MjUxNjA2MywiaWFkIjoiMjAyNS0wOS0wOVQxODo1NDozMC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MzEyMTU4MDksInJnbiI6ImV1YzEifQ.coddlcxR_0AFKA-vQ9RXdGKSVDOEeM7Bj-oTDhotMH4';
 const API_URL = 'https://api.monday.com/v2';
 
 const BOARDS = [

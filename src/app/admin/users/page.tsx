@@ -122,7 +122,7 @@ const initialForm: UserForm = {
   nom: '',
   prenom: '',
   role: 'agent_secteur',
-  territoire: '974',
+  territoire: tenantConfig.territories.length === 1 ? tenantConfig.territories[0] : 'none',
   telephone: '',
   actif: true,
   depot_ids: [],

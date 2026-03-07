@@ -13,7 +13,7 @@ import urllib.request
 import urllib.error
 import time
 
-PPE_TOKEN = "REDACTED_MONDAY_PPE_TOKEN"
+PPE_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjU2MDA3NDEzMiwiYWFpIjoxMSwidWlkIjo4MjUxNjA2MywiaWFkIjoiMjAyNS0wOS0wOVQxODo1NDozMC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MzEyMTU4MDksInJnbiI6ImV1YzEifQ.coddlcxR_0AFKA-vQ9RXdGKSVDOEeM7Bj-oTDhotMH4"
 
 MONDAY_API = "https://api.monday.com/v2"
 

@@ -7,8 +7,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = 'https://irpnllwlxivlylclfjwd.supabase.co'
-const SUPABASE_SERVICE_KEY = 'REDACTED_SUPABASE_ECOVOLT_SERVICE_KEY'
-const MONDAY_API_KEY = 'REDACTED_MONDAY_ECOVOLT_TOKEN'
+const SUPABASE_SERVICE_KEY = 'REDACTED'
+const MONDAY_API_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjYwNzQ0NzE0NiwiYWFpIjoxMSwidWlkIjo4MjAyNTk1MiwiaWFkIjoiMjAyNi0wMS0xNFQxMjo1MTozMi4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU5OTgxMjEsInJnbiI6InVzZTEifQ.pKHUmGDm_nv37bFv0aXwLQ1y4HimaLnW0FM6bWuBp5M'
 const MONDAY_API_URL = 'https://api.monday.com/v2'
 const BOARD_ID = '9990833105'
 const BATCH_SIZE = 100
