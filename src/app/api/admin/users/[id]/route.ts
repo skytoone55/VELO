@@ -20,7 +20,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authResult = await requireRole(['super_admin', 'admin'])
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
     if (isAuthError(authResult)) return authResult
 
     const { id } = await params
@@ -107,7 +107,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authResult = await requireRole(['super_admin', 'admin'])
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
     if (isAuthError(authResult)) return authResult
 
     const { id } = await params
@@ -235,7 +235,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authResult = await requireRole(['super_admin', 'admin'])
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
     if (isAuthError(authResult)) return authResult
 
     const { id } = await params

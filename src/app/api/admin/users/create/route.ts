@@ -7,7 +7,7 @@ import { UserRole } from '@/lib/types/database'
 
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await requireRole(['super_admin', 'admin'])
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
     if (isAuthError(authResult)) return authResult
 
     const body = await request.json()

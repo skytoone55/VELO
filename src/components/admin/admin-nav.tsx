@@ -84,19 +84,19 @@ const adminNavItems: NavItem[] = [
     href: '/admin/alertes',
     label: 'Alertes',
     icon: Bell,
-    roles: ['super_admin', 'admin'],
+    roles: ['super_admin', 'admin', 'agent_secteur'],
   },
   {
     href: '/admin/settings',
     label: 'Paramètres',
     icon: Settings,
-    roles: ['super_admin', 'admin'],
+    roles: ['super_admin', 'admin', 'agent_secteur'],
     children: [
       {
         href: '/admin/users',
         label: 'Utilisateurs',
         icon: Users,
-        roles: ['super_admin', 'admin'],
+        roles: ['super_admin', 'admin', 'agent_secteur'],
       },
       {
         href: '/admin/depots',
