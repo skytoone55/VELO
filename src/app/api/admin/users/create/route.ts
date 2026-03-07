@@ -56,7 +56,63 @@ export async function POST(request: NextRequest) {
 
     if (authError) {
       console.error('Error creating auth user:', authError)
-      return NextResponse.json({ error: authError.message }, { status: 400 })
+
+      // Si le compte auth existe déjà mais pas le profil, récupérer l'utilisateur existant
+      if (authError.message?.includes('already been registered')) {
+        const { data: { users } } = await adminClient.auth.admin.listUsers()
+        const existingUser = users?.find(u => u.email === email)
+
+        if (existingUser) {
+          // Vérifier si un profil existe déjà
+          const { data: existingProfile } = await adminClient
+            .from('users_profile')
+            .select('id')
+            .eq('id', existingUser.id)
+            .single()
+
+          if (existingProfile) {
+            return NextResponse.json({ error: 'Un utilisateur avec cet email existe déjà' }, { status: 400 })
+          }
+
+          // Profil manquant : mettre à jour le mot de passe et continuer avec cet utilisateur
+          await adminClient.auth.admin.updateUserById(existingUser.id, {
+            password,
+            email_confirm: true,
+            user_metadata: { nom, prenom, role }
+          })
+
+          // Continuer la création du profil avec l'ID existant
+          const profileData: Record<string, unknown> = {
+            id: existingUser.id,
+            email, nom, prenom, role,
+            territoire: territoire || null,
+            telephone: telephone || null,
+            actif: actif !== undefined ? actif : true,
+            depot_ids: depot_ids || [],
+            departement: departement || null,
+          }
+
+          const { error: profileError } = await adminClient
+            .from('users_profile')
+            .insert(profileData)
+
+          if (profileError) {
+            return NextResponse.json({ error: `Erreur création profil : ${profileError.message}` }, { status: 500 })
+          }
+
+          return NextResponse.json({ success: true, userId: existingUser.id, recovered: true })
+        }
+
+        return NextResponse.json({ error: 'Un utilisateur avec cet email existe déjà' }, { status: 400 })
+      }
+
+      // Autres erreurs Supabase — traduire les messages courants
+      const frenchErrors: Record<string, string> = {
+        'Password should be at least 6 characters': 'Le mot de passe doit contenir au moins 6 caractères',
+        'Unable to validate email address: invalid format': 'Format d\'email invalide',
+      }
+      const msg = frenchErrors[authError.message] || authError.message
+      return NextResponse.json({ error: msg }, { status: 400 })
     }
 
     if (!authData.user) {
