@@ -17,7 +17,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 API_URL = "https://api.monday.com/v2"
-API_TOKEN = "REDACTED"
+API_TOKEN = "REDACTED_MONDAY_ECOVOLT_TOKEN"
 BOARD_ID = 9990833105
 COLUMNS = [
     "color_mkvfws5n",

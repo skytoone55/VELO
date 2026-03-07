@@ -1,6 +1,6 @@
 const https = require('https');
 
-const API_KEY = 'REDACTED';
+const API_KEY = 'REDACTED_MONDAY_PPE_TOKEN';
 
 const BOARDS = [
   { id: 2144986053, name: 'ATHOME', siretCol: 'text_mkvqtq36' },

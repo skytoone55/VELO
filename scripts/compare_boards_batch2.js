@@ -1,7 +1,7 @@
 const fs = require('fs');
 const https = require('https');
 
-const API_KEY = 'REDACTED';
+const API_KEY = 'REDACTED_MONDAY_PPE_TOKEN';
 
 const BOARDS = [
   {

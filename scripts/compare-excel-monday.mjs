@@ -1,7 +1,7 @@
 import XLSX from 'xlsx'
 
 // ── Config ──
-const MONDAY_API_KEY = 'REDACTED'
+const MONDAY_API_KEY = 'REDACTED_MONDAY_PPE_TOKEN'
 
 // Les 7 boards PPE avec leurs colonnes spécifiques
 const BOARDS = [

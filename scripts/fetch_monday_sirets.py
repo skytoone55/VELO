@@ -1,6 +1,6 @@
 import urllib.request, json, time, re, ssl
 
-API_KEY = "REDACTED"
+API_KEY = "REDACTED_MONDAY_PPE_TOKEN"
 ENDPOINT = "https://api.monday.com/v2"
 
 BOARDS = [

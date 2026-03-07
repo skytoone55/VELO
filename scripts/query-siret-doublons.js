@@ -1,6 +1,6 @@
 const https = require('https');
 
-const API_KEY = 'REDACTED';
+const API_KEY = 'REDACTED_MONDAY_PPE_TOKEN';
 const API_URL = 'https://api.monday.com/v2';
 
 // Boards and their SIRET column IDs

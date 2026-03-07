@@ -9,7 +9,7 @@ except ImportError:
     print('ERROR: openpyxl not installed'); sys.exit(1)
 
 API_URL = "https://api.monday.com/v2"
-API_TOKEN = "REDACTED"
+API_TOKEN = "REDACTED_MONDAY_PPE_TOKEN"
 API_VERSION = "2024-10"
 OUTPUT = "/Users/john/JARVIS/CLAUDE/Stats_PPE_Energie.xlsx"
 NAF_FILE = "/Users/john/JARVIS/projets/velo/docs/naf-enemat-reference.json"

@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const API_KEY = 'REDACTED';
+const API_KEY = 'REDACTED_MONDAY_PPE_TOKEN';
 const API_URL = 'https://api.monday.com/v2';
 const BOARD_ID = 2144986053;
 

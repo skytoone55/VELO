@@ -82,7 +82,7 @@ const ecovoltConfig: TenantConfig = {
   tagline: 'Vélos cargo électriques',
 
   territories: ['971', '972', '973', '974'],
-  url: 'https://velo-ecovolt.vercel.app',
+  url: 'https://velo-fawn.vercel.app',
 
   email: 'admin@eco-volt.fr',
   phone: '0757991125',

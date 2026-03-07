@@ -5,7 +5,7 @@ import requests
 import os
 import json
 
-MONDAY_TOKEN = "REDACTED"
+MONDAY_TOKEN = "REDACTED_MONDAY_ECOVOLT_TOKEN"
 BOARD_ID = "9990833105"
 VELO_COL = "numeric_mkvcqm0r"
 RETINA_COL = "text_mkvfxbkp"

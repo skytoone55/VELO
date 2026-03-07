@@ -8,7 +8,7 @@ import * as path from 'path'
 
 // Connexion directe au Postgres PPE
 // Format: postgresql://postgres.[project-ref]:[password]@[host]:5432/postgres
-const DB_URL = 'postgresql://postgres.zfpzhhdovxllchlsihcr:REDACTED@aws-0-eu-central-1.pooler.supabase.com:5432/postgres'
+const DB_URL = 'postgresql://postgres.zfpzhhdovxllchlsihcr:Roca6140@aws-0-eu-central-1.pooler.supabase.com:5432/postgres'
 
 const sql = postgres(DB_URL, { ssl: 'require' })
 

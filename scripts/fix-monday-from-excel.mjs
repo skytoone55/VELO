@@ -1,4 +1,4 @@
-const MONDAY_API_KEY = 'REDACTED'
+const MONDAY_API_KEY = 'REDACTED_MONDAY_PPE_TOKEN'
 
 // Board configs
 const BOARDS = {
