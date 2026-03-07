@@ -372,10 +372,17 @@ export default function AdminUsersPage() {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Erreur')
 
-      // Open impersonate page that signs out first, then signs in as target
+      // Store return info before navigating away
+      localStorage.setItem('impersonate_return', JSON.stringify({
+        email: user?.email,
+        nom: user?.nom,
+        prenom: user?.prenom,
+        timestamp: Date.now(),
+      }))
+
+      // Navigate in same tab (cookies are shared across tabs, can't use new tab)
       const impersonateUrl = `/auth/impersonate?token=${encodeURIComponent(result.token)}&email=${encodeURIComponent(result.email)}`
-      window.open(impersonateUrl, '_blank')
-      toast.success(`Connexion en tant que ${targetUser.prenom} ${targetUser.nom} dans un nouvel onglet`)
+      window.location.href = impersonateUrl
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur d\'impersonation')
     }

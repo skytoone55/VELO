@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Calendar,
   ArrowLeftRight,
+  LogIn,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getTenantConfig, TENANTS } from '@/lib/tenants'
@@ -89,7 +90,7 @@ const adminNavItems: NavItem[] = [
     href: '/admin/settings',
     label: 'Paramètres',
     icon: Settings,
-    roles: ['super_admin'],
+    roles: ['super_admin', 'admin'],
     children: [
       {
         href: '/admin/users',
@@ -142,6 +143,29 @@ export function AdminNav({ user }: AdminNavProps) {
     pathname.startsWith('/admin/settings') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/depots')
   )
   const { theme, setTheme } = useTheme()
+  const [impersonating, setImpersonating] = useState<{ prenom: string; nom: string } | null>(null)
+
+  useEffect(() => {
+    const stored = localStorage.getItem('impersonate_return')
+    if (stored) {
+      try {
+        const data = JSON.parse(stored)
+        // Expire after 4 hours
+        if (Date.now() - data.timestamp < 4 * 60 * 60 * 1000) {
+          setImpersonating({ prenom: data.prenom, nom: data.nom })
+        } else {
+          localStorage.removeItem('impersonate_return')
+        }
+      } catch { localStorage.removeItem('impersonate_return') }
+    }
+  }, [])
+
+  const handleReturnToAdmin = async () => {
+    localStorage.removeItem('impersonate_return')
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/auth/login')
+  }
 
   // Resizable sidebar
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT)
@@ -199,9 +223,27 @@ export function AdminNav({ user }: AdminNavProps) {
 
   return (
     <>
+      {/* Impersonation banner */}
+      {impersonating && (
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-orange-500 text-white px-4 py-2 flex items-center justify-between text-sm">
+          <span>
+            Connecté en tant que <strong>{user.prenom} {user.nom}</strong> — Session de {impersonating.prenom} {impersonating.nom}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleReturnToAdmin}
+            className="text-white hover:bg-orange-600 hover:text-white"
+          >
+            <LogIn className="h-4 w-4 mr-1" />
+            Revenir à mon compte
+          </Button>
+        </div>
+      )}
+
       {/* Sidebar for desktop */}
       <aside
-        className="hidden md:fixed md:inset-y-0 md:flex md:flex-col"
+        className={cn("hidden md:fixed md:flex md:flex-col", impersonating ? "md:top-10 md:bottom-0" : "md:inset-y-0")}
         style={{ width: sidebarWidth }}
       >
         <div className="flex flex-col flex-grow bg-sidebar text-sidebar-foreground overflow-y-auto">
