@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Utiliser des champs spécifiques au lieu de '*'
     const { data: profile, error } = await supabase
       .from('users_profile')
-      .select('id, email, role, is_super_admin, nom, prenom, territoire, departement, depot_id, actif')
+      .select('id, email, role, is_super_admin, nom, prenom, territoire, departement, depot_ids, actif')
       .eq('id', supabaseUserId)
       .single()
 
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       prenom: profile.prenom,
       territoire: profile.territoire as AuthUser['territoire'],
       departement: profile.departement ?? null,
-      depot_id: profile.depot_id,
+      depot_ids: profile.depot_ids ?? [],
       actif: profile.actif ?? true,
     }
   }, [])

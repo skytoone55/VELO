@@ -12,7 +12,7 @@ export interface AdminUser {
   prenom: string
   territoire?: string | null
   departement?: string | null
-  depot_id?: string | null
+  depot_ids?: string[] | null
   actif: boolean
 }
 

@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     // Récupérer le profil pour vérifier les permissions
     const { data: profile } = await supabase
       .from('users_profile')
-      .select('role, territoire')
+      .select('role, territoire, departement, depot_ids')
       .eq('id', user.id)
       .single()
 
@@ -31,11 +31,12 @@ export async function GET(request: Request) {
       .select('*')
       .order('created_at', { ascending: false })
 
-    // Filtrer par territoire pour les non-admin généraux
-    if (profile.role === 'admin' || profile.role === 'agent_secteur') {
-      if (profile.territoire) {
-        query = query.eq('departement', profile.territoire)
-      }
+    // Filtrer par territoire/département
+    if (profile.role === 'admin' && profile.territoire) {
+      query = query.eq('departement', profile.territoire)
+    } else if (profile.role === 'agent_secteur') {
+      const dept = profile.departement || profile.territoire
+      if (dept) query = query.eq('departement', dept)
     }
 
     const { data, error } = await query

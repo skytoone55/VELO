@@ -35,7 +35,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     prenom: profile.prenom,
     territoire: profile.territoire as AuthUser['territoire'],
     departement: profile.departement ?? null,
-    depot_id: profile.depot_id,
+    depot_ids: profile.depot_ids ?? [],
     actif: profile.actif ?? true,
   }
 }

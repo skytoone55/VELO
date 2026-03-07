@@ -69,7 +69,7 @@ export function canAccessTerritory(user: AuthUser, territory: string): boolean {
  */
 export function canAccessDepot(user: AuthUser, depotId: string): boolean {
   if (['super_admin', 'admin'].includes(user.role)) return true
-  return user.depot_id === depotId
+  return user.depot_ids?.includes(depotId) ?? false
 }
 
 /**

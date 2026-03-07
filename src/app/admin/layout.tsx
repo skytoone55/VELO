@@ -22,7 +22,7 @@ export default async function AdminLayout({
   // Utiliser des champs spécifiques au lieu de '*' pour optimiser
   const { data: profile, error } = await supabase
     .from('users_profile')
-    .select('id, email, role, is_super_admin, nom, prenom, territoire, departement, depot_id, actif')
+    .select('id, email, role, is_super_admin, nom, prenom, territoire, departement, depot_ids, actif')
     .eq('id', user.id)
     .single()
 
@@ -63,7 +63,7 @@ export default async function AdminLayout({
     prenom: profile.prenom,
     territoire: profile.territoire,
     departement: profile.departement ?? null,
-    depot_id: profile.depot_id,
+    depot_ids: profile.depot_ids ?? [],
     actif: profile.actif ?? true,
   }
 

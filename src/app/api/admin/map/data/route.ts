@@ -18,25 +18,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    // Vérifier les permissions (admin uniquement)
+    // Vérifier les permissions
     const { data: profile } = await supabase
       .from('users_profile')
-      .select('role')
+      .select('role, depot_ids, departement, territoire')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+    if (!profile || !['super_admin', 'admin', 'agent_secteur'].includes(profile.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
     const adminClient = createAdminClient()
 
-    // Récupérer tous les dépôts actifs
-    const { data: depots, error: depotsError } = await adminClient
+    // Récupérer les dépôts (filtrés pour agent_secteur)
+    let depotsQuery = adminClient
       .from('depots')
       .select('*')
       .eq('actif', true)
       .order('nom')
+
+    if (profile.role === 'agent_secteur' && profile.depot_ids?.length) {
+      depotsQuery = depotsQuery.in('id', profile.depot_ids)
+    }
+
+    const { data: depots, error: depotsError } = await depotsQuery
 
     if (depotsError) {
       console.error('Erreur chargement dépôts:', depotsError)
@@ -51,10 +57,18 @@ export async function GET(request: NextRequest) {
     let hasMore = true
 
     while (hasMore) {
-      const { data: batch, error: clientsError } = await adminClient
+      let clientQuery = adminClient
         .from('clients')
         .select(clientFields)
         .range(offset, offset + BATCH_SIZE - 1)
+
+      // Agent secteur ne voit que les clients de son territoire/département
+      if (profile.role === 'agent_secteur') {
+        const dept = profile.departement || profile.territoire
+        if (dept) clientQuery = clientQuery.eq('departement', dept)
+      }
+
+      const { data: batch, error: clientsError } = await clientQuery
 
       if (clientsError) {
         console.error('Erreur chargement clients:', clientsError)

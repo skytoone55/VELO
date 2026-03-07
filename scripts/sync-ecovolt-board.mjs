@@ -7,8 +7,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = 'https://irpnllwlxivlylclfjwd.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'REDACTED'
-const MONDAY_API_KEY = process.env.MONDAY_API_KEY || 'REDACTED'
+const SUPABASE_SERVICE_KEY = 'REDACTED'
+const MONDAY_API_KEY = 'REDACTED'
 const MONDAY_API_URL = 'https://api.monday.com/v2'
 const BOARD_ID = '9990833105'
 const BATCH_SIZE = 100

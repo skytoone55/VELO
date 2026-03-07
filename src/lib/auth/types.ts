@@ -9,7 +9,7 @@ export interface AuthUser {
   prenom?: string | null
   territoire?: Departement | null
   departement?: string | null
-  depot_id?: string | null
+  depot_ids?: string[] | null
   actif: boolean
 }
 
