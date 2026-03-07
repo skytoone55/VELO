@@ -59,28 +59,25 @@ import { UsersProfile, UserRole } from '@/lib/types/database'
 
 const roleOptions: { value: string; label: string }[] = [
   { value: 'all', label: 'Tous les rôles' },
-  { value: 'admin_general', label: 'Admin Général' },
-  { value: 'admin_regional', label: 'Admin Régional' },
-  { value: 'agent_regional', label: 'Agent Régional' },
-  { value: 'agent_depot', label: 'Agent Dépôt' },
+  { value: 'super_admin', label: 'Super Admin' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'agent_secteur', label: 'Agent Secteur' },
   { value: 'livreur', label: 'Livreur' },
   { value: 'client', label: 'Client' },
 ]
 
 const roleColors: Record<string, string> = {
-  admin_general: 'bg-purple-100 text-purple-800',
-  admin_regional: 'bg-indigo-100 text-indigo-800',
-  agent_regional: 'bg-blue-100 text-blue-800',
-  agent_depot: 'bg-cyan-100 text-cyan-800',
+  super_admin: 'bg-purple-100 text-purple-800',
+  admin: 'bg-indigo-100 text-indigo-800',
+  agent_secteur: 'bg-blue-100 text-blue-800',
   livreur: 'bg-teal-100 text-teal-800',
   client: 'bg-gray-100 text-gray-800',
 }
 
 const roleLabels: Record<UserRole, string> = {
-  admin_general: 'Admin Général',
-  admin_regional: 'Admin Régional',
-  agent_regional: 'Agent Régional',
-  agent_depot: 'Agent Dépôt',
+  super_admin: 'Super Admin',
+  admin: 'Admin',
+  agent_secteur: 'Agent Secteur',
   livreur: 'Livreur',
   client: 'Client',
 }
@@ -99,7 +96,7 @@ const territoireOptions = [
 ]
 
 // Rôles qui nécessitent une sélection de dépôts
-const rolesWithDepots: UserRole[] = ['agent_depot', 'livreur']
+const rolesWithDepots: UserRole[] = ['agent_secteur', 'livreur']
 
 interface UserForm {
   email: string
@@ -118,7 +115,7 @@ const initialForm: UserForm = {
   password: '',
   nom: '',
   prenom: '',
-  role: 'agent_regional',
+  role: 'agent_secteur',
   territoire: '974',
   telephone: '',
   actif: true,
@@ -166,7 +163,7 @@ export default function AdminUsersPage() {
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (user?.role === 'admin_regional' && user.territoire) {
+      if (user?.role === 'admin' && user.territoire) {
         query = query.eq('territoire', user.territoire)
       }
 
@@ -411,7 +408,7 @@ export default function AdminUsersPage() {
             Gérez les comptes utilisateurs et leurs rôles
           </p>
         </div>
-        {user?.role === 'admin_general' && (
+        {(['super_admin', 'admin'] as const).includes(user?.role as 'super_admin' | 'admin') && (
           <Button onClick={openCreateDialog}>
             <UserPlus className="h-4 w-4 mr-2" />
             Nouvel utilisateur
@@ -522,31 +519,29 @@ export default function AdminUsersPage() {
                             <Pencil className="h-4 w-4 mr-2" />
                             Modifier
                           </DropdownMenuItem>
-                          {user?.role === 'admin_general' && (
+                          {!u.is_super_admin && u.id !== user.id && (
                             <>
                               <DropdownMenuItem onClick={() => handleResetPassword(u)}>
                                 <KeyRound className="h-4 w-4 mr-2" />
                                 Réinitialiser mot de passe
                               </DropdownMenuItem>
-                              {u.id !== user.id && (
+                              {user?.role === 'super_admin' && (
                                 <DropdownMenuItem onClick={() => handleImpersonate(u)}>
                                   <LogIn className="h-4 w-4 mr-2" />
                                   Se connecter en tant que
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
-                              {u.id !== user.id && (
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => {
-                                    setUserToDelete(u)
-                                    setShowDeleteDialog(true)
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Supprimer
-                                </DropdownMenuItem>
-                              )}
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => {
+                                  setUserToDelete(u)
+                                  setShowDeleteDialog(true)
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Supprimer
+                              </DropdownMenuItem>
                             </>
                           )}
                         </DropdownMenuContent>
@@ -653,10 +648,10 @@ export default function AdminUsersPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin_general">Admin Général</SelectItem>
-                    <SelectItem value="admin_regional">Admin Régional</SelectItem>
-                    <SelectItem value="agent_regional">Agent Régional</SelectItem>
-                    <SelectItem value="agent_depot">Agent Dépôt</SelectItem>
+                    {user?.role === 'super_admin' && (
+                      <SelectItem value="admin">Administrateur</SelectItem>
+                    )}
+                    <SelectItem value="agent_secteur">Agent Secteur</SelectItem>
                     <SelectItem value="livreur">Livreur</SelectItem>
                   </SelectContent>
                 </Select>
@@ -681,7 +676,7 @@ export default function AdminUsersPage() {
               </div>
             </div>
 
-            {/* Depot selection — visible for agent_depot and livreur */}
+            {/* Depot selection — visible for agent_secteur and livreur */}
             {rolesWithDepots.includes(form.role) && (
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">

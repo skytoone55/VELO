@@ -7,8 +7,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Only admin_general can impersonate
-    const authResult = await requireRole(['admin_general'])
+    // Only super_admin can impersonate
+    const authResult = await requireRole(['super_admin'])
     if (isAuthError(authResult)) return authResult
 
     const { id } = await params

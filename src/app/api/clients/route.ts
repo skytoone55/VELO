@@ -24,8 +24,8 @@ import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 export async function GET(request: NextRequest) {
   try {
-    // Clients accessible by admin_general, admin_regional, agent_regional
-    const authResult = await requireRole(['admin_general', 'admin_regional', 'agent_regional'])
+    // Clients accessible by super_admin, admin, agent_secteur
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
     if (isAuthError(authResult)) return authResult
 
     const { searchParams } = new URL(request.url)

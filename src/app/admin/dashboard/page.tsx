@@ -29,7 +29,7 @@ const menuCards: MenuCard[] = [
     description: 'Gestion des dossiers clients',
     icon: FileText,
     color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-    roles: ['admin_general', 'admin_regional', 'agent_regional'],
+    roles: ['super_admin', 'admin', 'agent_secteur'],
   },
   {
     href: '/admin/livraisons',
@@ -37,7 +37,7 @@ const menuCards: MenuCard[] = [
     description: 'Suivi des livraisons',
     icon: Truck,
     color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-    roles: ['admin_general', 'admin_regional', 'agent_regional', 'agent_depot', 'livreur'],
+    roles: ['super_admin', 'admin', 'agent_secteur', 'livreur'],
   },
   {
     href: '/admin/map',
@@ -45,7 +45,7 @@ const menuCards: MenuCard[] = [
     description: 'Vue geographique',
     icon: Map,
     color: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
-    roles: ['admin_general', 'admin_regional', 'agent_regional'],
+    roles: ['super_admin', 'admin', 'agent_secteur'],
   },
   {
     href: '/admin/alertes',
@@ -53,7 +53,7 @@ const menuCards: MenuCard[] = [
     description: 'Notifications et alertes',
     icon: Bell,
     color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-    roles: ['admin_general', 'admin_regional'],
+    roles: ['super_admin', 'admin'],
   },
   {
     href: '/admin/users',
@@ -61,7 +61,7 @@ const menuCards: MenuCard[] = [
     description: 'Gestion des comptes',
     icon: Users,
     color: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
-    roles: ['admin_general'],
+    roles: ['super_admin'],
   },
   {
     href: '/admin/depots',
@@ -69,7 +69,7 @@ const menuCards: MenuCard[] = [
     description: 'Gestion des depots',
     icon: Building2,
     color: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
-    roles: ['admin_general', 'admin_regional'],
+    roles: ['super_admin'],
   },
   {
     href: '/admin/settings',
@@ -77,7 +77,7 @@ const menuCards: MenuCard[] = [
     description: 'Configuration Monday',
     icon: Settings,
     color: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
-    roles: ['admin_general'],
+    roles: ['super_admin'],
   },
 ]
 

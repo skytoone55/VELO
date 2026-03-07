@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     // console.log('Profile:', profile)
-    if (!profile || !['admin_general', 'admin_regional', 'agent_regional'].includes(profile.role)) {
+    if (!profile || !['super_admin', 'admin', 'agent_secteur'].includes(profile.role)) {
       // console.log('ERROR: User not authorized, role:', profile?.role)
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }

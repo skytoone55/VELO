@@ -1,32 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { randomBytes } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendUserInvitationEmail } from '@/lib/email/gmail'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
-
-/**
- * Génère un mot de passe temporaire sécurisé
- * Utilise crypto.randomBytes pour une génération cryptographiquement sûre
- */
-function generateSecurePassword(length: number = 16): string {
-  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
-  const bytes = randomBytes(length)
-  let password = ''
-  for (let i = 0; i < length; i++) {
-    password += charset[bytes[i] % charset.length]
-  }
-  // S'assurer qu'il y a au moins une majuscule, une minuscule, un chiffre et un caractère spécial
-  return password + 'Aa1!'
-}
+import { creatableRoles } from '@/lib/auth/helpers'
+import { UserRole } from '@/lib/types/database'
 
 export async function POST(request: NextRequest) {
   try {
-    // Only admin_general can create users
-    const authResult = await requireRole(['admin_general'])
+    const authResult = await requireRole(['super_admin', 'admin'])
     if (isAuthError(authResult)) return authResult
 
     const body = await request.json()
-    const { email, nom, prenom, role, territoire, telephone, actif, depot_ids, password } = body
+    const { email, nom, prenom, role, territoire, telephone, actif, depot_ids, departement, agent_ids, password } = body
 
     if (!email || !nom || !prenom || !role) {
       return NextResponse.json(
@@ -42,65 +27,104 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Vérification hiérarchique : on ne peut créer que des rôles inférieurs
+    const allowed = creatableRoles(authResult.role)
+    if (!allowed.includes(role as UserRole)) {
+      return NextResponse.json(
+        { error: `Vous ne pouvez pas créer un utilisateur avec le rôle ${role}` },
+        { status: 403 }
+      )
+    }
+
+    // super_admin ne peut pas être créé via l'API
+    if (role === 'super_admin') {
+      return NextResponse.json(
+        { error: 'Le rôle Super Admin ne peut pas être attribué' },
+        { status: 403 }
+      )
+    }
+
     const adminClient = createAdminClient()
 
-    // Use the password provided by admin
-    const userPassword = password
-
+    // Créer l'utilisateur auth
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email,
-      password: userPassword,
+      password,
       email_confirm: true,
-      user_metadata: {
-        nom,
-        prenom,
-        role,
-      }
+      user_metadata: { nom, prenom, role }
     })
 
     if (authError) {
       console.error('Error creating auth user:', authError)
-      return NextResponse.json(
-        { error: authError.message },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: authError.message }, { status: 400 })
     }
 
     if (!authData.user) {
-      return NextResponse.json(
-        { error: 'Erreur lors de la création de l\'utilisateur' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Erreur lors de la création' }, { status: 500 })
     }
 
-    // Create profile in users_profile table
+    // Préparer les données profil
+    const profileData: Record<string, unknown> = {
+      id: authData.user.id,
+      email,
+      nom,
+      prenom,
+      role,
+      territoire: territoire || null,
+      telephone: telephone || null,
+      actif: actif ?? true,
+      depot_ids: [],
+      departement: null,
+    }
+
+    // Logique spécifique par rôle
+    if (role === 'agent_secteur') {
+      profileData.departement = departement || null
+      profileData.depot_ids = depot_ids || []
+    } else if (role === 'livreur' && agent_ids?.length) {
+      // Déduire département et dépôts des agents secteur assignés
+      const { data: agents } = await adminClient
+        .from('users_profile')
+        .select('id, depot_ids, departement')
+        .in('id', agent_ids)
+        .eq('role', 'agent_secteur')
+
+      if (agents && agents.length > 0) {
+        const allDepots = [...new Set(agents.flatMap(a => a.depot_ids ?? []))]
+        const depts = [...new Set(agents.map(a => a.departement).filter(Boolean))]
+        profileData.depot_ids = allDepots
+        profileData.departement = depts.length === 1 ? depts[0] : depts.join(',')
+      }
+    }
+
+    // Créer le profil
     const { data: profile, error: profileError } = await adminClient
       .from('users_profile')
-      .insert({
-        id: authData.user.id,
-        email,
-        nom,
-        prenom,
-        role,
-        territoire: territoire || null,
-        telephone: telephone || null,
-        actif: actif ?? true,
-        depot_ids: depot_ids || [],
-      })
+      .insert(profileData)
       .select()
       .single()
 
     if (profileError) {
       console.error('Error creating profile:', profileError)
-      // Try to clean up the auth user if profile creation fails
       await adminClient.auth.admin.deleteUser(authData.user.id)
-      return NextResponse.json(
-        { error: profileError.message },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: profileError.message }, { status: 500 })
     }
 
-    // Generate a password reset link and send invitation email
+    // Créer les liens livreur <-> agents secteur
+    if (role === 'livreur' && agent_ids?.length) {
+      const { error: linkError } = await adminClient
+        .from('livreur_agents')
+        .insert(agent_ids.map((agentId: string) => ({
+          livreur_id: authData.user!.id,
+          agent_id: agentId,
+        })))
+
+      if (linkError) {
+        console.error('Error creating livreur_agents links:', linkError)
+      }
+    }
+
+    // Envoyer l'email d'invitation
     let emailSent = false
     try {
       const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
@@ -108,28 +132,23 @@ export async function POST(request: NextRequest) {
         email,
       })
 
-      if (linkError) {
-        console.error('Error generating reset link:', linkError)
-      } else if (linkData?.properties?.action_link) {
-        // Send custom invitation email with the reset link
+      if (!linkError && linkData?.properties?.action_link) {
         const userName = `${prenom} ${nom}`
         await sendUserInvitationEmail(email, userName, role, linkData.properties.action_link)
         emailSent = true
-        console.log(`Email d'invitation envoyé à ${email}`)
       }
     } catch (emailError) {
       console.error('Error sending invitation email:', emailError)
-      // Not critical, user can request reset manually
     }
 
     return NextResponse.json({
       success: true,
       user: profile,
-      temporaryPassword: userPassword,
+      temporaryPassword: password,
       emailSent,
       message: emailSent
         ? 'Utilisateur créé. Un email d\'invitation a été envoyé.'
-        : 'Utilisateur créé. L\'email d\'invitation n\'a pas pu être envoyé - l\'utilisateur peut utiliser "Mot de passe oublié".'
+        : 'Utilisateur créé. L\'email d\'invitation n\'a pas pu être envoyé.'
     })
 
   } catch (error) {

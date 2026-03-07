@@ -1,0 +1,267 @@
+{
+  "counts": {
+    "excel_total": 1349,
+    "excel_by_sheet": {
+      "ZNI": 1244,
+      "01-10-2025": 0,
+      "19-09-2025": 105
+    },
+    "monday_total": 1188,
+    "matched": 1194,
+    "missing_from_monday": 155,
+    "orphans_on_monday": 13
+  },
+  "monday_column_ids_sample": {
+    "subtasks_mkvxgh18": "",
+    "multiple_person_mkvd4axb": "Pamela Dahan",
+    "email_mkvfk63f": "pamelafashionnew@hotmail.com",
+    "date_mkvsxn5j": "",
+    "color_mkvfws5n": "DEVIS SIGNÉ",
+    "numeric_mkvfghjq": "2",
+    "long_text_mkvn5k9w": "0696297405",
+    "text_mkvtxy4q": "Société à responsabilité limitée (sans autre indication)",
+    "text_mkvfykn9": "85365012500018",
+    "numeric_mkvcqm0r": "",
+    "file_mkvcc1r0": "",
+    "file_mkvnb7yj": "",
+    "file_mkvn9kzj": "",
+    "color_mkvdkzxh": "Martinique",
+    "text_mkvfxbkp": "13174aad",
+    "date_mkvfqvv1": "2025-09-05",
+    "text_mkvfkr8t": "AMSELLEM",
+    "numeric_mkvcqwxn": "",
+    "text_mkvfjqvv": "Jennifer",
+    "text_mkvfetg2": "63 RUE DU PROFESSEUR RAYMOND GARCIN",
+    "text_mkvfhcn9": "97200",
+    "text_mkvfgh8t": "FORT-DE-FRANCE",
+    "color_mm0cz8q": "",
+    "text_mkzvhvmd": "",
+    "text_mkzvp1ea": "",
+    "text_mkzvhaed": "",
+    "text_mkzvrj8d": "Test complément adresse",
+    "text_mkvft2w3": "4759A",
+    "text_mkvf8zp6": "D10057995-636",
+    "text_mkvfqsxv": "Devis AMSELLEM.pdf",
+    "email_mkvfnv4q": "Jen.amsellem@gmail.com",
+    "color_mkyqn153": "",
+    "color_mkvgsswc": "DEVIS SIGNÉ",
+    "color_mkvn1kg0": "",
+    "color_mkvp4dmz": "",
+    "pulse_id_mkvc9y13": "10017581972",
+    "color_mkvdek2g": "",
+    "pulse_log_mkvdtr77": "2025-09-10 10:19:47 UTC",
+    "multiple_person_mkve97pm": "",
+    "text_mkzvqk4s": "",
+    "text_mkzwq7p0": "",
+    "date_mkzww29q": "",
+    "color_mm0vxv46": "Fait"
+  },
+  "orphans": [
+    {
+      "name": "SOLEIL",
+      "id": "10017580054"
+    },
+    {
+      "name": "ndc services / deglin nathalie",
+      "id": "10017580864"
+    },
+    {
+      "name": "JASAWANT & JASAWANT",
+      "id": "10017581167"
+    },
+    {
+      "name": "GWA-BP",
+      "id": "10017581297"
+    },
+    {
+      "name": "DONATIEN LANGEVILLIER",
+      "id": "10017581720"
+    },
+    {
+      "name": "GREEN LOC",
+      "id": "10017579777"
+    },
+    {
+      "name": "LAURA BARBIER",
+      "id": "10017581501"
+    },
+    {
+      "name": "SOLARDOM",
+      "id": "10017579735"
+    },
+    {
+      "name": "SOLEIL",
+      "id": "10017580033"
+    },
+    {
+      "name": "SOC COMMERCIALISATION DISTRIBUTION (SOCODIS)",
+      "id": "10017580183"
+    },
+    {
+      "name": "MARIE-LAURE THIMA",
+      "id": "10017580715"
+    },
+    {
+      "name": "EDEN PHONE LAMENTIN",
+      "id": "10017581079"
+    },
+    {
+      "name": "DOSSIER TEST",
+      "id": "10061905976"
+    }
+  ],
+  "missing_first_20": [
+    {
+      "benef": "FAULIA",
+      "op": "142.0",
+      "sheet": "ZNI",
+      "email": "faulia97280@gmail.com"
+    },
+    {
+      "benef": "VILLAGE PARTAGE LA MARGUERITE",
+      "op": "273.0",
+      "sheet": "ZNI",
+      "email": "villagepartage@gmail.com"
+    },
+    {
+      "benef": "OYOBO",
+      "op": "372.0",
+      "sheet": "ZNI",
+      "email": "anthony@oyobo.re"
+    },
+    {
+      "benef": "k lite life",
+      "op": "435.0",
+      "sheet": "ZNI",
+      "email": "aucoralie@gmail.com"
+    },
+    {
+      "benef": "JORDAN BARON",
+      "op": "500.0",
+      "sheet": "ZNI",
+      "email": "jmbtransport971@gmail.com"
+    },
+    {
+      "benef": "JEAN LUC LIVE YU PENG",
+      "op": "607.0",
+      "sheet": "ZNI",
+      "email": "jeanluc.liveyupeng@yahoo.fr"
+    },
+    {
+      "benef": "SOCIETE COMMERCIALE D'ARTICLES DE BEBE (SCABB)",
+      "op": "646.0",
+      "sheet": "ZNI",
+      "email": "bebebonheur972@gmail.com"
+    },
+    {
+      "benef": "HERVE YEN-PON",
+      "op": "778.0",
+      "sheet": "ZNI",
+      "email": "herve.yp974@gmail.com"
+    },
+    {
+      "benef": "MARIE RIVIERE",
+      "op": "995.0",
+      "sheet": "ZNI",
+      "email": "anvaraly.yanic@yahoo.com"
+    },
+    {
+      "benef": "OLIVIER LIMERY",
+      "op": "1188.0",
+      "sheet": "ZNI",
+      "email": "elmbtp@hotmail.com"
+    },
+    {
+      "benef": "FREDERIC RIPERT",
+      "op": "1189.0",
+      "sheet": "ZNI",
+      "email": "ripert.aade@gmail.com"
+    },
+    {
+      "benef": "LEADER PHARMA SERVICES (L.P.S.)",
+      "op": "1191.0",
+      "sheet": "ZNI",
+      "email": "vincent.viguie971@gmail.com"
+    },
+    {
+      "benef": "JULIEN GUEGUEN",
+      "op": "1192.0",
+      "sheet": "ZNI",
+      "email": "breizhkayenn97351@gmail.com"
+    },
+    {
+      "benef": "XAVIER TARQUIN",
+      "op": "1193.0",
+      "sheet": "ZNI",
+      "email": "xaviertarquin971@hotmail.fr"
+    },
+    {
+      "benef": "SCULPTURAMA",
+      "op": "1195.0",
+      "sheet": "ZNI",
+      "email": "sculpturama.reunion@gmail.com"
+    },
+    {
+      "benef": "JULIE EROULY",
+      "op": "1196.0",
+      "sheet": "ZNI",
+      "email": "agenceboner.r@outlook.com"
+    },
+    {
+      "benef": "TATARETO",
+      "op": "1197.0",
+      "sheet": "ZNI",
+      "email": "oliviersheikboudhou@gmail.com"
+    },
+    {
+      "benef": "BH DISTRIBUTION (BHD)",
+      "op": "1198.0",
+      "sheet": "ZNI",
+      "email": "Bh.distribution97@gmail.com"
+    },
+    {
+      "benef": "DULCE ONDEE",
+      "op": "1199.0",
+      "sheet": "ZNI",
+      "email": "Dulc2109@icloud.com"
+    },
+    {
+      "benef": "MARIE MICHELE BERNARI",
+      "op": "1200.0",
+      "sheet": "ZNI",
+      "email": "mimisty971@hotmail.fr"
+    }
+  ],
+  "matched_sample_5": [
+    {
+      "excel_benef": "JORDAN CHAMAND",
+      "monday_name": "JORDAN CHAMAND",
+      "method": "benef_name",
+      "monday_id": "10017581660"
+    },
+    {
+      "excel_benef": "CABINET IMMOBILIER ST MICHEL",
+      "monday_name": "CABINET IMMOBILIER ST MICHEL",
+      "method": "benef_name",
+      "monday_id": "10017581674"
+    },
+    {
+      "excel_benef": "NCA VA",
+      "monday_name": "NCA VA",
+      "method": "benef_name",
+      "monday_id": "10017581932"
+    },
+    {
+      "excel_benef": "PRESTARUN",
+      "monday_name": "PRESTARUN",
+      "method": "benef_name",
+      "monday_id": "10017581113"
+    },
+    {
+      "excel_benef": "VIRGINIE LAURENCE PAYET",
+      "monday_name": "VIRGINIE LAURENCE PAYET",
+      "method": "benef_name",
+      "monday_id": "10017579855"
+    }
+  ]
+}

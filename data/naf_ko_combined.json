@@ -1,0 +1,1182 @@
+{
+  "ppe": {
+    "controle_valide": [
+      {
+        "code": "4322B",
+        "label": "Travaux d' installation d'équipements thermiques et de climatisation",
+        "clients_ko": 45,
+        "velos_ko": 83,
+        "nb_1velo": 36,
+        "nb_plus1velo": 9
+      },
+      {
+        "code": "7022Z",
+        "label": "Conseil pour les affaires et autres conseils de gestion",
+        "clients_ko": 51,
+        "velos_ko": 51,
+        "nb_1velo": 51,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "6820B",
+        "label": "Location de terrains et d'autres biens immobiliers",
+        "clients_ko": 45,
+        "velos_ko": 46,
+        "nb_1velo": 44,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4932Z",
+        "label": "Transports de voyageurs par taxis",
+        "clients_ko": 45,
+        "velos_ko": 45,
+        "nb_1velo": 45,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "0111Z",
+        "label": "Culture de céréales (à l'exception du riz), de légumineuses et de graines oléagineuses",
+        "clients_ko": 33,
+        "velos_ko": 38,
+        "nb_1velo": 31,
+        "nb_plus1velo": 2
+      },
+      {
+        "code": "7010Z",
+        "label": "Activités des sièges sociaux",
+        "clients_ko": 19,
+        "velos_ko": 29,
+        "nb_1velo": 16,
+        "nb_plus1velo": 3
+      },
+      {
+        "code": "8559A",
+        "label": "Formation continue d'adultes",
+        "clients_ko": 22,
+        "velos_ko": 27,
+        "nb_1velo": 21,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "2821Z",
+        "label": "Fabrication de fours et brûleurs",
+        "clients_ko": 1,
+        "velos_ko": 27,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4391A",
+        "label": "Travaux de charpente",
+        "clients_ko": 15,
+        "velos_ko": 19,
+        "nb_1velo": 13,
+        "nb_plus1velo": 2
+      },
+      {
+        "code": "4791A",
+        "label": "Vente à distance sur catalogue général",
+        "clients_ko": 19,
+        "velos_ko": 19,
+        "nb_1velo": 19,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "5911B",
+        "label": "Production de films institutionnels et publicitaires",
+        "clients_ko": 5,
+        "velos_ko": 19,
+        "nb_1velo": 4,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4941A",
+        "label": "Transports routiers de fret interurbains",
+        "clients_ko": 9,
+        "velos_ko": 15,
+        "nb_1velo": 8,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4120B",
+        "label": "Construction d'autres bâtiments",
+        "clients_ko": 12,
+        "velos_ko": 13,
+        "nb_1velo": 11,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "6201Z",
+        "label": "Programmation informatique",
+        "clients_ko": 13,
+        "velos_ko": 13,
+        "nb_1velo": 13,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "6202A",
+        "label": "Conseil en systèmes et logiciels informatiques",
+        "clients_ko": 11,
+        "velos_ko": 12,
+        "nb_1velo": 10,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "3511Z",
+        "label": "Production d'électricité",
+        "clients_ko": 11,
+        "velos_ko": 11,
+        "nb_1velo": 11,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "6420Z",
+        "label": "Activités des sociétés holding",
+        "clients_ko": 10,
+        "velos_ko": 10,
+        "nb_1velo": 10,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "8891A",
+        "label": "Accueil de jeunes enfants",
+        "clients_ko": 1,
+        "velos_ko": 10,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "7740Z",
+        "label": "Location-bail de propriété intellectuelle et de produits similaires, à l'exception des œuvres soumises à copyright",
+        "clients_ko": 2,
+        "velos_ko": 9,
+        "nb_1velo": 1,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "6619B",
+        "label": "Autres activités auxiliaires de services financiers, hors assurance et caisses de retraite, n.c.a.",
+        "clients_ko": 6,
+        "velos_ko": 8,
+        "nb_1velo": 5,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4791B",
+        "label": "Vente à distance sur catalogue spécialisé",
+        "clients_ko": 8,
+        "velos_ko": 8,
+        "nb_1velo": 8,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "0142Z",
+        "label": "Élevage d'autres bovins et de buffles",
+        "clients_ko": 8,
+        "velos_ko": 8,
+        "nb_1velo": 8,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4639B",
+        "label": "Commerce de gros (commerce interentreprises) alimentaire non spécialisé",
+        "clients_ko": 5,
+        "velos_ko": 8,
+        "nb_1velo": 4,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "6630Z",
+        "label": "Gestion de fonds",
+        "clients_ko": 7,
+        "velos_ko": 7,
+        "nb_1velo": 7,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4399B",
+        "label": "Travaux de montage de structures métalliques",
+        "clients_ko": 4,
+        "velos_ko": 7,
+        "nb_1velo": 3,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "8622C",
+        "label": "Autres activités des médecins spécialistes",
+        "clients_ko": 7,
+        "velos_ko": 7,
+        "nb_1velo": 7,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "0150Z",
+        "label": "Culture et élevage associés",
+        "clients_ko": 5,
+        "velos_ko": 6,
+        "nb_1velo": 4,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "8623Z",
+        "label": "Pratique dentaire",
+        "clients_ko": 6,
+        "velos_ko": 6,
+        "nb_1velo": 6,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4931Z",
+        "label": "Transports urbains et suburbains de voyageurs",
+        "clients_ko": 1,
+        "velos_ko": 6,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4399A",
+        "label": "Travaux d'étanchéification",
+        "clients_ko": 5,
+        "velos_ko": 5,
+        "nb_1velo": 5,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "5911A",
+        "label": "Production de films et de programmes pour la télévision",
+        "clients_ko": 5,
+        "velos_ko": 5,
+        "nb_1velo": 5,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "7990Z",
+        "label": "Autres services de réservation et activités connexes",
+        "clients_ko": 4,
+        "velos_ko": 4,
+        "nb_1velo": 4,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "2561Z",
+        "label": "Traitement et revêtement des métaux",
+        "clients_ko": 1,
+        "velos_ko": 4,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "1413Z",
+        "label": "Fabrication de vêtements de dessus",
+        "clients_ko": 4,
+        "velos_ko": 4,
+        "nb_1velo": 4,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3514Z",
+        "label": "Commerce d'électricité",
+        "clients_ko": 3,
+        "velos_ko": 3,
+        "nb_1velo": 3,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "8553Z",
+        "label": "Enseignement de la conduite",
+        "clients_ko": 3,
+        "velos_ko": 3,
+        "nb_1velo": 3,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "1623Z",
+        "label": "Fabrication de charpentes et d'autres menuiseries",
+        "clients_ko": 1,
+        "velos_ko": 3,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "3299Z",
+        "label": "Autres activités manufacturières n.c.a.",
+        "clients_ko": 3,
+        "velos_ko": 3,
+        "nb_1velo": 3,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4690Z",
+        "label": "Commerce de gros (commerce interentreprises) non spécialisé",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4299Z",
+        "label": "Construction d'autres ouvrages de génie civil n.c.a.",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4642Z",
+        "label": "Commerce de gros (commerce interentreprises) d'habillement et de chaussures",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "8010Z",
+        "label": "Activités de sécurité privée",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4399D",
+        "label": "Autres travaux spécialisés de construction",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "5920Z",
+        "label": "Enregistrement sonore et édition musicale",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "41.20B  (Construction d'autres bâtiments)",
+        "label": "",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3320D",
+        "label": "Installation d'équipements électriques, de matériels électroniques et optiques ou d'autres matériels",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4311Z",
+        "label": "Travaux de démolition",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4614Z",
+        "label": "Intermédiaires du commerce en machines, équipements industriels, navires et avions",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "7111Z",
+        "label": "Activités d'architecture",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "7220Z",
+        "label": "Recherche-développement en sciences humaines et sociales",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "2512Z",
+        "label": "Fabrication de portes et fenêtres en métal",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "8220Z",
+        "label": "Activités de centres d'appels",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3311Z",
+        "label": "Réparation d'ouvrages en métaux",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4778B",
+        "label": "Commerces de détail de charbons et combustibles",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3832Z",
+        "label": "Récupération de déchets triés",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "8030Z",
+        "label": "Activités d'enquête",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "7430Z",
+        "label": "Traduction et interprétation",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "7731Z",
+        "label": "Location et location-bail de machines et équipements agricoles",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4669B",
+        "label": "Commerce de gros (commerce interentreprises) de fournitures et équipements industriels divers",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3320A",
+        "label": "Installation de structures métalliques, chaudronnées et de tuyauterie",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "2550A",
+        "label": "Forge, estampage, matriçage ; métallurgie des poudres",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "2511Z",
+        "label": "Fabrication de structures métalliques et de parties de structures",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4519Z",
+        "label": "Commerce d'autres véhicules automobiles",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3523Z",
+        "label": "Commerce de combustibles gazeux par conduites",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "5229B",
+        "label": "Affrètement et organisation des transports",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "TOTAL",
+        "label": "",
+        "clients_ko": 488,
+        "velos_ko": 634,
+        "nb_1velo": 456,
+        "nb_plus1velo": 32
+      }
+    ],
+    "en_attente": [
+      {
+        "code": "4322B",
+        "label": "Travaux d' installation d'équipements thermiques et de climatisation",
+        "clients_ko": 2,
+        "velos_ko": 14,
+        "nb_1velo": 0,
+        "nb_plus1velo": 2
+      },
+      {
+        "code": "7010Z",
+        "label": "Activités des sièges sociaux",
+        "clients_ko": 2,
+        "velos_ko": 12,
+        "nb_1velo": 0,
+        "nb_plus1velo": 2
+      },
+      {
+        "code": "4211Z",
+        "label": "Construction de routes et autoroutes",
+        "clients_ko": 1,
+        "velos_ko": 10,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "0146Z",
+        "label": "Élevage de porcins",
+        "clients_ko": 1,
+        "velos_ko": 3,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "6201Z",
+        "label": "Programmation informatique",
+        "clients_ko": 1,
+        "velos_ko": 3,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4941A",
+        "label": "Transports routiers de fret interurbains",
+        "clients_ko": 1,
+        "velos_ko": 3,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4120B",
+        "label": "Construction d'autres bâtiments",
+        "clients_ko": 1,
+        "velos_ko": 2,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4690Z",
+        "label": "Commerce de gros (commerce interentreprises) non spécialisé",
+        "clients_ko": 1,
+        "velos_ko": 2,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "8559A",
+        "label": "Formation continue d'adultes",
+        "clients_ko": 1,
+        "velos_ko": 2,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "6820B",
+        "label": "Location de terrains et d'autres biens immobiliers",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "TOTAL",
+        "label": "",
+        "clients_ko": 12,
+        "velos_ko": 52,
+        "nb_1velo": 1,
+        "nb_plus1velo": 11
+      }
+    ]
+  },
+  "ecovolt": {
+    "controle_valide": [
+      {
+        "code": "6820B",
+        "label": "Location de terrains et d'autres biens immobiliers",
+        "clients_ko": 32,
+        "velos_ko": 32,
+        "nb_1velo": 32,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "7010Z",
+        "label": "Activités des sièges sociaux",
+        "clients_ko": 20,
+        "velos_ko": 20,
+        "nb_1velo": 20,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "7022Z",
+        "label": "Conseil pour les affaires et autres conseils de gestion",
+        "clients_ko": 18,
+        "velos_ko": 18,
+        "nb_1velo": 18,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "8891A",
+        "label": "Accueil de jeunes enfants",
+        "clients_ko": 5,
+        "velos_ko": 18,
+        "nb_1velo": 1,
+        "nb_plus1velo": 4
+      },
+      {
+        "code": "4399E",
+        "label": "Location avec opérateur de matériel de construction",
+        "clients_ko": 4,
+        "velos_ko": 13,
+        "nb_1velo": 3,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4730Z",
+        "label": "Commerce de détail de carburants en magasin spécialisé",
+        "clients_ko": 4,
+        "velos_ko": 11,
+        "nb_1velo": 2,
+        "nb_plus1velo": 2
+      },
+      {
+        "code": "4322B",
+        "label": "Travaux d' installation d'équipements thermiques et de climatisation",
+        "clients_ko": 10,
+        "velos_ko": 10,
+        "nb_1velo": 10,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4690Z",
+        "label": "Commerce de gros (commerce interentreprises) non spécialisé",
+        "clients_ko": 8,
+        "velos_ko": 8,
+        "nb_1velo": 8,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "8559A",
+        "label": "Formation continue d'adultes",
+        "clients_ko": 6,
+        "velos_ko": 6,
+        "nb_1velo": 6,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3832Z",
+        "label": "Récupération de déchets triés",
+        "clients_ko": 2,
+        "velos_ko": 6,
+        "nb_1velo": 1,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "6420Z",
+        "label": "Activités des sociétés holding",
+        "clients_ko": 6,
+        "velos_ko": 6,
+        "nb_1velo": 6,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4791A",
+        "label": "Vente à distance sur catalogue général",
+        "clients_ko": 5,
+        "velos_ko": 5,
+        "nb_1velo": 5,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "5911A",
+        "label": "Production de films et de programmes pour la télévision",
+        "clients_ko": 5,
+        "velos_ko": 5,
+        "nb_1velo": 5,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3530Z",
+        "label": "Production et distribution de vapeur et d'air conditionné",
+        "clients_ko": 3,
+        "velos_ko": 5,
+        "nb_1velo": 2,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4941A",
+        "label": "Transports routiers de fret interurbains",
+        "clients_ko": 4,
+        "velos_ko": 5,
+        "nb_1velo": 3,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "0150Z",
+        "label": "Culture et élevage associés",
+        "clients_ko": 5,
+        "velos_ko": 5,
+        "nb_1velo": 5,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4120B",
+        "label": "Construction d'autres bâtiments",
+        "clients_ko": 4,
+        "velos_ko": 4,
+        "nb_1velo": 4,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4391A",
+        "label": "Travaux de charpente",
+        "clients_ko": 4,
+        "velos_ko": 4,
+        "nb_1velo": 4,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "8010Z",
+        "label": "Activités de sécurité privée",
+        "clients_ko": 1,
+        "velos_ko": 4,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "7111Z",
+        "label": "Activités d'architecture",
+        "clients_ko": 3,
+        "velos_ko": 3,
+        "nb_1velo": 3,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4531Z",
+        "label": "Commerce de gros d'équipements automobiles",
+        "clients_ko": 1,
+        "velos_ko": 3,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "7990Z",
+        "label": "Autres services de réservation et activités connexes",
+        "clients_ko": 3,
+        "velos_ko": 3,
+        "nb_1velo": 3,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4791B",
+        "label": "Vente à distance sur catalogue spécialisé",
+        "clients_ko": 3,
+        "velos_ko": 3,
+        "nb_1velo": 3,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "8553Z",
+        "label": "Enseignement de la conduite",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4639B",
+        "label": "Commerce de gros (commerce interentreprises) alimentaire non spécialisé",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "2512Z",
+        "label": "Fabrication de portes et fenêtres en métal",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "6201Z",
+        "label": "Programmation informatique",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4399A",
+        "label": "Travaux d'étanchéification",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "8623Z",
+        "label": "Pratique dentaire",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4399D",
+        "label": "Autres travaux spécialisés de construction",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3511Z",
+        "label": "Production d'électricité",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "2511Z",
+        "label": "Fabrication de structures métalliques et de parties de structures",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "6202A",
+        "label": "Conseil en systèmes et logiciels informatiques",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "1413Z",
+        "label": "Fabrication de vêtements de dessus",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "8622C",
+        "label": "Autres activités des médecins spécialistes",
+        "clients_ko": 2,
+        "velos_ko": 2,
+        "nb_1velo": 2,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "2363Z",
+        "label": "Fabrication de béton prêt à l'emploi",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3299Z",
+        "label": "Autres activités manufacturières n.c.a.",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "1623Z",
+        "label": "Fabrication de charpentes et d'autres menuiseries",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "5911B",
+        "label": "Production de films institutionnels et publicitaires",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4642Z",
+        "label": "Commerce de gros (commerce interentreprises) d'habillement et de chaussures",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4932Z",
+        "label": "Transports de voyageurs par taxis",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3320D",
+        "label": "Installation d'équipements électriques, de matériels électroniques et optiques ou d'autres matériels",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3320A",
+        "label": "Installation de structures métalliques, chaudronnées et de tuyauterie",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "0000Z",
+        "label": "",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "6630Z",
+        "label": "Gestion de fonds",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "6619B",
+        "label": "Autres activités auxiliaires de services financiers, hors assurance et caisses de retraite, n.c.a.",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "4669B",
+        "label": "Commerce de gros (commerce interentreprises) de fournitures et équipements industriels divers",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3315Z",
+        "label": "Réparation et maintenance navale",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "2821Z",
+        "label": "Fabrication de fours et brûleurs",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "0142Z",
+        "label": "Élevage d'autres bovins et de buffles",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "3311Z",
+        "label": "Réparation d'ouvrages en métaux",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "5920Z",
+        "label": "Enregistrement sonore et édition musicale",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "TOTAL",
+        "label": "",
+        "clients_ko": 197,
+        "velos_ko": 238,
+        "nb_1velo": 185,
+        "nb_plus1velo": 12
+      }
+    ],
+    "en_attente": [
+      {
+        "code": "8559A",
+        "label": "Formation continue d'adultes",
+        "clients_ko": 2,
+        "velos_ko": 144,
+        "nb_1velo": 0,
+        "nb_plus1velo": 2
+      },
+      {
+        "code": "7010Z",
+        "label": "Activités des sièges sociaux",
+        "clients_ko": 9,
+        "velos_ko": 97,
+        "nb_1velo": 0,
+        "nb_plus1velo": 9
+      },
+      {
+        "code": "8010Z",
+        "label": "Activités de sécurité privée",
+        "clients_ko": 2,
+        "velos_ko": 56,
+        "nb_1velo": 0,
+        "nb_plus1velo": 2
+      },
+      {
+        "code": "4730Z",
+        "label": "Commerce de détail de carburants en magasin spécialisé",
+        "clients_ko": 3,
+        "velos_ko": 44,
+        "nb_1velo": 0,
+        "nb_plus1velo": 3
+      },
+      {
+        "code": "8690A",
+        "label": "Ambulances",
+        "clients_ko": 1,
+        "velos_ko": 24,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "2512Z",
+        "label": "Fabrication de portes et fenêtres en métal",
+        "clients_ko": 2,
+        "velos_ko": 19,
+        "nb_1velo": 0,
+        "nb_plus1velo": 2
+      },
+      {
+        "code": "8622C",
+        "label": "Autres activités des médecins spécialistes",
+        "clients_ko": 2,
+        "velos_ko": 17,
+        "nb_1velo": 0,
+        "nb_plus1velo": 2
+      },
+      {
+        "code": "4642Z",
+        "label": "Commerce de gros (commerce interentreprises) d'habillement et de chaussures",
+        "clients_ko": 1,
+        "velos_ko": 6,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4391A",
+        "label": "Travaux de charpente",
+        "clients_ko": 1,
+        "velos_ko": 6,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4941A",
+        "label": "Transports routiers de fret interurbains",
+        "clients_ko": 2,
+        "velos_ko": 5,
+        "nb_1velo": 0,
+        "nb_plus1velo": 2
+      },
+      {
+        "code": "6820B",
+        "label": "Location de terrains et d'autres biens immobiliers",
+        "clients_ko": 1,
+        "velos_ko": 5,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4120B",
+        "label": "Construction d'autres bâtiments",
+        "clients_ko": 1,
+        "velos_ko": 4,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4322B",
+        "label": "Travaux d' installation d'équipements thermiques et de climatisation",
+        "clients_ko": 1,
+        "velos_ko": 3,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "6619B",
+        "label": "Autres activités auxiliaires de services financiers, hors assurance et caisses de retraite, n.c.a.",
+        "clients_ko": 1,
+        "velos_ko": 2,
+        "nb_1velo": 0,
+        "nb_plus1velo": 1
+      },
+      {
+        "code": "4399E",
+        "label": "Location avec opérateur de matériel de construction",
+        "clients_ko": 1,
+        "velos_ko": 1,
+        "nb_1velo": 1,
+        "nb_plus1velo": 0
+      },
+      {
+        "code": "TOTAL",
+        "label": "",
+        "clients_ko": 30,
+        "velos_ko": 433,
+        "nb_1velo": 1,
+        "nb_plus1velo": 29
+      }
+    ]
+  }
+}

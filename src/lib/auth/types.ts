@@ -4,9 +4,11 @@ export interface AuthUser {
   id: string
   email: string
   role: UserRole
+  is_super_admin: boolean
   nom?: string | null
   prenom?: string | null
   territoire?: Departement | null
+  departement?: string | null
   depot_id?: string | null
   actif: boolean
 }
@@ -18,7 +20,7 @@ export interface AuthSession {
 
 // Permissions par rôle
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
-  admin_general: [
+  super_admin: [
     'view:all',
     'edit:all',
     'delete:all',
@@ -28,24 +30,18 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'sync:monday',
     'export:data',
   ],
-  admin_regional: [
-    'view:territory',
-    'edit:territory',
-    'manage:users:territory',
-    'manage:depots:territory',
-    'view:reports:territory',
-    'export:data:territory',
+  admin: [
+    'view:all',
+    'edit:all',
+    'manage:users',
+    'view:all_territories',
+    'export:data',
   ],
-  agent_regional: [
+  agent_secteur: [
     'view:territory',
     'edit:clients:territory',
     'manage:livraisons:territory',
     'view:reports:territory',
-  ],
-  agent_depot: [
-    'view:depot',
-    'edit:livraisons:depot',
-    'manage:stock:depot',
   ],
   livreur: [
     'view:livraisons:assigned',
@@ -61,22 +57,20 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   ],
 }
 
-// Hiérarchie des rôles (pour vérifier si un rôle peut en gérer un autre)
+// Hiérarchie des rôles
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  admin_general: 100,
-  admin_regional: 80,
-  agent_regional: 60,
-  agent_depot: 40,
+  super_admin: 100,
+  admin: 80,
+  agent_secteur: 60,
   livreur: 20,
   client: 10,
 }
 
 // Routes par défaut après connexion
 export const DEFAULT_ROUTES: Record<UserRole, string> = {
-  admin_general: '/admin/dashboard',
-  admin_regional: '/admin/dashboard',
-  agent_regional: '/admin/clients',
-  agent_depot: '/admin/depot',
+  super_admin: '/admin/dashboard',
+  admin: '/admin/dashboard',
+  agent_secteur: '/admin/clients',
   livreur: '/admin/livraisons',
   client: '/client/dashboard',
 }
@@ -84,9 +78,9 @@ export const DEFAULT_ROUTES: Record<UserRole, string> = {
 // Routes protégées par rôle minimum
 export const PROTECTED_ROUTES: { path: string; minRole: UserRole }[] = [
   { path: '/admin', minRole: 'livreur' },
-  { path: '/admin/users', minRole: 'admin_regional' },
-  { path: '/admin/depots', minRole: 'admin_regional' },
-  { path: '/admin/settings', minRole: 'admin_general' },
-  { path: '/admin/sync', minRole: 'admin_general' },
+  { path: '/admin/users', minRole: 'admin' },
+  { path: '/admin/depots', minRole: 'super_admin' },
+  { path: '/admin/settings', minRole: 'super_admin' },
+  { path: '/admin/sync', minRole: 'super_admin' },
   { path: '/client', minRole: 'client' },
 ]

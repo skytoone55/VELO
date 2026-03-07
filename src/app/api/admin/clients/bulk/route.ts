@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['admin_general', 'admin_regional', 'agent_regional'].includes(profile.role)) {
+    if (!profile || !['super_admin', 'admin', 'agent_secteur'].includes(profile.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
@@ -66,8 +66,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erreur récupération clients' }, { status: 500 })
     }
 
-    // Vérifier les permissions territoriales pour admin_regional
-    if (profile.role === 'admin_regional') {
+    // Vérifier les permissions territoriales pour admin
+    if (profile.role === 'admin') {
       const unauthorizedClients = clients.filter(c => c.departement !== profile.territoire)
       if (unauthorizedClients.length > 0) {
         return NextResponse.json({

@@ -68,10 +68,9 @@ export const MONDAY_SYNC = {
 // RÔLES UTILISATEURS
 // =================================================================
 export const USER_ROLES = {
-  admin_general: 'Admin Général',
-  admin_regional: 'Admin Régional',
-  agent_regional: 'Agent Régional',
-  agent_depot: 'Agent Dépôt',
+  super_admin: 'Super Admin',
+  admin: 'Administrateur',
+  agent_secteur: 'Agent Secteur',
   livreur: 'Livreur',
   client: 'Client',
 } as const
@@ -144,10 +143,9 @@ export type DeliveryMode = keyof typeof DELIVERY_MODES
 // COULEURS PAR RÔLE (pour les badges)
 // =================================================================
 export const ROLE_COLORS: Record<UserRole, string> = {
-  admin_general: 'bg-purple-100 text-purple-800',
-  admin_regional: 'bg-indigo-100 text-indigo-800',
-  agent_regional: 'bg-blue-100 text-blue-800',
-  agent_depot: 'bg-cyan-100 text-cyan-800',
+  super_admin: 'bg-purple-100 text-purple-800',
+  admin: 'bg-indigo-100 text-indigo-800',
+  agent_secteur: 'bg-blue-100 text-blue-800',
   livreur: 'bg-teal-100 text-teal-800',
   client: 'bg-gray-100 text-gray-800',
 }

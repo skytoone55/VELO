@@ -22,7 +22,7 @@ export default async function AdminLayout({
   // Utiliser des champs spécifiques au lieu de '*' pour optimiser
   const { data: profile, error } = await supabase
     .from('users_profile')
-    .select('id, email, role, nom, prenom, territoire, depot_id, actif')
+    .select('id, email, role, is_super_admin, nom, prenom, territoire, departement, depot_id, actif')
     .eq('id', user.id)
     .single()
 
@@ -30,7 +30,6 @@ export default async function AdminLayout({
     console.error('Profile fetch error:', error)
   }
 
-  // Si pas de profil
   if (!profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -47,12 +46,10 @@ export default async function AdminLayout({
     )
   }
 
-  // Vérifier que l'utilisateur n'est pas un client
   if (profile.role === 'client') {
     redirect('/client/dashboard')
   }
 
-  // Vérifier que le compte est actif
   if (!profile.actif) {
     redirect('/auth/login?error=account_disabled')
   }
@@ -61,9 +58,11 @@ export default async function AdminLayout({
     id: profile.id,
     email: profile.email,
     role: profile.role as UserRole,
+    is_super_admin: profile.is_super_admin ?? false,
     nom: profile.nom,
     prenom: profile.prenom,
     territoire: profile.territoire,
+    departement: profile.departement ?? null,
     depot_id: profile.depot_id,
     actif: profile.actif ?? true,
   }

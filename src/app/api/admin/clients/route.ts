@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false })
 
     // Filtrer par territoire pour les non-admin généraux
-    if (profile.role === 'admin_regional' || profile.role === 'agent_regional') {
+    if (profile.role === 'admin' || profile.role === 'agent_secteur') {
       if (profile.territoire) {
         query = query.eq('departement', profile.territoire)
       }

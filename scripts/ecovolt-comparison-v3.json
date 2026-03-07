@@ -1,0 +1,7688 @@
+{
+  "counts": {
+    "excel": 1349,
+    "monday": 1188,
+    "matched": 1186,
+    "perfect": 620,
+    "mismatched": 566,
+    "missing": 163,
+    "orphans": 4,
+    "excel_dupes": 2
+  },
+  "sheet_counts": {
+    "ZNI": 1244,
+    "01-10-2025": 0,
+    "19-09-2025": 105
+  },
+  "orphans": [
+    {
+      "id": "10017581501",
+      "name": "LAURA BARBIER"
+    },
+    {
+      "id": "10017580183",
+      "name": "SOC COMMERCIALISATION DISTRIBUTION (SOCODIS)"
+    },
+    {
+      "id": "10017581079",
+      "name": "EDEN PHONE LAMENTIN"
+    },
+    {
+      "id": "10061905976",
+      "name": "DOSSIER TEST"
+    }
+  ],
+  "field_mismatch_counts": {
+    "Telephone": 551,
+    "Ref devis": 24,
+    "Ref interne": 25,
+    "Adresse": 13,
+    "Code postal": 8,
+    "SIRET": 3,
+    "Email": 4,
+    "Ville": 6
+  },
+  "mismatches_all": [
+    {
+      "name": "JORDAN CHAMAND",
+      "monday_name": "JORDAN CHAMAND",
+      "monday_id": "10017581660",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 01 62 67",
+          "monday": "0692016267"
+        }
+      }
+    },
+    {
+      "name": "PRESTARUN",
+      "monday_name": "PRESTARUN",
+      "monday_id": "10017581113",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 31 18 56",
+          "monday": "0692311856"
+        }
+      }
+    },
+    {
+      "name": "FREDERIC PAYET",
+      "monday_name": "FREDERIC PAYET",
+      "monday_id": "10017580673",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 47 38 32",
+          "monday": "0693473832"
+        }
+      }
+    },
+    {
+      "name": "LAILA IMACHE",
+      "monday_name": "LAILA IMACHE",
+      "monday_id": "10017580287",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 33 79 30",
+          "monday": "0692337930"
+        }
+      }
+    },
+    {
+      "name": "HUGO DALEAU SERY",
+      "monday_name": "HUGO DALEAU SERY",
+      "monday_id": "10017579784",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 40 23 99",
+          "monday": "0692402399"
+        }
+      }
+    },
+    {
+      "name": "NALIA (NALIA)",
+      "monday_name": "NALIA (NALIA)",
+      "monday_id": "10017581566",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 46 90 53",
+          "monday": "0693469053"
+        }
+      }
+    },
+    {
+      "name": "REUNION ESPACE VERT SUD",
+      "monday_name": "REUNION ESPACE VERT SUD",
+      "monday_id": "10017581495",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 66 79 92",
+          "monday": "0692667992"
+        }
+      }
+    },
+    {
+      "name": "FLEURS DE LIGNE",
+      "monday_name": "FLEURS DE LIGNE",
+      "monday_id": "10017581800",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 70 68 00",
+          "monday": "0692706800"
+        }
+      }
+    },
+    {
+      "name": "LE WOK ST JO",
+      "monday_name": "LE WOK ST JO",
+      "monday_id": "10017581769",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 25 64 29",
+          "monday": "0692256429"
+        }
+      }
+    },
+    {
+      "name": "JANNICK COURTOIS",
+      "monday_name": "JANNICK COURTOIS",
+      "monday_id": "10017581364",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 68 23 37",
+          "monday": "0692682337"
+        }
+      }
+    },
+    {
+      "name": "LES AILES DES LAVES",
+      "monday_name": "LES AILES DES LAVES",
+      "monday_id": "10017582219",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 81 54 42",
+          "monday": "0692815442"
+        }
+      }
+    },
+    {
+      "name": "LBDB 974",
+      "monday_name": "LBDB 974",
+      "monday_id": "10017581928",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 84 29 06",
+          "monday": "0693842906"
+        },
+        "Ref devis": {
+          "excel": "D10057779-427",
+          "monday": "KL2G67PNACKXV37"
+        }
+      }
+    },
+    {
+      "name": "MAHMAD GOLAM HOSEN",
+      "monday_name": "MAHMAD GOLAM HOSEN",
+      "monday_id": "10017580096",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 14 19 30",
+          "monday": "0692141930"
+        }
+      }
+    },
+    {
+      "name": "SANDRINE BRUGEL",
+      "monday_name": "SANDRINE BRUGEL",
+      "monday_id": "10017581540",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 67 34 93",
+          "monday": "0692673493"
+        }
+      }
+    },
+    {
+      "name": "PRISCILLA THIA KON FAT",
+      "monday_name": "PRISCILLA THIA KON FAT",
+      "monday_id": "10017580687",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 08 08 33",
+          "monday": "0692080833"
+        }
+      }
+    },
+    {
+      "name": "FREDERIC RANGAMA",
+      "monday_name": "FREDERIC RANGAMA",
+      "monday_id": "10017581325",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 14 82 64",
+          "monday": "0692148264"
+        }
+      }
+    },
+    {
+      "name": "ALEXANDRE PAYET",
+      "monday_name": "ALEXANDRE PAYET",
+      "monday_id": "10017580705",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 00 42 77",
+          "monday": "0693004277"
+        }
+      }
+    },
+    {
+      "name": "GREGORY TAOCHY",
+      "monday_name": "GREGORY TAOCHY",
+      "monday_id": "10017580458",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 86 20 92",
+          "monday": "0692862092"
+        }
+      }
+    },
+    {
+      "name": "JEAN LEPINAY",
+      "monday_name": "JEAN LEPINAY",
+      "monday_id": "10017580655",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 30 78 94",
+          "monday": "0692307894"
+        }
+      }
+    },
+    {
+      "name": "LAETITIA SITTLER",
+      "monday_name": "LAETITIA SITTLER",
+      "monday_id": "10017579717",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 81 87 39",
+          "monday": "0693818739"
+        }
+      }
+    },
+    {
+      "name": "ASSOCIATION DE JIU-JITSU BRESILIEN MARRON (AJJBM)",
+      "monday_name": "ASSOCIATION DE JIU-JITSU BRESILIEN MARRON (AJJBM)",
+      "monday_id": "10017579794",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 52 98 95",
+          "monday": "0692529895"
+        }
+      }
+    },
+    {
+      "name": "SALAD FACTORY",
+      "monday_name": "SALAD FACTORY",
+      "monday_id": "10017580781",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 03 67 69",
+          "monday": "0693036769"
+        }
+      }
+    },
+    {
+      "name": "KAZ METISSE",
+      "monday_name": "KAZ METISSE",
+      "monday_id": "10017579829",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 31 58 27",
+          "monday": "0693315827"
+        }
+      }
+    },
+    {
+      "name": "RESTAURANT KAZ METISSE",
+      "monday_name": "RESTAURANT KAZ METISSE",
+      "monday_id": "10017579912",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 31 58 27",
+          "monday": "0693315827"
+        }
+      }
+    },
+    {
+      "name": "MIRA LILA MAISONNIER",
+      "monday_name": "MIRA LILA MAISONNIER",
+      "monday_id": "10017580022",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 35 17 19",
+          "monday": "0692351719"
+        }
+      }
+    },
+    {
+      "name": "MARIE MOREL",
+      "monday_name": "MARIE MOREL",
+      "monday_id": "10017580075",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 20 76 52",
+          "monday": "0692207652"
+        }
+      }
+    },
+    {
+      "name": "JOHANN SAVRIAMA",
+      "monday_name": "JOHANN SAVRIAMA",
+      "monday_id": "10017581421",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 32 69 69",
+          "monday": "0693326969"
+        }
+      }
+    },
+    {
+      "name": "ETIENNE MAALIKI CONSEILS (EMC)",
+      "monday_name": "ETIENNE MAALIKI CONSEILS (EMC)",
+      "monday_id": "10017582045",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 86 27 52",
+          "monday": "0696862752"
+        }
+      }
+    },
+    {
+      "name": "O SAVEURS HABISSOISES (OSH)",
+      "monday_name": "O SAVEURS HABISSOISES (OSH)",
+      "monday_id": "10017579707",
+      "diffs": {
+        "Ref interne": {
+          "excel": "13128650.0",
+          "monday": "1319f40f"
+        },
+        "Ref devis": {
+          "excel": "D10058202-828",
+          "monday": "D10058883-1507"
+        }
+      }
+    },
+    {
+      "name": "PORTOFINO",
+      "monday_name": "PORTOFINO",
+      "monday_id": "10017581821",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 38 41 14",
+          "monday": "0696384114"
+        }
+      }
+    },
+    {
+      "name": "FOOD DISTRIBUTION MARTINIQUE (F.D.M.)",
+      "monday_name": "FOOD DISTRIBUTION MARTINIQUE (F.D.M.)",
+      "monday_id": "10017581944",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 38 41 14",
+          "monday": "0696384114"
+        }
+      }
+    },
+    {
+      "name": "HMR",
+      "monday_name": "HMR",
+      "monday_id": "10017581854",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 38 41 14",
+          "monday": "0696384114"
+        }
+      }
+    },
+    {
+      "name": "PICCOLO PORTOFINO",
+      "monday_name": "PICCOLO PORTOFINO",
+      "monday_id": "10017581892",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 38 41 14",
+          "monday": "0696384114"
+        }
+      }
+    },
+    {
+      "name": "ASSOCIATION LES MAILLONS DE L'ESPOIR",
+      "monday_name": "ASSOCIATION LES MAILLONS DE L'ESPOIR",
+      "monday_id": "10017582075",
+      "diffs": {
+        "Ref interne": {
+          "excel": "1312b9a5",
+          "monday": "(vide)"
+        }
+      }
+    },
+    {
+      "name": "SOIZIC COUDIERE",
+      "monday_name": "SOIZIC COUDIERE",
+      "monday_id": "10017581222",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 32 77 64",
+          "monday": "0692327764"
+        }
+      }
+    },
+    {
+      "name": "KEVIN RIVIERE",
+      "monday_name": "KEVIN RIVIERE",
+      "monday_id": "10017581454",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 86 13 92",
+          "monday": "0693861392"
+        }
+      }
+    },
+    {
+      "name": "DONATIEN LANGEVILLIER",
+      "monday_name": "DONATIEN LANGEVILLIER",
+      "monday_id": "10017581684",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 79 98 44",
+          "monday": "0692799844"
+        },
+        "Adresse": {
+          "excel": "SAINT GILLES LES HAUTS",
+          "monday": "69 CHEMIN DES EUCALYPTUS"
+        },
+        "Code postal": {
+          "excel": "97435.0",
+          "monday": "97422"
+        },
+        "Ref interne": {
+          "excel": "131c4af8",
+          "monday": "131b8dfc"
+        },
+        "Ref devis": {
+          "excel": "D10058265-891",
+          "monday": "D10058270-896"
+        }
+      }
+    },
+    {
+      "name": "LUDOVIC GEREONE",
+      "monday_name": "LUDOVIC GEREONE",
+      "monday_id": "10017581991",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 20 40 35",
+          "monday": "0692204035"
+        }
+      }
+    },
+    {
+      "name": "DONATIEN LANGEVILLIER",
+      "monday_name": "DONATIEN LANGEVILLIER",
+      "monday_id": "10017581720",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 79 98 44",
+          "monday": "0692799844"
+        },
+        "Adresse": {
+          "excel": "69 CHEMIN DES EUCALYPTUS",
+          "monday": "SAINT GILLES LES HAUTS"
+        },
+        "Code postal": {
+          "excel": "97422.0",
+          "monday": "97435"
+        },
+        "Ref interne": {
+          "excel": "131b8dfc",
+          "monday": "131c4af8"
+        },
+        "Ref devis": {
+          "excel": "D10058270-896",
+          "monday": "D10058265-891"
+        }
+      }
+    },
+    {
+      "name": "GERMAIN PAYET",
+      "monday_name": "GERMAIN PAYET",
+      "monday_id": "10017580544",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 66 19 36",
+          "monday": "0692661936"
+        }
+      }
+    },
+    {
+      "name": "REUNION TRANSPORT BETON (RTB)",
+      "monday_name": "REUNION TRANSPORT BETON (RTB)",
+      "monday_id": "10017580376",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 35 39 12",
+          "monday": "0692353912"
+        }
+      }
+    },
+    {
+      "name": "PONSODA NICOLAS",
+      "monday_name": "PONSODA NICOLAS",
+      "monday_id": "10017579903",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 53 28 33",
+          "monday": "0696532833"
+        }
+      }
+    },
+    {
+      "name": "KAY BEBEL",
+      "monday_name": "KAY BEBEL",
+      "monday_id": "10017580113",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 67 76 09",
+          "monday": "0696677609"
+        }
+      }
+    },
+    {
+      "name": "DGJA RESTAURATION",
+      "monday_name": "DGJA RESTAURATION",
+      "monday_id": "10017580020",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 85 99 59",
+          "monday": "0696859959"
+        }
+      }
+    },
+    {
+      "name": "D.G ELEC 972",
+      "monday_name": "D.G ELEC 972",
+      "monday_id": "10017579991",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 85 99 59",
+          "monday": "0696859959"
+        }
+      }
+    },
+    {
+      "name": "J.K CONSTRUCTION RENOVATION (J.K)",
+      "monday_name": "J.K CONSTRUCTION RENOVATION (J.K)",
+      "monday_id": "10017580888",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 74 55 94",
+          "monday": "0696745594"
+        }
+      }
+    },
+    {
+      "name": "MICHAEL REBECCAI",
+      "monday_name": "MICHAEL REBECCAI",
+      "monday_id": "10017581704",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "AMR IMMO",
+      "monday_name": "AMR IMMO",
+      "monday_id": "10017580450",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "SENSY",
+      "monday_name": "SENSY",
+      "monday_id": "10017581041",
+      "diffs": {
+        "Ref devis": {
+          "excel": "D10058412-1036",
+          "monday": "953 171 634 00017"
+        }
+      }
+    },
+    {
+      "name": "DAN BANG FAMILY",
+      "monday_name": "DAN BANG FAMILY",
+      "monday_id": "10017580588",
+      "diffs": {
+        "Telephone": {
+          "excel": "5946 94 99 55 77",
+          "monday": "0694995577"
+        }
+      }
+    },
+    {
+      "name": "EDEN SAINT LAURENT",
+      "monday_name": "EDEN SAINT LAURENT",
+      "monday_id": "10017582121",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "MILLENIUM BARBER",
+      "monday_name": "MILLENIUM BARBER",
+      "monday_id": "10017581018",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 91 27 22 63",
+          "monday": "0691272263"
+        }
+      }
+    },
+    {
+      "name": "AMR SOLUTION & SECURITE",
+      "monday_name": "AMR SOLUTION & SECURITE",
+      "monday_id": "10017580253",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "MR CALL CENTER",
+      "monday_name": "MR CALL CENTER",
+      "monday_id": "10017580581",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "WORLD IMPORT",
+      "monday_name": "WORLD IMPORT",
+      "monday_id": "10017580282",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "JEAN LETROIS DENTIKA",
+      "monday_name": "JEAN LETROIS DENTIKA",
+      "monday_id": "10017581380",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 91 23 28 20",
+          "monday": "0691232820"
+        }
+      }
+    },
+    {
+      "name": "AMR BTP 973",
+      "monday_name": "AMR BTP 973",
+      "monday_id": "10017580307",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "GRAND LARGE",
+      "monday_name": "GRAND LARGE",
+      "monday_id": "10017581743",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "GUYANE SOLUTION MONETIQUE ET INFORMATIQUE (GSMI)",
+      "monday_name": "GUYANE SOLUTION MONETIQUE ET INFORMATIQUE (GSMI)",
+      "monday_id": "10017581919",
+      "diffs": {
+        "Telephone": {
+          "excel": "5946 94 29 55 01",
+          "monday": "0694295501"
+        }
+      }
+    },
+    {
+      "name": "ECO LOC",
+      "monday_name": "ECO LOC",
+      "monday_id": "10017579813",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "LOCA SCOOT",
+      "monday_name": "LOCA SCOOT",
+      "monday_id": "10017579844",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "PONTE FORT",
+      "monday_name": "PONTE FORT",
+      "monday_id": "10017581935",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "LES PECHEURS",
+      "monday_name": "LES PECHEURS",
+      "monday_id": "10017581874",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "MANUEL ADELO",
+      "monday_name": "MANUEL ADELO",
+      "monday_id": "10017580886",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 13 14 63",
+          "monday": "0690131463"
+        }
+      }
+    },
+    {
+      "name": "POINTE FORT",
+      "monday_name": "POINTE FORT",
+      "monday_id": "10017580503",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "BAIA BY A",
+      "monday_name": "BAIA BY A",
+      "monday_id": "10017581624",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 80 46 44 99",
+          "monday": "0680464499"
+        }
+      }
+    },
+    {
+      "name": "SARL MADAM",
+      "monday_name": "SARL MADAM",
+      "monday_id": "10017581181",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 80 46 44 99",
+          "monday": "0680464499"
+        }
+      }
+    },
+    {
+      "name": "SOCIETE DE TELESURVEILLANCE ET DE SECURITE (S.T.S)",
+      "monday_name": "SOCIETE DE TELESURVEILLANCE ET DE SECURITE (S.T.S)",
+      "monday_id": "10017581559",
+      "diffs": {
+        "Telephone": {
+          "excel": "5946 94 20 62 60",
+          "monday": "0694206260"
+        }
+      }
+    },
+    {
+      "name": "ARNIE",
+      "monday_name": "ARNIE",
+      "monday_id": "10017581604",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 80 46 44 99",
+          "monday": "0680464499"
+        }
+      }
+    },
+    {
+      "name": "LOC HGY",
+      "monday_name": "LOC HGY",
+      "monday_id": "10017581261",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 10 91 83",
+          "monday": "0696109183"
+        }
+      }
+    },
+    {
+      "name": "ATTA",
+      "monday_name": "ATTA",
+      "monday_id": "10017581333",
+      "diffs": {
+        "Telephone": {
+          "excel": "5946 94 06 94 40",
+          "monday": "0694069440"
+        }
+      }
+    },
+    {
+      "name": "LE BELVEDERE DE L'AUTRE-BORD",
+      "monday_name": "LE BELVEDERE DE L'AUTRE-BORD",
+      "monday_id": "10017581484",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 65 64 28",
+          "monday": "0690656428"
+        }
+      }
+    },
+    {
+      "name": "ANNIE TRAVERT",
+      "monday_name": "ANNIE TRAVERT",
+      "monday_id": "10017581155",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 80 46 44 99",
+          "monday": "0680464499"
+        }
+      }
+    },
+    {
+      "name": "SC RTP+",
+      "monday_name": "SC RTP+",
+      "monday_id": "10017580330",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 15 42 74",
+          "monday": "0690154274"
+        }
+      }
+    },
+    {
+      "name": "WORLD TECH",
+      "monday_name": "WORLD TECH",
+      "monday_id": "10017580344",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "WORLD BUILDING",
+      "monday_name": "WORLD BUILDING",
+      "monday_id": "10017580416",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "BOUCHERIE RABOTEUR (B R)",
+      "monday_name": "BOUCHERIE RABOTEUR (B R)",
+      "monday_id": "10017580463",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 20 79 98",
+          "monday": "0690207998"
+        }
+      }
+    },
+    {
+      "name": "SCOOT CITY",
+      "monday_name": "SCOOT CITY",
+      "monday_id": "10017580246",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "AGENCE DE COMMUNICATION ET EVENEMENTIEL (COM'EVENTS)",
+      "monday_name": "AGENCE DE COMMUNICATION ET EVENEMENTIEL (COM'EVENTS)",
+      "monday_id": "10017579852",
+      "diffs": {
+        "Telephone": {
+          "excel": "5946 94 40 02 44",
+          "monday": "0694400244"
+        },
+        "Ref interne": {
+          "excel": "1311cd38",
+          "monday": "131545a0"
+        },
+        "Ref devis": {
+          "excel": "D10058481-1105",
+          "monday": "D10058881-1505"
+        }
+      }
+    },
+    {
+      "name": "SANDRA JEAN-FRANCOIS",
+      "monday_name": "SANDRA JEAN-FRANCOIS",
+      "monday_id": "10017581963",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 88 05 77",
+          "monday": "0696880577"
+        }
+      }
+    },
+    {
+      "name": "RENT SUN CAR",
+      "monday_name": "RENT SUN CAR",
+      "monday_id": "10017580137",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "ELEC SCOOT",
+      "monday_name": "ELEC SCOOT",
+      "monday_id": "10017580029",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "EMERAUDE IMAGERIES",
+      "monday_name": "EMERAUDE IMAGERIES",
+      "monday_id": "10017581458",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 65 64 28",
+          "monday": "0690656428"
+        }
+      }
+    },
+    {
+      "name": "ENERGIA SCOOT",
+      "monday_name": "ENERGIA SCOOT",
+      "monday_id": "10017580175",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "PALM BEACH",
+      "monday_name": "PALM BEACH",
+      "monday_id": "10017580071",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 71 76 95",
+          "monday": "0690717695"
+        }
+      }
+    },
+    {
+      "name": "MT PRODUCTION (MT)",
+      "monday_name": "MT PRODUCTION (MT)",
+      "monday_id": "10017580868",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 07 88 87",
+          "monday": "0690078887"
+        }
+      }
+    },
+    {
+      "name": "KYU KAZAN DOJO",
+      "monday_name": "KYU KAZAN DOJO",
+      "monday_id": "10017580091",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 60 81 12",
+          "monday": "0693608112"
+        }
+      }
+    },
+    {
+      "name": "SCOOT AND FUN",
+      "monday_name": "SCOOT AND FUN",
+      "monday_id": "10017580104",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "EDEN PHONE GUYANE",
+      "monday_name": "EDEN PHONE GUYANE",
+      "monday_id": "10017581675",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 94 12 97",
+          "monday": "0696941297"
+        }
+      }
+    },
+    {
+      "name": "BIKE LIFE",
+      "monday_name": "BIKE LIFE",
+      "monday_id": "10017579921",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "LUCIENNE EPHREM",
+      "monday_name": "LUCIENNE EPHREM",
+      "monday_id": "10017581027",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 91 76 30",
+          "monday": "0690917630"
+        }
+      }
+    },
+    {
+      "name": "WORLD SAV",
+      "monday_name": "WORLD SAV",
+      "monday_id": "10017580382",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "SASU NOVA CONCEPT STORE",
+      "monday_name": "SASU NOVA CONCEPT STORE",
+      "monday_id": "10017581765",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 94 12 97",
+          "monday": "0696941297"
+        }
+      }
+    },
+    {
+      "name": "ENR BUILDING",
+      "monday_name": "ENR BUILDING",
+      "monday_id": "10017580311",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "SKY LINE RENTAL (SLR)",
+      "monday_name": "SKY LINE RENTAL (SLR)",
+      "monday_id": "10017580368",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 58 99 44",
+          "monday": "0690589944"
+        }
+      }
+    },
+    {
+      "name": "PRIMEUR DES SAINTES",
+      "monday_name": "PRIMEUR DES SAINTES",
+      "monday_id": "10017580395",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 58 99 44",
+          "monday": "0690589944"
+        }
+      }
+    },
+    {
+      "name": "FIRMATTO",
+      "monday_name": "FIRMATTO",
+      "monday_id": "10017582127",
+      "diffs": {
+        "Telephone": {
+          "excel": "5946 94 01 77 36",
+          "monday": "0694017736"
+        }
+      }
+    },
+    {
+      "name": "ENR FREE MARTINIQUE",
+      "monday_name": "ENR FREE MARTINIQUE",
+      "monday_id": "10017581703",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 94 12 97",
+          "monday": "0696941297"
+        }
+      }
+    },
+    {
+      "name": "GDU HOLDING",
+      "monday_name": "GDU HOLDING",
+      "monday_id": "10017581850",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 94 12 97",
+          "monday": "0696941297"
+        }
+      }
+    },
+    {
+      "name": "LE POINT VERT 2.0",
+      "monday_name": "LE POINT VERT 2.0",
+      "monday_id": "10017581985",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 14 72 71",
+          "monday": "0690147271"
+        }
+      }
+    },
+    {
+      "name": "IPM ANTILLES GUYANE",
+      "monday_name": "IPM ANTILLES GUYANE",
+      "monday_id": "10017581236",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 11 73",
+          "monday": "0696441173"
+        }
+      }
+    },
+    {
+      "name": "MPS+ (MPS+)",
+      "monday_name": "MPS+ (MPS+)",
+      "monday_id": "10017580366",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 15 42 74",
+          "monday": "0690154274"
+        }
+      }
+    },
+    {
+      "name": "SOCIETE NOUVELLE PAPETERIE DES CARAIBES",
+      "monday_name": "SOCIETE NOUVELLE PAPETERIE DES CARAIBES",
+      "monday_id": "10017580971",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 11 73",
+          "monday": "0696441173"
+        }
+      }
+    },
+    {
+      "name": "SCI LA COLLINE",
+      "monday_name": "SCI LA COLLINE",
+      "monday_id": "10017582062",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "SCI ROUTE DU PHARE",
+      "monday_name": "SCI ROUTE DU PHARE",
+      "monday_id": "10017582014",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "DEPOTS SCHOELCHER",
+      "monday_name": "DEPOTS SCHOELCHER",
+      "monday_id": "10017581907",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "SCI LES TROPIQUES",
+      "monday_name": "SCI LES TROPIQUES",
+      "monday_id": "10017582042",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "SAURAYE DEVELOPPEMENT (SDVP)",
+      "monday_name": "SAURAYE DEVELOPPEMENT (SDVP)",
+      "monday_id": "10017581199",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 55 81 52",
+          "monday": "0690558152"
+        }
+      }
+    },
+    {
+      "name": "SCI CHERUBIN",
+      "monday_name": "SCI CHERUBIN",
+      "monday_id": "10017581988",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "SCI LARIVOT",
+      "monday_name": "SCI LARIVOT",
+      "monday_id": "10017579741",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "JMR IMMOBILIER",
+      "monday_name": "JMR IMMOBILIER",
+      "monday_id": "10017581664",
+      "diffs": {
+        "Telephone": {
+          "excel": "178 69 60 51 14",
+          "monday": "0869605114"
+        }
+      }
+    },
+    {
+      "name": "S.E.L MARIE DURET",
+      "monday_name": "S.E.L MARIE DURET",
+      "monday_id": "10017580568",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 93 76 14",
+          "monday": "0693937614"
+        }
+      }
+    },
+    {
+      "name": "SCI CONSEIL",
+      "monday_name": "SCI CONSEIL",
+      "monday_id": "10017582217",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "ALMR GLOBAL CONSULTING",
+      "monday_name": "ALMR GLOBAL CONSULTING",
+      "monday_id": "10017582195",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "LUCAS ETENNA",
+      "monday_name": "LUCAS ETENNA",
+      "monday_id": "10017581271",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 58 43 66",
+          "monday": "0690584366"
+        }
+      }
+    },
+    {
+      "name": "GREEN LOC",
+      "monday_name": "GREEN LOC",
+      "monday_id": "10017580676",
+      "diffs": {
+        "SIRET": {
+          "excel": "921509923.0",
+          "monday": "93814128000017"
+        },
+        "Email": {
+          "excel": "m.rebeccai@hotmail.fr",
+          "monday": "contact@greenrocket.re"
+        },
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0760394011"
+        },
+        "Adresse": {
+          "excel": "42 BOULEVARD SAINTE CATHERINE",
+          "monday": "17 ROUTE DES EUCALYPTUS"
+        },
+        "Code postal": {
+          "excel": "97200.0",
+          "monday": "97400"
+        },
+        "Ville": {
+          "excel": "FORT-DE-FRANCE",
+          "monday": "SAINT-DENIS"
+        },
+        "Ref interne": {
+          "excel": "1311d75f",
+          "monday": "1314f2a6"
+        },
+        "Ref devis": {
+          "excel": "D10058579-1203",
+          "monday": "D10058783-1407"
+        }
+      }
+    },
+    {
+      "name": "COCO LOC",
+      "monday_name": "COCO LOC",
+      "monday_id": "10017579957",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "COOL SCOOT",
+      "monday_name": "COOL SCOOT",
+      "monday_id": "10017579993",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "M'TON SCOOT",
+      "monday_name": "M'TON SCOOT",
+      "monday_id": "10017580281",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "DAVID DARIVON",
+      "monday_name": "DAVID DARIVON",
+      "monday_id": "10017580346",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 77 12 03",
+          "monday": "0696771203"
+        }
+      }
+    },
+    {
+      "name": "HERPIE SARL",
+      "monday_name": "HERPIE SARL",
+      "monday_id": "10017581208",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 11 73",
+          "monday": "0696441173"
+        }
+      }
+    },
+    {
+      "name": "BON AIR CITY",
+      "monday_name": "BON AIR CITY",
+      "monday_id": "10017580053",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 73 82 58",
+          "monday": "0696738258"
+        }
+      }
+    },
+    {
+      "name": "ON THE ROAD",
+      "monday_name": "ON THE ROAD",
+      "monday_id": "10017580214",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "SCOOT & LOC",
+      "monday_name": "SCOOT & LOC",
+      "monday_id": "10017580062",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "PCL",
+      "monday_name": "PCL",
+      "monday_id": "10017581030",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 11 73",
+          "monday": "0696441173"
+        }
+      }
+    },
+    {
+      "name": "MOBIDEN",
+      "monday_name": "MOBIDEN",
+      "monday_id": "10017581194",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 11 73",
+          "monday": "0696441173"
+        }
+      }
+    },
+    {
+      "name": "AMR VIDEASTE",
+      "monday_name": "AMR VIDEASTE",
+      "monday_id": "10017582100",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "EDEN@PHONE",
+      "monday_name": "EDEN@PHONE",
+      "monday_id": "10017581053",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 11 73",
+          "monday": "0696441173"
+        }
+      }
+    },
+    {
+      "name": "ALMR YACHTING",
+      "monday_name": "ALMR YACHTING",
+      "monday_id": "10017581810",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "boudin an nou",
+      "monday_name": "boudin an nou",
+      "monday_id": "10017580782",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 91 23 85 15",
+          "monday": "0691238515"
+        }
+      }
+    },
+    {
+      "name": "AMR ENTREPOSAGE AND CO",
+      "monday_name": "AMR ENTREPOSAGE AND CO",
+      "monday_id": "10017582239",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "JAP'AUTO",
+      "monday_name": "JAP'AUTO",
+      "monday_id": "10017581032",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 74 61 74",
+          "monday": "0696746174"
+        }
+      }
+    },
+    {
+      "name": "EDEN STORE 1 SASU",
+      "monday_name": "EDEN STORE 1 SASU",
+      "monday_id": "10017581136",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 11 73",
+          "monday": "0696441173"
+        }
+      }
+    },
+    {
+      "name": "JONATHAN ALAVIN",
+      "monday_name": "JONATHAN ALAVIN",
+      "monday_id": "10017581177",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 12 41 11",
+          "monday": "0692124111"
+        }
+      }
+    },
+    {
+      "name": "FLORENT FLAVIER",
+      "monday_name": "FLORENT FLAVIER",
+      "monday_id": "10017580034",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 09 12 23",
+          "monday": "0696091223"
+        }
+      }
+    },
+    {
+      "name": "REP55",
+      "monday_name": "REP55",
+      "monday_id": "10017581109",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 11 73",
+          "monday": "0696441173"
+        }
+      }
+    },
+    {
+      "name": "GAEL EDON",
+      "monday_name": "GAEL EDON",
+      "monday_id": "10017580672",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 69 12 57",
+          "monday": "0690691257"
+        }
+      }
+    },
+    {
+      "name": "DAMUR IMPORT",
+      "monday_name": "DAMUR IMPORT",
+      "monday_id": "10017582166",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "HOLDING AMR BROTHERS",
+      "monday_name": "HOLDING AMR BROTHERS",
+      "monday_id": "10017582255",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "YANNICK TOUSSAINT",
+      "monday_name": "YANNICK TOUSSAINT",
+      "monday_id": "10017581009",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 22 19 09",
+          "monday": "0696221909"
+        }
+      }
+    },
+    {
+      "name": "VINBERGE SAS",
+      "monday_name": "VINBERGE SAS",
+      "monday_id": "10017581000",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 11 73",
+          "monday": "0696441173"
+        }
+      }
+    },
+    {
+      "name": "DAMUR BTP 972",
+      "monday_name": "DAMUR BTP 972",
+      "monday_id": "10017582143",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "EDEN STORE PROVIDENCE",
+      "monday_name": "EDEN STORE PROVIDENCE",
+      "monday_id": "10017581165",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 11 73",
+          "monday": "0696441173"
+        }
+      }
+    },
+    {
+      "name": "AMR ENERGIE",
+      "monday_name": "AMR ENERGIE",
+      "monday_id": "10017582078",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "WORLD BTP",
+      "monday_name": "WORLD BTP",
+      "monday_id": "10017580026",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "CIE MARTINIQUAISE DE DISTRIBUTION (COMADI)",
+      "monday_name": "CIE MARTINIQUAISE DE DISTRIBUTION (COMADI)",
+      "monday_id": "10017582054",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 35 09 78",
+          "monday": "0690350978"
+        }
+      }
+    },
+    {
+      "name": "romain martin insular",
+      "monday_name": "romain martin insular",
+      "monday_id": "10017580671",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 63 44 95",
+          "monday": "0692634495"
+        }
+      }
+    },
+    {
+      "name": "LA CAYENNAISE DE DISTRIBUTION (LCD)",
+      "monday_name": "LA CAYENNAISE DE DISTRIBUTION (LCD)",
+      "monday_id": "10017579792",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 35 09 78",
+          "monday": "0690350978"
+        }
+      }
+    },
+    {
+      "name": "DISTRIMO",
+      "monday_name": "DISTRIMO",
+      "monday_id": "10017579883",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 35 09 78",
+          "monday": "0690350978"
+        }
+      }
+    },
+    {
+      "name": "ASSOCIATION PATRONAGE MARTINIQUE (APM)",
+      "monday_name": "ASSOCIATION PATRONAGE MARTINIQUE (APM)",
+      "monday_id": "10017579885",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 67 15 79",
+          "monday": "0696671579"
+        }
+      }
+    },
+    {
+      "name": "LA GUADELOUPEENNE DE DISTRIBUTION (LGD)",
+      "monday_name": "LA GUADELOUPEENNE DE DISTRIBUTION (LGD)",
+      "monday_id": "10017582083",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 35 09 78",
+          "monday": "0690350978"
+        }
+      }
+    },
+    {
+      "name": "GUADELOUPE MOBILIER (GUAMOB)",
+      "monday_name": "GUADELOUPE MOBILIER (GUAMOB)",
+      "monday_id": "10017579822",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 35 09 78",
+          "monday": "0690350978"
+        }
+      }
+    },
+    {
+      "name": "JM DESIGNER",
+      "monday_name": "JM DESIGNER",
+      "monday_id": "10017582123",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 62 76 65",
+          "monday": "0690627665"
+        }
+      }
+    },
+    {
+      "name": "LA DOTHEMARIENNE DE DISTRIBUTION",
+      "monday_name": "LA DOTHEMARIENNE DE DISTRIBUTION",
+      "monday_id": "10017579684",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 35 09 78",
+          "monday": "0690350978"
+        }
+      }
+    },
+    {
+      "name": "MARVEN LOC SERVICES",
+      "monday_name": "MARVEN LOC SERVICES",
+      "monday_id": "10017580816",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 98 98 90",
+          "monday": "0696989890"
+        }
+      }
+    },
+    {
+      "name": "FRANCK COMUCE",
+      "monday_name": "FRANCK COMUCE",
+      "monday_id": "10017580332",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 64 35 63",
+          "monday": "0690643563"
+        }
+      }
+    },
+    {
+      "name": "GOURBEYRE DISTRIBUTION",
+      "monday_name": "GOURBEYRE DISTRIBUTION",
+      "monday_id": "10017579845",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 35 09 78",
+          "monday": "0690350978"
+        }
+      }
+    },
+    {
+      "name": "GARRY BOYEAU",
+      "monday_name": "GARRY BOYEAU",
+      "monday_id": "10017581623",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 64 56 98",
+          "monday": "0690645698"
+        }
+      }
+    },
+    {
+      "name": "FANNY JEAN-LOUIS",
+      "monday_name": "FANNY JEAN-LOUIS",
+      "monday_id": "10017582013",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 46 11 93",
+          "monday": "0690461193"
+        }
+      }
+    },
+    {
+      "name": "ALIZE GOUTTIERES",
+      "monday_name": "ALIZE GOUTTIERES",
+      "monday_id": "10017581398",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 56 01 61",
+          "monday": "0690560161"
+        }
+      }
+    },
+    {
+      "name": "ALINE RODANET",
+      "monday_name": "ALINE RODANET",
+      "monday_id": "10017579896",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 95 44 48",
+          "monday": "0690954448"
+        }
+      }
+    },
+    {
+      "name": "TANIA CAROUPANAPOULLE",
+      "monday_name": "TANIA CAROUPANAPOULLE",
+      "monday_id": "10017580293",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 92 39 49",
+          "monday": "0690923949"
+        }
+      }
+    },
+    {
+      "name": "CHRISTIAN GLAUDE",
+      "monday_name": "CHRISTIAN GLAUDE",
+      "monday_id": "10017580042",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 49 73 29",
+          "monday": "0690497329"
+        }
+      }
+    },
+    {
+      "name": "ISRAEL RAMPARSAH",
+      "monday_name": "ISRAEL RAMPARSAH",
+      "monday_id": "10017581127",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 34 72 39",
+          "monday": "0690347239"
+        }
+      }
+    },
+    {
+      "name": "MATHIEU GAVALY",
+      "monday_name": "MATHIEU GAVALY",
+      "monday_id": "10017581715",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 58 94 49",
+          "monday": "0690589449"
+        }
+      }
+    },
+    {
+      "name": "DIDIER DALY",
+      "monday_name": "DIDIER DALY",
+      "monday_id": "10017579839",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 49 50 00",
+          "monday": "0690495000"
+        }
+      }
+    },
+    {
+      "name": "CHRISTINE MUSIHIRI",
+      "monday_name": "CHRISTINE MUSIHIRI",
+      "monday_id": "10017580882",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 03 65 34",
+          "monday": "0696036534"
+        }
+      }
+    },
+    {
+      "name": "MARIUS HILAIRE",
+      "monday_name": "MARIUS HILAIRE",
+      "monday_id": "10017581779",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 95 09 72",
+          "monday": "0690950972"
+        }
+      }
+    },
+    {
+      "name": "BERNARD HIBADE",
+      "monday_name": "BERNARD HIBADE",
+      "monday_id": "10017581723",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 73 05 20",
+          "monday": "0690730520"
+        }
+      }
+    },
+    {
+      "name": "MABOJOH",
+      "monday_name": "MABOJOH",
+      "monday_id": "10017579970",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 40 50 50",
+          "monday": "0690405050"
+        }
+      }
+    },
+    {
+      "name": "LE BLEU LAGON",
+      "monday_name": "LE BLEU LAGON",
+      "monday_id": "10017580322",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 50 89 80",
+          "monday": "0690508980"
+        }
+      }
+    },
+    {
+      "name": "FL PRO-TINT (FL TEINTE)",
+      "monday_name": "FL PRO-TINT (FL TEINTE)",
+      "monday_id": "10017580716",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 53 38 34",
+          "monday": "0690533834"
+        }
+      }
+    },
+    {
+      "name": "SARL HEKA",
+      "monday_name": "SARL HEKA",
+      "monday_id": "10017581040",
+      "diffs": {
+        "Telephone": {
+          "excel": "5946 94 07 88 87",
+          "monday": "0694078887"
+        }
+      }
+    },
+    {
+      "name": "MONDESIR BTP",
+      "monday_name": "MONDESIR BTP",
+      "monday_id": "10017579725",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 53 59 80",
+          "monday": "0696535980"
+        }
+      }
+    },
+    {
+      "name": "KARUSPICE",
+      "monday_name": "KARUSPICE",
+      "monday_id": "10017581637",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 83 20 83",
+          "monday": "0690832083"
+        }
+      }
+    },
+    {
+      "name": "NEW FLOW",
+      "monday_name": "NEW FLOW",
+      "monday_id": "10017580936",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 19 67 93",
+          "monday": "0690196793"
+        }
+      }
+    },
+    {
+      "name": "CYRUS",
+      "monday_name": "CYRUS",
+      "monday_id": "10017580250",
+      "diffs": {
+        "Email": {
+          "excel": "sci.cyrus@gmail.com",
+          "monday": "ajconseil07@gmail.com"
+        },
+        "Telephone": {
+          "excel": "5906 90 49 24 49",
+          "monday": "0690492449"
+        },
+        "Ref interne": {
+          "excel": "1314b153",
+          "monday": "131b85f8"
+        },
+        "Ref devis": {
+          "excel": "D10058702-1326",
+          "monday": "D10058706-1330"
+        }
+      }
+    },
+    {
+      "name": "ROYAL BUFFET",
+      "monday_name": "ROYAL BUFFET ANDRE",
+      "monday_id": "10017580023",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 35 09 78",
+          "monday": "0690350978"
+        }
+      }
+    },
+    {
+      "name": "ASIAN HOUSE",
+      "monday_name": "ASIAN HOUSE ANDRE",
+      "monday_id": "10017581486",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 35 09 78",
+          "monday": "0690350978"
+        }
+      }
+    },
+    {
+      "name": "B.LU'PATISS (BLP)",
+      "monday_name": "B.LU'PATISS (BLP)",
+      "monday_id": "10017581914",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 07 39 08",
+          "monday": "0696073908"
+        }
+      }
+    },
+    {
+      "name": "SAS DELICES DU SOLEIL",
+      "monday_name": "SAS DELICES DU SOLEIL",
+      "monday_id": "10017581614",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 84 48 79",
+          "monday": "0690844879"
+        }
+      }
+    },
+    {
+      "name": "ALBATISERV",
+      "monday_name": "ALBATISERV",
+      "monday_id": "10017581626",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 10 03 00",
+          "monday": "0696100300"
+        }
+      }
+    },
+    {
+      "name": "DANIEL MAVILLE",
+      "monday_name": "DANIEL MAVILLE",
+      "monday_id": "10017581221",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 28 11 09",
+          "monday": "0696281109"
+        }
+      }
+    },
+    {
+      "name": "CO-ELEVEIGHT PARTNERS (C.E.P.)",
+      "monday_name": "CO-ELEVEIGHT PARTNERS (C.E.P.)",
+      "monday_id": "10017580646",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 99 43 71",
+          "monday": "0690994371"
+        }
+      }
+    },
+    {
+      "name": "JOHANA LUCINUS",
+      "monday_name": "JOHANA LUCINUS",
+      "monday_id": "10017581937",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 20 32 34",
+          "monday": "0690203234"
+        }
+      }
+    },
+    {
+      "name": "EXPERTISE ET FORMATION POUR LA RESTAURATION (EFR)",
+      "monday_name": "EXPERTISE ET FORMATION POUR LA RESTAURATION (EFR)",
+      "monday_id": "10017580462",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 71 80 61",
+          "monday": "0690718061"
+        }
+      }
+    },
+    {
+      "name": "O TEMPS DE SAVEURS (O TEMPS DE SAVEURS)",
+      "monday_name": "O TEMPS DE SAVEURS (O TEMPS DE SAVEURS)",
+      "monday_id": "10017580985",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 59 10 66",
+          "monday": "0690591066"
+        }
+      }
+    },
+    {
+      "name": "MBR DISTRIBUTION",
+      "monday_name": "MBR DISTRIBUTION",
+      "monday_id": "10017581443",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 24 78 03",
+          "monday": "0696247803"
+        }
+      }
+    },
+    {
+      "name": "BOATCLEAN COUTA",
+      "monday_name": "BOATCLEAN COUTA",
+      "monday_id": "10017581436",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 07 22 81",
+          "monday": "0696072281"
+        }
+      }
+    },
+    {
+      "name": "T2R (T2R)",
+      "monday_name": "T2R (T2R)",
+      "monday_id": "10017580891",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 76 90 07",
+          "monday": "0690769007"
+        }
+      }
+    },
+    {
+      "name": "VACANCES ALIZES",
+      "monday_name": "VACANCES ALIZES",
+      "monday_id": "10017581249",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 31 52 84",
+          "monday": "0696315284"
+        }
+      }
+    },
+    {
+      "name": "ESSENCIEL",
+      "monday_name": "ESSENCIEL",
+      "monday_id": "10017580047",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 25 35 55",
+          "monday": "0696253555"
+        }
+      }
+    },
+    {
+      "name": "CELERINE LOUISE BAGALD",
+      "monday_name": "CELERINE LOUISE BAGALD",
+      "monday_id": "10017580557",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 73 20 34",
+          "monday": "0696732034"
+        }
+      }
+    },
+    {
+      "name": "ASSOCIATION ENTENTE SPORTIVE ETANG SALE",
+      "monday_name": "ASSOCIATION ENTENTE SPORTIVE ETANG SALE",
+      "monday_id": "10017580571",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 81 83 25",
+          "monday": "0693818325"
+        }
+      }
+    },
+    {
+      "name": "MARGAUX SCHLATTER",
+      "monday_name": "MARGAUX SCHLATTER",
+      "monday_id": "10017581512",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 62 86 82",
+          "monday": "0693628682"
+        }
+      }
+    },
+    {
+      "name": "CLARUDISC",
+      "monday_name": "CLARUDISC",
+      "monday_id": "10017579875",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 56 44 24",
+          "monday": "0690564424"
+        }
+      }
+    },
+    {
+      "name": "SCI VALFRE",
+      "monday_name": "SCI VALFRE",
+      "monday_id": "10017579730",
+      "diffs": {
+        "Telephone": {
+          "excel": "5946 94 43 61 13",
+          "monday": "0694436113"
+        }
+      }
+    },
+    {
+      "name": "PHARMACIE D'ABORD",
+      "monday_name": "PHARMACIE D'ABORD",
+      "monday_id": "10017581612",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 44 14 52",
+          "monday": "0692441452"
+        }
+      }
+    },
+    {
+      "name": "BELGIUM BOAT",
+      "monday_name": "BELGIUM BOAT",
+      "monday_id": "10017580179",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 67 21 77",
+          "monday": "0696672177"
+        }
+      }
+    },
+    {
+      "name": "GREEN LOC",
+      "monday_name": "GREEN LOC",
+      "monday_id": "10017579777",
+      "diffs": {
+        "SIRET": {
+          "excel": "938141280.0",
+          "monday": "92150992300014"
+        },
+        "Email": {
+          "excel": "contact@greenrocket.re",
+          "monday": "m.rebeccai@hotmail.fr"
+        },
+        "Telephone": {
+          "excel": "07 60 39 40 11",
+          "monday": "0695386486"
+        },
+        "Adresse": {
+          "excel": "17 ROUTE DES EUCALYPTUS",
+          "monday": "42 BOULEVARD SAINTE CATHERINE"
+        },
+        "Code postal": {
+          "excel": "97400.0",
+          "monday": "97200"
+        },
+        "Ville": {
+          "excel": "SAINT-DENIS",
+          "monday": "FORT-DE-FRANCE"
+        },
+        "Ref interne": {
+          "excel": "1314f2a6",
+          "monday": "1311d75f"
+        },
+        "Ref devis": {
+          "excel": "D10058783-1407",
+          "monday": "D10058579-1203"
+        }
+      }
+    },
+    {
+      "name": "M'KFE",
+      "monday_name": "M'KFE",
+      "monday_id": "10017581107",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 94 21 46",
+          "monday": "0692942146"
+        }
+      }
+    },
+    {
+      "name": "JLB",
+      "monday_name": "JLB",
+      "monday_id": "10017579941",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 66 85 68",
+          "monday": "0696668568"
+        }
+      }
+    },
+    {
+      "name": "GREEN OI",
+      "monday_name": "GREEN OI",
+      "monday_id": "10017581349",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 13 27 61",
+          "monday": "0693132761"
+        }
+      }
+    },
+    {
+      "name": "ZENITH SOLAR DISTRIBUTION (ZSD)",
+      "monday_name": "ZENITH SOLAR DISTRIBUTION (ZSD)",
+      "monday_id": "10017581172",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 87 60 96",
+          "monday": "0692876096"
+        }
+      }
+    },
+    {
+      "name": "ZENAIR",
+      "monday_name": "ZENAIR",
+      "monday_id": "10017581210",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 87 60 96",
+          "monday": "0692876096"
+        }
+      }
+    },
+    {
+      "name": "AKYVISION",
+      "monday_name": "AKYVISION",
+      "monday_id": "10017581293",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 40 75 71",
+          "monday": "0690407571"
+        }
+      }
+    },
+    {
+      "name": "SEALIAH MARCEL",
+      "monday_name": "SEALIAH MARCEL",
+      "monday_id": "10017581655",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 05 74 79",
+          "monday": "0690057479"
+        }
+      }
+    },
+    {
+      "name": "JAD' BEAUTY",
+      "monday_name": "JAD' BEAUTY",
+      "monday_id": "10017580312",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 74 49 36",
+          "monday": "0696744936"
+        }
+      }
+    },
+    {
+      "name": "CLAUDE ILFIX",
+      "monday_name": "CLAUDE ILFIX",
+      "monday_id": "10017580261",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 49 41 94",
+          "monday": "0690494194"
+        }
+      }
+    },
+    {
+      "name": "MARIE-LAURE THIMA",
+      "monday_name": "MARIE-LAURE THIMA",
+      "monday_id": "10017580741",
+      "diffs": {
+        "Adresse": {
+          "excel": "9 RUE SAINT JEAN",
+          "monday": "BONAN"
+        },
+        "Ref interne": {
+          "excel": "131094d8",
+          "monday": "131687a0"
+        },
+        "Ref devis": {
+          "excel": "D10058862-1486",
+          "monday": "D10058958-1582"
+        }
+      }
+    },
+    {
+      "name": "MELANIE FFRENCH",
+      "monday_name": "MELANIE FFRENCH",
+      "monday_id": "10017581318",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 31 90 80",
+          "monday": "0690319080"
+        }
+      }
+    },
+    {
+      "name": "SODEXGO",
+      "monday_name": "SODEXGO",
+      "monday_id": "10017579881",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 35 45 05",
+          "monday": "0690354505"
+        }
+      }
+    },
+    {
+      "name": "STUDIO PINEAPPLE",
+      "monday_name": "STUDIO PINEAPPLE",
+      "monday_id": "10017581138",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 86 38 17",
+          "monday": "0696863817"
+        }
+      }
+    },
+    {
+      "name": "EURL SYLVAIN MINATCHI",
+      "monday_name": "EURL SYLVAIN MINATCHI",
+      "monday_id": "10017580547",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 74 20 02",
+          "monday": "0690742002"
+        },
+        "Ref interne": {
+          "excel": "1314b5a4",
+          "monday": "13199f84"
+        },
+        "Ref devis": {
+          "excel": "D10058885-1509",
+          "monday": "D10058333-959"
+        }
+      }
+    },
+    {
+      "name": "RD'M RENT (RD'M-R)",
+      "monday_name": "RD'M RENT (RD'M-R)",
+      "monday_id": "10017581724",
+      "diffs": {
+        "Telephone": {
+          "excel": "3307 67 42 71 53",
+          "monday": "0767427153"
+        }
+      }
+    },
+    {
+      "name": "MELIMATHI",
+      "monday_name": "MELIMATHI",
+      "monday_id": "10017581115",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "SCI KIKINE",
+      "monday_name": "SCI KIKINE",
+      "monday_id": "10017581876",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "MAJOR CLEAN",
+      "monday_name": "MAJOR CLEAN",
+      "monday_id": "10017581311",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 97 81 56",
+          "monday": "0690978156"
+        }
+      }
+    },
+    {
+      "name": "GUADELOUPE RECYCLERIE SOLIDAIRE",
+      "monday_name": "GUADELOUPE RECYCLERIE SOLIDAIRE",
+      "monday_id": "10017580136",
+      "diffs": {
+        "Ref interne": {
+          "excel": "13119ba7",
+          "monday": "13110407"
+        },
+        "Ref devis": {
+          "excel": "D10058919-1543",
+          "monday": "D10058921-1545"
+        }
+      }
+    },
+    {
+      "name": "TBR CONSULTING (TBR)",
+      "monday_name": "TBR CONSULTING (TBR)",
+      "monday_id": "10017580107",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 96 40 40",
+          "monday": "0690964040"
+        }
+      }
+    },
+    {
+      "name": "JOYS",
+      "monday_name": "JOYS",
+      "monday_id": "10017581883",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 14 38 97",
+          "monday": "0690143897"
+        }
+      }
+    },
+    {
+      "name": "AD+ (AD+ CONSULTING)",
+      "monday_name": "AD+ (AD+ CONSULTING)",
+      "monday_id": "10017580829",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 93 26 36",
+          "monday": "0690932636"
+        }
+      }
+    },
+    {
+      "name": "THIERRY ELFGANG",
+      "monday_name": "THIERRY ELFGANG",
+      "monday_id": "10017580744",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 15 60 45",
+          "monday": "0690156045"
+        }
+      }
+    },
+    {
+      "name": "S.C.I LES BIDONNETTES",
+      "monday_name": "S.C.I LES BIDONNETTES",
+      "monday_id": "10017580665",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "MARIO RAMPATH",
+      "monday_name": "MARIO RAMPATH",
+      "monday_id": "10017581162",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 14 38 97",
+          "monday": "0690143897"
+        }
+      }
+    },
+    {
+      "name": "MT SOLAR",
+      "monday_name": "MT SOLAR",
+      "monday_id": "10017580031",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 15 60 45",
+          "monday": "0690156045"
+        }
+      }
+    },
+    {
+      "name": "WIDLY NEGRE",
+      "monday_name": "WIDLY NEGRE",
+      "monday_id": "10017581517",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 91 09 72",
+          "monday": "0690910972"
+        }
+      }
+    },
+    {
+      "name": "MALANGKA (MLK)",
+      "monday_name": "MALANGKA (MLK)",
+      "monday_id": "10017581981",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 91 25 38 70",
+          "monday": "0691253870"
+        }
+      }
+    },
+    {
+      "name": "NEW JYL BAT (NJB)",
+      "monday_name": "NEW JYL BAT (NJB)",
+      "monday_id": "10017581968",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 05 31 36",
+          "monday": "0690053136"
+        }
+      }
+    },
+    {
+      "name": "GARY MORVANY",
+      "monday_name": "GARY MORVANY",
+      "monday_id": "10017580295",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 69 74 33",
+          "monday": "0690697433"
+        }
+      }
+    },
+    {
+      "name": "STEPHEN DORIVAL",
+      "monday_name": "STEPHEN DORIVAL",
+      "monday_id": "10017579900",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 25 03 97",
+          "monday": "0690250397"
+        }
+      }
+    },
+    {
+      "name": "FOYAL MIX",
+      "monday_name": "FOYAL MIX",
+      "monday_id": "10017580695",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "GEN'MIX SARL",
+      "monday_name": "GEN'MIX SARL",
+      "monday_id": "10017580592",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "YES PAPA",
+      "monday_name": "YES PAPA",
+      "monday_id": "10017581879",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 92 15 75",
+          "monday": "0696921575"
+        }
+      }
+    },
+    {
+      "name": "AMBITIONS CARAIBES (AC)",
+      "monday_name": "AMBITIONS CARAIBES (AC)",
+      "monday_id": "10017580222",
+      "diffs": {
+        "Telephone": {
+          "excel": "59006 90 32 34 66",
+          "monday": "0690323466"
+        }
+      }
+    },
+    {
+      "name": "SAVEURS ATLANTIQUES",
+      "monday_name": "SAVEURS ATLANTIQUES",
+      "monday_id": "10017580826",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "SMARTDOM",
+      "monday_name": "SMARTDOM",
+      "monday_id": "10017581912",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 92 15 75",
+          "monday": "0696921575"
+        }
+      }
+    },
+    {
+      "name": "MARIE-LAURE THIMA",
+      "monday_name": "MARIE-LAURE THIMA",
+      "monday_id": "10017580715",
+      "diffs": {
+        "Adresse": {
+          "excel": "BONAN",
+          "monday": "9 RUE SAINT JEAN"
+        },
+        "Ref interne": {
+          "excel": "131687a0",
+          "monday": "131094d8"
+        },
+        "Ref devis": {
+          "excel": "D10058958-1582",
+          "monday": "D10058862-1486"
+        }
+      }
+    },
+    {
+      "name": "CENTRE INDUSTRIEL AUTOMOBILE (C.I.A.) MARTINIQUE GARAGE BULIARD (C I A)",
+      "monday_name": "CENTRE INDUSTRIEL AUTOMOBILE (C.I.A.) MARTINIQUE GARAGE BULIARD (C I A)",
+      "monday_id": "10017580616",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "STE COOPERATIVE PRODUCTEUR ANANAS DE MARTINIQUE (ANANAS MARTINIQUE)",
+      "monday_name": "STE COOPERATIVE PRODUCTEUR ANANAS DE MARTINIQUE (ANANAS MARTINIQUE)",
+      "monday_id": "10017580245",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 80 84 54",
+          "monday": "0696808454"
+        }
+      }
+    },
+    {
+      "name": "SOGUADIAL DALCIAT",
+      "monday_name": "SOGUADIAL DALCIAT",
+      "monday_id": "10017580360",
+      "diffs": {
+        "Ref interne": {
+          "excel": "1310b98b",
+          "monday": "1313a58a"
+        },
+        "Ref devis": {
+          "excel": "D10058990-1614",
+          "monday": "D10059011-1635"
+        }
+      }
+    },
+    {
+      "name": "GWA-BP",
+      "monday_name": "GWA-BP",
+      "monday_id": "10017581264",
+      "diffs": {
+        "Adresse": {
+          "excel": "23 ALLEE DES HIBISCUS",
+          "monday": "26 RUE PAUL LACAVE"
+        },
+        "Ref interne": {
+          "excel": "1319990a",
+          "monday": "13137a59"
+        },
+        "Ref devis": {
+          "excel": "D10059007-1631",
+          "monday": "D10059057-1681"
+        }
+      }
+    },
+    {
+      "name": "BODY ILES",
+      "monday_name": "BODY ILES",
+      "monday_id": "10017580489",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "BIDON-CHOUX",
+      "monday_name": "BIDON-CHOUX",
+      "monday_id": "10017580777",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "MADIN NAIL (NAIL' MINUTE)",
+      "monday_name": "MADIN NAIL (NAIL' MINUTE)",
+      "monday_id": "10017580542",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "BODY GENIPA",
+      "monday_name": "BODY GENIPA",
+      "monday_id": "10017580567",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "BULIARD DIAMANT",
+      "monday_name": "BULIARD DIAMANT",
+      "monday_id": "10017580748",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "BODY ROBERT",
+      "monday_name": "BODY ROBERT",
+      "monday_id": "10017580723",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "BODY PLAZA",
+      "monday_name": "BODY PLAZA",
+      "monday_id": "10017580521",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "KREYOL MIX",
+      "monday_name": "KREYOL MIX",
+      "monday_id": "10017580804",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "LA BRASSERIE ANTILLAISE",
+      "monday_name": "LA BRASSERIE ANTILLAISE",
+      "monday_id": "10017580641",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 16 13",
+          "monday": "0696891613"
+        }
+      }
+    },
+    {
+      "name": "ITHRONIC",
+      "monday_name": "ITHRONIC",
+      "monday_id": "10017581979",
+      "diffs": {
+        "Ref interne": {
+          "excel": "131a5ac2",
+          "monday": "(vide)"
+        }
+      }
+    },
+    {
+      "name": "GWA-BP",
+      "monday_name": "GWA-BP",
+      "monday_id": "10017581297",
+      "diffs": {
+        "Adresse": {
+          "excel": "26 RUE PAUL LACAVE",
+          "monday": "23 ALLEE DES HIBISCUS"
+        },
+        "Ref interne": {
+          "excel": "13137a59",
+          "monday": "1319990a"
+        },
+        "Ref devis": {
+          "excel": "D10059057-1681",
+          "monday": "D10059007-1631"
+        }
+      }
+    },
+    {
+      "name": "MAT & BAT CARAIBES",
+      "monday_name": "MAT & BAT CARAIBES",
+      "monday_id": "10017580301",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 26 56 26",
+          "monday": "0696265626"
+        }
+      }
+    },
+    {
+      "name": "FREDERIC SAINT LARY",
+      "monday_name": "FREDERIC SAINT LARY",
+      "monday_id": "10017580229",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 60 54 58",
+          "monday": "0696605458"
+        }
+      }
+    },
+    {
+      "name": "LOGIQUE CONDUITE (AELC)",
+      "monday_name": "LOGIQUE CONDUITE (AELC)",
+      "monday_id": "10017579760",
+      "diffs": {
+        "Telephone": {
+          "excel": "5946 94 92 35 11",
+          "monday": "0694923511"
+        }
+      }
+    },
+    {
+      "name": "Saint-lary",
+      "monday_name": "Saint-lary",
+      "monday_id": "10017580426",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 02 82 90",
+          "monday": "0696028290"
+        }
+      }
+    },
+    {
+      "name": "LA BASE",
+      "monday_name": "LA BASE",
+      "monday_id": "10017581577",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 38 83 38",
+          "monday": "0696388338"
+        }
+      }
+    },
+    {
+      "name": "JENES BWADJAK KREASYONS",
+      "monday_name": "JENES BWADJAK KREASYONS",
+      "monday_id": "10017582074",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 28 90",
+          "monday": "0696892890"
+        }
+      }
+    },
+    {
+      "name": "Infirmière",
+      "monday_name": "Infirmière",
+      "monday_id": "10017580913",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 68 11 60",
+          "monday": "0696681160"
+        }
+      }
+    },
+    {
+      "name": "LADIES MO'O",
+      "monday_name": "LADIES MO'O",
+      "monday_id": "10017580396",
+      "diffs": {
+        "Telephone": {
+          "excel": "5946 94 15 23 07",
+          "monday": "0694152307"
+        }
+      }
+    },
+    {
+      "name": "SOLEN MANUSSALA BENHASHEMSH'",
+      "monday_name": "SOLEN MANUSSALA BENHASHEMSH'",
+      "monday_id": "10017580296",
+      "diffs": {
+        "Telephone": {
+          "excel": "59606 96 81 91 37",
+          "monday": "0696819137"
+        }
+      }
+    },
+    {
+      "name": "LES P'TITS BRANCHES",
+      "monday_name": "LES P'TITS BRANCHES",
+      "monday_id": "10017581915",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 06 07 57",
+          "monday": "0696060757"
+        }
+      }
+    },
+    {
+      "name": "CANDY SHOP MTQ",
+      "monday_name": "CANDY SHOP MTQ",
+      "monday_id": "10017581978",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 06 07 57",
+          "monday": "0696060757"
+        }
+      }
+    },
+    {
+      "name": "DREAM CUT",
+      "monday_name": "DREAM CUT",
+      "monday_id": "10017581838",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 55 69 93",
+          "monday": "0690556993"
+        }
+      }
+    },
+    {
+      "name": "PEREFILLE",
+      "monday_name": "PEREFILLE",
+      "monday_id": "10017581590",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 93 98 81",
+          "monday": "0696939881"
+        }
+      }
+    },
+    {
+      "name": "JEAN-PHILIPPE AUBREE",
+      "monday_name": "JEAN-PHILIPPE AUBREE",
+      "monday_id": "10017580828",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 39 94 04",
+          "monday": "0693399404"
+        }
+      }
+    },
+    {
+      "name": "MARIE IMACHE",
+      "monday_name": "MARIE IMACHE",
+      "monday_id": "10017580310",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 43 99 48",
+          "monday": "0692439948"
+        }
+      }
+    },
+    {
+      "name": "SYLVIA MICHOUD",
+      "monday_name": "SYLVIA MICHOUD",
+      "monday_id": "10017579818",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 64 43 03",
+          "monday": "0693644303"
+        }
+      }
+    },
+    {
+      "name": "SELAS DE MEDECINS ANESTHESISTES REANIMATEURS DE MARTINIQUE (SELAS MARM)",
+      "monday_name": "SELAS DE MEDECINS ANESTHESISTES REANIMATEURS DE MARTINIQUE (SELAS MARM)",
+      "monday_id": "10017581314",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 80 19 01",
+          "monday": "0696801901"
+        }
+      }
+    },
+    {
+      "name": "AL BTP",
+      "monday_name": "AL BTP",
+      "monday_id": "10017581601",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 10 03 00",
+          "monday": "0696100300"
+        }
+      }
+    },
+    {
+      "name": "ASS GUYANAISE FORMATION TRAVAILSOCIAL",
+      "monday_name": "ASS GUYANAISE FORMATION TRAVAILSOCIAL",
+      "monday_id": "10017581764",
+      "diffs": {
+        "Telephone": {
+          "excel": "5946 94 44 62 12",
+          "monday": "0694446212"
+        }
+      }
+    },
+    {
+      "name": "VINCENT BOURGIN",
+      "monday_name": "VINCENT BOURGIN",
+      "monday_id": "10017581475",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 75 32 48",
+          "monday": "0692753248"
+        }
+      }
+    },
+    {
+      "name": "LA MAM FAMILY",
+      "monday_name": "LA MAM FAMILY",
+      "monday_id": "10017579796",
+      "diffs": {
+        "Ref interne": {
+          "excel": "13186d23",
+          "monday": "13194a3a"
+        },
+        "Ref devis": {
+          "excel": "D10057791-439",
+          "monday": "D10057790-438"
+        }
+      }
+    },
+    {
+      "name": "FP MULTISERVICES",
+      "monday_name": "FP MULTISERVICES",
+      "monday_id": "10017579816",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 05 08 70",
+          "monday": "0693050870"
+        }
+      }
+    },
+    {
+      "name": "PALAS LORNA",
+      "monday_name": "PALAS LORNA",
+      "monday_id": "10017579910",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 51 26 18",
+          "monday": "0693512618"
+        }
+      }
+    },
+    {
+      "name": "MALESGREEN",
+      "monday_name": "MALESGREEN",
+      "monday_id": "10017580873",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 40 72 84",
+          "monday": "0696407284"
+        }
+      }
+    },
+    {
+      "name": "SCM CABINET D'INFIRMIERES PAUSE-LAPPARTIENT-GILLOUIN",
+      "monday_name": "SCM CABINET D'INFIRMIERES PAUSE-LAPPARTIENT-GILLOUIN",
+      "monday_id": "10017581755",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 73 06 58",
+          "monday": "0692730658"
+        }
+      }
+    },
+    {
+      "name": "LAURENCE LE GLEUT",
+      "monday_name": "LAURENCE LE GLEUT",
+      "monday_id": "10017580035",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 87 81 88",
+          "monday": "0692878188"
+        }
+      }
+    },
+    {
+      "name": "CHAMAND FILS CONSTRUCTION ET RENOVATION",
+      "monday_name": "CHAMAND FILS CONSTRUCTION ET RENOVATION",
+      "monday_id": "10017581633",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 00 63 62",
+          "monday": "0693006362"
+        }
+      }
+    },
+    {
+      "name": "FLORDECO",
+      "monday_name": "FLORDECO",
+      "monday_id": "10017580409",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 25 64 40",
+          "monday": "0696256440"
+        }
+      }
+    },
+    {
+      "name": "ENTREPRISE DANY TRAVAUX PUBLICS (E.D.T.P)",
+      "monday_name": "ENTREPRISE DANY TRAVAUX PUBLICS (E.D.T.P)",
+      "monday_id": "10017580740",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 71 40",
+          "monday": "0696897140"
+        }
+      }
+    },
+    {
+      "name": "SYRIUS MARTINIQUE",
+      "monday_name": "SYRIUS MARTINIQUE",
+      "monday_id": "10017581250",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 11 81 83",
+          "monday": "0696118183"
+        }
+      }
+    },
+    {
+      "name": "SYRIUS ENERGIE MARTINIQUE",
+      "monday_name": "SYRIUS ENERGIE MARTINIQUE",
+      "monday_id": "10017581217",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 11 81 83",
+          "monday": "0696118183"
+        }
+      }
+    },
+    {
+      "name": "KELLY SARL",
+      "monday_name": "KELLY SARL",
+      "monday_id": "10017580973",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 08 70 81",
+          "monday": "0696087081"
+        }
+      }
+    },
+    {
+      "name": "Germilus pierre",
+      "monday_name": "Germilus pierre",
+      "monday_id": "10017582031",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 82 95 30",
+          "monday": "0696829530"
+        }
+      }
+    },
+    {
+      "name": "KETENER ABELARD",
+      "monday_name": "KETENER ABELARD",
+      "monday_id": "10017580775",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 96 55 32",
+          "monday": "0696965532"
+        }
+      }
+    },
+    {
+      "name": "ALITOL LOCATION",
+      "monday_name": "ALITOL LOCATION",
+      "monday_id": "10017580780",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 97 02 85",
+          "monday": "0696970285"
+        }
+      }
+    },
+    {
+      "name": "SARL FONTEAU SAINT-LEBE",
+      "monday_name": "SARL FONTEAU SAINT-LEBE",
+      "monday_id": "10017580259",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 29 32 89",
+          "monday": "0696293289"
+        }
+      }
+    },
+    {
+      "name": "BUTAMON",
+      "monday_name": "BUTAMON",
+      "monday_id": "10017580046",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 27 93 19",
+          "monday": "0696279319"
+        }
+      }
+    },
+    {
+      "name": "PRINT HOUSE",
+      "monday_name": "PRINT HOUSE",
+      "monday_id": "10017579688",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 11 77 00",
+          "monday": "0696117700"
+        }
+      }
+    },
+    {
+      "name": "CHRYSTEL BERNARD",
+      "monday_name": "CHRYSTEL BERNARD",
+      "monday_id": "10017580319",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 46 98 38 30",
+          "monday": "0646983830"
+        }
+      }
+    },
+    {
+      "name": "FRANCOIS AUTO TEST",
+      "monday_name": "FRANCOIS AUTO TEST",
+      "monday_id": "10017580041",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 91 14",
+          "monday": "0696899114"
+        }
+      }
+    },
+    {
+      "name": "SOLUTIONS",
+      "monday_name": "SOLUTIONS",
+      "monday_id": "10017580228",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 88 14 41",
+          "monday": "0696881441"
+        }
+      }
+    },
+    {
+      "name": "JIMMY NILUSMAS",
+      "monday_name": "JIMMY NILUSMAS",
+      "monday_id": "10017581900",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 91 31 41",
+          "monday": "0696913141"
+        }
+      }
+    },
+    {
+      "name": "THIERRY GAUVIN",
+      "monday_name": "THIERRY GAUVIN",
+      "monday_id": "10017581636",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 55 14 65",
+          "monday": "0692551465"
+        }
+      }
+    },
+    {
+      "name": "ROBERT HILA MOISE (MOISE ROBERT HILA)",
+      "monday_name": "ROBERT HILA MOISE (MOISE ROBERT HILA)",
+      "monday_id": "10017581661",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 85 48 21",
+          "monday": "0693854821"
+        }
+      }
+    },
+    {
+      "name": "KRISHNA SOUPAYA VALLIAMA",
+      "monday_name": "KRISHNA SOUPAYA VALLIAMA",
+      "monday_id": "10017579928",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 98 71 71",
+          "monday": "0692987171"
+        }
+      }
+    },
+    {
+      "name": "KEVIN LUK OK CHOO",
+      "monday_name": "KEVIN LUK OK CHOO",
+      "monday_id": "10017581995",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 56 77 10",
+          "monday": "0692567710"
+        }
+      }
+    },
+    {
+      "name": "ECO CAR LOCATION (E.L)",
+      "monday_name": "ECO CAR LOCATION (E.L)",
+      "monday_id": "10017580649",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 43 68 74 50",
+          "monday": "0643687450"
+        }
+      }
+    },
+    {
+      "name": "JEAN DIJOUX",
+      "monday_name": "JEAN DIJOUX",
+      "monday_id": "10017582267",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 26 47 52",
+          "monday": "0692264752"
+        }
+      }
+    },
+    {
+      "name": "SOL'IMMO",
+      "monday_name": "SOL'IMMO",
+      "monday_id": "10017581625",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 64 76 90",
+          "monday": "0692647690"
+        }
+      }
+    },
+    {
+      "name": "MARIE-PAULE CASSAGNEAU",
+      "monday_name": "MARIE-PAULE CASSAGNEAU",
+      "monday_id": "10017582050",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 19 16 91",
+          "monday": "0696191691"
+        }
+      }
+    },
+    {
+      "name": "MANUEL LOPEZ",
+      "monday_name": "MANUEL LOPEZ",
+      "monday_id": "10017581532",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 32 83 07",
+          "monday": "0696328307"
+        }
+      }
+    },
+    {
+      "name": "JEAN-YVES DABRIOU",
+      "monday_name": "JEAN-YVES DABRIOU",
+      "monday_id": "10017581839",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 84 61 09",
+          "monday": "0696846109"
+        }
+      }
+    },
+    {
+      "name": "AME EXPERTISE ANTILLES",
+      "monday_name": "AME EXPERTISE ANTILLES",
+      "monday_id": "10017581386",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 80 98 02 31",
+          "monday": "0680980231"
+        }
+      }
+    },
+    {
+      "name": "AMR CARS",
+      "monday_name": "AMR CARS",
+      "monday_id": "10017581843",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "CHARLES-EDOUARD FENOT",
+      "monday_name": "CHARLES-EDOUARD FENOT",
+      "monday_id": "10017579687",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 36 16 40",
+          "monday": "0696361640"
+        }
+      }
+    },
+    {
+      "name": "CHARLENE LE FLOC H",
+      "monday_name": "CHARLENE LE FLOC H",
+      "monday_id": "10017580008",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 21 14 45",
+          "monday": "0696211445"
+        }
+      }
+    },
+    {
+      "name": "2 A HOLDING",
+      "monday_name": "2 A HOLDING",
+      "monday_id": "10017581089",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 26 60 33",
+          "monday": "0696266033"
+        }
+      }
+    },
+    {
+      "name": "TECHN-CONSTRUCTION",
+      "monday_name": "TECHN-CONSTRUCTION",
+      "monday_id": "10017580920",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 36 26 02",
+          "monday": "0696362602"
+        }
+      }
+    },
+    {
+      "name": "CATHY DECILAP",
+      "monday_name": "CATHY DECILAP",
+      "monday_id": "10017580799",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 65 28 28",
+          "monday": "0696652828"
+        }
+      }
+    },
+    {
+      "name": "JF PLOMBERIE",
+      "monday_name": "JF PLOMBERIE",
+      "monday_id": "10017580280",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 94 25 61",
+          "monday": "0696942561"
+        }
+      }
+    },
+    {
+      "name": "ALBATROS",
+      "monday_name": "ALBATROS",
+      "monday_id": "10017582012",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 77 78 94",
+          "monday": "0690777894"
+        }
+      }
+    },
+    {
+      "name": "SODEVICA",
+      "monday_name": "SODEVICA",
+      "monday_id": "10017580905",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 85 03 11",
+          "monday": "0696850311"
+        }
+      }
+    },
+    {
+      "name": "MELISSA-ALIZEE MORVILLE",
+      "monday_name": "MELISSA-ALIZEE MORVILLE",
+      "monday_id": "10017580455",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 01 46 11",
+          "monday": "0696014611"
+        }
+      }
+    },
+    {
+      "name": "FLORA PIERRE-FRANCOIS",
+      "monday_name": "FLORA PIERRE-FRANCOIS",
+      "monday_id": "10017581760",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 34 52 20",
+          "monday": "0696345220"
+        }
+      }
+    },
+    {
+      "name": "Entrepreneur individuel",
+      "monday_name": "Entrepreneur individuel",
+      "monday_id": "10017582029",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 47 82 19 55",
+          "monday": "0647821955"
+        }
+      }
+    },
+    {
+      "name": "SNACK LE FESTIN",
+      "monday_name": "SNACK LE FESTIN",
+      "monday_id": "10017580634",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 58 34",
+          "monday": "0696445834"
+        }
+      }
+    },
+    {
+      "name": "MARIE ARNAUD",
+      "monday_name": "MARIE ARNAUD",
+      "monday_id": "10017580448",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 36 41 39",
+          "monday": "0696364139"
+        }
+      }
+    },
+    {
+      "name": "SASU LICORNE",
+      "monday_name": "SASU LICORNE",
+      "monday_id": "10017580700",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 97 44 10",
+          "monday": "0696974410"
+        }
+      }
+    },
+    {
+      "name": "SASUY.MONTABORD (IHOME.MQ)",
+      "monday_name": "SASUY.MONTABORD (IHOME.MQ)",
+      "monday_id": "10017580016",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 00 80 92",
+          "monday": "0696008092"
+        }
+      }
+    },
+    {
+      "name": "AKOSAM",
+      "monday_name": "AKOSAM",
+      "monday_id": "10017581131",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 38 34 33",
+          "monday": "0696383433"
+        }
+      }
+    },
+    {
+      "name": "NAT EXPRESS REUNION",
+      "monday_name": "NAT EXPRESS REUNION",
+      "monday_id": "10017581369",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 22 25 83",
+          "monday": "0696222583"
+        }
+      }
+    },
+    {
+      "name": "KAREN CHAMBERTIN",
+      "monday_name": "KAREN CHAMBERTIN",
+      "monday_id": "10017581695",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 45 75 08 03",
+          "monday": "0645750803"
+        }
+      }
+    },
+    {
+      "name": "BEY ELISEMONE",
+      "monday_name": "BEY ELISEMONE",
+      "monday_id": "10017580468",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 92 30 89",
+          "monday": "0693923089"
+        }
+      }
+    },
+    {
+      "name": "KHUN LALAO",
+      "monday_name": "KHUN LALAO",
+      "monday_id": "10017580621",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 41 57 43",
+          "monday": "0692415743"
+        }
+      }
+    },
+    {
+      "name": "ANTOINE RIVIERE",
+      "monday_name": "ANTOINE RIVIERE",
+      "monday_id": "10017581525",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 78 15 66",
+          "monday": "0692781566"
+        }
+      }
+    },
+    {
+      "name": "FABRICE HENRY",
+      "monday_name": "FABRICE HENRY",
+      "monday_id": "10017581469",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 78 74 30",
+          "monday": "0692787430"
+        }
+      }
+    },
+    {
+      "name": "DANIEL GUERIN",
+      "monday_name": "DANIEL GUERIN",
+      "monday_id": "10017580824",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 66 80 97",
+          "monday": "0692668097"
+        }
+      }
+    },
+    {
+      "name": "COISSER LUDOVIC",
+      "monday_name": "COISSER LUDOVIC",
+      "monday_id": "10017580059",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 50 84 56",
+          "monday": "0693508456"
+        }
+      }
+    },
+    {
+      "name": "SOCIETE D'INGENIERIE ET DE PRESTATIONS EN EXPERTISES (SIPE)",
+      "monday_name": "SOCIETE D'INGENIERIE ET DE PRESTATIONS EN EXPERTISES (SIPE)",
+      "monday_id": "10017580881",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 36 24 82",
+          "monday": "0696362482"
+        }
+      }
+    },
+    {
+      "name": "EMMANUEL BOISVILLIERS",
+      "monday_name": "EMMANUEL BOISVILLIERS",
+      "monday_id": "10017580818",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 21 21 06",
+          "monday": "0692212106"
+        }
+      }
+    },
+    {
+      "name": "NAIGOM LOIC (L. N. ENTREPRISES)",
+      "monday_name": "NAIGOM LOIC (L. N. ENTREPRISES)",
+      "monday_id": "10017581095",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 39 95 12",
+          "monday": "0693399512"
+        }
+      }
+    },
+    {
+      "name": "KARINE APAYA",
+      "monday_name": "KARINE APAYA",
+      "monday_id": "10017580264",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 52 53 74",
+          "monday": "0692525374"
+        }
+      }
+    },
+    {
+      "name": "PAYET NICOLAS (LA SICILLIA)",
+      "monday_name": "PAYET NICOLAS (LA SICILLIA)",
+      "monday_id": "10017580808",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 40 40 12",
+          "monday": "0693404012"
+        }
+      }
+    },
+    {
+      "name": "SANDRINE ROQUE",
+      "monday_name": "SANDRINE ROQUE",
+      "monday_id": "10017580718",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 93 79 52",
+          "monday": "0692937952"
+        }
+      }
+    },
+    {
+      "name": "LUDOVIC LEPINAY",
+      "monday_name": "LUDOVIC LEPINAY",
+      "monday_id": "10017580686",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 50 64 88",
+          "monday": "0693506488"
+        }
+      }
+    },
+    {
+      "name": "MADASSAMY BBQ",
+      "monday_name": "MADASSAMY BBQ",
+      "monday_id": "10017582090",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 42 60 22",
+          "monday": "0690426022"
+        }
+      }
+    },
+    {
+      "name": "YANOBOUTIKADOM",
+      "monday_name": "YANOBOUTIKADOM",
+      "monday_id": "10017581507",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 80 80 65",
+          "monday": "0693808065"
+        }
+      }
+    },
+    {
+      "name": "JULIEN MUSSARD",
+      "monday_name": "JULIEN MUSSARD",
+      "monday_id": "10017580914",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 85 53 79",
+          "monday": "0692855379"
+        }
+      }
+    },
+    {
+      "name": "HARMONY DESIGN",
+      "monday_name": "HARMONY DESIGN",
+      "monday_id": "10017580674",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 78 42 83",
+          "monday": "0692784283"
+        }
+      }
+    },
+    {
+      "name": "MATHIEU AMOUNY",
+      "monday_name": "MATHIEU AMOUNY",
+      "monday_id": "10017581844",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 79 64 33",
+          "monday": "0692796433"
+        }
+      }
+    },
+    {
+      "name": "LENAIK THOMAS",
+      "monday_name": "LENAIK THOMAS",
+      "monday_id": "10017580265",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 79 78 09",
+          "monday": "0692797809"
+        }
+      }
+    },
+    {
+      "name": "BATI PRO CONSEIL",
+      "monday_name": "BATI PRO CONSEIL",
+      "monday_id": "10017579869",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 20 02 69",
+          "monday": "0693200269"
+        }
+      }
+    },
+    {
+      "name": "JULIEN QUELARD",
+      "monday_name": "JULIEN QUELARD",
+      "monday_id": "10017580243",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 50 45 40",
+          "monday": "0693504540"
+        }
+      }
+    },
+    {
+      "name": "SEBASTIEN HOARAU",
+      "monday_name": "SEBASTIEN HOARAU",
+      "monday_id": "10017579719",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 36 21 58",
+          "monday": "0692362158"
+        }
+      }
+    },
+    {
+      "name": "EURL 2 PIEDS DANS LA PISCINE",
+      "monday_name": "EURL 2 PIEDS DANS LA PISCINE",
+      "monday_id": "10017580464",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 28 32 88",
+          "monday": "0692283288"
+        }
+      }
+    },
+    {
+      "name": "SOPHIE NADEGE DURAND",
+      "monday_name": "SOPHIE NADEGE DURAND",
+      "monday_id": "10017580459",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 88 23 25",
+          "monday": "0692882325"
+        }
+      }
+    },
+    {
+      "name": "MAXIMIN APAYA",
+      "monday_name": "MAXIMIN APAYA",
+      "monday_id": "10017580211",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 48 11 24",
+          "monday": "0693481124"
+        }
+      }
+    },
+    {
+      "name": "INTENS'ILE",
+      "monday_name": "INTENS'ILE",
+      "monday_id": "10017580732",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 00 13 17",
+          "monday": "0693001317"
+        }
+      }
+    },
+    {
+      "name": "NRJ INVEST",
+      "monday_name": "NRJ INVEST",
+      "monday_id": "10017579775",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 14 79 33",
+          "monday": "0692147933"
+        }
+      }
+    },
+    {
+      "name": "MAX ALMA",
+      "monday_name": "MAX ALMA",
+      "monday_id": "10017581608",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 48 15 80",
+          "monday": "0692481580"
+        }
+      }
+    },
+    {
+      "name": "YANNICK LAURY",
+      "monday_name": "YANNICK LAURY",
+      "monday_id": "10017579729",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 49 00 07",
+          "monday": "0693490007"
+        }
+      }
+    },
+    {
+      "name": "RIPOCHE SEBASTIEN GERARD",
+      "monday_name": "RIPOCHE SEBASTIEN GERARD",
+      "monday_id": "10017581339",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 57 85 01",
+          "monday": "0692578501"
+        }
+      }
+    },
+    {
+      "name": "ELODIE SITTLER",
+      "monday_name": "ELODIE SITTLER",
+      "monday_id": "10017579691",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 10 96 55",
+          "monday": "0692109655"
+        }
+      }
+    },
+    {
+      "name": "MORGANE PAYET",
+      "monday_name": "MORGANE PAYET",
+      "monday_id": "10017580645",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 07 79 02",
+          "monday": "0692077902"
+        }
+      }
+    },
+    {
+      "name": "MURIELLE JOSSELYNE BENARD",
+      "monday_name": "MURIELLE JOSSELYNE BENARD",
+      "monday_id": "10017580848",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 01 98 77",
+          "monday": "0692019877"
+        }
+      }
+    },
+    {
+      "name": "JUDITH IGOUFE",
+      "monday_name": "JUDITH IGOUFE",
+      "monday_id": "10017581453",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 24 78 65",
+          "monday": "0692247865"
+        }
+      }
+    },
+    {
+      "name": "JEAN BENARD",
+      "monday_name": "JEAN BENARD",
+      "monday_id": "10017580155",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 65 54 61",
+          "monday": "0692655461"
+        }
+      }
+    },
+    {
+      "name": "NOEL XAVIER",
+      "monday_name": "NOEL XAVIER",
+      "monday_id": "10017581416",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 79 13 58",
+          "monday": "0692791358"
+        }
+      }
+    },
+    {
+      "name": "SHOTOKAN KARATE SUD REUNION",
+      "monday_name": "SHOTOKAN KARATE SUD REUNION",
+      "monday_id": "10017580191",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 43 68 40",
+          "monday": "0692436840"
+        }
+      }
+    },
+    {
+      "name": "Julie BRUYERE",
+      "monday_name": "Julie BRUYERE",
+      "monday_id": "10017579769",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 82 58 11",
+          "monday": "0693825811"
+        }
+      }
+    },
+    {
+      "name": "LAURA CANO",
+      "monday_name": "LAURA CANO",
+      "monday_id": "10017580184",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 52 27 11",
+          "monday": "0692522711"
+        }
+      }
+    },
+    {
+      "name": "MAHAMAD ZIDANE",
+      "monday_name": "MAHAMAD ZIDANE",
+      "monday_id": "10017579930",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 63 41 63",
+          "monday": "0693634163"
+        }
+      }
+    },
+    {
+      "name": "LUDOVIC QUINTUAL",
+      "monday_name": "LUDOVIC QUINTUAL",
+      "monday_id": "10017580387",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 26 41 53",
+          "monday": "0692264153"
+        }
+      }
+    },
+    {
+      "name": "PETIOT YVAN",
+      "monday_name": "PETIOT YVAN",
+      "monday_id": "10017581330",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 94 94 43",
+          "monday": "0692949443"
+        }
+      }
+    },
+    {
+      "name": "TDZ CONSTRUCTION",
+      "monday_name": "TDZ CONSTRUCTION",
+      "monday_id": "10017581034",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 56 50 01",
+          "monday": "0692565001"
+        }
+      }
+    },
+    {
+      "name": "K ET H BEAUTY SHOP",
+      "monday_name": "K ET H BEAUTY SHOP",
+      "monday_id": "10017580348",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 49 23 42",
+          "monday": "0692492342"
+        }
+      }
+    },
+    {
+      "name": "SOCIETE TUYAUTERIE CHAUDRONNERIE CHARPENTE (ST2C)",
+      "monday_name": "SOCIETE TUYAUTERIE CHAUDRONNERIE CHARPENTE (ST2C)",
+      "monday_id": "10017581388",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 56 71 27",
+          "monday": "0692567127"
+        }
+      }
+    },
+    {
+      "name": "DAVID DARCALLE",
+      "monday_name": "DAVID DARCALLE",
+      "monday_id": "10017580180",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 54 81 76",
+          "monday": "0692548176"
+        }
+      }
+    },
+    {
+      "name": "THIA KON FAT Wendy",
+      "monday_name": "THIA KON FAT Wendy",
+      "monday_id": "10017580653",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 58 84 56",
+          "monday": "0692588456"
+        }
+      }
+    },
+    {
+      "name": "MARIE CAROLE DOMITILE",
+      "monday_name": "MARIE CAROLE DOMITILE",
+      "monday_id": "10017579713",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 74 33 58",
+          "monday": "0692743358"
+        }
+      }
+    },
+    {
+      "name": "VISION NET CARAIBES",
+      "monday_name": "VISION NET CARAIBES",
+      "monday_id": "10017580706",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 45 59 08",
+          "monday": "0696455908"
+        }
+      }
+    },
+    {
+      "name": "AIEX OVERSEAS",
+      "monday_name": "AIEX OVERSEAS",
+      "monday_id": "10017580162",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 43 72 50",
+          "monday": "0696437250"
+        }
+      }
+    },
+    {
+      "name": "S'TIA",
+      "monday_name": "S'TIA",
+      "monday_id": "10017580095",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 55 12 84",
+          "monday": "0696551284"
+        }
+      }
+    },
+    {
+      "name": "F.E. SERVICES",
+      "monday_name": "F.E. SERVICES",
+      "monday_id": "10017581729",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 37 62 65",
+          "monday": "0696376265"
+        }
+      }
+    },
+    {
+      "name": "LABEL DES CHAMPS",
+      "monday_name": "LABEL DES CHAMPS",
+      "monday_id": "10017581316",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 55 07 95",
+          "monday": "0692550795"
+        }
+      }
+    },
+    {
+      "name": "DANS LES YEUX DE STITCH",
+      "monday_name": "DANS LES YEUX DE STITCH",
+      "monday_id": "10017580596",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 03 68 79",
+          "monday": "0693036879"
+        }
+      }
+    },
+    {
+      "name": "CHARLY'S AUTO LOC (C.A.L.)",
+      "monday_name": "CHARLY'S AUTO LOC (C.A.L.)",
+      "monday_id": "10017580142",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 84 94 96",
+          "monday": "0693849496"
+        }
+      }
+    },
+    {
+      "name": "ANTILLES NEGOCE",
+      "monday_name": "ANTILLES NEGOCE",
+      "monday_id": "10017580476",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 01 84 94",
+          "monday": "0696018494"
+        }
+      }
+    },
+    {
+      "name": "FRANCOIS-XAVIER BENARD",
+      "monday_name": "FRANCOIS-XAVIER BENARD",
+      "monday_id": "10017580190",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 43 19 95",
+          "monday": "0692431995"
+        }
+      }
+    },
+    {
+      "name": "REGINE CHAULEAU",
+      "monday_name": "REGINE CHAULEAU",
+      "monday_id": "10017581951",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 07 31 79",
+          "monday": "0696073179"
+        }
+      }
+    },
+    {
+      "name": "CAROLE PAULET",
+      "monday_name": "CAROLE PAULET",
+      "monday_id": "10017580371",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 31 03 46",
+          "monday": "0696310346"
+        }
+      }
+    },
+    {
+      "name": "ESPACE GOURMAND FLOREAL SARL",
+      "monday_name": "ESPACE GOURMAND FLOREAL SARL",
+      "monday_id": "10017580607",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 58 34",
+          "monday": "0696445834"
+        }
+      }
+    },
+    {
+      "name": "BAYWATCH",
+      "monday_name": "BAYWATCH",
+      "monday_id": "10017579749",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 37 88 88",
+          "monday": "0696378888"
+        }
+      }
+    },
+    {
+      "name": "JANIK SAINTE ROSE",
+      "monday_name": "JANIK SAINTE ROSE",
+      "monday_id": "10017580580",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 58 34",
+          "monday": "0696445834"
+        }
+      }
+    },
+    {
+      "name": "PURE DESIGN",
+      "monday_name": "PURE DESIGN",
+      "monday_id": "10017581972",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 29 74 05",
+          "monday": "0696297405"
+        }
+      }
+    },
+    {
+      "name": "LINK UP",
+      "monday_name": "LINK UP",
+      "monday_id": "10017581971",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 00 25 04",
+          "monday": "0696002504"
+        }
+      }
+    },
+    {
+      "name": "BATISSONS RENOVONS",
+      "monday_name": "BATISSONS RENOVONS",
+      "monday_id": "10017581424",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 17 55 11",
+          "monday": "0696175511"
+        }
+      }
+    },
+    {
+      "name": "ETP INNOV - ENERGIE TRAVAUX PERFORMANCE (ETPI)",
+      "monday_name": "ETP INNOV - ENERGIE TRAVAUX PERFORMANCE (ETPI)",
+      "monday_id": "10017579768",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 18 69 08",
+          "monday": "0690186908"
+        }
+      }
+    },
+    {
+      "name": "LUDWIG RUTIL",
+      "monday_name": "LUDWIG RUTIL",
+      "monday_id": "10017579736",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 18 69 08",
+          "monday": "0690186908"
+        }
+      }
+    },
+    {
+      "name": "SCI X-TREME",
+      "monday_name": "SCI X-TREME",
+      "monday_id": "10017581346",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 51 28 88",
+          "monday": "0696512888"
+        }
+      }
+    },
+    {
+      "name": "JEAN-CLAUDE REGIS",
+      "monday_name": "JEAN-CLAUDE REGIS",
+      "monday_id": "10017580603",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 21 30 08",
+          "monday": "0696213008"
+        }
+      }
+    },
+    {
+      "name": "GZ TOWN",
+      "monday_name": "GZ TOWN",
+      "monday_id": "10017580015",
+      "diffs": {
+        "Telephone": {
+          "excel": "5946 94 03 61 36",
+          "monday": "0694036136"
+        }
+      }
+    },
+    {
+      "name": "B C M",
+      "monday_name": "B C M",
+      "monday_id": "10017579989",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 04 85 15",
+          "monday": "0696048515"
+        }
+      }
+    },
+    {
+      "name": "FRANCINE MAGDELEINE",
+      "monday_name": "FRANCINE MAGDELEINE",
+      "monday_id": "10017581784",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 07 14 95",
+          "monday": "0696071495"
+        }
+      }
+    },
+    {
+      "name": "SOCIETE ANTILLAISE DE GESTION ET DE SERVICES (SAGSS)",
+      "monday_name": "SOCIETE ANTILLAISE DE GESTION ET DE SERVICES (SAGSS)",
+      "monday_id": "10017582035",
+      "diffs": {
+        "Telephone": {
+          "excel": "337 44 84 52 33",
+          "monday": "0744845233"
+        }
+      }
+    },
+    {
+      "name": "RBH2O",
+      "monday_name": "RBH2O",
+      "monday_id": "10017581634",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 94 44 96",
+          "monday": "0696944496"
+        }
+      }
+    },
+    {
+      "name": "LA BAIE DES CHATEAUX",
+      "monday_name": "LA BAIE DES CHATEAUX",
+      "monday_id": "10017580608",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 58 34 35",
+          "monday": "0690583435"
+        }
+      }
+    },
+    {
+      "name": "MADIN'PRESTA BTP 972",
+      "monday_name": "MADIN'PRESTA BTP 972",
+      "monday_id": "10017582088",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 08 09 80",
+          "monday": "0696080980"
+        }
+      }
+    },
+    {
+      "name": "SANDRA JESSU",
+      "monday_name": "SANDRA JESSU",
+      "monday_id": "10017579753",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 24 21 70",
+          "monday": "0696242170"
+        }
+      }
+    },
+    {
+      "name": "LA TRIBE CORP",
+      "monday_name": "LA TRIBE CORP",
+      "monday_id": "10017579876",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 07 49 33",
+          "monday": "0696074933"
+        }
+      }
+    },
+    {
+      "name": "K&L BELLEZA",
+      "monday_name": "K&L BELLEZA",
+      "monday_id": "10017580270",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 60 55 00",
+          "monday": "0696605500"
+        }
+      }
+    },
+    {
+      "name": "ACROBAT EVOLUTION",
+      "monday_name": "ACROBAT EVOLUTION",
+      "monday_id": "10017581400",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 00 81 86",
+          "monday": "0696008186"
+        }
+      }
+    },
+    {
+      "name": "KRAZZ EVENTS",
+      "monday_name": "KRAZZ EVENTS",
+      "monday_id": "10017581687",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 31 43 47",
+          "monday": "0696314347"
+        }
+      }
+    },
+    {
+      "name": "BELOLITOF",
+      "monday_name": "BELOLITOF",
+      "monday_id": "10017579835",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 23 21 19",
+          "monday": "0696232119"
+        }
+      }
+    },
+    {
+      "name": "ABC DEPANNAGE",
+      "monday_name": "ABC DEPANNAGE",
+      "monday_id": "10017580049",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 25 72 98",
+          "monday": "0696257298"
+        }
+      }
+    },
+    {
+      "name": "OLIZA MARTINIQUE",
+      "monday_name": "OLIZA MARTINIQUE",
+      "monday_id": "10017579864",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 23 21 19",
+          "monday": "0696232119"
+        }
+      }
+    },
+    {
+      "name": "SIMON-LUC ANNONAY",
+      "monday_name": "SIMON-LUC ANNONAY",
+      "monday_id": "10017579925",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 11 31 00",
+          "monday": "0696113100"
+        }
+      }
+    },
+    {
+      "name": "MADA NET POOL",
+      "monday_name": "MADA NET POOL",
+      "monday_id": "10017582377",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 05 93 90",
+          "monday": "0696059390"
+        }
+      }
+    },
+    {
+      "name": "MAURANE ERIALE FOYE",
+      "monday_name": "MAURANE ERIALE FOYE",
+      "monday_id": "10017581049",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 26 34 22",
+          "monday": "0696263422"
+        }
+      }
+    },
+    {
+      "name": "RAPID POMPAGE",
+      "monday_name": "RAPID POMPAGE",
+      "monday_id": "10017579908",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 82 67 39",
+          "monday": "0696826739"
+        },
+        "Ref interne": {
+          "excel": "131a9bd5",
+          "monday": "131d5c20"
+        },
+        "Ref devis": {
+          "excel": "D10058070-706",
+          "monday": "D10058077-712"
+        }
+      }
+    },
+    {
+      "name": "DA EMILIO (BELLANO)",
+      "monday_name": "DA EMILIO (BELLANO)",
+      "monday_id": "10017579892",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 52 10 50",
+          "monday": "0696521050"
+        }
+      }
+    },
+    {
+      "name": "WILLY HENRY",
+      "monday_name": "WILLY HENRY",
+      "monday_id": "10017581500",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 43 69 94",
+          "monday": "0696436994"
+        }
+      }
+    },
+    {
+      "name": "BENJY.LOC",
+      "monday_name": "BENJY.LOC",
+      "monday_id": "10017579679",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 32 23 06",
+          "monday": "0696322306"
+        }
+      }
+    },
+    {
+      "name": "GOLD HAIR MIXTE",
+      "monday_name": "GOLD HAIR MIXTE",
+      "monday_id": "10017582053",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 32 23 06",
+          "monday": "0696322306"
+        }
+      }
+    },
+    {
+      "name": "DOMINIQUE VULCAIN",
+      "monday_name": "DOMINIQUE VULCAIN",
+      "monday_id": "10017581274",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 25 65 78",
+          "monday": "0696256578"
+        }
+      }
+    },
+    {
+      "name": "PRESTATIONS PLUS",
+      "monday_name": "PRESTATIONS PLUS",
+      "monday_id": "10017581964",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 23 59 08",
+          "monday": "0696235908"
+        }
+      }
+    },
+    {
+      "name": "ZI MULTISERVICES",
+      "monday_name": "ZI MULTISERVICES",
+      "monday_id": "10017580148",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 50 05 39",
+          "monday": "0696500539"
+        }
+      }
+    },
+    {
+      "name": "BAKE AN TOUT SOS",
+      "monday_name": "BAKE AN TOUT SOS",
+      "monday_id": "10017580745",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 09 84 08",
+          "monday": "0696098408"
+        }
+      }
+    },
+    {
+      "name": "JANIVEL CONSTRUCTIONS",
+      "monday_name": "JANIVEL CONSTRUCTIONS",
+      "monday_id": "10017580995",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 28 77 71",
+          "monday": "0696287771"
+        }
+      }
+    },
+    {
+      "name": "VERONIQUE JEANNE-ROSE",
+      "monday_name": "VERONIQUE JEANNE-ROSE",
+      "monday_id": "10017579764",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 34 26 96",
+          "monday": "0696342696"
+        }
+      }
+    },
+    {
+      "name": "SN LYSLOU'S CAR",
+      "monday_name": "SN LYSLOU'S CAR",
+      "monday_id": "10017581309",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 09 84 48",
+          "monday": "0696098448"
+        }
+      }
+    },
+    {
+      "name": "THE SECRET",
+      "monday_name": "THE SECRET",
+      "monday_id": "10017580666",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 42 31 35 71",
+          "monday": "0642313571"
+        }
+      }
+    },
+    {
+      "name": "MADIANA CONGRES",
+      "monday_name": "MADIANA CONGRES",
+      "monday_id": "10017580887",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 22 25 26",
+          "monday": "0696222526"
+        }
+      }
+    },
+    {
+      "name": "RADIO CARAIBES INTERNATIONAL MARTINIQUE (RCI MARTINIQUE)",
+      "monday_name": "RADIO CARAIBES INTERNATIONAL MARTINIQUE (RCI MARTINIQUE)",
+      "monday_id": "10017580823",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 22 25 26",
+          "monday": "0696222526"
+        }
+      }
+    },
+    {
+      "name": "REGIE CARAIBES NUMERO 1 (RCI)",
+      "monday_name": "REGIE CARAIBES NUMERO 1 (RCI)",
+      "monday_id": "10017580849",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 22 25 26",
+          "monday": "0696222526"
+        }
+      }
+    },
+    {
+      "name": "RADIO CARAIBES INTERNATIONAL NEWS (RCI NEWS)",
+      "monday_name": "RADIO CARAIBES INTERNATIONAL NEWS (RCI NEWS)",
+      "monday_id": "10017580921",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 22 25 26",
+          "monday": "0696222526"
+        }
+      }
+    },
+    {
+      "name": "LES TOILES DU SUD",
+      "monday_name": "LES TOILES DU SUD",
+      "monday_id": "10017580955",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 22 25 26",
+          "monday": "0696222526"
+        }
+      }
+    },
+    {
+      "name": "CORAM",
+      "monday_name": "CORAM",
+      "monday_id": "10017579716",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 86 86 95",
+          "monday": "0696868695"
+        }
+      }
+    },
+    {
+      "name": "SPAR'CAR",
+      "monday_name": "SPAR'CAR",
+      "monday_id": "10017581622",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 33 14 93",
+          "monday": "0696331493"
+        }
+      }
+    },
+    {
+      "name": "PARADISE LOCATION",
+      "monday_name": "PARADISE LOCATION",
+      "monday_id": "10017581659",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 33 14 93",
+          "monday": "0696331493"
+        }
+      }
+    },
+    {
+      "name": "VP44",
+      "monday_name": "VP44",
+      "monday_id": "10017581823",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 94 12 97",
+          "monday": "0696941297"
+        }
+      }
+    },
+    {
+      "name": "L95",
+      "monday_name": "L95",
+      "monday_id": "10017581793",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 94 12 97",
+          "monday": "0696941297"
+        }
+      }
+    },
+    {
+      "name": "DIGITAL AMBULANCES",
+      "monday_name": "DIGITAL AMBULANCES",
+      "monday_id": "10017579964",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 28 79",
+          "monday": "0696442879"
+        }
+      }
+    },
+    {
+      "name": "KATI PAJOUL",
+      "monday_name": "KATI PAJOUL",
+      "monday_id": "10017579884",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 40 47 84",
+          "monday": "0696404784"
+        }
+      }
+    },
+    {
+      "name": "FREDDY GUILLAUME",
+      "monday_name": "FREDDY GUILLAUME",
+      "monday_id": "10017580893",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 94 07 09",
+          "monday": "0690940709"
+        }
+      }
+    },
+    {
+      "name": "AMADICOM",
+      "monday_name": "AMADICOM",
+      "monday_id": "10017579787",
+      "diffs": {
+        "Telephone": {
+          "excel": "59606 96 17 00 69",
+          "monday": "0696170069"
+        }
+      }
+    },
+    {
+      "name": "RPC - RESEAUX PLUS CARAIBES (RPC)",
+      "monday_name": "RPC - RESEAUX PLUS CARAIBES (RPC)",
+      "monday_id": "10017579705",
+      "diffs": {
+        "Telephone": {
+          "excel": "59606 96 23 73 62",
+          "monday": "0696237362"
+        }
+      }
+    },
+    {
+      "name": "REVI",
+      "monday_name": "REVI",
+      "monday_id": "10017581510",
+      "diffs": {
+        "Telephone": {
+          "excel": "59606 96 93 79 80",
+          "monday": "0696937980"
+        }
+      }
+    },
+    {
+      "name": "AMADILOC",
+      "monday_name": "AMADILOC",
+      "monday_id": "10017579841",
+      "diffs": {
+        "Telephone": {
+          "excel": "59606 96 17 00 69",
+          "monday": "0696170069"
+        }
+      }
+    },
+    {
+      "name": "EURL STEEVENS GREPAS INGENIERIE",
+      "monday_name": "EURL STEEVENS GREPAS INGENIERIE",
+      "monday_id": "10017579681",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 24 40 03",
+          "monday": "0696244003"
+        }
+      }
+    },
+    {
+      "name": "AURELIA ARNAUD",
+      "monday_name": "AURELIA ARNAUD",
+      "monday_id": "10017580421",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 39 33 98",
+          "monday": "0696393398"
+        }
+      }
+    },
+    {
+      "name": "HISTOIRE D'AIR",
+      "monday_name": "HISTOIRE D'AIR",
+      "monday_id": "10017581347",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 47 71",
+          "monday": "0696444771"
+        }
+      }
+    },
+    {
+      "name": "INARI",
+      "monday_name": "INARI",
+      "monday_id": "10017579742",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 82 87 47",
+          "monday": "0696828747"
+        }
+      }
+    },
+    {
+      "name": "MIKE COURQUIN",
+      "monday_name": "MIKE COURQUIN",
+      "monday_id": "10017581312",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 37 49 33",
+          "monday": "0696374933"
+        }
+      }
+    },
+    {
+      "name": "LOYD COURQUIN",
+      "monday_name": "LOYD COURQUIN",
+      "monday_id": "10017581338",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 61 97 07",
+          "monday": "0696619707"
+        }
+      }
+    },
+    {
+      "name": "PETER FIDELIN",
+      "monday_name": "PETER FIDELIN",
+      "monday_id": "10017579985",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 98 05 03",
+          "monday": "0696980503"
+        }
+      }
+    },
+    {
+      "name": "LES HAUTS DU BAS MORNE",
+      "monday_name": "LES HAUTS DU BAS MORNE",
+      "monday_id": "10017580650",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 41 89 30",
+          "monday": "0696418930"
+        }
+      }
+    },
+    {
+      "name": "YLAYABY TRANS",
+      "monday_name": "YLAYABY TRANS",
+      "monday_id": "10017579998",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 24 99 23",
+          "monday": "0696249923"
+        }
+      }
+    },
+    {
+      "name": "CABINET M. PINEL-FEREOL BENOIT",
+      "monday_name": "CABINET M. PINEL-FEREOL BENOIT",
+      "monday_id": "10017582064",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 28 64 00",
+          "monday": "0696286400"
+        }
+      }
+    },
+    {
+      "name": "LA KAZ A CREPES",
+      "monday_name": "LA KAZ A CREPES",
+      "monday_id": "10017581775",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "AMR CONSEIL",
+      "monday_name": "AMR CONSEIL",
+      "monday_id": "10017581965",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 38 64 86",
+          "monday": "0695386486"
+        }
+      }
+    },
+    {
+      "name": "KAINA BAY",
+      "monday_name": "KAINA BAY",
+      "monday_id": "10017580268",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 48 86 20",
+          "monday": "0693488620"
+        }
+      }
+    },
+    {
+      "name": "FREDERIC ANDOUCHE",
+      "monday_name": "FREDERIC ANDOUCHE",
+      "monday_id": "10017582043",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 48 97 20",
+          "monday": "0692489720"
+        }
+      }
+    },
+    {
+      "name": "MICKAEL CRESCI",
+      "monday_name": "MICKAEL CRESCI",
+      "monday_id": "10017581555",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 42 13 75",
+          "monday": "0693421375"
+        }
+      }
+    },
+    {
+      "name": "COLOMBINE BOURGEY",
+      "monday_name": "COLOMBINE BOURGEY",
+      "monday_id": "10017581522",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 47 80 21",
+          "monday": "0693478021"
+        }
+      }
+    },
+    {
+      "name": "LEA RATEL",
+      "monday_name": "LEA RATEL",
+      "monday_id": "10017580902",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 84 72 73 85",
+          "monday": "0684727385"
+        }
+      }
+    },
+    {
+      "name": "THOMAS BONMARIN",
+      "monday_name": "THOMAS BONMARIN",
+      "monday_id": "10017580870",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 04 79 83",
+          "monday": "0692047983"
+        }
+      }
+    },
+    {
+      "name": "MIKAEL VIGNERON",
+      "monday_name": "MIKAEL VIGNERON",
+      "monday_id": "10017580766",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 66 85 10",
+          "monday": "0693668510"
+        }
+      }
+    },
+    {
+      "name": "Belveaux Joëlle",
+      "monday_name": "Belveaux Joëlle",
+      "monday_id": "10017579929",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 60 96 38",
+          "monday": "0696609638"
+        }
+      }
+    },
+    {
+      "name": "FREDERIC GRONDIN",
+      "monday_name": "FREDERIC GRONDIN",
+      "monday_id": "10017580515",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 90 40 33",
+          "monday": "0693904033"
+        }
+      }
+    },
+    {
+      "name": "MIXED FIGHTING TRAINING",
+      "monday_name": "MIXED FIGHTING TRAINING",
+      "monday_id": "10017581151",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 12 45 12",
+          "monday": "0693124512"
+        }
+      }
+    },
+    {
+      "name": "ARRC",
+      "monday_name": "ARRC",
+      "monday_id": "10017581909",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 64 78 52 99",
+          "monday": "0664785299"
+        }
+      }
+    },
+    {
+      "name": "LOUIS FRANCOISE",
+      "monday_name": "LOUIS FRANCOISE",
+      "monday_id": "10017580807",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 86 98 21",
+          "monday": "0692869821"
+        }
+      }
+    },
+    {
+      "name": "QUINCY JEANNE EMILIE",
+      "monday_name": "QUINCY JEANNE EMILIE",
+      "monday_id": "10017580316",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 62 01 82",
+          "monday": "0693620182"
+        },
+        "Ref interne": {
+          "excel": "13154afa",
+          "monday": "1a3154af"
+        }
+      }
+    },
+    {
+      "name": "THIERRY TRAN",
+      "monday_name": "THIERRY TRAN",
+      "monday_id": "10017581132",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 21 43 07",
+          "monday": "0692214307"
+        }
+      }
+    },
+    {
+      "name": "BALAZI ATCHY NILLAMA LORINNE MARIE-ANAIS (SOS APERO)",
+      "monday_name": "BALAZI ATCHY NILLAMA LORINNE MARIE-ANAIS (SOS APERO)",
+      "monday_id": "10017581319",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 63 30 23",
+          "monday": "0692633023"
+        }
+      }
+    },
+    {
+      "name": "MAISON D'ASSISTANTES MATERNELLES LES P'TITS LIONS",
+      "monday_name": "MAISON D'ASSISTANTES MATERNELLES LES P'TITS LIONS",
+      "monday_id": "10017581736",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 56 95 95",
+          "monday": "0692569595"
+        }
+      }
+    },
+    {
+      "name": "YOLLANDE RANDRIANARIVELO",
+      "monday_name": "YOLLANDE RANDRIANARIVELO",
+      "monday_id": "10017580234",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 05 67 03",
+          "monday": "0692056703"
+        }
+      }
+    },
+    {
+      "name": "BL AUTO-MOTO",
+      "monday_name": "BL AUTO-MOTO",
+      "monday_id": "10017581650",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 27 58 33",
+          "monday": "0696275833"
+        }
+      }
+    },
+    {
+      "name": "BL CONTROLE TECHNIQUE",
+      "monday_name": "BL CONTROLE TECHNIQUE",
+      "monday_id": "10017581677",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 27 58 33",
+          "monday": "0696275833"
+        }
+      }
+    },
+    {
+      "name": "VIDEOSMAX",
+      "monday_name": "VIDEOSMAX",
+      "monday_id": "10017579746",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 02 89 07",
+          "monday": "0693028907"
+        }
+      }
+    },
+    {
+      "name": "LES PETITS AVENTURIERS",
+      "monday_name": "LES PETITS AVENTURIERS",
+      "monday_id": "10017579750",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 04 93 48",
+          "monday": "0692049348"
+        }
+      }
+    },
+    {
+      "name": "LA CERISE SUR LE GATEAU PROD",
+      "monday_name": "LA CERISE SUR LE GATEAU PROD",
+      "monday_id": "10017579700",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 92 72 46",
+          "monday": "0693927246"
+        }
+      }
+    },
+    {
+      "name": "JEAN-MICHEL JOSEPH BAILLIF",
+      "monday_name": "JEAN-MICHEL JOSEPH BAILLIF",
+      "monday_id": "10017581265",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 92 06 86 39",
+          "monday": "0692068639"
+        }
+      }
+    },
+    {
+      "name": "NICOLAS BELLUNE",
+      "monday_name": "NICOLAS BELLUNE",
+      "monday_id": "10017579863",
+      "diffs": {
+        "Telephone": {
+          "excel": "2626 93 10 19 88",
+          "monday": "0693101988"
+        }
+      }
+    },
+    {
+      "name": "SOCIETE HOTELIERE DE L'ACAJOU (SHA)",
+      "monday_name": "SOCIETE HOTELIERE DE L'ACAJOU (SHA)",
+      "monday_id": "10017580153",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 99 14 42 42",
+          "monday": "0699144242"
+        }
+      }
+    },
+    {
+      "name": "BIO SERVICE ANTILLES (BSA)",
+      "monday_name": "BIO SERVICE ANTILLES (BSA)",
+      "monday_id": "10017579958",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 45 05 06",
+          "monday": "0696450506"
+        }
+      }
+    },
+    {
+      "name": "RODOLPH AMPIGNY",
+      "monday_name": "RODOLPH AMPIGNY",
+      "monday_id": "10017581943",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 64 78 52 99",
+          "monday": "0664785299"
+        }
+      }
+    },
+    {
+      "name": "RENOV DISCOUNT",
+      "monday_name": "RENOV DISCOUNT",
+      "monday_id": "10017580218",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 26 26 13",
+          "monday": "0696262613"
+        }
+      }
+    },
+    {
+      "name": "DYNAMIQUE MARIGOTINE",
+      "monday_name": "DYNAMIQUE MARIGOTINE",
+      "monday_id": "10017581530",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 34 31 05",
+          "monday": "0696343105"
+        }
+      }
+    },
+    {
+      "name": "THIERRY DUPAS",
+      "monday_name": "THIERRY DUPAS",
+      "monday_id": "10017580317",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 45 85 13",
+          "monday": "0696458513"
+        }
+      }
+    },
+    {
+      "name": "RENOVBAIT 972",
+      "monday_name": "RENOVBAIT 972",
+      "monday_id": "10017581161",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 07 10 84",
+          "monday": "0696071084"
+        }
+      }
+    },
+    {
+      "name": "ATELIER D'ARCHITECTURE ARNAUD CHEVALIER (3AC)",
+      "monday_name": "ATELIER D'ARCHITECTURE ARNAUD CHEVALIER (3AC)",
+      "monday_id": "10017582092",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 43 12 06",
+          "monday": "0696431206"
+        }
+      }
+    },
+    {
+      "name": "CABINET BARBEAU",
+      "monday_name": "CABINET BARBEAU",
+      "monday_id": "10017581435",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 41 62 18",
+          "monday": "0696416218"
+        }
+      }
+    },
+    {
+      "name": "MARTINIQUE PLONGEE (MP)",
+      "monday_name": "MARTINIQUE PLONGEE (MP)",
+      "monday_id": "10017582067",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 04 00 65",
+          "monday": "0696040065"
+        }
+      }
+    },
+    {
+      "name": "PREMIERE MEDICALE",
+      "monday_name": "PREMIERE MEDICALE",
+      "monday_id": "10017580286",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 09 46 67 59",
+          "monday": "0609466759"
+        }
+      }
+    },
+    {
+      "name": "ROSA",
+      "monday_name": "ROSA",
+      "monday_id": "10017581580",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 95 18 84 99",
+          "monday": "0695188499"
+        }
+      }
+    },
+    {
+      "name": "OREADE",
+      "monday_name": "OREADE",
+      "monday_id": "10017580538",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 05 80 03",
+          "monday": "0696058003"
+        }
+      }
+    },
+    {
+      "name": "MYRIAM DARCY",
+      "monday_name": "MYRIAM DARCY",
+      "monday_id": "10017580221",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 01 74 98",
+          "monday": "0696017498"
+        }
+      }
+    },
+    {
+      "name": "OPHTA CARAIBES",
+      "monday_name": "OPHTA CARAIBES",
+      "monday_id": "10017581690",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 09 46 67 59",
+          "monday": "0609466759"
+        }
+      }
+    },
+    {
+      "name": "JADE ONESIPE JANVIER",
+      "monday_name": "JADE ONESIPE JANVIER",
+      "monday_id": "10017582182",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 66 12 38",
+          "monday": "0696661238"
+        }
+      }
+    },
+    {
+      "name": "LE MONDE DU TERRASSEMENT",
+      "monday_name": "LE MONDE DU TERRASSEMENT",
+      "monday_id": "10017580150",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 28 63 37",
+          "monday": "0696286337"
+        }
+      }
+    },
+    {
+      "name": "O BOL DORE",
+      "monday_name": "O BOL DORE",
+      "monday_id": "10017580313",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 61 65 03 74",
+          "monday": "0661650374"
+        }
+      }
+    },
+    {
+      "name": "LIVGOOD 972",
+      "monday_name": "LIVGOOD 972",
+      "monday_id": "10017581575",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 50 10 25",
+          "monday": "0696501025"
+        }
+      }
+    },
+    {
+      "name": "KAYCHIN EX",
+      "monday_name": "KAYCHIN EX",
+      "monday_id": "10017580564",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 54 41 29",
+          "monday": "0696544129"
+        }
+      }
+    },
+    {
+      "name": "PROKEYS' AUTO SERVICES (PKS)",
+      "monday_name": "PROKEYS' AUTO SERVICES (PKS)",
+      "monday_id": "10017579759",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 67 12 38",
+          "monday": "0696671238"
+        }
+      }
+    },
+    {
+      "name": "SCARPONE PRODUCTIONS",
+      "monday_name": "SCARPONE PRODUCTIONS",
+      "monday_id": "10017581372",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 52 27 77 33",
+          "monday": "0652277733"
+        }
+      }
+    },
+    {
+      "name": "ALDO",
+      "monday_name": "ALDO",
+      "monday_id": "10017581343",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 52 27 77 33",
+          "monday": "0652277733"
+        }
+      }
+    },
+    {
+      "name": "LEADER ALU",
+      "monday_name": "LEADER ALU",
+      "monday_id": "10017581232",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 90 46 48",
+          "monday": "0696904648"
+        }
+      }
+    },
+    {
+      "name": "CARAIBES GOUTTIERES",
+      "monday_name": "CARAIBES GOUTTIERES",
+      "monday_id": "10017580910",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 02 22 92",
+          "monday": "0696022292"
+        }
+      }
+    },
+    {
+      "name": "MIAMOR",
+      "monday_name": "MIAMOR",
+      "monday_id": "10017581491",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 75 30 11",
+          "monday": "0696753011"
+        }
+      }
+    },
+    {
+      "name": "WILL BE FAN",
+      "monday_name": "WILL BE FAN",
+      "monday_id": "10017581463",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 75 30 11",
+          "monday": "0696753011"
+        }
+      }
+    },
+    {
+      "name": "ANNICK LENAERS",
+      "monday_name": "ANNICK LENAERS",
+      "monday_id": "10017580446",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 29 40 47",
+          "monday": "0696294047"
+        }
+      }
+    },
+    {
+      "name": "AQUA RELAX CARAIBES",
+      "monday_name": "AQUA RELAX CARAIBES",
+      "monday_id": "10017580670",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 28 42 83",
+          "monday": "0696284283"
+        }
+      }
+    },
+    {
+      "name": "STESSO",
+      "monday_name": "STESSO",
+      "monday_id": "10017580530",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 29 40 47",
+          "monday": "0696294047"
+        }
+      }
+    },
+    {
+      "name": "AQUADIS NORD CARAIBES (ANC)",
+      "monday_name": "AQUADIS NORD CARAIBES (ANC)",
+      "monday_id": "10017580733",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 28 42 83",
+          "monday": "0696284283"
+        }
+      }
+    },
+    {
+      "name": "DITTO",
+      "monday_name": "DITTO",
+      "monday_id": "10017580483",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 29 40 47",
+          "monday": "0696294047"
+        }
+      }
+    },
+    {
+      "name": "AQUA RELAX DISTRIBUTION",
+      "monday_name": "AQUA RELAX DISTRIBUTION",
+      "monday_id": "10017580701",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 28 42 83",
+          "monday": "0696284283"
+        }
+      }
+    },
+    {
+      "name": "ECOLE DE CONDUITE MERGIRIE",
+      "monday_name": "ECOLE DE CONDUITE MERGIRIE",
+      "monday_id": "10017581552",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 31 28 94",
+          "monday": "0696312894"
+        }
+      }
+    },
+    {
+      "name": "RDB32",
+      "monday_name": "RDB32",
+      "monday_id": "10017581002",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 66 94 44",
+          "monday": "0696669444"
+        }
+      }
+    },
+    {
+      "name": "LAURENT ANSART",
+      "monday_name": "LAURENT ANSART",
+      "monday_id": "10017579987",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 74 42 09",
+          "monday": "0696744209"
+        }
+      }
+    },
+    {
+      "name": "CHRISTELLE SMITS",
+      "monday_name": "CHRISTELLE SMITS",
+      "monday_id": "10017579752",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 74 42 09",
+          "monday": "0696744209"
+        }
+      }
+    },
+    {
+      "name": "MONPLAISIR ENTREPRISE",
+      "monday_name": "MONPLAISIR ENTREPRISE",
+      "monday_id": "10017580414",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 85 59 56",
+          "monday": "0696855956"
+        }
+      }
+    },
+    {
+      "name": "EQUIP'PRO",
+      "monday_name": "EQUIP'PRO",
+      "monday_id": "10017581984",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 44 31 93",
+          "monday": "0696443193"
+        }
+      }
+    },
+    {
+      "name": "MYLENE VAUBON",
+      "monday_name": "MYLENE VAUBON",
+      "monday_id": "10017580024",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 93 41 61",
+          "monday": "0696934161"
+        }
+      }
+    },
+    {
+      "name": "PAMELA'FASHION NEW STYLE",
+      "monday_name": "PAMELA'FASHION NEW STYLE",
+      "monday_id": "10017581946",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 65 31 27",
+          "monday": "0696653127"
+        }
+      }
+    },
+    {
+      "name": "C'AUTO SERVICES PLUS (CASP)",
+      "monday_name": "C'AUTO SERVICES PLUS (CASP)",
+      "monday_id": "10017580885",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 17 45 35",
+          "monday": "0696174535"
+        }
+      }
+    },
+    {
+      "name": "YLAN CAYOL",
+      "monday_name": "YLAN CAYOL",
+      "monday_id": "10017580851",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 17 45 35",
+          "monday": "0696174535"
+        }
+      }
+    },
+    {
+      "name": "MAXIME DESCAMPS",
+      "monday_name": "MAXIME DESCAMPS",
+      "monday_id": "10017581619",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 29 30 88",
+          "monday": "0696293088"
+        }
+      }
+    },
+    {
+      "name": "LEILA ALCINDOR",
+      "monday_name": "LEILA ALCINDOR",
+      "monday_id": "10017581467",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 93 97 00",
+          "monday": "0696939700"
+        }
+      }
+    },
+    {
+      "name": "CECILE BARROIS",
+      "monday_name": "CECILE BARROIS",
+      "monday_id": "10017581774",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 78 68 51 80",
+          "monday": "0678685180"
+        }
+      }
+    },
+    {
+      "name": "RESIDENCE TI PUNCH (RTP)",
+      "monday_name": "RESIDENCE TI PUNCH (RTP)",
+      "monday_id": "10017579807",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 33 76 75",
+          "monday": "0696337675"
+        }
+      }
+    },
+    {
+      "name": "EURL DUDU",
+      "monday_name": "EURL DUDU",
+      "monday_id": "10017580500",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 61 12 84",
+          "monday": "0696611284"
+        }
+      }
+    },
+    {
+      "name": "TOP CAR MARTINIQUE",
+      "monday_name": "TOP CAR MARTINIQUE",
+      "monday_id": "10017582249",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 31 82 88",
+          "monday": "0696318288"
+        }
+      }
+    },
+    {
+      "name": "ASSURANCE DES ILES",
+      "monday_name": "ASSURANCE DES ILES",
+      "monday_id": "10017581953",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 06 29 03",
+          "monday": "0696062903"
+        }
+      }
+    },
+    {
+      "name": "BMF GROUPE",
+      "monday_name": "BMF GROUPE",
+      "monday_id": "10017580120",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 67 91 97",
+          "monday": "0696679197"
+        }
+      }
+    },
+    {
+      "name": "HOLDING A.K.L. (A.K.L)",
+      "monday_name": "HOLDING A.K.L. (A.K.L)",
+      "monday_id": "10017580355",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 60 55 00",
+          "monday": "0696605500"
+        }
+      }
+    },
+    {
+      "name": "LASHES&CO",
+      "monday_name": "LASHES&CO",
+      "monday_id": "10017580300",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 60 55 00",
+          "monday": "0696605500"
+        }
+      }
+    },
+    {
+      "name": "CHABAL GREGORY",
+      "monday_name": "CHABAL GREGORY",
+      "monday_id": "10017581154",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 27 67 30",
+          "monday": "0696276730"
+        }
+      }
+    },
+    {
+      "name": "CAR BOAT RENT FWI",
+      "monday_name": "CAR BOAT RENT FWI",
+      "monday_id": "10017580326",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 60 55 00",
+          "monday": "0696605500"
+        }
+      }
+    },
+    {
+      "name": "PIEL KANELA",
+      "monday_name": "PIEL KANELA",
+      "monday_id": "10017580235",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 60 55 00",
+          "monday": "0696605500"
+        }
+      }
+    },
+    {
+      "name": "CASTEL CAPITAL AM",
+      "monday_name": "CASTEL CAPITAL AM",
+      "monday_id": "10017580407",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 82 73 43",
+          "monday": "0696827343"
+        }
+      }
+    },
+    {
+      "name": "DPELEC",
+      "monday_name": "DPELEC",
+      "monday_id": "10017580161",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 83 24 42",
+          "monday": "0696832442"
+        }
+      }
+    },
+    {
+      "name": "THE MOOVING/SQUAT",
+      "monday_name": "THE MOOVING/SQUAT",
+      "monday_id": "10017581679",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 73 83 31",
+          "monday": "0696738331"
+        }
+      }
+    },
+    {
+      "name": "CULTURE LOISIRS ACTIVITES SPORTIVES ET SOCIALES (CLASS CLUB)",
+      "monday_name": "CULTURE LOISIRS ACTIVITES SPORTIVES ET SOCIALES (CLASS CLUB)",
+      "monday_id": "10017580787",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 26 46 02",
+          "monday": "0696264602"
+        }
+      }
+    },
+    {
+      "name": "A.V.O.C SARL (AVOC SARL)",
+      "monday_name": "A.V.O.C SARL (AVOC SARL)",
+      "monday_id": "10017580990",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 25 69 78",
+          "monday": "0696256978"
+        }
+      }
+    },
+    {
+      "name": "KATALINA BOUCHER",
+      "monday_name": "KATALINA BOUCHER",
+      "monday_id": "10017581280",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 52 33 82",
+          "monday": "0690523382"
+        }
+      }
+    },
+    {
+      "name": "DOMINIQUE BOLO",
+      "monday_name": "DOMINIQUE BOLO",
+      "monday_id": "10017580840",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 70 74 21",
+          "monday": "0696707421"
+        }
+      }
+    },
+    {
+      "name": "MC PISCINE 972",
+      "monday_name": "MC PISCINE 972",
+      "monday_id": "10017581528",
+      "diffs": {
+        "Telephone": {
+          "excel": "336 61 54 52 42",
+          "monday": "0661545242"
+        }
+      }
+    },
+    {
+      "name": "EMILE EMILE ERICHER",
+      "monday_name": "EMILE EMILE ERICHER",
+      "monday_id": "10017581081",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 43 79 62",
+          "monday": "0696437962"
+        }
+      }
+    },
+    {
+      "name": "Maeva Letuvee",
+      "monday_name": "Maeva Letuvee",
+      "monday_id": "10017580907",
+      "diffs": {
+        "Telephone": {
+          "excel": "5906 90 80 57 60",
+          "monday": "0690805760"
+        }
+      }
+    },
+    {
+      "name": "CFA LA BEAUTE DU STRASS",
+      "monday_name": "CFA LA BEAUTE DU STRASS",
+      "monday_id": "10017580449",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 24 78 03",
+          "monday": "0696247803"
+        },
+        "Ref interne": {
+          "excel": "131617a0",
+          "monday": "1310a9bc"
+        },
+        "Ref devis": {
+          "excel": "D10057683-331",
+          "monday": "D10058743-1367"
+        }
+      }
+    },
+    {
+      "name": "MENUISERIE BOURGEOIS",
+      "monday_name": "MENUISERIE BOURGEOIS",
+      "monday_id": "10017581412",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 28 67 31",
+          "monday": "0696286731"
+        }
+      }
+    },
+    {
+      "name": "L'ESCALE GOURMANDE",
+      "monday_name": "L'ESCALE GOURMANDE",
+      "monday_id": "10017581786",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 31 99 03",
+          "monday": "0696319903"
+        }
+      }
+    },
+    {
+      "name": "ASSOC JEUNESSE SPORT CULTUR DE CANAL (AJSCC)",
+      "monday_name": "ASSOC JEUNESSE SPORT CULTUR DE CANAL (AJSCC)",
+      "monday_id": "10017580099",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 00 33 92",
+          "monday": "0696003392"
+        }
+      }
+    },
+    {
+      "name": "DWET DOUVEN YANKEE ANTILLES",
+      "monday_name": "DWET DOUVEN YANKEE ANTILLES",
+      "monday_id": "10017581754",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 31 99 03",
+          "monday": "0696319903"
+        }
+      }
+    },
+    {
+      "name": "YVES BUSSY",
+      "monday_name": "YVES BUSSY",
+      "monday_id": "10017579858",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 25 52 02",
+          "monday": "0696255202"
+        }
+      }
+    },
+    {
+      "name": "Ly prestige",
+      "monday_name": "Ly prestige",
+      "monday_id": "10017581871",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 65 20 03",
+          "monday": "0696652003"
+        }
+      }
+    },
+    {
+      "name": "VOIE 2 BELLE ETOILE",
+      "monday_name": "VOIE 2 BELLE ETOILE",
+      "monday_id": "10017579715",
+      "diffs": {
+        "Telephone": {
+          "excel": "3526 91 26 06 77",
+          "monday": "0691260677"
+        }
+      }
+    },
+    {
+      "name": "ESPRIT LIBRE",
+      "monday_name": "ESPRIT LIBRE",
+      "monday_id": "10017582259",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 24 32 16",
+          "monday": "0696243216"
+        }
+      }
+    },
+    {
+      "name": "SAS ROLEC (ROLEC)",
+      "monday_name": "SAS ROLEC (ROLEC)",
+      "monday_id": "10017579975",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 24 32 16",
+          "monday": "0696243216"
+        }
+      }
+    },
+    {
+      "name": "SOLEIL",
+      "monday_name": "SOLEIL",
+      "monday_id": "10017580422",
+      "diffs": {
+        "Adresse": {
+          "excel": "82 RUE VICTOR HUGO",
+          "monday": "11 AVENUE CASIMIR BRANGLIDOR"
+        },
+        "Code postal": {
+          "excel": "97200.0",
+          "monday": "97220"
+        },
+        "Ville": {
+          "excel": "FORT-DE-FRANCE",
+          "monday": "TRINITE"
+        },
+        "Ref interne": {
+          "excel": "131a4da8",
+          "monday": "131a9c74"
+        },
+        "Ref devis": {
+          "excel": "D10057711-359",
+          "monday": "D10057721-369"
+        }
+      }
+    },
+    {
+      "name": "NADIA DALMAT",
+      "monday_name": "NADIA DALMAT",
+      "monday_id": "10017579815",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 07 51 06",
+          "monday": "0696075106"
+        }
+      }
+    },
+    {
+      "name": "RAPHAEL ZITELLI",
+      "monday_name": "RAPHAEL ZITELLI",
+      "monday_id": "10017580109",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 84 03 40",
+          "monday": "0696840340"
+        }
+      }
+    },
+    {
+      "name": "SOLEIL",
+      "monday_name": "SOLEIL",
+      "monday_id": "10017580033",
+      "diffs": {
+        "Adresse": {
+          "excel": "11 AVENUE CASIMIR BRANGLIDOR",
+          "monday": "82 RUE VICTOR HUGO"
+        },
+        "Code postal": {
+          "excel": "97220.0",
+          "monday": "97200"
+        },
+        "Ville": {
+          "excel": "TRINITE",
+          "monday": "FORT-DE-FRANCE"
+        },
+        "Ref interne": {
+          "excel": "1310dbab",
+          "monday": "131a4da8"
+        },
+        "Ref devis": {
+          "excel": "D10057715-363",
+          "monday": "D10057711-359"
+        }
+      }
+    },
+    {
+      "name": "RADICAL TRAITEMENT",
+      "monday_name": "RADICAL TRAITEMENT",
+      "monday_id": "10017582133",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 39 55 16",
+          "monday": "0696395516"
+        }
+      }
+    },
+    {
+      "name": "KEMSLEY JACQUES",
+      "monday_name": "KEMSLEY JACQUES",
+      "monday_id": "10017580863",
+      "diffs": {
+        "Telephone": {
+          "excel": "5966 96 89 50 55",
+          "monday": "0696895055"
+        }
+      }
+    },
+    {
+      "name": "GARAGE ZAMIDIO ET FRERES",
+      "monday_name": "GARAGE ZAMIDIO ET FRERES",
+      "monday_id": "10017579902",
+      "diffs": {
+        "Telephone": {
+          "excel": "262692000000.0",
+          "monday": "0692297971"
+        }
+      }
+    },
+    {
+      "name": "TONY PAYET",
+      "monday_name": "TONY PAYET",
+      "monday_id": "10017580577",
+      "diffs": {
+        "Telephone": {
+          "excel": "262693000000.0",
+          "monday": "0692646698"
+        }
+      }
+    },
+    {
+      "name": "JASAWANT'S",
+      "monday_name": "JASAWANT'S",
+      "monday_id": "10017581111",
+      "diffs": {
+        "Adresse": {
+          "excel": "ZONE INDUSTRIELLE DE JARRY",
+          "monday": "CHEMIN DE LA PLAGE"
+        },
+        "Code postal": {
+          "excel": "97122.0",
+          "monday": "97180"
+        },
+        "Ville": {
+          "excel": "BAIE-MAHAULT",
+          "monday": "SAINTE-ANNE"
+        },
+        "Ref interne": {
+          "excel": "131a3c26",
+          "monday": "13106a24"
+        },
+        "Ref devis": {
+          "excel": "D10059042-1666",
+          "monday": "D10059060-1684"
+        }
+      }
+    },
+    {
+      "name": "PAIN NOBEL",
+      "monday_name": "PAIN NOBEL",
+      "monday_id": "10017581202",
+      "diffs": {
+        "Adresse": {
+          "excel": "RTE HIBISCUS ROUTE DES ABYMES",
+          "monday": "13 RUE ACHILLE RENE BOISNEUF"
+        },
+        "Ref interne": {
+          "excel": "1312f70b",
+          "monday": "131a43b7"
+        },
+        "Ref devis": {
+          "excel": "D10059049-1673",
+          "monday": "D10059063-1687"
+        }
+      }
+    },
+    {
+      "name": "MARK BRUNO",
+      "monday_name": "RK",
+      "monday_id": "10017582293",
+      "diffs": {
+        "SIRET": {
+          "excel": "418301164.0",
+          "monday": "81199539800021"
+        },
+        "Email": {
+          "excel": "markbrunoavocat@gmail.com",
+          "monday": "k.rousseaux@orange.fr"
+        },
+        "Telephone": {
+          "excel": "5966 96 68 84 82",
+          "monday": "0690477426"
+        },
+        "Adresse": {
+          "excel": "RTE DE LA POINTE DES SABLES",
+          "monday": "12 BD DU MARQUISAT DU HOUELBOURG"
+        },
+        "Code postal": {
+          "excel": "97200.0",
+          "monday": "97122"
+        },
+        "Ville": {
+          "excel": "FORT DE FRANCE",
+          "monday": "BAIE-MAHAULT"
+        },
+        "Ref interne": {
+          "excel": "13106083.0",
+          "monday": "131dd49a"
+        },
+        "Ref devis": {
+          "excel": "D10059160-1784",
+          "monday": "D10058680-1304"
+        }
+      }
+    },
+    {
+      "name": "JBF RENOV",
+      "monday_name": "JBF RENOV",
+      "monday_id": "10017582060",
+      "diffs": {
+        "Telephone": {
+          "excel": "690630974.0",
+          "monday": "0690630974"
+        }
+      }
+    }
+  ],
+  "missing_all": [
+    {
+      "sheet": "ZNI",
+      "op": "142.0",
+      "benef": "FAULIA",
+      "email": "faulia97280@gmail.com",
+      "tel": "336 80 46 44 99"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "273.0",
+      "benef": "VILLAGE PARTAGE LA MARGUERITE",
+      "email": "villagepartage@gmail.com",
+      "tel": "2626 92 07 76 64"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "372.0",
+      "benef": "OYOBO",
+      "email": "anthony@oyobo.re",
+      "tel": "06 93 64 82 03"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "435.0",
+      "benef": "k lite life",
+      "email": "aucoralie@gmail.com",
+      "tel": "5906 90 65 27 26"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "500.0",
+      "benef": "JORDAN BARON",
+      "email": "jmbtransport971@gmail.com",
+      "tel": "06 90 37 78 59"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "607.0",
+      "benef": "JEAN LUC LIVE YU PENG",
+      "email": "jeanluc.liveyupeng@yahoo.fr",
+      "tel": "06 92 98 01 94"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "646.0",
+      "benef": "SOCIETE COMMERCIALE D'ARTICLES DE BEBE (SCABB)",
+      "email": "bebebonheur972@gmail.com",
+      "tel": "06 96 29 07 97"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "778.0",
+      "benef": "HERVE YEN-PON",
+      "email": "herve.yp974@gmail.com",
+      "tel": "06 92 95 14 04"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "995.0",
+      "benef": "MARIE RIVIERE",
+      "email": "anvaraly.yanic@yahoo.com",
+      "tel": "06 92 32 19 74"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1188.0",
+      "benef": "OLIVIER LIMERY",
+      "email": "elmbtp@hotmail.com",
+      "tel": "5966 96 06 10 58"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1189.0",
+      "benef": "FREDERIC RIPERT",
+      "email": "ripert.aade@gmail.com",
+      "tel": "06 96 29 43 43"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1191.0",
+      "benef": "LEADER PHARMA SERVICES (L.P.S.)",
+      "email": "vincent.viguie971@gmail.com",
+      "tel": "06 90 72 20 27"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1192.0",
+      "benef": "JULIEN GUEGUEN",
+      "email": "breizhkayenn97351@gmail.com",
+      "tel": "33769119373.0"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1193.0",
+      "benef": "XAVIER TARQUIN",
+      "email": "xaviertarquin971@hotmail.fr",
+      "tel": "06 90 75 33 09"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1195.0",
+      "benef": "SCULPTURAMA",
+      "email": "sculpturama.reunion@gmail.com",
+      "tel": "06 93 60 15 90"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1196.0",
+      "benef": "JULIE EROULY",
+      "email": "agenceboner.r@outlook.com",
+      "tel": "06 92 11 06 35"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1197.0",
+      "benef": "TATARETO",
+      "email": "oliviersheikboudhou@gmail.com",
+      "tel": "06 90 35 39 44"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1198.0",
+      "benef": "BH DISTRIBUTION (BHD)",
+      "email": "Bh.distribution97@gmail.com",
+      "tel": "06 90 47 44 57"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1199.0",
+      "benef": "DULCE ONDEE",
+      "email": "Dulc2109@icloud.com",
+      "tel": "06 90 95 10 76"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1200.0",
+      "benef": "MARIE MICHELE BERNARI",
+      "email": "mimisty971@hotmail.fr",
+      "tel": "590691000000.0"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1201.0",
+      "benef": "LAURA URBINO",
+      "email": "Lapausa971@gmail.com",
+      "tel": "06 90 09 73 61"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1202.0",
+      "benef": "ALURENOV FWI",
+      "email": "alurenov26@gmail.com",
+      "tel": "590690000000.0"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1203.0",
+      "benef": "AMIPAIN",
+      "email": "jasawantwilly@gmail.com",
+      "tel": "06 90 35 41 01"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1204.0",
+      "benef": "GROUPE WDL",
+      "email": "jasawantwilly@gmail.com",
+      "tel": "06 90 35 41 01"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1205.0",
+      "benef": "SSBP",
+      "email": "jasawantwilly@gmail.com",
+      "tel": "06 90 35 41 01"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1207.0",
+      "benef": "BP FREBAULT",
+      "email": "jasawantwilly@gmail.com",
+      "tel": "06 90 35 41 01"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1209.0",
+      "benef": "LAKASA PAIN",
+      "email": "jasawantwilly@gmail.com",
+      "tel": "06 90 35 41 01"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1210.0",
+      "benef": "COMMUNE DE MACOURIA",
+      "email": "martine.legros@ac-guyane.fr",
+      "tel": "06 94 16 22 15"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1211.0",
+      "benef": "MILOT CHERY",
+      "email": "cherymilot91@gmail.com",
+      "tel": "06 90 21 00 91"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1212.0",
+      "benef": "STANIS PHAETON",
+      "email": "Jeanluc.d20@gmail.com",
+      "tel": "06 90 63 65 88"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1213.0",
+      "benef": "FREDERIC HENRI OCTAVIUS",
+      "email": "flycontact@gmail.com",
+      "tel": "06 96 94 92 14"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1215.0",
+      "benef": "MEDIA H ANTILLES GUYANE",
+      "email": "fchabasse@antillestv.fr",
+      "tel": "5966 96 71 22 71"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1216.0",
+      "benef": "NUHDISS HARDCORE BARBELL GUYANE",
+      "email": "nuhdisshardcorebarbellguyane@gmail.com",
+      "tel": "06 94 42 19 59"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1217.0",
+      "benef": "YVELA FLEURIVAL",
+      "email": "amoscadet12@gmail.com",
+      "tel": "06 94 08 42 94"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1218.0",
+      "benef": "ASSISTANCE BUREAUTIQUE ET SERVICES",
+      "email": "assistance.bureautique@outlook.com",
+      "tel": "06 94 99 14 15"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1219.0",
+      "benef": "IMOXI",
+      "email": "contact.imoxi@gmail.com",
+      "tel": "06 94 99 14 15"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1220.0",
+      "benef": "DL DISTRIBUTION (DLD)",
+      "email": "dl.distribution@outlook.com",
+      "tel": "06 94 99 14 15"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1221.0",
+      "benef": "PAULO-SERGIO REIS-DE-OLIVEIRA",
+      "email": "reis.construction973@gmail.com",
+      "tel": "06 94 94 43 70"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1223.0",
+      "benef": "EARL GUSTO",
+      "email": "lutedy@live.fr",
+      "tel": "5966 96 34 14 29"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1224.0",
+      "benef": "ETUDES CONSTRUCTION PLUS",
+      "email": "mgaydu@live.fr",
+      "tel": "06 90 30 81 53"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1225.0",
+      "benef": "MANOEL BORGES DA SILVA",
+      "email": "ferreiradasilvaraquel0401@gmail.com",
+      "tel": "06 94 01 46 79"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1226.0",
+      "benef": "BERTILI LOCATION",
+      "email": "Bertiligregory3@gmail.com",
+      "tel": "06 50 58 88 62"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1227.0",
+      "benef": "SUNDOM",
+      "email": "Pignol.pierre.e@gmail.com",
+      "tel": "06 96 26 39 30"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1228.0",
+      "benef": "WELINTON PEREZ",
+      "email": "wendelmendieta29@gmail.com",
+      "tel": "06 90 90 58 65"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1229.0",
+      "benef": "EMMERIC BEAUPIN",
+      "email": "beaupin.emmeric971@gmx.com",
+      "tel": "06 90 44 66 34"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1230.0",
+      "benef": "ROMAELLE FIFI",
+      "email": "rorostyles_bcf.guadeloupe@hotmail.com",
+      "tel": "06 90 26 18 53"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1231.0",
+      "benef": "MBC CLIMATISATION",
+      "email": "wendelmendieta29@gmail.com",
+      "tel": "06 90 90 58 65"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1232.0",
+      "benef": "KDS",
+      "email": "sasukds972@gmail.com",
+      "tel": "06 96 21 45 87"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1234.0",
+      "benef": "NA",
+      "email": "roussena97190@gmail.com",
+      "tel": "07 44 57 78 01"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1235.0",
+      "benef": "DOMOTIQUE CAMERAS 972",
+      "email": "contact.camera972@gmail.com",
+      "tel": "06 96 60 00 05"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1236.0",
+      "benef": "NA",
+      "email": "viardotwilliam@gmail.com",
+      "tel": "06 90 76 05 32"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1237.0",
+      "benef": "DN BTP",
+      "email": "deriaunicolas10@gmail.com",
+      "tel": "06 96 77 72 94"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1238.0",
+      "benef": "L'UNIVERS DE JENNY",
+      "email": "Facctimacespedes@gmail.com",
+      "tel": "06 90 86 68 60"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1239.0",
+      "benef": "LOUIDGI PRADEL",
+      "email": "louistypradel@gmail.com",
+      "tel": "06 90 34 49 45"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1240.0",
+      "benef": "EDINHO COMPPER",
+      "email": "vudenhaut971@gmail.com",
+      "tel": "06 90 58 38 62"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1241.0",
+      "benef": "NC RESTAURATION",
+      "email": "Lapuchi2001@icloud.com",
+      "tel": "06 90 72 02 79"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1242.0",
+      "benef": "CASTLE QUICK",
+      "email": "kene.cita@hotmail.fr",
+      "tel": "06 90 73 30 02"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1243.0",
+      "benef": "MASTER CAR CONCEPT",
+      "email": "mastercarconcept@gmail.com",
+      "tel": "06 90 06 40 47"
+    },
+    {
+      "sheet": "ZNI",
+      "op": "1244.0",
+      "benef": "TOR",
+      "email": "torbey.stephane@gmail.com",
+      "tel": "06 90 11 11 91"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "1.0",
+      "benef": "PATRICK MELLOR",
+      "email": "crocdor971@gmail.com",
+      "tel": "690971700.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "2.0",
+      "benef": "KEINA MANIJEAN LAURENT",
+      "email": "laurentkeina@gmail.com",
+      "tel": "783365671.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "3.0",
+      "benef": "PIERRE TALLEUX",
+      "email": "allo3615pierrot@hotmail.com",
+      "tel": "692079407.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "4.0",
+      "benef": "NIFLORE JOHANN",
+      "email": "johannkarine@live.fr",
+      "tel": "692613929.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "5.0",
+      "benef": "ARNAUD OLIVIER MERON",
+      "email": "plaisance974@yahoo.com",
+      "tel": "692146146.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "6.0",
+      "benef": "ASSISTANCE DOMOTIQUE ELECTRICITE ET INDUSTRIE (A.D.E.I)",
+      "email": "direction@domenergy97.com",
+      "tel": "596696668373.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "7.0",
+      "benef": "PATRICE MARTINEZ",
+      "email": "patrollo974@gmail.com",
+      "tel": "262692940194.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "8.0",
+      "benef": "GILLES ERIC THOMAS",
+      "email": "mobilite.australie@yahoo.fr",
+      "tel": "692765038.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "9.0",
+      "benef": "LUDOVIC GOURAYA GOUROUVADOU POTAYA",
+      "email": "l.gouraya@me.com",
+      "tel": "262692815978.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "10.0",
+      "benef": "EMMANUEL BARDEUR",
+      "email": "ebardeur@hotmail.fr",
+      "tel": "690401491.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "11.0",
+      "benef": "MIKAEL JEAN FRANCOIS RIVELY",
+      "email": "rively.fabienne@orange.fr",
+      "tel": "262692318942.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "12.0",
+      "benef": "LAGUARIGUE Pauline",
+      "email": "pauline.fillion@gmail.com",
+      "tel": "692991430.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "14.0",
+      "benef": "TOM IPPOLITO",
+      "email": "tippolito97427@gmail.com",
+      "tel": "693656102.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "15.0",
+      "benef": "CHEZ RORO",
+      "email": "gtaupe@guitogest.com",
+      "tel": "590690424848.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "16.0",
+      "benef": "GABRIEL MULTISERVICES",
+      "email": "lys.loysse@yahoo.fr",
+      "tel": "596696847843.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "17.0",
+      "benef": "RICHARD LERIN",
+      "email": "chaolerin@gmail.com",
+      "tel": "590690316022.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "18.0",
+      "benef": "EMILIE JEAN",
+      "email": "emiliejean.osteo@gmail.com",
+      "tel": "590690755542.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "19.0",
+      "benef": "JEAN-PHILIPPE DANAUS",
+      "email": "danagwada@hotmail.com",
+      "tel": "590690510866.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "20.0",
+      "benef": "MANUEL KOMLA-SOUKHA",
+      "email": "Sublimakom@Gmail.com",
+      "tel": "590690598773.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "21.0",
+      "benef": "TIBURCE NICOLSON",
+      "email": "Marionicolson@gmail.com",
+      "tel": "590690450677.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "22.0",
+      "benef": "COURSE A DOMICILE (CAD)",
+      "email": "clients@cad.gp",
+      "tel": "590690829583.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "23.0",
+      "benef": "CARDIO CLIM",
+      "email": "cardio.clim971@gmail.com",
+      "tel": "590690954067.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "24.0",
+      "benef": "MPJ IMMO",
+      "email": "meghanpierrejustin@gmail.com",
+      "tel": "33761741624.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "25.0",
+      "benef": "TOUT EST POSSIBLE (TEP)",
+      "email": "asso.toutestpossible@gmail.com",
+      "tel": "590690495000.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "26.0",
+      "benef": "CHANTILLY RENT'CARS",
+      "email": "chantillyrentcars@gmail.com",
+      "tel": "590690545517.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "27.0",
+      "benef": "JEAN-LUC CARPENE",
+      "email": "jl.carpene@yahoo.fr",
+      "tel": "590690810330.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "28.0",
+      "benef": "COSMEDIS GUADELOUPE SNE",
+      "email": "cosmedis971@cosmedis.net",
+      "tel": "590690356101.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "29.0",
+      "benef": "SYLVIE COLONNEAUX",
+      "email": "sylviecolonneaux@hotmail.com",
+      "tel": "590690421042.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "30.0",
+      "benef": "DODDS RENTAL",
+      "email": "rhonie7466@gmail.com",
+      "tel": "590690246555.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "31.0",
+      "benef": "SAS ALL KUSTOM",
+      "email": "allkustom971@gmail.com",
+      "tel": "590690139011.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "32.0",
+      "benef": "NATURE SANTE REUNION SAS",
+      "email": "andrevalliamee567@gmail.com",
+      "tel": "692191303.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "33.0",
+      "benef": "AUSTRAL PARTICIPATIONS",
+      "email": "australparticipations@gmail.com",
+      "tel": "693601590.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "34.0",
+      "benef": "AUSTRAL DISTRI",
+      "email": "australdistri@gmail.com",
+      "tel": "693601590.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "35.0",
+      "benef": "FABRICATIONS TROPICALES CONCEPT (FTC)",
+      "email": "direction@ftc.gp",
+      "tel": "590690199580.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "36.0",
+      "benef": "CASUAL DUCOS",
+      "email": "casual.ducos@gmail.com",
+      "tel": "5960696293293.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "37.0",
+      "benef": "MARKARA",
+      "email": "mpmek179@gmail.com",
+      "tel": "590690410201.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "38.0",
+      "benef": "ORPHEE ETIENNE",
+      "email": "orphee.etienne@gmail.com",
+      "tel": "590690468266.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "39.0",
+      "benef": "JESSIE FOY",
+      "email": "jessiefwa97114@gmail.com",
+      "tel": "590690971188.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "40.0",
+      "benef": "JUNIOR EXAVIER",
+      "email": "venioexavier971@gmail.com",
+      "tel": "690996393.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "41.0",
+      "benef": "CHRISTEL ELIZABETH",
+      "email": "elizabethchristel@hotmail.com",
+      "tel": "590690865847.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "42.0",
+      "benef": "JEAN-RENE LADINE",
+      "email": "jeanreneladine@outlook.fr",
+      "tel": "590690327945.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "43.0",
+      "benef": "BERNADETTE BURQUIER",
+      "email": "dr.bernadette.burquier@orange.fr",
+      "tel": "590690154196.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "44.0",
+      "benef": "MAJORD HOME SERVICES",
+      "email": "direction1.majordhome@gmail.com",
+      "tel": "590690978156.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "45.0",
+      "benef": "GIRARD PISIOU",
+      "email": "oceanspaceline@icloud.com",
+      "tel": "590690408462.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "46.0",
+      "benef": "O P'TI SOIN INFIRMIER",
+      "email": "cabinetlama@outlook.fr",
+      "tel": "690637837.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "47.0",
+      "benef": "CLIM PROPRE 971",
+      "email": "Climpropre971@gmail.com",
+      "tel": "690595956.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "48.0",
+      "benef": "HOME DESIGN",
+      "email": "homedesign97300@gmail.com",
+      "tel": "694363582.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "49.0",
+      "benef": "RAPID TRANSPORTS",
+      "email": "themapipi@hotmail.com",
+      "tel": "694447700.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "50.0",
+      "benef": "JIMI MARIE-MAGDELEINE",
+      "email": "sosmaldos@gmail.com",
+      "tel": "696312040.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "51.0",
+      "benef": "ERICK AFRICAAUDO",
+      "email": "africa.erick@gmail.com",
+      "tel": "696661497.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "52.0",
+      "benef": "RGS REST (O'B)",
+      "email": "contact@originalburger.fr",
+      "tel": "769400805.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "53.0",
+      "benef": "RGS ITALY",
+      "email": "contact@originalburger.fr",
+      "tel": "769400805.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "54.0",
+      "benef": "JPR RESTAURATION (JPRR)",
+      "email": "contact@originalburger.fr",
+      "tel": "769400805.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "55.0",
+      "benef": "GARAGE POUI DI",
+      "email": "garagepouidi@gmail.com",
+      "tel": "692862991.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "56.0",
+      "benef": "LE REGAL ET VOUS",
+      "email": "egaltier363@gmail.com",
+      "tel": "692295895.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "57.0",
+      "benef": "FRANCOIS LIBELLE",
+      "email": "francoislibelle@gmail.com",
+      "tel": "692400602.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "58.0",
+      "benef": "BAGUETISSE",
+      "email": "jasawantwilly@gmail.com",
+      "tel": "690354101.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "59.0",
+      "benef": "KEVIN ROSET",
+      "email": "Roset.kevinalex@gmail.com",
+      "tel": "596696775211.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "60.0",
+      "benef": "O' KALM LOCATIONS (VILLA PAIPAI)",
+      "email": "okalmlocations@gmail.com",
+      "tel": "690527191.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "61.0",
+      "benef": "BEAUSEJOUR GESTION",
+      "email": "commercial.rhumbeausejour@gmail.com",
+      "tel": "596696682357.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "62.0",
+      "benef": "BADEBJEN",
+      "email": "Badebjen@gmail.com",
+      "tel": "690455000.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "63.0",
+      "benef": "DISTILLERIE LA FAVORITE",
+      "email": "maelle.mucret@rhum-lafavorite.com",
+      "tel": "696277504.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "64.0",
+      "benef": "RUDDY DESHAUTEURS",
+      "email": "Naidy.debissaram@gmail.com",
+      "tel": "690948466.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "65.0",
+      "benef": "MANDY LAVERIE",
+      "email": "mandylaverie@gmail.com",
+      "tel": "690232935.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "66.0",
+      "benef": "CHRIST LIN RELMY-MADINSKA",
+      "email": "rmcsoudure@gmx.fr",
+      "tel": "690191193.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "67.0",
+      "benef": "LYLAS.NET",
+      "email": "stessyarmand@yahoo.fr",
+      "tel": "690202640.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "68.0",
+      "benef": "collange cyril",
+      "email": "cyrilcollange@hotmail.com",
+      "tel": "694228156.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "69.0",
+      "benef": "SANDRA TALIEN",
+      "email": "kawo.benj@gmail.com",
+      "tel": "690232700.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "70.0",
+      "benef": "BABY MAMA SHOP",
+      "email": "marikajc4@gmail.com",
+      "tel": "630463024.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "71.0",
+      "benef": "TEDDY JOAILLE",
+      "email": "teddy.joaille@gmail.com",
+      "tel": "690199580.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "72.0",
+      "benef": "JIMMY TOUTOUTE-FAUCONNIER",
+      "email": "Jimmy.fauconnier@hotmail.com",
+      "tel": "690758480.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "73.0",
+      "benef": "Beauty full butterfly",
+      "email": "beautyfullbutterfly@outlook.com",
+      "tel": "262693033214.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "74.0",
+      "benef": "PROFIL GUYANE",
+      "email": "directionpgm@profil-guyane.fr",
+      "tel": "694208801.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "75.0",
+      "benef": "PROFIL GUYANE DE L OUEST",
+      "email": "directionpgm@profil-guyane.fr",
+      "tel": "694208801.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "76.0",
+      "benef": "BLEU VENUS CENTER (BVC)",
+      "email": "kelly.ceriance@hotmail.fr",
+      "tel": "691283772.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "77.0",
+      "benef": "EUROLOCATION",
+      "email": "Sebastien.Scholastique@gbh.fr",
+      "tel": "690687814.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "78.0",
+      "benef": "EUNICE VAN DE CRUIZE",
+      "email": "Wong.rachelle@gmx.fr",
+      "tel": "690687814.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "79.0",
+      "benef": "CLARTE DIVINE GUADELOUPE S.A.R.L",
+      "email": "laurent.saintcyr@orange.fr",
+      "tel": "590690611664.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "80.0",
+      "benef": "LMC KARAIBES",
+      "email": "saintfrancois@coteparticuliers.com",
+      "tel": "590690365516.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "81.0",
+      "benef": "KIMAE",
+      "email": "mylene.liedot@gmail.com",
+      "tel": "262692427195.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "82.0",
+      "benef": "ROMAIN ESSOB",
+      "email": "bat.ouest.construction@gmail.com",
+      "tel": "692142611.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "83.0",
+      "benef": "LOIC GEDEON",
+      "email": "gedeonloic@hotmail.fr",
+      "tel": "690005771.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "84.0",
+      "benef": "VINCENT CESPEDES",
+      "email": "cespedes.vince@yahoo.fr",
+      "tel": "594694083246.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "85.0",
+      "benef": "CEDRIC GOURRET",
+      "email": "cedricgourret@hotmail.fr",
+      "tel": "590690133244.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "86.0",
+      "benef": "SEBASTIEN SCHUFT",
+      "email": "sebastien.schuft@orange.fr",
+      "tel": "33766442088.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "87.0",
+      "benef": "VALERIE FLERET",
+      "email": "valerie.fleret@orange.fr",
+      "tel": "590690310331.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "88.0",
+      "benef": "REY NOVATION",
+      "email": "reynovation.gp@icloud.com",
+      "tel": "590690296099.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "89.0",
+      "benef": "DBR DEVELOPPEMENT",
+      "email": "dbrdeveloppement@icloud.com",
+      "tel": "590690595188.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "90.0",
+      "benef": "COSMOS ENERGIE",
+      "email": "chrisnelventose1@gmail.com",
+      "tel": "694487336.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "107.0",
+      "benef": "SLIMANN SAYAH",
+      "email": "legranddepot@hotmail.fr",
+      "tel": "690618678.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "109.0",
+      "benef": "ANTHONY CHARLES",
+      "email": "charlantfr79@gmail.com",
+      "tel": "690766254.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "115.0",
+      "benef": "PHARMACIE CHAN OU TEUNG",
+      "email": "phiecot@gmail.com",
+      "tel": "692664732.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "116.0",
+      "benef": "AGRITROPIC",
+      "email": "agritropic@gmail.com",
+      "tel": "590690208811.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "117.0",
+      "benef": "CAIGNET CONSTRUC BATIMENT (CCB)",
+      "email": "Sophie971jlf@gmail.com",
+      "tel": "690008791.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "154.0",
+      "benef": "PASCAL LIO-SOON-SHUN",
+      "email": "lsspascal974@gmail.com",
+      "tel": "262692235001.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "155.0",
+      "benef": "MARIE NELLY HOARAU",
+      "email": "nelly.morel974@yahoo.fr",
+      "tel": "262692436840.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "156.0",
+      "benef": "JEAN-LUC PAYET",
+      "email": "luc421@hotmail.fr",
+      "tel": "692008351.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "157.0",
+      "benef": "SABRINA ALIDOR",
+      "email": "alidor.sabrina@outlook.fr",
+      "tel": "590690159024.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "505.0",
+      "benef": "RUN PROTECTION",
+      "email": "thibault.rameaux@runprotection.com",
+      "tel": "692099039.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "506.0",
+      "benef": "SEBASTIEN BRUNOT",
+      "email": "Sebastb75@gmail.com",
+      "tel": "696802662.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "507.0",
+      "benef": "FOODILES AGENCY",
+      "email": "jessica.brudey@foodiles.com",
+      "tel": "590690722716.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "617.0",
+      "benef": "HADECA BOUTIQUE & SNACKING",
+      "email": "witbens509@gmail.com",
+      "tel": "596696501036.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "626.0",
+      "benef": "AM DIAMANT LOC",
+      "email": "alaric.meilland@ame-expertise.com",
+      "tel": "33680980231.0"
+    },
+    {
+      "sheet": "19-09-2025",
+      "op": "732.0",
+      "benef": "LYDIE LAKHIA",
+      "email": "lydie.lakhia@gmail.com",
+      "tel": "590690910047.0"
+    }
+  ]
+}

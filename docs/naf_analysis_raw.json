@@ -1,0 +1,1878 @@
+[
+  {
+    "code_naf": "9499Z",
+    "label": "Autres organisations fonctionnant par adhésion volontaire",
+    "validation": "OK",
+    "total_velos": 333,
+    "nb_dossiers": 32
+  },
+  {
+    "code_naf": "9312Z",
+    "label": "Activités de clubs de sports",
+    "validation": "OK",
+    "total_velos": 213,
+    "nb_dossiers": 17
+  },
+  {
+    "code_naf": "4321A",
+    "label": "Travaux d'installation électrique dans tous locaux",
+    "validation": "OK",
+    "total_velos": 161,
+    "nb_dossiers": 126
+  },
+  {
+    "code_naf": "4399C",
+    "label": "Travaux de maçonnerie générale et gros œuvre de bâtiment",
+    "validation": "OK",
+    "total_velos": 152,
+    "nb_dossiers": 113
+  },
+  {
+    "code_naf": "6831Z",
+    "label": "Agences immobilières",
+    "validation": "OK",
+    "total_velos": 150,
+    "nb_dossiers": 129
+  },
+  {
+    "code_naf": "5530Z",
+    "label": "Terrains de camping et parcs pour caravanes ou véhicules de loisirs",
+    "validation": "OK",
+    "total_velos": 129,
+    "nb_dossiers": 28
+  },
+  {
+    "code_naf": "4331Z",
+    "label": "Travaux de plâtrerie",
+    "validation": "OK",
+    "total_velos": 113,
+    "nb_dossiers": 84
+  },
+  {
+    "code_naf": "4322A",
+    "label": "Travaux d'installation d'eau et de gaz en tous locaux",
+    "validation": "OK",
+    "total_velos": 111,
+    "nb_dossiers": 97
+  },
+  {
+    "code_naf": "4322B",
+    "label": "Travaux d' installation d'équipements thermiques et de climatisation",
+    "validation": "KO",
+    "total_velos": 97,
+    "nb_dossiers": 48
+  },
+  {
+    "code_naf": "8121Z",
+    "label": "Nettoyage courant des bâtiments",
+    "validation": "OK",
+    "total_velos": 94,
+    "nb_dossiers": 71
+  },
+  {
+    "code_naf": "4334Z",
+    "label": "Travaux de peinture et vitrerie",
+    "validation": "OK",
+    "total_velos": 91,
+    "nb_dossiers": 65
+  },
+  {
+    "code_naf": "4332A",
+    "label": "Travaux de menuiserie bois et PVC",
+    "validation": "OK",
+    "total_velos": 89,
+    "nb_dossiers": 64
+  },
+  {
+    "code_naf": "5320Z",
+    "label": "Autres activités de poste et de courrier",
+    "validation": "OK",
+    "total_velos": 87,
+    "nb_dossiers": 87
+  },
+  {
+    "code_naf": "4329A",
+    "label": "Travaux d'isolation",
+    "validation": "OK",
+    "total_velos": 86,
+    "nb_dossiers": 39
+  },
+  {
+    "code_naf": "5610C",
+    "label": "Restauration de type rapide",
+    "validation": "OK",
+    "total_velos": 75,
+    "nb_dossiers": 52
+  },
+  {
+    "code_naf": "7112B",
+    "label": "Ingénierie, études techniques",
+    "validation": "OK",
+    "total_velos": 65,
+    "nb_dossiers": 62
+  },
+  {
+    "code_naf": "7490A",
+    "label": "Activité des économistes de la construction",
+    "validation": "OK",
+    "total_velos": 62,
+    "nb_dossiers": 55
+  },
+  {
+    "code_naf": "4333Z",
+    "label": "Travaux de revêtement des sols et des murs",
+    "validation": "OK",
+    "total_velos": 61,
+    "nb_dossiers": 52
+  },
+  {
+    "code_naf": "7010Z",
+    "label": "Activités des sièges sociaux",
+    "validation": "KO",
+    "total_velos": 58,
+    "nb_dossiers": 26
+  },
+  {
+    "code_naf": "5520Z",
+    "label": "Hébergement touristique et autre hébergement de courte durée",
+    "validation": "OK",
+    "total_velos": 57,
+    "nb_dossiers": 7
+  },
+  {
+    "code_naf": "4619B",
+    "label": "Autres intermédiaires du commerce en produits divers",
+    "validation": "OK",
+    "total_velos": 56,
+    "nb_dossiers": 44
+  },
+  {
+    "code_naf": "7022Z",
+    "label": "Conseil pour les affaires et autres conseils de gestion",
+    "validation": "KO",
+    "total_velos": 55,
+    "nb_dossiers": 55
+  },
+  {
+    "code_naf": "4511Z",
+    "label": "Commerce de voitures et de véhicules automobiles légers",
+    "validation": "OK",
+    "total_velos": 55,
+    "nb_dossiers": 44
+  },
+  {
+    "code_naf": "8899B",
+    "label": "Action sociale sans hébergement n.c.a.",
+    "validation": "OK",
+    "total_velos": 54,
+    "nb_dossiers": 22
+  },
+  {
+    "code_naf": "9609Z",
+    "label": "Autres services personnels n.c.a.",
+    "validation": "OK",
+    "total_velos": 54,
+    "nb_dossiers": 54
+  },
+  {
+    "code_naf": "6820B",
+    "label": "Location de terrains et d'autres biens immobiliers",
+    "validation": "KO",
+    "total_velos": 48,
+    "nb_dossiers": 47
+  },
+  {
+    "code_naf": "8551Z",
+    "label": "Enseignement de disciplines sportives et d'activités de loisirs",
+    "validation": "OK",
+    "total_velos": 46,
+    "nb_dossiers": 46
+  },
+  {
+    "code_naf": "4932Z",
+    "label": "Transports de voyageurs par taxis",
+    "validation": "KO",
+    "total_velos": 45,
+    "nb_dossiers": 45
+  },
+  {
+    "code_naf": "9602B",
+    "label": "Soins de beauté",
+    "validation": "OK",
+    "total_velos": 40,
+    "nb_dossiers": 35
+  },
+  {
+    "code_naf": "5610A",
+    "label": "Restauration traditionnelle",
+    "validation": "OK",
+    "total_velos": 40,
+    "nb_dossiers": 17
+  },
+  {
+    "code_naf": "8710B",
+    "label": "Hébergement médicalisés pour enfants handicapés",
+    "validation": "OK",
+    "total_velos": 40,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "0111Z",
+    "label": "Culture de céréales (à l'exception du riz), de légumineuses et de graines oléagineuses",
+    "validation": "KO",
+    "total_velos": 39,
+    "nb_dossiers": 34
+  },
+  {
+    "code_naf": "4520A",
+    "label": "Entretien et réparation de véhicules automobiles légers",
+    "validation": "OK",
+    "total_velos": 38,
+    "nb_dossiers": 29
+  },
+  {
+    "code_naf": "4391B",
+    "label": "Travaux de couverture par éléments",
+    "validation": "OK",
+    "total_velos": 37,
+    "nb_dossiers": 22
+  },
+  {
+    "code_naf": "4120A",
+    "label": "Construction de maisons individuelles",
+    "validation": "OK",
+    "total_velos": 35,
+    "nb_dossiers": 31
+  },
+  {
+    "code_naf": "4941B",
+    "label": "Transports routiers de fret de proximité",
+    "validation": "OK",
+    "total_velos": 34,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "9602A",
+    "label": "Coiffure",
+    "validation": "OK",
+    "total_velos": 32,
+    "nb_dossiers": 30
+  },
+  {
+    "code_naf": "8559A",
+    "label": "Formation continue d'adultes",
+    "validation": "KO",
+    "total_velos": 32,
+    "nb_dossiers": 24
+  },
+  {
+    "code_naf": "8299Z",
+    "label": "Autres activités de soutien aux entreprises n.c.a.",
+    "validation": "OK",
+    "total_velos": 27,
+    "nb_dossiers": 19
+  },
+  {
+    "code_naf": "2821Z",
+    "label": "Fabrication de fours et brûleurs",
+    "validation": "KO",
+    "total_velos": 27,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "8690D",
+    "label": "Activités des infirmiers et des sages-femmes",
+    "validation": "OK",
+    "total_velos": 25,
+    "nb_dossiers": 25
+  },
+  {
+    "code_naf": "9329Z",
+    "label": "Autres activités récréatives et de loisirs",
+    "validation": "OK",
+    "total_velos": 24,
+    "nb_dossiers": 23
+  },
+  {
+    "code_naf": "6820A",
+    "label": "Location de logements",
+    "validation": "OK",
+    "total_velos": 24,
+    "nb_dossiers": 24
+  },
+  {
+    "code_naf": "6832A",
+    "label": "Administration d'immeubles et autres biens immobiliers",
+    "validation": "OK",
+    "total_velos": 22,
+    "nb_dossiers": 7
+  },
+  {
+    "code_naf": "4312A",
+    "label": "Travaux de terrassement courants et travaux préparatoires",
+    "validation": "OK",
+    "total_velos": 21,
+    "nb_dossiers": 10
+  },
+  {
+    "code_naf": "9319Z",
+    "label": "Autres activités liées au sport",
+    "validation": "OK",
+    "total_velos": 20,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "8690F",
+    "label": "Activités de santé humaine non classées ailleurs",
+    "validation": "OK",
+    "total_velos": 20,
+    "nb_dossiers": 20
+  },
+  {
+    "code_naf": "4391A",
+    "label": "Travaux de charpente",
+    "validation": "KO",
+    "total_velos": 19,
+    "nb_dossiers": 15
+  },
+  {
+    "code_naf": "4791A",
+    "label": "Vente à distance sur catalogue général",
+    "validation": "KO",
+    "total_velos": 19,
+    "nb_dossiers": 19
+  },
+  {
+    "code_naf": "5911B",
+    "label": "Production de films institutionnels et publicitaires",
+    "validation": "KO",
+    "total_velos": 19,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "4941A",
+    "label": "Transports routiers de fret interurbains",
+    "validation": "KO",
+    "total_velos": 18,
+    "nb_dossiers": 10
+  },
+  {
+    "code_naf": "4120B",
+    "label": "Construction d'autres bâtiments",
+    "validation": "KO",
+    "total_velos": 17,
+    "nb_dossiers": 15
+  },
+  {
+    "code_naf": "8211Z",
+    "label": "Services administratifs combinés de bureau",
+    "validation": "OK",
+    "total_velos": 17,
+    "nb_dossiers": 17
+  },
+  {
+    "code_naf": "8810A",
+    "label": "Aide à domicile",
+    "validation": "OK",
+    "total_velos": 17,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "5621Z",
+    "label": "Services des traiteurs",
+    "validation": "OK",
+    "total_velos": 16,
+    "nb_dossiers": 13
+  },
+  {
+    "code_naf": "6201Z",
+    "label": "Programmation informatique",
+    "validation": "KO",
+    "total_velos": 16,
+    "nb_dossiers": 14
+  },
+  {
+    "code_naf": "4789Z",
+    "label": "Autres commerces de détail sur éventaires et marchés",
+    "validation": "OK",
+    "total_velos": 16,
+    "nb_dossiers": 16
+  },
+  {
+    "code_naf": "4721Z",
+    "label": "Commerce de détail de fruits et légumes en magasin spécialisé",
+    "validation": "OK",
+    "total_velos": 16,
+    "nb_dossiers": 10
+  },
+  {
+    "code_naf": "8690E",
+    "label": "Activités des professionnels de la rééducation, de l’appareillage et des pédicures-podologues",
+    "validation": "OK",
+    "total_velos": 16,
+    "nb_dossiers": 16
+  },
+  {
+    "code_naf": "6312Z",
+    "label": "Portails Internet",
+    "validation": "OK",
+    "total_velos": 16,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "4799A",
+    "label": "Vente à domicile",
+    "validation": "OK",
+    "total_velos": 15,
+    "nb_dossiers": 15
+  },
+  {
+    "code_naf": "7490B",
+    "label": "Activités spécialisées, scientifiques et techniques diverses",
+    "validation": "OK",
+    "total_velos": 15,
+    "nb_dossiers": 11
+  },
+  {
+    "code_naf": "4399A",
+    "label": "Travaux d'étanchéification",
+    "validation": "KO",
+    "total_velos": 15,
+    "nb_dossiers": 6
+  },
+  {
+    "code_naf": "6622Z",
+    "label": "Activités des agents et courtiers d'assurances",
+    "validation": "OK",
+    "total_velos": 15,
+    "nb_dossiers": 9
+  },
+  {
+    "code_naf": "3811Z",
+    "label": "Collecte des déchets non dangereux",
+    "validation": "OK",
+    "total_velos": 15,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "8790A",
+    "label": "Hébergement social pour enfants en difficultés",
+    "validation": "OK",
+    "total_velos": 15,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "8520Z",
+    "label": "Enseignement primaire",
+    "validation": "OK",
+    "total_velos": 15,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7410Z",
+    "label": "Activités spécialisées de design",
+    "validation": "OK",
+    "total_velos": 14,
+    "nb_dossiers": 14
+  },
+  {
+    "code_naf": "7311Z",
+    "label": "Activités des agences de publicité",
+    "validation": "OK",
+    "total_velos": 14,
+    "nb_dossiers": 10
+  },
+  {
+    "code_naf": "4711B",
+    "label": "Commerce d'alimentation générale",
+    "validation": "OK",
+    "total_velos": 13,
+    "nb_dossiers": 8
+  },
+  {
+    "code_naf": "7420Z",
+    "label": "Activités photographiques",
+    "validation": "OK",
+    "total_velos": 13,
+    "nb_dossiers": 13
+  },
+  {
+    "code_naf": "9001Z",
+    "label": "Arts du spectacle vivant",
+    "validation": "OK",
+    "total_velos": 13,
+    "nb_dossiers": 12
+  },
+  {
+    "code_naf": "4332B",
+    "label": "Travaux de menuiserie métallique et serrurerie",
+    "validation": "OK",
+    "total_velos": 12,
+    "nb_dossiers": 12
+  },
+  {
+    "code_naf": "3511Z",
+    "label": "Production d'électricité",
+    "validation": "KO",
+    "total_velos": 12,
+    "nb_dossiers": 12
+  },
+  {
+    "code_naf": "6202A",
+    "label": "Conseil en systèmes et logiciels informatiques",
+    "validation": "KO",
+    "total_velos": 12,
+    "nb_dossiers": 11
+  },
+  {
+    "code_naf": "7312Z",
+    "label": "Régie publicitaire de médias",
+    "validation": "OK",
+    "total_velos": 12,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "6420Z",
+    "label": "Activités des sociétés holding",
+    "validation": "KO",
+    "total_velos": 11,
+    "nb_dossiers": 11
+  },
+  {
+    "code_naf": "6810Z",
+    "label": "Activités des marchands de biens immobiliers",
+    "validation": "OK",
+    "total_velos": 11,
+    "nb_dossiers": 11
+  },
+  {
+    "code_naf": "4781Z",
+    "label": "Commerce de détail alimentaire sur éventaires et marchés",
+    "validation": "OK",
+    "total_velos": 11,
+    "nb_dossiers": 8
+  },
+  {
+    "code_naf": "0161Z",
+    "label": "Activités de soutien aux cultures",
+    "validation": "OK",
+    "total_velos": 11,
+    "nb_dossiers": 9
+  },
+  {
+    "code_naf": "8130Z",
+    "label": "Services d'aménagement paysager",
+    "validation": "OK",
+    "total_velos": 11,
+    "nb_dossiers": 10
+  },
+  {
+    "code_naf": "4673A",
+    "label": "Commerce de gros (commerce interentreprises) de bois et de matériaux de construction",
+    "validation": "OK",
+    "total_velos": 11,
+    "nb_dossiers": 4
+  },
+  {
+    "code_naf": "8230Z",
+    "label": "Organisation de foires, salons professionnels et congrès",
+    "validation": "OK",
+    "total_velos": 10,
+    "nb_dossiers": 6
+  },
+  {
+    "code_naf": "8559B",
+    "label": "Autres enseignements",
+    "validation": "OK",
+    "total_velos": 10,
+    "nb_dossiers": 9
+  },
+  {
+    "code_naf": "8891A",
+    "label": "Accueil de jeunes enfants",
+    "validation": "KO",
+    "total_velos": 10,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7021Z",
+    "label": "Conseil en relations publiques et communication",
+    "validation": "OK",
+    "total_velos": 10,
+    "nb_dossiers": 8
+  },
+  {
+    "code_naf": "4722Z",
+    "label": "Commerce de détail de viandes et de produits à base de viande en magasin spécialisé",
+    "validation": "OK",
+    "total_velos": 10,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "4211Z",
+    "label": "Construction de routes et autoroutes",
+    "validation": "KO",
+    "total_velos": 10,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "8552Z",
+    "label": "Enseignement culturel",
+    "validation": "OK",
+    "total_velos": 9,
+    "nb_dossiers": 9
+  },
+  {
+    "code_naf": "7740Z",
+    "label": "Location-bail de propriété intellectuelle et de produits similaires, à l'exception des œuvres soumises à copyright",
+    "validation": "KO",
+    "total_velos": 9,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "4782Z",
+    "label": "Commerce de détail de textiles, d'habillement et de chaussures sur éventaires et marchés",
+    "validation": "OK",
+    "total_velos": 9,
+    "nb_dossiers": 9
+  },
+  {
+    "code_naf": "4791B",
+    "label": "Vente à distance sur catalogue spécialisé",
+    "validation": "KO",
+    "total_velos": 9,
+    "nb_dossiers": 9
+  },
+  {
+    "code_naf": "9604Z",
+    "label": "Entretien corporel",
+    "validation": "OK",
+    "total_velos": 9,
+    "nb_dossiers": 9
+  },
+  {
+    "code_naf": "4751Z",
+    "label": "Commerce de détail de textiles en magasin spécialisé",
+    "validation": "OK",
+    "total_velos": 9,
+    "nb_dossiers": 9
+  },
+  {
+    "code_naf": "8129A",
+    "label": "Désinfection, désinsectisation, dératisation",
+    "validation": "OK",
+    "total_velos": 9,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "0142Z",
+    "label": "Élevage d'autres bovins et de buffles",
+    "validation": "KO",
+    "total_velos": 8,
+    "nb_dossiers": 8
+  },
+  {
+    "code_naf": "4339Z",
+    "label": "Autres travaux de finition",
+    "validation": "OK",
+    "total_velos": 8,
+    "nb_dossiers": 7
+  },
+  {
+    "code_naf": "4759A",
+    "label": "Commerce de détail de meubles",
+    "validation": "OK",
+    "total_velos": 8,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "6619B",
+    "label": "Autres activités auxiliaires de services financiers, hors assurance et caisses de retraite, n.c.a.",
+    "validation": "KO",
+    "total_velos": 8,
+    "nb_dossiers": 6
+  },
+  {
+    "code_naf": "4639B",
+    "label": "Commerce de gros (commerce interentreprises) alimentaire non spécialisé",
+    "validation": "KO",
+    "total_velos": 8,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "0121Z",
+    "label": "Culture de la vigne",
+    "validation": "OK",
+    "total_velos": 8,
+    "nb_dossiers": 6
+  },
+  {
+    "code_naf": "0143Z",
+    "label": "Élevage de chevaux et d'autres équidés",
+    "validation": "OK",
+    "total_velos": 7,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "5630Z",
+    "label": "Débits de boissons",
+    "validation": "OK",
+    "total_velos": 7,
+    "nb_dossiers": 7
+  },
+  {
+    "code_naf": "6920Z",
+    "label": "Activités comptables",
+    "validation": "OK",
+    "total_velos": 7,
+    "nb_dossiers": 6
+  },
+  {
+    "code_naf": "5510Z",
+    "label": "Hôtels et hébergement similaire",
+    "validation": "OK",
+    "total_velos": 7,
+    "nb_dossiers": 6
+  },
+  {
+    "code_naf": "8122Z",
+    "label": "Autres activités de nettoyage des bâtiments et nettoyage industriel",
+    "validation": "OK",
+    "total_velos": 7,
+    "nb_dossiers": 7
+  },
+  {
+    "code_naf": "4775Z",
+    "label": "Commerce de détail de parfumerie et de produits de beauté en magasin spécialisé",
+    "validation": "OK",
+    "total_velos": 7,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "6630Z",
+    "label": "Gestion de fonds",
+    "validation": "KO",
+    "total_velos": 7,
+    "nb_dossiers": 7
+  },
+  {
+    "code_naf": "8020Z",
+    "label": "Activités liées aux systèmes de sécurité",
+    "validation": "OK",
+    "total_velos": 7,
+    "nb_dossiers": 6
+  },
+  {
+    "code_naf": "0113Z",
+    "label": "Culture de légumes, de melons, de racines et de tubercules",
+    "validation": "OK",
+    "total_velos": 7,
+    "nb_dossiers": 7
+  },
+  {
+    "code_naf": "8621Z",
+    "label": "Activité des médecins généralistes",
+    "validation": "OK",
+    "total_velos": 7,
+    "nb_dossiers": 7
+  },
+  {
+    "code_naf": "8622C",
+    "label": "Autres activités des médecins spécialistes",
+    "validation": "KO",
+    "total_velos": 7,
+    "nb_dossiers": 7
+  },
+  {
+    "code_naf": "4399B",
+    "label": "Travaux de montage de structures métalliques",
+    "validation": "KO",
+    "total_velos": 7,
+    "nb_dossiers": 4
+  },
+  {
+    "code_naf": "0150Z",
+    "label": "Culture et élevage associés",
+    "validation": "KO",
+    "total_velos": 6,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "8623Z",
+    "label": "Pratique dentaire",
+    "validation": "KO",
+    "total_velos": 6,
+    "nb_dossiers": 6
+  },
+  {
+    "code_naf": "5829C",
+    "label": "Edition de logiciels applicatifs",
+    "validation": "OK",
+    "total_velos": 6,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4799B",
+    "label": "Vente par automates et autres commerces de détail hors magasin, éventaires ou marchés n.c.a.",
+    "validation": "OK",
+    "total_velos": 6,
+    "nb_dossiers": 4
+  },
+  {
+    "code_naf": "1071C",
+    "label": "Boulangerie et boulangerie-pâtisserie",
+    "validation": "OK",
+    "total_velos": 6,
+    "nb_dossiers": 4
+  },
+  {
+    "code_naf": "4931Z",
+    "label": "Transports urbains et suburbains de voyageurs",
+    "validation": "KO",
+    "total_velos": 6,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4631Z",
+    "label": "Commerce de gros (commerce interentreprises) de fruits et légumes",
+    "validation": "OK",
+    "total_velos": 6,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7120B",
+    "label": "Analyses, essais et inspections techniques",
+    "validation": "OK",
+    "total_velos": 5,
+    "nb_dossiers": 4
+  },
+  {
+    "code_naf": "5911A",
+    "label": "Production de films et de programmes pour la télévision",
+    "validation": "KO",
+    "total_velos": 5,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "3109B",
+    "label": "Fabrication d’autres meubles et industries connexes de l’ameublement",
+    "validation": "OK",
+    "total_velos": 5,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "4711C",
+    "label": "Supérettes",
+    "validation": "OK",
+    "total_velos": 5,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "0147Z",
+    "label": "Élevage de volailles",
+    "validation": "OK",
+    "total_velos": 5,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "0141Z",
+    "label": "Élevage de vaches laitières",
+    "validation": "OK",
+    "total_velos": 5,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "9003B",
+    "label": "Autre création artistique",
+    "validation": "OK",
+    "total_velos": 5,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "4719B",
+    "label": "Autres commerces de détail en magasin non spécialisé",
+    "validation": "OK",
+    "total_velos": 5,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "9529Z",
+    "label": "Réparation d'autres biens personnels et domestiques",
+    "validation": "OK",
+    "total_velos": 5,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "0149Z",
+    "label": "Élevage d'autres animaux",
+    "validation": "OK",
+    "total_velos": 5,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "9003A",
+    "label": "Création artistique relevant des arts plastiques",
+    "validation": "OK",
+    "total_velos": 5,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "6910Z",
+    "label": "Activités juridiques",
+    "validation": "OK",
+    "total_velos": 5,
+    "nb_dossiers": 5
+  },
+  {
+    "code_naf": "1413Z",
+    "label": "Fabrication de vêtements de dessus",
+    "validation": "KO",
+    "total_velos": 4,
+    "nb_dossiers": 4
+  },
+  {
+    "code_naf": "4778A",
+    "label": "Commerces de détail d'optique",
+    "validation": "OK",
+    "total_velos": 4,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "5221Z",
+    "label": "Services auxiliaires des transports terrestres",
+    "validation": "OK",
+    "total_velos": 4,
+    "nb_dossiers": 4
+  },
+  {
+    "code_naf": "9313Z",
+    "label": "Activités des centres de culture physique",
+    "validation": "OK",
+    "total_velos": 4,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "4725Z",
+    "label": "Commerce de détail de boissons en magasin spécialisé",
+    "validation": "OK",
+    "total_velos": 4,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "4759B",
+    "label": "Commerce de détail d'autres équipements du foyer",
+    "validation": "OK",
+    "total_velos": 4,
+    "nb_dossiers": 4
+  },
+  {
+    "code_naf": "2561Z",
+    "label": "Traitement et revêtement des métaux",
+    "validation": "KO",
+    "total_velos": 4,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4771Z",
+    "label": "Commerce de détail d'habillement en magasin spécialisé",
+    "validation": "OK",
+    "total_velos": 4,
+    "nb_dossiers": 4
+  },
+  {
+    "code_naf": "4690Z",
+    "label": "Commerce de gros (commerce interentreprises) non spécialisé",
+    "validation": "KO",
+    "total_velos": 4,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "1072Z",
+    "label": "Fabrication de biscuits, biscottes et pâtisseries de conservation",
+    "validation": "OK",
+    "total_velos": 4,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7990Z",
+    "label": "Autres services de réservation et activités connexes",
+    "validation": "KO",
+    "total_velos": 4,
+    "nb_dossiers": 4
+  },
+  {
+    "code_naf": "9512Z",
+    "label": "Réparation d'équipements de communication",
+    "validation": "OK",
+    "total_velos": 4,
+    "nb_dossiers": 4
+  },
+  {
+    "code_naf": "4632C",
+    "label": "Commerce de gros (commerce interentreprises) de volailles et gibier",
+    "validation": "OK",
+    "total_velos": 4,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "0162Z",
+    "label": "Activités de soutien à la production animale",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "0145Z",
+    "label": "Élevage d'ovins et de caprins",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "3514Z",
+    "label": "Commerce d'électricité",
+    "validation": "KO",
+    "total_velos": 3,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "1011Z",
+    "label": "Transformation et conservation de la viande de boucherie",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "4332C",
+    "label": "Agencement de lieux de vente",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "1623Z",
+    "label": "Fabrication de charpentes et d'autres menuiseries",
+    "validation": "KO",
+    "total_velos": 3,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "1813Z",
+    "label": "Activités de pré-presse",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "3299Z",
+    "label": "Autres activités manufacturières n.c.a.",
+    "validation": "KO",
+    "total_velos": 3,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "0146Z",
+    "label": "Élevage de porcins",
+    "validation": "KO",
+    "total_velos": 3,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4618Z",
+    "label": "Intermédiaires spécialisés dans le commerce d'autres produits spécifiques",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "9511Z",
+    "label": "Réparation d'ordinateurs et d'équipements périphériques",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "2341Z",
+    "label": "Fabrication d'articles céramiques à usage domestique ou ornemental",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "1071D",
+    "label": "Pâtisserie",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "4329B",
+    "label": "Autres travaux d'installation n.c.a.",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "8219Z",
+    "label": "Photocopie, préparation de documents et autres activités spécialisées de soutien de bureau",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "8542Z",
+    "label": "Enseignement supérieur",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "8553Z",
+    "label": "Enseignement de la conduite",
+    "validation": "KO",
+    "total_velos": 3,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "4778C",
+    "label": "Autres commerces de détail spécialisés divers",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 3
+  },
+  {
+    "code_naf": "4532Z",
+    "label": "Commerce de détail d'équipements automobiles",
+    "validation": "OK",
+    "total_velos": 3,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "4641Z",
+    "label": "Commerce de gros (commerce interentreprises) de textiles",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "4299Z",
+    "label": "Construction d'autres ouvrages de génie civil n.c.a.",
+    "validation": "KO",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "9491Z",
+    "label": "Activités des organisations religieuses",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4726Z",
+    "label": "Commerce de détail de produits à base de tabac en magasin spécialisé",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "4711D",
+    "label": "Supermarchés",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "5814Z",
+    "label": "Édition de revues et périodiques",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "4674B",
+    "label": "Commerce de gros (commerce interentreprises) de fournitures pour la plomberie et le chauffage",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4399D",
+    "label": "Autres travaux spécialisés de construction",
+    "validation": "KO",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "7810Z",
+    "label": "Activités des agences de placement de main-d'œuvre",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "5920Z",
+    "label": "Enregistrement sonore et édition musicale",
+    "validation": "KO",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "5912Z",
+    "label": "Post-production de films cinématographiques, de vidéo et de programmes de télévision",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "1419Z",
+    "label": "Fabrication d'autres vêtements et accessoires",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "6499Z",
+    "label": "Autres activités des services financiers, hors assurance et caisses de retraite, n.c.a.",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "8129B",
+    "label": "Autres activités de nettoyage n.c.a.",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "8010Z",
+    "label": "Activités de sécurité privée",
+    "validation": "KO",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "4645Z",
+    "label": "Commerce de gros (commerce interentreprises) de parfumerie et de produits de beauté",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "9524Z",
+    "label": "Réparation de meubles et d'équipements du foyer",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "3314Z",
+    "label": "Réparation d'équipements électriques",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "0124Z",
+    "label": "Culture de fruits à pépins et à noyau",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "4652Z",
+    "label": "Commerce de gros (commerce interentreprises) de composants et d'équipements électroniques et de télécommunication",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "0210Z",
+    "label": "Sylviculture et autres activités forestières",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "1512Z",
+    "label": "Fabrication d'articles de voyage, de maroquinerie et de sellerie",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "4642Z",
+    "label": "Commerce de gros (commerce interentreprises) d'habillement et de chaussures",
+    "validation": "KO",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "4222Z",
+    "label": "Construction de réseaux électriques et de télécommunications",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "8899A",
+    "label": "Autre accueil ou accompagnement sans hébergement d’enfants et d’adolescents",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "4634Z",
+    "label": "Commerce de gros (commerce interentreprises) de boissons",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4110D",
+    "label": "Supports juridiques de programmes",
+    "validation": "OK",
+    "total_velos": 2,
+    "nb_dossiers": 2
+  },
+  {
+    "code_naf": "7721Z",
+    "label": "Location et location-bail d'articles de loisirs et de sport",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4311Z",
+    "label": "Travaux de démolition",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "0114Z",
+    "label": "Culture de la canne à sucre",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "1051A",
+    "label": "Fabrication de lait liquide et de produits frais",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "3523Z",
+    "label": "Commerce de combustibles gazeux par conduites",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4647Z",
+    "label": "Commerce de gros (commerce interentreprises) de meubles, de tapis et d'appareils d'éclairage",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "5229B",
+    "label": "Affrètement et organisation des transports",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "6391Z",
+    "label": "Activités des agences de presse",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "8560Z",
+    "label": "Activités de soutien à l'enseignement",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4531Z",
+    "label": "Commerce de gros d'équipements automobiles",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "5811Z",
+    "label": "Édition de livres",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7911Z",
+    "label": "Activités des agences de voyage",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "3320A",
+    "label": "Installation de structures métalliques, chaudronnées et de tuyauterie",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "1071B",
+    "label": "Cuisson de produits de boulangerie",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4764Z",
+    "label": "Commerce de détail d'articles de sport en magasin spécialisé",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4729Z",
+    "label": "Autres commerces de détail alimentaires en magasin spécialisé",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "8220Z",
+    "label": "Activités de centres d'appels",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4649Z",
+    "label": "Commerce de gros (commerce interentreprises) d'autres biens domestiques",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "3320D",
+    "label": "Installation d'équipements électriques, de matériels électroniques et optiques ou d'autres matériels",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7111Z",
+    "label": "Activités d'architecture",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "9601B",
+    "label": "Blanchisserie-teinturerie de détail",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7731Z",
+    "label": "Location et location-bail de machines et équipements agricoles",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "0240Z",
+    "label": "Services de soutien à l'exploitation forestière",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "8030Z",
+    "label": "Activités d'enquête",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "3250A",
+    "label": "Fabrication de matériel médico-chirurgical et dentaire",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "3220Z",
+    "label": "Fabrication d'instruments de musique",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "1083Z",
+    "label": "",
+    "validation": "",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "9002Z",
+    "label": "Activités de soutien au spectacle vivant",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4646Z",
+    "label": "Commerce de gros (commerce interentreprises) de produits pharmaceutiques",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "6110Z",
+    "label": "Télécommunications filaires",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "9311Z",
+    "label": "Gestion d'installations sportives",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "2219Z",
+    "label": "",
+    "validation": "",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "1392Z",
+    "label": "Fabrication d'articles textiles, sauf habillement",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4942Z",
+    "label": "Services de déménagement",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7220Z",
+    "label": "Recherche-développement en sciences humaines et sociales",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "3312Z",
+    "label": "Réparation de machines et équipements mécaniques",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4669B",
+    "label": "Commerce de gros (commerce interentreprises) de fournitures et équipements industriels divers",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7430Z",
+    "label": "Traduction et interprétation",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "2313Z",
+    "label": "Fabrication de verre creux",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "6202B",
+    "label": "Tierce maintenance de systèmes et d’applications informatiques",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7732Z",
+    "label": "Location et location-bail de machines et équipements pour la construction",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4778B",
+    "label": "Commerces de détail de charbons et combustibles",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "3311Z",
+    "label": "Réparation d'ouvrages en métaux",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4519Z",
+    "label": "Commerce d'autres véhicules automobiles",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "3213Z",
+    "label": "Fabrication d’articles de bijouterie fantaisie et articles similaires",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "2016Z",
+    "label": "Fabrication de matières plastiques de base",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "2550A",
+    "label": "Forge, estampage, matriçage ; métallurgie des poudres",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "0125Z",
+    "label": "Culture d'autres fruits d'arbres ou d'arbustes et de fruits à coque",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "1082Z",
+    "label": "Fabrication de cacao, chocolat et de produits de confiserie",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "9525Z",
+    "label": "Réparation d'articles d'horlogerie et de bijouterie",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4779Z",
+    "label": "Commerce de détail de biens d'occasion en magasin",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7711A",
+    "label": "Location de courte durée de voitures et de véhicules automobiles légers",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "3832Z",
+    "label": "Récupération de déchets triés",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "8292Z",
+    "label": "Activités de conditionnement",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4776Z",
+    "label": "Commerce de détail de fleurs, plantes, graines, engrais, animaux de compagnie et aliments pour ces animaux en magasin spécialisé",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "9522Z",
+    "label": "Réparation d'appareils électroménagers et d'équipements pour la maison et le jardin",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "5210B",
+    "label": "Entreposage et stockage non frigorifique",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "1396Z",
+    "label": "Fabrication d'autres textiles techniques et industriels",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4614Z",
+    "label": "Intermédiaires du commerce en machines, équipements industriels, navires et avions",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4671Z",
+    "label": "Commerce de gros (commerce interentreprises) de combustibles et de produits annexes",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4651Z",
+    "label": "Commerce de gros (commerce interentreprises) d'ordinateurs, d'équipements informatiques périphériques et de logiciels",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4110A",
+    "label": "Promotion immobilière de logements",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "2511Z",
+    "label": "Fabrication de structures métalliques et de parties de structures",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7729Z",
+    "label": "Location et location-bail d'autres biens personnels et domestiques",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4669A",
+    "label": "Commerce de gros (commerce interentreprises) de matériel électrique",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "5229A",
+    "label": "Messagerie, fret express",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7739Z",
+    "label": "Location et location-bail d'autres machines, équipements et biens matériels n.c.a.",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4664Z",
+    "label": "Commerce de gros (commerce interentreprises) de machines pour l'industrie textile et l'habillement",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7500Z",
+    "label": "Activités vétérinaires",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "9523Z",
+    "label": "Réparation de chaussures et d'articles en cuir",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4742Z",
+    "label": "Commerce de détail de matériels de télécommunication en magasin spécialisé",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "2512Z",
+    "label": "Fabrication de portes et fenêtres en métal",
+    "validation": "KO",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "0119Z",
+    "label": "Autres cultures non permanentes",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4110C",
+    "label": "",
+    "validation": "",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4752A",
+    "label": "Commerce de détail de quincaillerie, peintures et verres en petites surfaces (moins de 400 m2)",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "7712Z",
+    "label": "Location et location-bail de camions",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  },
+  {
+    "code_naf": "4741Z",
+    "label": "Commerce de détail d'ordinateurs, d'unités périphériques et de logiciels en magasin spécialisé",
+    "validation": "OK",
+    "total_velos": 1,
+    "nb_dossiers": 1
+  }
+]

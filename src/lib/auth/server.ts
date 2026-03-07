@@ -30,9 +30,11 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     id: profile.id,
     email: profile.email,
     role: profile.role as UserRole,
+    is_super_admin: profile.is_super_admin ?? false,
     nom: profile.nom,
     prenom: profile.prenom,
     territoire: profile.territoire as AuthUser['territoire'],
+    departement: profile.departement ?? null,
     depot_id: profile.depot_id,
     actif: profile.actif ?? true,
   }

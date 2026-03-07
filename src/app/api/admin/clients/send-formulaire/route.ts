@@ -23,7 +23,7 @@ import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
  */
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await requireRole(['admin_general', 'admin_regional', 'agent_regional'])
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
     if (isAuthError(authResult)) return authResult
 
     const body = await request.json()

@@ -603,10 +603,12 @@ export type Database = {
         Row: {
           actif: boolean | null
           created_at: string | null
+          departement: string | null
           depot_id: string | null
           depot_ids: string[] | null
           email: string
           id: string
+          is_super_admin: boolean
           nom: string | null
           preferences: Json | null
           prenom: string | null
@@ -618,10 +620,12 @@ export type Database = {
         Insert: {
           actif?: boolean | null
           created_at?: string | null
+          departement?: string | null
           depot_id?: string | null
           depot_ids?: string[] | null
           email: string
           id: string
+          is_super_admin?: boolean
           nom?: string | null
           preferences?: Json | null
           prenom?: string | null
@@ -633,10 +637,12 @@ export type Database = {
         Update: {
           actif?: boolean | null
           created_at?: string | null
+          departement?: string | null
           depot_id?: string | null
           depot_ids?: string[] | null
           email?: string
           id?: string
+          is_super_admin?: boolean
           nom?: string | null
           preferences?: Json | null
           prenom?: string | null
@@ -732,10 +738,9 @@ export type ClientHorsZone = Tables<'clients_hors_zone'>
 
 // Role types
 export type UserRole =
-  | 'admin_general'
-  | 'admin_regional'
-  | 'agent_regional'
-  | 'agent_depot'
+  | 'super_admin'
+  | 'admin'
+  | 'agent_secteur'
   | 'livreur'
   | 'client'
 

@@ -73,7 +73,7 @@ export async function GET() {
   }
 }
 
-// ─── POST : Lancer le géocodage batch ─────────────────────────────────────
+// ─── POST : Lancer le géocodage batch ───────────────────────────────────
 
 export async function POST(request: NextRequest) {
   try {
@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ─── Fonction de géocodage batch via CSV ──────────────────────────────────
+// ─── Fonction de géocodage batch via CSV ────────────────────────────────
 
 interface BatchItem {
   id: string

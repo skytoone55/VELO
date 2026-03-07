@@ -55,13 +55,13 @@ async function fetchAllItems(boardId: string): Promise<{ mondayId: string; statu
 }
 
 async function main() {
-  console.log('\uD83D\uDE80 Sync statut_commercial depuis Monday vers Supabase PPE')
+  console.log('🚀 Sync statut_commercial depuis Monday vers Supabase PPE')
   let totalUpdated = 0
   let totalNotFound = 0
   let totalErrors = 0
 
   for (const boardId of BOARD_IDS) {
-    console.log(`\n\uD83D\uDCCB Board ${boardId}`)
+    console.log(`\n📋 Board ${boardId}`)
     const items = await fetchAllItems(boardId)
     console.log(`   ${items.length} items avec statut_commercial`)
 
@@ -80,15 +80,15 @@ async function main() {
         totalUpdated++
       }
     }
-    console.log(`   \u2705 Done`)
+    console.log(`   ✅ Done`)
   }
 
-  console.log('\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550')
-  console.log(`\u2705 Terminé`)
+  console.log('\n═══════════════════════════════════════')
+  console.log(`✅ Terminé`)
   console.log(`   Mis à jour : ${totalUpdated}`)
   console.log(`   Non trouvés : ${totalNotFound}`)
   console.log(`   Erreurs : ${totalErrors}`)
-  console.log('\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550')
+  console.log('═══════════════════════════════════════')
 }
 
 main().catch(err => { console.error('Fatal:', err); process.exit(1) })

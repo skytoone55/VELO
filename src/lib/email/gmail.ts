@@ -459,10 +459,9 @@ export async function sendUserInvitationEmail(
   const tenant = getTenantConfig()
 
   const roleLabels: Record<string, string> = {
-    admin_general: 'Administrateur Général',
-    admin_regional: 'Administrateur Régional',
-    agent_regional: 'Agent Régional',
-    agent_depot: 'Agent Dépôt',
+    super_admin: 'Super Admin',
+    admin: 'Administrateur',
+    agent_secteur: 'Agent Secteur',
     livreur: 'Livreur',
     client: 'Client',
   }

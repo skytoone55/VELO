@@ -1,0 +1,1380 @@
+{
+  "generated_at": "2026-02-22T16:00:23.816Z",
+  "boards": [
+    {
+      "board_name": "STELLARS",
+      "board_id": 5001072451,
+      "total_items": 35,
+      "items_matched": 35,
+      "items_not_in_ref": [],
+      "differences": [
+        {
+          "item_id": "5013817140",
+          "item_name": "CAP'FLAM",
+          "siret": "87919495900034",
+          "board": "STELLARS",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 3,
+              "reference": 1
+            }
+          }
+        },
+        {
+          "item_id": "5013817125",
+          "item_name": "BELLA PIZZA",
+          "siret": "91850197400011",
+          "board": "STELLARS",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 2,
+              "reference": 1
+            }
+          }
+        },
+        {
+          "item_id": "5013817187",
+          "item_name": "IDEMMO FONCIER",
+          "siret": "53312582900051",
+          "board": "STELLARS",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 2,
+              "reference": 1
+            }
+          }
+        },
+        {
+          "item_id": "5013817131",
+          "item_name": "AVICAP",
+          "siret": "44527854200037",
+          "board": "STELLARS",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 6,
+              "reference": 3
+            }
+          }
+        },
+        {
+          "item_id": "5013817174",
+          "item_name": "PIZZERIA L'ECLIPSE",
+          "siret": "79162378800027",
+          "board": "STELLARS",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 2,
+              "reference": 1
+            }
+          }
+        },
+        {
+          "item_id": "5021214526",
+          "item_name": "A L'UNISSONS",
+          "siret": "90441142800017",
+          "board": "STELLARS",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 15,
+              "reference": 12
+            }
+          }
+        }
+      ]
+    },
+    {
+      "board_name": "EKL",
+      "board_id": 2140187165,
+      "total_items": 231,
+      "items_matched": 231,
+      "items_not_in_ref": [],
+      "differences": []
+    },
+    {
+      "board_name": "JM",
+      "board_id": 2137662048,
+      "total_items": 147,
+      "items_matched": 147,
+      "items_not_in_ref": [],
+      "differences": [
+        {
+          "item_id": "2137781861",
+          "item_name": "CTRE EDUCAT.NICOIS TRADITION RECHERCHES (LE CENTRE)",
+          "siret": "47930525200021",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 4,
+              "reference": 15
+            }
+          }
+        },
+        {
+          "item_id": "5001435326",
+          "item_name": "LEDIGN'EN SCENES",
+          "siret": "92435718900019",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "13169a0a"
+            }
+          }
+        },
+        {
+          "item_id": "5001437934",
+          "item_name": "COMPOST IN CAUX",
+          "siret": "92470115400016",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "131867d8"
+            }
+          }
+        },
+        {
+          "item_id": "2137781959",
+          "item_name": "ECURIE BEAU",
+          "siret": "88384863200013",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "2137781760",
+          "item_name": "SAVEURS ET PARTAGES",
+          "siret": "93213641900011",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "5001434790",
+          "item_name": "SARL WALID",
+          "siret": "79910738800016",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "131aac4c"
+            }
+          }
+        },
+        {
+          "item_id": "5001434905",
+          "item_name": "MICKAEL BACHER",
+          "siret": "81485925200037",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "1314fb73"
+            }
+          }
+        },
+        {
+          "item_id": "5001435127",
+          "item_name": "CHAIRWOOD",
+          "siret": "82095280200024",
+          "board": "JM",
+          "fields": {
+            "NOM": {
+              "monday": "CHAIRWOOD",
+              "reference": "TEYSSIER D'ORFEUIL"
+            },
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "1316c782"
+            }
+          }
+        },
+        {
+          "item_id": "5001436194",
+          "item_name": "YANNICK LABASTIE",
+          "siret": "44453721100013",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "131dab71"
+            }
+          }
+        },
+        {
+          "item_id": "5001436579",
+          "item_name": "CASA BENELLI",
+          "siret": "80752100000016",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "13107819"
+            }
+          }
+        },
+        {
+          "item_id": "2137781902",
+          "item_name": "CAMPING LES PINS",
+          "siret": "42827714900012",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 2,
+              "reference": 4
+            }
+          }
+        },
+        {
+          "item_id": "2137781801",
+          "item_name": "ASSOC COMMUNAUTE ISRAELITE MARSEILLE (CDIM)",
+          "siret": "95042722900022",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "5001437324",
+          "item_name": "TALOS",
+          "siret": "44868369800022",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "131aa9df"
+            }
+          }
+        },
+        {
+          "item_id": "2137781913",
+          "item_name": "CAMPING LA BRETONNIERE",
+          "siret": "52238470000012",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 2,
+              "reference": 4
+            }
+          }
+        },
+        {
+          "item_id": "2137781964",
+          "item_name": "ANTOINE LETELLIER",
+          "siret": "31524472300021",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "2137781826",
+          "item_name": "CLEAN MY CALANQUES",
+          "siret": "83464986500021",
+          "board": "JM",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "834 649 865 00021",
+              "reference": "83464986500021 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "2137781777",
+          "item_name": "LES SIRENES",
+          "siret": "53099682600018",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 12,
+              "reference": 7
+            }
+          }
+        },
+        {
+          "item_id": "2137781823",
+          "item_name": "CAMPING AU PAYS DE HANAU",
+          "siret": "88432377500012",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "5001433939",
+          "item_name": "RAYAN",
+          "siret": "79910405400017",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "131643d1"
+            }
+          }
+        },
+        {
+          "item_id": "5001431261",
+          "item_name": "LATIF",
+          "siret": "45299286000034",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "131a3af1"
+            }
+          }
+        },
+        {
+          "item_id": "5001434156",
+          "item_name": "GALLIA RESORT",
+          "siret": "89961502500017",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "13160a28"
+            }
+          }
+        },
+        {
+          "item_id": "2137781922",
+          "item_name": "ASSOCIATION SYNDICALE DU SQUARE LA PAULINE",
+          "siret": "92839097000012",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 7,
+              "reference": 15
+            }
+          }
+        },
+        {
+          "item_id": "2137781829",
+          "item_name": "CHAMBRE ECONOMIQUE FRANCE TUNISIE (PCCFT)",
+          "siret": "83044732200017",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 8,
+              "reference": 15
+            }
+          }
+        },
+        {
+          "item_id": "2137781887",
+          "item_name": "ENTREPRISE DE SERVICE DE PROXIMITE D ANIMATION ET DE CONSEIL AUX ENTREPRISES (E.S.P.A.C.E.)",
+          "siret": "51253095700012",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 8,
+              "reference": 15
+            }
+          }
+        },
+        {
+          "item_id": "2137781839",
+          "item_name": "FEDERATION INTERNATIONALE DES RESEAUX DE SOUTIEN POUR LA TUNISIE (F.I.R.S.T.)",
+          "siret": "85349491200019",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 7,
+              "reference": 15
+            }
+          }
+        },
+        {
+          "item_id": "2137781899",
+          "item_name": "SPORTING ATHLETICO MARSEILLE",
+          "siret": "92372528700018",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 12,
+              "reference": 15
+            }
+          }
+        },
+        {
+          "item_id": "2137781864",
+          "item_name": "SEMAPHORE EXPERTISE",
+          "siret": "88185352700011",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 6,
+              "reference": 15
+            }
+          }
+        },
+        {
+          "item_id": "5001436705",
+          "item_name": "ABC FRUITS",
+          "siret": "88515979800010",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "13139c44"
+            }
+          }
+        },
+        {
+          "item_id": "5001434511",
+          "item_name": "NOURFRUIT",
+          "siret": "82129283600011",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "131f4ff6"
+            }
+          }
+        },
+        {
+          "item_id": "5001434327",
+          "item_name": "SASU RIADH",
+          "siret": "92142780300017",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "13108244"
+            }
+          }
+        },
+        {
+          "item_id": "5001434672",
+          "item_name": "SAS THOLONET",
+          "siret": "89753851800019",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "1316a400"
+            }
+          }
+        },
+        {
+          "item_id": "5001436443",
+          "item_name": "LA MELEE DES JEUX (LMJ)",
+          "siret": "98000312300018",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "13177748"
+            }
+          }
+        },
+        {
+          "item_id": "2137781766",
+          "item_name": "LA CREOLE",
+          "siret": "38437964000012",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "2146146547",
+          "item_name": "BYN. RENOV 13 (B.Y.N.R 13)",
+          "siret": "79280949300028",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 3,
+              "reference": 1
+            }
+          }
+        },
+        {
+          "item_id": "2137781870",
+          "item_name": "LES FEES MAISON",
+          "siret": "82483959100024",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 7,
+              "reference": 10
+            }
+          }
+        },
+        {
+          "item_id": "2137781759",
+          "item_name": "ADELEC",
+          "siret": "82057432500024",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "2137781833",
+          "item_name": "BETH HABAD CANTON VERT",
+          "siret": "92412955400029",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 3
+            }
+          }
+        },
+        {
+          "item_id": "2137781811",
+          "item_name": "CAMPING ROBINSON",
+          "siret": "50117902200014",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 3,
+              "reference": 4
+            }
+          }
+        },
+        {
+          "item_id": "2137781983",
+          "item_name": "KEREN CHMOUEL",
+          "siret": "85059073800017",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "2137781940",
+          "item_name": "MD DISTRIBUTION",
+          "siret": "82310155500048",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 15,
+              "reference": 8
+            }
+          }
+        },
+        {
+          "item_id": "2137781790",
+          "item_name": "COULEURS VENDEE",
+          "siret": "31255009800031",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 3
+            }
+          }
+        },
+        {
+          "item_id": "2137781756",
+          "item_name": "CMN CAMP",
+          "siret": "81157812900017",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "2137781751",
+          "item_name": "CNRCAMP",
+          "siret": "48094701900026",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 4,
+              "reference": 6
+            }
+          }
+        },
+        {
+          "item_id": "2137781813",
+          "item_name": "AMELIA CAMPING",
+          "siret": "53248095100013",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "2137781958",
+          "item_name": "GREGORY PANNIER",
+          "siret": "41284715400041",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 2,
+              "reference": 5
+            }
+          }
+        },
+        {
+          "item_id": "2137781866",
+          "item_name": "EASY",
+          "siret": "98219512500017",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 3
+            }
+          }
+        },
+        {
+          "item_id": "2137781918",
+          "item_name": "MARECHALERIE SEYER ADRIEN -MSA-",
+          "siret": "81191996800032",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "2137781919",
+          "item_name": "EURL NIBELLE JULIEN",
+          "siret": "93287940600019",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "2137781953",
+          "item_name": "CAMPING LE PEYRELADE",
+          "siret": "41169064700010",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 2
+            }
+          }
+        },
+        {
+          "item_id": "5001438782",
+          "item_name": "MOHAMMED BOUNOUHI",
+          "siret": "93375050700016",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "131c8f72"
+            }
+          }
+        },
+        {
+          "item_id": "2137781954",
+          "item_name": "LE PRE DES SABLES",
+          "siret": "79801474200026",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 3
+            }
+          }
+        },
+        {
+          "item_id": "5001438923",
+          "item_name": "B 2",
+          "siret": "94967769400026",
+          "board": "JM",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "",
+              "reference": "131b67c5"
+            }
+          }
+        },
+        {
+          "item_id": "2137781752",
+          "item_name": "PROVENCE VALLEE",
+          "siret": "80024221600029",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 1,
+              "reference": 3
+            }
+          }
+        },
+        {
+          "item_id": "2137781917",
+          "item_name": "SYLVIE MALLE",
+          "siret": "51137539600047",
+          "board": "JM",
+          "fields": {
+            "VELO_VOULU": {
+              "monday": 2,
+              "reference": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "board_name": "DIZIEN VELO",
+      "board_id": 2146667697,
+      "total_items": 422,
+      "items_matched": 422,
+      "items_not_in_ref": [],
+      "differences": [
+        {
+          "item_id": "2150866603",
+          "item_name": "OPTICA DESIGN (KRYS)",
+          "siret": "81155169600016",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "TEL": {
+              "monday": "0602168660",
+              "reference": "553642392.0"
+            },
+            "REF_RETINA": {
+              "monday": "1311a7c9",
+              "reference": "1311c28f"
+            }
+          }
+        },
+        {
+          "item_id": "5005634845",
+          "item_name": "BASTIEN ANCHORDOGNY",
+          "siret": "83252004300015",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "832520043 00015",
+              "reference": "83252004300015 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5018754721",
+          "item_name": "LOAN JOY",
+          "siret": "92912010300015",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "929 120 103 00015",
+              "reference": "92912010300015 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "2150833041",
+          "item_name": "LENI ESTHETIQUECAR",
+          "siret": "90509719200017",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "905 097 192 00017",
+              "reference": "90509719200017 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "2151858833",
+          "item_name": "RENOV BTP",
+          "siret": "98104362300017",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "981 043 623 000 17",
+              "reference": "98104362300017 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5019965746",
+          "item_name": "ATELIER METAL ART",
+          "siret": "93896875700014",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "938 968 757 00014",
+              "reference": "93896875700014 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "2147824502",
+          "item_name": "ALLO CLIM",
+          "siret": "95278195300023",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "952 781 953 00023",
+              "reference": "95278195300023 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5005639575",
+          "item_name": "DPS RENOV45",
+          "siret": "98024334900019",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "980 243 349 00019",
+              "reference": "98024334900019 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5014587795",
+          "item_name": "FOUADE BOUZIANE",
+          "siret": "91412911900014",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "914 129 119 00014",
+              "reference": "91412911900014 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5004155478",
+          "item_name": "SNC LES PERSPECTIVES",
+          "siret": "51220897600013",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "131609ba",
+              "reference": "1315a570"
+            }
+          }
+        },
+        {
+          "item_id": "5013354272",
+          "item_name": "ADRIEN HILLEWAERE",
+          "siret": "90091310400015",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "900 913 104 00015",
+              "reference": "90091310400015 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5019956914",
+          "item_name": "JEAN-LOUIS BELTRAMINI",
+          "siret": "79984904700011",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "7 9 9 8 4 9 0 4 7 0 0 0 1 1",
+              "reference": "79984904700011 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5016023997",
+          "item_name": "BÉNAC CLÉMENT",
+          "siret": "94129218700015",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "941 292 187 00015",
+              "reference": "94129218700015 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5013355078",
+          "item_name": "SNC DLHC",
+          "siret": "91220654700016",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "912 206 547 00016",
+              "reference": "91220654700016 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5019414344",
+          "item_name": "MIDI BATI FONCIER",
+          "siret": "82279562100025",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "822 795 621 00025",
+              "reference": "82279562100025 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5004676727",
+          "item_name": "AHMED LAJINI",
+          "siret": "93975192100015",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "939 751 921 00015",
+              "reference": "93975192100015 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5020341770",
+          "item_name": "KARIM GHEMAME",
+          "siret": "82946680400020",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "829 466 804 00020",
+              "reference": "82946680400020 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5004677330",
+          "item_name": "I.N.N",
+          "siret": "92768371400012",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "927 683 714 00012",
+              "reference": "92768371400012 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5003453979",
+          "item_name": "LAURENT CAUBRIERE MULTISERVICES",
+          "siret": "89805544700012",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "898 055 447 00012",
+              "reference": "89805544700012 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5013363827",
+          "item_name": "EARL LOUWS JEAN JACQUES",
+          "siret": "39769070200022",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "397 690 702 00022",
+              "reference": "39769070200022 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5004678027",
+          "item_name": "YS RESTAURATION",
+          "siret": "84236313700014",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "842 363 137 00014",
+              "reference": "84236313700014 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "2150456720",
+          "item_name": "SAZERNERGIE",
+          "siret": "98480510100016",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "984 805 101 00016",
+              "reference": "98480510100016 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "2151148888",
+          "item_name": "LA MAISON BLANCHE",
+          "siret": "53943745900057",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "13192d76",
+              "reference": "13124d7a"
+            }
+          }
+        },
+        {
+          "item_id": "5004678369",
+          "item_name": "RICARDO MARTINS DA PONTE",
+          "siret": "98198448700026",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "981 984 487 00026",
+              "reference": "98198448700026 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5011372808",
+          "item_name": "RIDA KHIYATI",
+          "siret": "95285323200025",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "952 853 232 00025",
+              "reference": "95285323200025 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5004678728",
+          "item_name": "RUN TOWN TAXI",
+          "siret": "83078743800027",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "830 787 438 00027",
+              "reference": "83078743800027 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5021211379",
+          "item_name": "NORMO PRIMEURS",
+          "siret": "79086296500015",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "790 862 965 00015",
+              "reference": "79086296500015 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5021211307",
+          "item_name": "ARCHANGE PIOKA",
+          "siret": "88892737300025",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "888 927 373 00025",
+              "reference": "88892737300025 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5021211509",
+          "item_name": "Yacine Ouerdani",
+          "siret": "98145824300012",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "981 458 243 00012",
+              "reference": "98145824300012 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5021211708",
+          "item_name": "ATK",
+          "siret": "98413607700018",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "984 136 077 00018",
+              "reference": "98413607700018 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5021211530",
+          "item_name": "FORMATLANTIK (FORMATK)",
+          "siret": "94870265900020",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "948 702 659 00020",
+              "reference": "94870265900020 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5021123477",
+          "item_name": "GREEN WAVE ACTIVITY (GWA)",
+          "siret": "89259916800010",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "892 599 168 00010",
+              "reference": "89259916800010 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5021157109",
+          "item_name": "LE STUDIO",
+          "siret": "94470450100013",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "944 704 501 00013",
+              "reference": "94470450100013 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5020916154",
+          "item_name": "BATI. S",
+          "siret": "47915991500020",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "479 159 915 00020",
+              "reference": "47915991500020 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5020914994",
+          "item_name": "JOUANEN CONSTRUCTIONS",
+          "siret": "81959060500021",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "819 590 605 00021",
+              "reference": "81959060500021 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5001667640",
+          "item_name": "TGC ENERGIE",
+          "siret": "93382733900013",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "REF_RETINA": {
+              "monday": "131a1812",
+              "reference": "1312af33"
+            }
+          }
+        },
+        {
+          "item_id": "5005634967",
+          "item_name": "DE LA HAUTE CAVE",
+          "siret": "48814019500014",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "488 140 195 00014",
+              "reference": "48814019500014 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5005634707",
+          "item_name": "GAEC DE RAYMILUC",
+          "siret": "41017974100013",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "410 179 741 00013",
+              "reference": "41017974100013 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "2151056272",
+          "item_name": "JSM",
+          "siret": "82842365700018",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "828 423 657 00018",
+              "reference": "82842365700018 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5013428789",
+          "item_name": "HB ENERGIES",
+          "siret": "95111518700019",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "EMAIL": {
+              "monday": "hakim.neoline@gmail.com",
+              "reference": "hakim@lagence39.fr"
+            },
+            "REF_RETINA": {
+              "monday": "1314d7f3",
+              "reference": "131d94f2"
+            }
+          }
+        },
+        {
+          "item_id": "5004676768",
+          "item_name": "CONCEPT HOME",
+          "siret": "88880410100010",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "888 804 101 00010",
+              "reference": "88880410100010 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "2151062985",
+          "item_name": "SARL JADE BEAUTY",
+          "siret": "93528318400015",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "935 283 184 00015",
+              "reference": "93528318400015 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5004677365",
+          "item_name": "MEUBLE DESTOCK",
+          "siret": "94044850900015",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "940 448 509 00015",
+              "reference": "94044850900015 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5004677438",
+          "item_name": "BOSPHORE",
+          "siret": "91314836700018",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "913 148 367 00018",
+              "reference": "91314836700018 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "2151071030",
+          "item_name": "SM",
+          "siret": "94051876400011",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "940 518 764 00011",
+              "reference": "94051876400011 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5004677588",
+          "item_name": "ZILLENIUM",
+          "siret": "89940325700020",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "899 403 257 00020",
+              "reference": "89940325700020 (14 digits no spaces)"
+            }
+          }
+        },
+        {
+          "item_id": "5020331457",
+          "item_name": "SOLUOUEST",
+          "siret": "92888924500017",
+          "board": "DIZIEN VELO",
+          "fields": {
+            "SIRET_FORMAT": {
+              "monday": "928 889 245 00017",
+              "reference": "92888924500017 (14 digits no spaces)"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "per_board": [
+      {
+        "board": "STELLARS",
+        "total_items": 35,
+        "matched": 35,
+        "not_in_ref": 0,
+        "items_with_diffs": 6,
+        "total_field_diffs": 6
+      },
+      {
+        "board": "EKL",
+        "total_items": 231,
+        "matched": 231,
+        "not_in_ref": 0,
+        "items_with_diffs": 0,
+        "total_field_diffs": 0
+      },
+      {
+        "board": "JM",
+        "total_items": 147,
+        "matched": 147,
+        "not_in_ref": 0,
+        "items_with_diffs": 54,
+        "total_field_diffs": 55
+      },
+      {
+        "board": "DIZIEN VELO",
+        "total_items": 422,
+        "matched": 422,
+        "not_in_ref": 0,
+        "items_with_diffs": 47,
+        "total_field_diffs": 49
+      }
+    ],
+    "per_field": {
+      "VELO_VOULU": 41,
+      "REF_RETINA": 23,
+      "NOM": 1,
+      "SIRET_FORMAT": 43,
+      "TEL": 1,
+      "EMAIL": 1
+    }
+  }
+}

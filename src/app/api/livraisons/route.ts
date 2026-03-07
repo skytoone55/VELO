@@ -11,7 +11,7 @@ import { requireRole, isAuthError, type AuthenticatedUser } from '@/lib/auth/req
 export async function GET(request: NextRequest) {
   try {
     // Livraisons accessible by all admin roles
-    const authResult = await requireRole(['admin_general', 'admin_regional', 'agent_regional', 'agent_depot', 'livreur'])
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
     if (isAuthError(authResult)) return authResult
     const currentUser = authResult as AuthenticatedUser
 
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Role-based data filtering
-    if (currentUser.role === 'agent_depot' && currentUser.depot_ids?.length) {
+    if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
       query = query.in('depot_id', currentUser.depot_ids)
     } else if (currentUser.role === 'livreur') {
       query = query.eq('livreur_id', currentUser.id)

@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['admin_general', 'admin_regional', 'agent_regional'].includes(profile.role)) {
+    if (!profile || !['super_admin', 'admin', 'agent_secteur'].includes(profile.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 

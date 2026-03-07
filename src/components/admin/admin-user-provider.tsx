@@ -7,9 +7,11 @@ export interface AdminUser {
   id: string
   email: string
   role: UserRole
+  is_super_admin: boolean
   nom: string
   prenom: string
   territoire?: string | null
+  departement?: string | null
   depot_id?: string | null
   actif: boolean
 }

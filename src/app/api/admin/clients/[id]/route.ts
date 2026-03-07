@@ -44,8 +44,8 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 404 })
     }
 
-    // Vérifier le territoire pour admin_regional
-    if (profile.role === 'admin_regional' && profile.territoire !== client.departement) {
+    // Vérifier le territoire pour admin
+    if (profile.role === 'admin' && profile.territoire !== client.departement) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
@@ -129,7 +129,7 @@ export async function PUT(
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['admin_general', 'admin_regional', 'agent_regional'].includes(profile.role)) {
+    if (!profile || !['super_admin', 'admin', 'agent_secteur'].includes(profile.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
@@ -149,8 +149,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Client non trouvé' }, { status: 404 })
     }
 
-    // Vérifier le territoire pour admin_regional
-    if (profile.role === 'admin_regional' && profile.territoire !== existingClient.departement) {
+    // Vérifier le territoire pour admin
+    if (profile.role === 'admin' && profile.territoire !== existingClient.departement) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
@@ -299,9 +299,9 @@ export async function DELETE(
       .eq('id', user.id)
       .single()
 
-    // Seul admin_general peut supprimer
-    if (!profile || profile.role !== 'admin_general') {
-      return NextResponse.json({ error: 'Seul un admin général peut supprimer des clients' }, { status: 403 })
+    // Seul super_admin peut supprimer
+    if (!profile || profile.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Seul un super admin peut supprimer des clients' }, { status: 403 })
     }
 
     // Utiliser le client admin pour bypasser RLS

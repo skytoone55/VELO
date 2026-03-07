@@ -6,7 +6,9 @@ export interface AuthenticatedUser {
   id: string
   email: string
   role: UserRole
+  is_super_admin: boolean
   territoire: string | null
+  departement: string | null
   depot_ids: string[] | null
 }
 
@@ -30,7 +32,7 @@ export async function requireRole(
 
   const { data: profile, error: profileError } = await supabase
     .from('users_profile')
-    .select('id, email, role, territoire, depot_ids')
+    .select('id, email, role, is_super_admin, territoire, departement, depot_ids')
     .eq('id', user.id)
     .single()
 
@@ -52,7 +54,9 @@ export async function requireRole(
     id: profile.id,
     email: profile.email,
     role: profile.role as UserRole,
+    is_super_admin: profile.is_super_admin ?? false,
     territoire: profile.territoire,
+    departement: profile.departement ?? null,
     depot_ids: profile.depot_ids,
   }
 }
@@ -62,4 +66,11 @@ export async function requireRole(
  */
 export function isAuthError(result: AuthenticatedUser | NextResponse): result is NextResponse {
   return result instanceof NextResponse
+}
+
+/**
+ * Vérifie si un utilisateur est le Super Admin
+ */
+export function isSuperAdmin(user: AuthenticatedUser): boolean {
+  return user.is_super_admin === true && user.role === 'super_admin'
 }

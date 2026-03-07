@@ -182,7 +182,7 @@ export default function AdminDepotsPage() {
         .order('nom', { ascending: true })
 
       // Filtrer par agence pour admin régional
-      if (user?.role === 'admin_regional' && user.territoire) {
+      if (user?.role === 'admin' && user.territoire) {
         const agence = getAgenceFromTerritoire(user.territoire)
         query = query.eq('agence', agence)
       }
@@ -430,7 +430,7 @@ export default function AdminDepotsPage() {
             Gérez les points de retrait et dépôts logistiques
           </p>
         </div>
-        {user?.role === 'admin_general' && (
+        {user?.role === 'super_admin' && (
           <Button onClick={openCreateDialog}>
             <Plus className="h-4 w-4 mr-2" />
             Nouveau depot
@@ -464,7 +464,7 @@ export default function AdminDepotsPage() {
                 ))}
               </SelectContent>
             </Select>
-            {user?.role === 'admin_general' && (
+            {user?.role === 'super_admin' && (
               <Select value={agenceFilter} onValueChange={setAgenceFilter}>
                 <SelectTrigger className="w-full lg:w-56">
                   <MapPin className="h-4 w-4 mr-2" />
@@ -561,7 +561,7 @@ export default function AdminDepotsPage() {
                             <Pencil className="h-4 w-4 mr-2" />
                             Modifier
                           </DropdownMenuItem>
-                          {user?.role === 'admin_general' && (
+                          {user?.role === 'super_admin' && (
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
