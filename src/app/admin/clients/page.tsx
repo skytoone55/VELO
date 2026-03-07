@@ -31,7 +31,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Pencil, Trash2, MoreHorizontal, Navigation, Eye, Phone, KeyRound, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Pencil, Trash2, MoreHorizontal, Navigation, Eye, Phone, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import {
@@ -494,7 +494,7 @@ export default function AdminClientsPage() {
   }
 
   // === Actions groupées ===
-  const handleBulkAction = async (action: 'send_code' | 'send_form' | 'change_status', data?: { statut?: string }) => {
+  const handleBulkAction = async (action: 'send_form' | 'change_status', data?: { statut?: string }) => {
     if (selectedClients.size === 0) return
     setBulkActionLoading(true)
 
@@ -1025,15 +1025,6 @@ export default function AdminClientsPage() {
                 {selectedClients.size} client{selectedClients.size > 1 ? 's' : ''} sélectionné{selectedClients.size > 1 ? 's' : ''}
               </span>
               <div className="h-6 w-px bg-border" />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleBulkAction('send_code')}
-                disabled={bulkActionLoading}
-              >
-                <KeyRound className="h-4 w-4 mr-2" />
-                Envoyer codes
-              </Button>
               <Button
                 size="sm"
                 variant="outline"
