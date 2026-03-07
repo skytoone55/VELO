@@ -24,9 +24,11 @@ import {
   ChevronDown,
   ChevronRight,
   Calendar,
+  ArrowLeftRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { getTenantConfig } from '@/lib/tenants'
+import { getTenantConfig, TENANTS } from '@/lib/tenants'
+import type { TenantId } from '@/lib/tenants'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -124,6 +126,7 @@ interface AdminNavProps {
     id: string
     email: string
     role: UserRole
+    is_super_admin?: boolean
     nom: string
     prenom: string
     territoire?: string | null
@@ -296,6 +299,23 @@ export function AdminNav({ user }: AdminNavProps) {
               )
             })}
           </nav>
+
+          {/* Switch tenant (super_admin only) */}
+          {user.is_super_admin && (() => {
+            const otherTenantId: TenantId = tenant.id === 'ppe' ? 'ecovolt' : 'ppe'
+            const otherTenant = TENANTS[otherTenantId]
+            return (
+              <div className="px-4 pb-2">
+                <a
+                  href={`${otherTenant.url}/admin/dashboard`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium bg-sidebar-accent/30 hover:bg-sidebar-accent/60 text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors w-full"
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5" />
+                  Basculer vers {otherTenant.name}
+                </a>
+              </div>
+            )
+          })()}
 
           {/* User info at bottom */}
           <div className="p-4 border-t border-sidebar-border">

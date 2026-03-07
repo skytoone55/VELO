@@ -1,6 +1,6 @@
 import urllib.request, json, time, re, ssl
 
-API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjU2MDA3NDEzMiwiYWFpIjoxMSwidWlkIjo4MjUxNjA2MywiaWFkIjoiMjAyNS0wOS0wOVQxODo1NDozMC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MzEyMTU4MDksInJnbiI6ImV1YzEifQ.coddlcxR_0AFKA-vQ9RXdGKSVDOEeM7Bj-oTDhotMH4"
+API_KEY = "REDACTED"
 ENDPOINT = "https://api.monday.com/v2"
 
 BOARDS = [

@@ -2316,7 +2316,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
 # ============================================
 # MONDAY.COM
 # ============================================
-MONDAY_API_KEY=eyJhbGciOiJIUzI1NiJ9...
+MONDAY_API_KEY=REDACTED
 MONDAY_BOARD_ID=9990833105
 MONDAY_WEBHOOK_SECRET=[gÃ©nÃ©rer 32 chars alÃ©atoires]
 

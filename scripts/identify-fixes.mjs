@@ -1,6 +1,6 @@
 import XLSX from 'xlsx'
 
-const MONDAY_API_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjU2MDA3NDEzMiwiYWFpIjoxMSwidWlkIjo4MjUxNjA2MywiaWFkIjoiMjAyNS0wOS0wOVQxODo1NDozMC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MzEyMTU4MDksInJnbiI6ImV1YzEifQ.coddlcxR_0AFKA-vQ9RXdGKSVDOEeM7Bj-oTDhotMH4'
+const MONDAY_API_KEY = 'REDACTED'
 
 // Les 14 items à corriger — on va les récupérer pour avoir leur SIRET exact
 const ITEM_IDS = [

@@ -78,7 +78,7 @@ cp .env.ecovolt.local .env.local
 NEXT_PUBLIC_TENANT_ID="ecovolt"
 NEXT_PUBLIC_SUPABASE_URL="https://irpnllwlxivlylclfjwd.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbG..." (JWT classique)
-SUPABASE_SERVICE_ROLE_KEY="REDACTED_SERVICE_ROLE_KEY"
+SUPABASE_SERVICE_ROLE_KEY="REDACTED"
 GMAIL_CLIENT_ID / GMAIL_CLIENT_SECRET / GMAIL_REFRESH_TOKEN → configurés, fonctionnels
 GMAIL_USER="admin@eco-volt.fr"
 MONDAY_API_KEY → configuré
@@ -91,12 +91,12 @@ NEXT_PUBLIC_APP_URL="https://velo-fawn.vercel.app"
 NEXT_PUBLIC_TENANT_ID="ppe"
 NEXT_PUBLIC_SUPABASE_URL="https://zfpzhhdovxllchlsihcr.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="sb_publishable_-eV40xJPpPxRA308jeoGzQ_oYR7jNio"
-SUPABASE_SERVICE_ROLE_KEY="REDACTED_SERVICE_ROLE_KEY"
+SUPABASE_SERVICE_ROLE_KEY="REDACTED"
 SMTP_HOST="smtp.office365.com"
 SMTP_PORT="587"
 SMTP_SECURE="false"
 SMTP_USER="velo-cargo@patrimoine-energie.fr"
-SMTP_PASSWORD="REDACTED_SMTP_PASSWORD"
+SMTP_PASSWORD="REDACTED"
 GMAIL_USER="velo-cargo@patrimoine-energie.fr"
 MONDAY_API_KEY="TODO_PPE_MONDAY_API_KEY"          ← À CONFIGURER
 MONDAY_BOARD_ID="TODO_PPE_MONDAY_BOARD_ID"        ← À CONFIGURER
@@ -168,7 +168,7 @@ NEXT_PUBLIC_APP_URL="http://localhost:3003"
 ### PPE → Microsoft 365 SMTP (EN ATTENTE)
 - Adresse : velo-cargo@patrimoine-energie.fr
 - Méthode : SMTP direct via smtp.office365.com:587
-- Mot de passe du compte : REDACTED_SMTP_PASSWORD
+- Mot de passe du compte : REDACTED
 - **BLOQUÉ** : Erreur 5.7.139 - Le SMTP AUTH est désactivé par la politique de sécurité de l'organisation Microsoft 365
 
 ### Action en cours
@@ -267,7 +267,7 @@ Jonathan a contacté son service informatique pour faire activer le SMTP AUTH su
    ```bash
    cd /Users/john/JARVIS/velo && node -e "
    const nodemailer = require('nodemailer');
-   const t = nodemailer.createTransport({host:'smtp.office365.com',port:587,secure:false,auth:{user:'velo-cargo@patrimoine-energie.fr',pass:'REDACTED_SMTP_PASSWORD'}});
+   const t = nodemailer.createTransport({host:'smtp.office365.com',port:587,secure:false,auth:{user:'velo-cargo@patrimoine-energie.fr',pass:'REDACTED'}});
    t.sendMail({from:'PPE Énergie <velo-cargo@patrimoine-energie.fr>',to:'malai.jonathan@gmail.com',subject:'Test PPE',html:'<p>Test OK</p>'}).then(i=>console.log('OK:',i.messageId)).catch(e=>console.log('ERROR:',e.message));
    "
    ```

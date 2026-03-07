@@ -56,6 +56,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { UsersProfile, UserRole } from '@/lib/types/database'
+import { getTenantConfig, TENANTS } from '@/lib/tenants'
 
 const roleOptions: { value: string; label: string }[] = [
   { value: 'all', label: 'Tous les rôles' },
@@ -86,13 +87,18 @@ function getRoleLabel(role: UserRole): string {
   return roleLabels[role] || role
 }
 
+const allTerritoires: Record<string, string> = {
+  FR: 'France métropolitaine',
+  '971': '971 - Guadeloupe',
+  '972': '972 - Martinique',
+  '973': '973 - Guyane',
+  '974': '974 - La Réunion',
+}
+
+const tenantConfig = getTenantConfig()
 const territoireOptions = [
   { value: 'none', label: 'Aucun' },
-  { value: 'FR', label: 'France métropolitaine' },
-  { value: '971', label: '971 - Guadeloupe' },
-  { value: '972', label: '972 - Martinique' },
-  { value: '973', label: '973 - Guyane' },
-  { value: '974', label: '974 - La Réunion' },
+  ...tenantConfig.territories.map(t => ({ value: t, label: allTerritoires[t] || t })),
 ]
 
 // Rôles qui nécessitent une sélection de dépôts

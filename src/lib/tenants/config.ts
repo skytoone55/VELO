@@ -60,6 +60,12 @@ export interface TenantConfig {
     description: string
   }
 
+  // Territoires disponibles pour ce tenant
+  territories: string[]
+
+  // URL de l'autre tenant (pour le switch super_admin)
+  url: string
+
   // Textes personnalisés
   texts: {
     welcomeMessage: string
@@ -74,6 +80,9 @@ const ecovoltConfig: TenantConfig = {
   name: 'ECO-VOLT',
   fullName: 'ECO-VOLT',
   tagline: 'Vélos cargo électriques',
+
+  territories: ['971', '972', '973', '974'],
+  url: 'https://velo-ecovolt.vercel.app',
 
   email: 'admin@eco-volt.fr',
   phone: '0757991125',
@@ -128,6 +137,9 @@ const ppeConfig: TenantConfig = {
   name: 'PPE Énergie',
   fullName: 'PRESERVATION DU PATRIMOINE ENERGIE (PPE)',
   tagline: 'Vélos cargo électriques',
+
+  territories: ['FR'],
+  url: 'https://velo-ppe.vercel.app',
 
   email: 'velo-cargo@patrimoine-energie.fr',
   phone: '0974161400',
