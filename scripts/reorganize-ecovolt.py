@@ -15,7 +15,7 @@ import unicodedata
 
 # --- Config ---
 ECOVOLT_DIR = "/Users/john/JARVIS/projets/velo/documents-client-velo/ECOVOLT"
-MONDAY_TOKEN = "REDACTED"
+MONDAY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjYwNzQ0NzE0NiwiYWFpIjoxMSwidWlkIjo4MjAyNTk1MiwiaWFkIjoiMjAyNi0wMS0xNFQxMjo1MTozMi4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU5OTgxMjEsInJnbiI6InVzZTEifQ.pKHUmGDm_nv37bFv0aXwLQ1y4HimaLnW0FM6bWuBp5M"
 BOARD_ID = "9990833105"
 RETINA_COL = "text_mkvfxbkp"
 STATUT_COL = "color_mkvfws5n"

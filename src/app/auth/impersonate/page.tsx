@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export default function ImpersonatePage() {
+function ImpersonateContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [status, setStatus] = useState('Connexion en cours...')
@@ -45,11 +45,24 @@ export default function ImpersonatePage() {
   }, [searchParams, router])
 
   return (
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+      <p className="text-muted-foreground">{status}</p>
+    </div>
+  )
+}
+
+export default function ImpersonatePage() {
+  return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
-        <p className="text-muted-foreground">{status}</p>
-      </div>
+      <Suspense fallback={
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      }>
+        <ImpersonateContent />
+      </Suspense>
     </div>
   )
 }
