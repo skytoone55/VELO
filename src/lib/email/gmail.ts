@@ -223,7 +223,8 @@ export async function sendCodeValidationEmail(
 export async function sendFormulaireLinkEmail(
   clientEmail: string,
   clientName: string,
-  formulaireLink: string
+  formulaireLink: string,
+  validationCode?: string
 ) {
   const tenant = getTenantConfig()
 
@@ -254,9 +255,17 @@ export async function sendFormulaireLinkEmail(
                 Nous avons le plaisir de vous informer que votre commande de vélo cargo électrique est en cours de traitement.
               </p>
 
-              <p style="margin: 0 0 30px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Pour finaliser votre livraison, veuillez remplir le formulaire ci-dessous avec vos informations de livraison :
+              <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Pour finaliser votre livraison, veuillez remplir le formulaire ci-dessous avec vos informations de livraison.
               </p>
+
+              ${validationCode ? `
+              <div style="background-color: #f0f9ff; border: 2px solid ${tenant.branding.colors.secondary}; border-radius: 8px; padding: 20px; margin: 0 0 30px 0; text-align: center;">
+                <p style="margin: 0 0 8px 0; color: #52525b; font-size: 14px;">Votre code de validation ENEMAT :</p>
+                <p style="margin: 0; color: #18181b; font-size: 28px; font-weight: 700; letter-spacing: 4px;">${validationCode}</p>
+                <p style="margin: 8px 0 0 0; color: #71717a; font-size: 12px;">Ce code vous sera demandé à la première étape du formulaire</p>
+              </div>
+              ` : ''}
 
               <!-- CTA Button -->
               <table width="100%" cellpadding="0" cellspacing="0">

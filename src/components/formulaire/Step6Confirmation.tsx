@@ -23,9 +23,7 @@ import {
   Mail,
   Calendar,
   Phone,
-  CreditCard,
   BookOpen,
-  Car,
   FileText,
 } from 'lucide-react'
 import { getTenantConfig } from '@/lib/tenants'
@@ -301,16 +299,16 @@ export function Step6Confirmation() {
               {/* Icônes des documents acceptés */}
               <div className="flex justify-center gap-4 mb-3">
                 <div className="flex flex-col items-center gap-1">
-                  <CreditCard className="h-8 w-8 text-foreground" />
-                  <span className="text-[10px] text-muted-foreground">Carte d'identité</span>
+                  <IdCard className="h-8 w-8 text-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Carte d&apos;identité</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <BookOpen className="h-8 w-8 text-foreground" />
                   <span className="text-[10px] text-muted-foreground">Passeport</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <Car className="h-8 w-8 text-foreground" />
-                  <span className="text-[10px] text-muted-foreground">Permis</span>
+                  <IdCard className="h-8 w-8 text-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Permis de conduire</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <FileText className="h-8 w-8 text-foreground" />

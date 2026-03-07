@@ -302,7 +302,7 @@ export function Step4Preference() {
         {preference && preference !== 'retrait' && (
           <div className="space-y-2 pt-2 border-t">
             <Label htmlFor="preferencesLivraison" className="text-sm font-medium">
-              Préférences de livraison (optionnel)
+              Préférences de livraison
             </Label>
             <Textarea
               id="preferencesLivraison"

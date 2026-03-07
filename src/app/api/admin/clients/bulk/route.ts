@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateValidationCode, hashValidationCode } from '@/lib/utils'
-import { sendCodeValidationEmail, sendFormulaireLinkEmail } from '@/lib/email/gmail'
+import { sendFormulaireLinkEmail } from '@/lib/email/gmail'
 import { syncClientToMonday } from '@/lib/monday/api'
 import { isMondayConfigured } from '@/lib/monday/config'
+import { geocodeAddress, buildClientAddress, classifyClientZone, DepotWithCoords } from '@/lib/geo/utils'
 
-type BulkAction = 'send_code' | 'send_form' | 'change_status'
+type BulkAction = 'send_form' | 'change_status'
 
 interface BulkResult {
   clientId: string
@@ -79,9 +80,6 @@ export async function POST(request: NextRequest) {
     let response: BulkResponse
 
     switch (action) {
-      case 'send_code':
-        response = await handleBulkSendCode(clients, adminClient)
-        break
       case 'send_form':
         response = await handleBulkSendForm(clients, adminClient)
         break
@@ -102,61 +100,45 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleBulkSendCode(
-  clients: any[],
+async function geocodeAndAssignDepot(
+  client: any,
   adminClient: ReturnType<typeof createAdminClient>
-): Promise<BulkResponse> {
-  const results: BulkResult[] = []
+): Promise<void> {
+  // Skip si déjà géocodé avec dépôt assigné
+  if (client.latitude && client.longitude && (client.depot_retrait_id || client.depot_logistique_id)) return
 
-  for (const client of clients) {
-    try {
-      // Générer un nouveau code
-      const newCode = generateValidationCode()
-      const newCodeHash = hashValidationCode(newCode)
+  const address = buildClientAddress(client)
+  if (!address) return
 
-      // Mettre à jour le client
-      const { error: updateError } = await adminClient
-        .from('clients')
-        .update({
-          code_validation_hash: newCodeHash,
-          code_validation_envoye_at: new Date().toISOString(),
-          code_enemat_tentatives: 0,
-          code_enemat_bloque: false,
-          code_enemat_valide: false,
-          code_enemat_saisi: null,
-        })
-        .eq('id', client.id)
+  // Géocoder si pas de coordonnées
+  let lat = client.latitude ? parseFloat(client.latitude) : null
+  let lng = client.longitude ? parseFloat(client.longitude) : null
 
-      if (updateError) {
-        results.push({ clientId: client.id, success: false, error: updateError.message })
-        continue
-      }
-
-      // Envoyer l'email au bénéficiaire (prioritaire) ou commercial (fallback)
-      const clientName = client.contact_prenom && client.contact_nom
-        ? `${client.contact_prenom} ${client.contact_nom}`
-        : client.raison_sociale
-
-      const recipientEmail = client.email_beneficiaire || client.email
-      if (!recipientEmail || !recipientEmail.includes('@')) {
-        results.push({ clientId: client.id, success: false, error: 'Email bénéficiaire manquant' })
-        continue
-      }
-
-      await sendCodeValidationEmail(recipientEmail, clientName, newCode)
-      results.push({ clientId: client.id, success: true })
-    } catch (error: any) {
-      results.push({ clientId: client.id, success: false, error: error.message })
-    }
+  if (!lat || !lng) {
+    const geo = await geocodeAddress(address.adresse, address.codePostal, address.ville)
+    if (!geo) return
+    lat = geo.lat
+    lng = geo.lng
   }
 
-  return {
-    action: 'send_code',
-    total: clients.length,
-    success: results.filter(r => r.success).length,
-    failed: results.filter(r => !r.success).length,
-    results,
-  }
+  // Récupérer les dépôts pour classification
+  const { data: depots } = await adminClient
+    .from('depots')
+    .select('id, nom, latitude, longitude, rayon_couverture_km, rayon_livraison_payant_km, prix_livraison_payante, type, agence')
+
+  if (!depots || depots.length === 0) return
+
+  const classification = classifyClientZone(lat, lng, depots as DepotWithCoords[])
+
+  await adminClient
+    .from('clients')
+    .update({
+      latitude: lat.toString(),
+      longitude: lng.toString(),
+      depot_retrait_id: classification.depotRetraitId,
+      depot_logistique_id: classification.depotLogistiqueId,
+    })
+    .eq('id', client.id)
 }
 
 async function handleBulkSendForm(
@@ -164,24 +146,34 @@ async function handleBulkSendForm(
   adminClient: ReturnType<typeof createAdminClient>
 ): Promise<BulkResponse> {
   const results: BulkResult[] = []
-  // NEXT_PUBLIC_APP_URL doit être défini dans Vercel: https://velo-fawn.vercel.app
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL
     || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
     || 'http://localhost:3001'
 
   for (const client of clients) {
     try {
-      // Générer un token unique
+      // Géocoder + assigner dépôt si pas encore fait
+      try { await geocodeAndAssignDepot(client, adminClient) } catch (e) { console.error('Geocoding error:', e) }
+
+      // Générer un token unique + code validation
+      const newCode = generateValidationCode()
+      const newCodeHash = hashValidationCode(newCode)
       const token = `${client.id}-${Date.now()}-${Math.random().toString(36).substring(7)}`
       const formulaireUrl = `${baseUrl}/formulaire?token=${token}`
 
-      // Mettre à jour le client
+      // Mettre à jour le client (token formulaire + code validation)
       const { error: updateError } = await adminClient
         .from('clients')
         .update({
           token_formulaire: token,
           statut_formulaire: 'formulaire_envoye',
           date_envoi_formulaire: new Date().toISOString(),
+          code_validation_hash: newCodeHash,
+          code_validation_envoye_at: new Date().toISOString(),
+          code_enemat_tentatives: 0,
+          code_enemat_bloque: false,
+          code_enemat_valide: false,
+          code_enemat_saisi: null,
         })
         .eq('id', client.id)
 
@@ -201,7 +193,7 @@ async function handleBulkSendForm(
         continue
       }
 
-      await sendFormulaireLinkEmail(recipientEmail, clientName, formulaireUrl)
+      await sendFormulaireLinkEmail(recipientEmail, clientName, formulaireUrl, newCode)
 
       // Synchroniser vers Monday si configuré
       if (client.monday_item_id && isMondayConfigured()) {
