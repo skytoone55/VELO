@@ -50,9 +50,21 @@ export async function POST(
       )
     }
 
+    // Extract token from action_link URL
+    const actionUrl = new URL(linkData.properties.action_link)
+    const token = actionUrl.searchParams.get('token')
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Token non trouvé dans le lien' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({
       success: true,
-      actionLink: linkData.properties.action_link,
+      token,
+      email: profile.email,
     })
 
   } catch (error: any) {
