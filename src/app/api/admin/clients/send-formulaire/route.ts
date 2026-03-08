@@ -11,15 +11,15 @@ import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
  * Envoie le code de validation + le lien du formulaire en une seule action.
  *
  * Gardes (bloquantes) :
- * - validation_naf doit \u00eatre 'OUI'
- * - statut_commercial doit \u00eatre 'controle_valide'
+ * - validation_naf doit être 'OUI'
+ * - statut_commercial doit être 'controle_valide'
  *
  * Actions :
- * 1. G\u00e9n\u00e8re un code de validation + hash
- * 2. G\u00e9n\u00e8re un token formulaire
+ * 1. Génère un code de validation + hash
+ * 2. Génère un token formulaire
  * 3. Envoie l'email du code
  * 4. Envoie l'email du formulaire
- * 5. Met \u00e0 jour statut_commercial \u2192 'formulaire_envoye' (Supabase + Monday)
+ * 5. Met à jour statut_commercial → 'formulaire_envoye' (Supabase + Monday)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    // R\u00e9cup\u00e9rer le client avec les champs n\u00e9cessaires
+    // Récupérer le client avec les champs nécessaires
     const { data: client, error: fetchError } = await adminClient
       .from('clients')
       .select('id, email, email_beneficiaire, raison_sociale, contact_prenom, contact_nom, monday_item_id, monday_board_id, validation_naf, statut_commercial')
@@ -43,14 +43,14 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (fetchError || !client) {
-      return NextResponse.json({ error: 'Client non trouv\u00e9' }, { status: 404 })
+      return NextResponse.json({ error: 'Client non trouvé' }, { status: 404 })
     }
 
     // === GARDES ===
     const nafValid = ['OUI', 'ok', 'oui'].includes(client.validation_naf || '')
     if (!nafValid) {
       return NextResponse.json({
-        error: 'Client non \u00e9ligible : code NAF non valid\u00e9 (NAF doit \u00eatre OUI)',
+        error: 'Client non éligible : code NAF non validé (NAF doit être OUI)',
         guard: 'naf',
       }, { status: 422 })
     }
@@ -63,29 +63,29 @@ export async function POST(request: NextRequest) {
 
     if (!isControleValide) {
       return NextResponse.json({
-        error: `Client non \u00e9ligible : statut commercial doit \u00eatre "Contr\u00f4le valid\u00e9" (actuellement : ${client.statut_commercial || 'aucun'})`,
+        error: `Client non éligible : statut commercial doit être "Contrôle validé" (actuellement : ${client.statut_commercial || 'aucun'})`,
         guard: 'statut',
       }, { status: 422 })
     }
 
-    // V\u00e9rifier l'email
+    // Vérifier l'email
     const recipientEmail = client.email_beneficiaire || client.email
     if (!recipientEmail || !recipientEmail.includes('@')) {
-      return NextResponse.json({ error: 'Email du b\u00e9n\u00e9ficiaire manquant ou invalide' }, { status: 400 })
+      return NextResponse.json({ error: 'Email du bénéficiaire manquant ou invalide' }, { status: 400 })
     }
 
     const clientName = client.contact_prenom && client.contact_nom
       ? `${client.contact_prenom} ${client.contact_nom}`
       : client.raison_sociale
 
-    // 1. G\u00e9n\u00e9rer le code de validation
+    // 1. Générer le code de validation
     const newCode = generateValidationCode()
     const newCodeHash = hashValidationCode(newCode)
 
-    // 2. G\u00e9n\u00e9rer le token formulaire
+    // 2. Générer le token formulaire
     const token = crypto.randomUUID()
 
-    // 3. Mettre \u00e0 jour le client en une seule requ\u00eate
+    // 3. Mettre à jour le client en une seule requête
     const { error: updateError } = await adminClient
       .from('clients')
       .update({
@@ -103,8 +103,8 @@ export async function POST(request: NextRequest) {
       .eq('id', clientId)
 
     if (updateError) {
-      console.error('Erreur mise \u00e0 jour client:', updateError)
-      return NextResponse.json({ error: 'Erreur lors de la mise \u00e0 jour' }, { status: 500 })
+      console.error('Erreur mise à jour client:', updateError)
+      return NextResponse.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 })
     }
 
     // 4. Envoyer l'email du code
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       emailErrors.push(`Code: ${err.message || 'Erreur inconnue'}`)
     }
 
-    // Petit d\u00e9lai pour \u00e9viter le rate limit Gmail
+    // Petit délai pour éviter le rate limit Gmail
     await new Promise(resolve => setTimeout(resolve, 2000))
 
     // 5. Envoyer l'email du formulaire
@@ -151,8 +151,8 @@ export async function POST(request: NextRequest) {
       emailErrors,
       formulaireUrl,
       message: emailErrors.length > 0
-        ? `Formulaire envoy\u00e9 avec erreurs email : ${emailErrors.join(', ')}`
-        : `Code + formulaire envoy\u00e9s \u00e0 ${recipientEmail}`,
+        ? `Formulaire envoyé avec erreurs email : ${emailErrors.join(', ')}`
+        : `Code + formulaire envoyés à ${recipientEmail}`,
     })
   } catch (error: any) {
     console.error('Erreur API send-formulaire:', error)

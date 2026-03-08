@@ -1,0 +1,161 @@
+import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
+import { sendFormulaireLivraisonEmail } from '@/lib/email/gmail'
+import { getTenantConfig } from '@/lib/tenants'
+
+/**
+ * POST /api/admin/clients/send-formulaire-livraison
+ *
+ * Envoie le formulaire de choix de creneau de livraison au client.
+ *
+ * Gardes (bloquantes) :
+ * - Le client doit avoir une livraison associee
+ * - Le statut commercial doit etre 'a_livrer'
+ * - Le creneau ne doit pas deja etre choisi
+ *
+ * Actions :
+ * 1. Genere un token de 64 caracteres hex
+ * 2. Stocke le token dans livraisons.token_livraison
+ * 3. Envoie l'email avec le lien unique
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+    if (isAuthError(authResult)) return authResult
+
+    const body = await request.json()
+    const { clientId } = body
+
+    if (!clientId) {
+      return NextResponse.json({ error: 'Client ID requis' }, { status: 400 })
+    }
+
+    const adminClient = createAdminClient()
+    const tenant = getTenantConfig()
+
+    // Recuperer le client
+    const { data: client, error: fetchError } = await adminClient
+      .from('clients')
+      .select('id, email, email_beneficiaire, raison_sociale, contact_prenom, contact_nom, statut_commercial')
+      .eq('id', clientId)
+      .single()
+
+    if (fetchError || !client) {
+      return NextResponse.json({ error: 'Client non trouve' }, { status: 404 })
+    }
+
+    // === GARDES ===
+
+    // Verifier le statut commercial
+    const normalizedStatut = (client.statut_commercial || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+
+    if (normalizedStatut !== 'a_livrer') {
+      return NextResponse.json({
+        error: `Client non eligible : statut commercial doit etre "a_livrer" (actuellement : ${client.statut_commercial || 'aucun'})`,
+        guard: 'statut',
+      }, { status: 422 })
+    }
+
+    // Verifier l'email
+    const recipientEmail = client.email_beneficiaire || client.email
+    if (!recipientEmail || !recipientEmail.includes('@')) {
+      return NextResponse.json({ error: 'Email du beneficiaire manquant ou invalide' }, { status: 400 })
+    }
+
+    // Recuperer la livraison du client
+    const { data: livraison, error: livraisonError } = await adminClient
+      .from('livraisons')
+      .select('id, depot_id, mode_livraison, creneau_date, token_livraison')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (livraisonError || !livraison) {
+      return NextResponse.json({
+        error: 'Aucune livraison trouvee pour ce client',
+        guard: 'livraison',
+      }, { status: 422 })
+    }
+
+    // Verifier que le creneau n'est pas deja choisi
+    if (livraison.creneau_date) {
+      return NextResponse.json({
+        error: 'Un creneau a deja ete choisi pour cette livraison',
+        guard: 'creneau_deja_choisi',
+      }, { status: 422 })
+    }
+
+    // Recuperer le depot pour le nom
+    let depotName = 'Depot'
+    if (livraison.depot_id) {
+      const { data: depot } = await adminClient
+        .from('depots')
+        .select('nom')
+        .eq('id', livraison.depot_id)
+        .single()
+      if (depot) depotName = depot.nom
+    }
+
+    const clientName = client.contact_prenom && client.contact_nom
+      ? `${client.contact_prenom} ${client.contact_nom}`
+      : client.raison_sociale
+
+    // 1. Generer le token
+    const token = crypto.randomBytes(32).toString('hex')
+
+    // 2. Stocker le token dans la livraison
+    const { error: updateError } = await adminClient
+      .from('livraisons')
+      .update({
+        token_livraison: token,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', livraison.id)
+
+    if (updateError) {
+      console.error('Erreur mise a jour livraison:', updateError)
+      return NextResponse.json({ error: 'Erreur lors de la mise a jour' }, { status: 500 })
+    }
+
+    // 3. Construire l'URL du formulaire
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || 'http://localhost:3001'
+    const formulaireUrl = `${baseUrl}/formulaire-livraison?token=${token}`
+
+    // 4. Envoyer l'email
+    let emailError: string | null = null
+    try {
+      await sendFormulaireLivraisonEmail({
+        to: recipientEmail,
+        clientName,
+        depotName,
+        modeLivraison: livraison.mode_livraison,
+        formulaireUrl,
+        tenantName: tenant.name,
+      })
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Erreur inconnue'
+      emailError = errMsg
+      console.error('Erreur envoi email formulaire livraison:', errMsg)
+    }
+
+    return NextResponse.json({
+      success: true,
+      emailError,
+      formulaireUrl,
+      message: emailError
+        ? `Formulaire livraison envoye avec erreur email : ${emailError}`
+        : `Formulaire de livraison envoye a ${recipientEmail}`,
+    })
+  } catch (error: unknown) {
+    console.error('Erreur API send-formulaire-livraison:', error)
+    const errMsg = error instanceof Error ? error.message : 'Erreur serveur'
+    return NextResponse.json({ error: errMsg }, { status: 500 })
+  }
+}
