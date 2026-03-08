@@ -56,7 +56,8 @@ export async function GET(request: NextRequest) {
       }
 
       if (departementFilter && departementFilter !== 'all') {
-        clientQuery = clientQuery.eq('departement', departementFilter)
+        // PPE: departement vaut souvent 'FR' (pays Monday), filtrer par CP
+        clientQuery = clientQuery.ilike('adresse_societe_cp', `${departementFilter}%`)
       }
 
       if (commercialFilter && commercialFilter !== 'all') {

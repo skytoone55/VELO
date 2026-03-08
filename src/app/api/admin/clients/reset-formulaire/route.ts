@@ -8,7 +8,7 @@ import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
 export async function POST(request: NextRequest) {
   // console.log('=== API reset-formulaire called ===')
   try {
-    // Vérifier l'authentification
+    // V\u00e9rifier l'authentification
     // console.log('Checking authentication...')
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -16,10 +16,10 @@ export async function POST(request: NextRequest) {
     // console.log('User:', user?.id || 'No user')
     if (!user) {
       // console.log('ERROR: No user authenticated')
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+      return NextResponse.json({ error: 'Non autoris\u00e9' }, { status: 401 })
     }
 
-    // Vérifier les permissions
+    // V\u00e9rifier les permissions
     // console.log('Checking permissions for user:', user.id)
     const { data: profile } = await supabase
       .from('users_profile')
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     // console.log('Profile:', profile)
     if (!profile || !['super_admin', 'admin', 'agent_secteur'].includes(profile.role)) {
       // console.log('ERROR: User not authorized, role:', profile?.role)
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+      return NextResponse.json({ error: 'Non autoris\u00e9' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -43,22 +43,31 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    // Récupérer le client
+    // R\u00e9cup\u00e9rer le client
     const { data: client, error: fetchError } = await adminClient
       .from('clients')
-      .select('id, email, email_beneficiaire, raison_sociale, contact_prenom, contact_nom, monday_item_id, monday_board_id')
+      .select('id, email, email_beneficiaire, raison_sociale, contact_prenom, contact_nom, monday_item_id, monday_board_id, validation_naf')
       .eq('id', clientId)
       .single()
 
     if (fetchError || !client) {
-      return NextResponse.json({ error: 'Client non trouvé' }, { status: 404 })
+      return NextResponse.json({ error: 'Client non trouv\u00e9' }, { status: 404 })
     }
 
-    // Générer un nouveau code
+    // === GARDE NAF ===
+    const nafValid = ['OUI', 'ok', 'oui'].includes(client.validation_naf || '')
+    if (!nafValid) {
+      return NextResponse.json({
+        error: 'Client non \u00e9ligible : code NAF non valid\u00e9. Impossible d\'envoyer le formulaire.',
+        guard: 'naf',
+      }, { status: 422 })
+    }
+
+    // G\u00e9n\u00e9rer un nouveau code
     const newCode = generateValidationCode()
     const newCodeHash = hashValidationCode(newCode)
 
-    // Réinitialiser TOUS les champs du formulaire
+    // R\u00e9initialiser TOUS les champs du formulaire
     const { error: updateError } = await adminClient
       .from('clients')
       .update({
@@ -72,8 +81,11 @@ export async function POST(request: NextRequest) {
         code_enemat_valide: false,
         code_enemat_saisi: null,
 
-        // Reset token (sera régénéré après)
+        // Reset token (sera r\u00e9g\u00e9n\u00e9r\u00e9 apr\u00e8s)
         token_formulaire: null,
+
+        // Reset statut formulaire (sinon "d\u00e9j\u00e0 compl\u00e9t\u00e9")
+        statut_formulaire: null,
 
         // Reset choix livraison/retrait
         depot_retrait_id: null,
@@ -85,8 +97,8 @@ export async function POST(request: NextRequest) {
       .eq('id', clientId)
 
     if (updateError) {
-      console.error('Erreur mise à jour client:', updateError)
-      return NextResponse.json({ error: 'Erreur lors de la réinitialisation' }, { status: 500 })
+      console.error('Erreur mise \u00e0 jour client:', updateError)
+      return NextResponse.json({ error: 'Erreur lors de la r\u00e9initialisation' }, { status: 500 })
     }
 
     // Supprimer les livraisons existantes pour ce client
@@ -97,12 +109,12 @@ export async function POST(request: NextRequest) {
 
     if (deleteLivraisonsError) {
       console.error('Erreur suppression livraisons:', deleteLivraisonsError)
-      // On continue même si la suppression échoue
+      // On continue m\u00eame si la suppression \u00e9choue
     } else {
-      // console.log(`Livraisons supprimées pour le client ${clientId}`)
+      // console.log(`Livraisons supprim\u00e9es pour le client ${clientId}`)
     }
 
-    // Préparer les infos pour les emails
+    // Pr\u00e9parer les infos pour les emails
     const clientName = client.contact_prenom && client.contact_nom
       ? `${client.contact_prenom} ${client.contact_nom}`
       : client.raison_sociale
@@ -118,7 +130,7 @@ export async function POST(request: NextRequest) {
       if (sendNewCode) {
         try {
           await sendCodeValidationEmail(recipientEmail, clientName, newCode)
-          // console.log(`Nouveau code de validation envoyé à ${recipientEmail}`)
+          // console.log(`Nouveau code de validation envoy\u00e9 \u00e0 ${recipientEmail}`)
           codeSent = true
         } catch (emailError: any) {
           console.error('Erreur envoi email code:', emailError)
@@ -126,10 +138,10 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 2. Générer le token et envoyer le lien du formulaire
+      // 2. G\u00e9n\u00e9rer le token et envoyer le lien du formulaire
       const token = `${clientId}-${Date.now()}-${Math.random().toString(36).substring(7)}`
 
-      // Mettre à jour le client avec le token et les statuts
+      // Mettre \u00e0 jour le client avec le token et les statuts
       await adminClient
         .from('clients')
         .update({
@@ -148,7 +160,7 @@ export async function POST(request: NextRequest) {
       // Envoyer l'email du formulaire
       try {
         await sendFormulaireLinkEmail(recipientEmail, clientName, formulaireUrl)
-        // console.log(`Lien formulaire envoyé à ${recipientEmail}`)
+        // console.log(`Lien formulaire envoy\u00e9 \u00e0 ${recipientEmail}`)
         formulaireSent = true
       } catch (emailError: any) {
         console.error('Erreur envoi email formulaire:', emailError)
@@ -158,14 +170,14 @@ export async function POST(request: NextRequest) {
       emailErrors.push('Email invalide ou manquant')
     }
 
-    // 3. Sync vers Monday - mettre le statut "FORMULAIRE ENVOYÉ"
+    // 3. Sync vers Monday - mettre le statut "FORMULAIRE ENVOY\u00c9"
     if (client.monday_item_id && isMondayConfigured()) {
       try {
         await syncClientToMonday(
           { monday_item_id: client.monday_item_id, monday_board_id: client.monday_board_id, statut_commercial: 'formulaire_envoye' },
           ['statut_commercial']
         )
-        // console.log(`Statut FORMULAIRE ENVOYÉ sync vers Monday pour ${client.raison_sociale}`)
+        // console.log(`Statut FORMULAIRE ENVOY\u00c9 sync vers Monday pour ${client.raison_sociale}`)
       } catch (syncError) {
         console.error('Erreur sync Monday:', syncError)
       }
@@ -174,8 +186,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: emailErrors.length > 0
-        ? `Client réinitialisé, mais erreur d'envoi email: ${emailErrors.join(', ')}`
-        : `Client ${client.raison_sociale} réinitialisé avec succès`,
+        ? `Client r\u00e9initialis\u00e9, mais erreur d'envoi email: ${emailErrors.join(', ')}`
+        : `Client ${client.raison_sociale} r\u00e9initialis\u00e9 avec succ\u00e8s`,
       codeSent,
       formulaireSent,
       formulaireUrl,

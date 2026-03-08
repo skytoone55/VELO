@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    // Vérifier que le client existe et récupérer ses infos
+    // V\u00e9rifier que le client existe et r\u00e9cup\u00e9rer ses infos
     const { data: client, error: clientCheckError } = await adminClient
       .from('clients')
       .select('id, email, email_beneficiaire, raison_sociale, contact_nom, contact_prenom, statut_formulaire, depot_retrait_id, depot_logistique_id, monday_item_id')
@@ -26,28 +26,28 @@ export async function POST(request: NextRequest) {
 
     if (clientCheckError || !client) {
       return NextResponse.json(
-        { error: 'Client non trouvé' },
+        { error: 'Client non trouv\u00e9' },
         { status: 404 }
       )
     }
 
-    // Vérifier que le formulaire n'est pas déjà complété
+    // V\u00e9rifier que le formulaire n'est pas d\u00e9j\u00e0 compl\u00e9t\u00e9
     if (client.statut_formulaire === 'formulaire_complete') {
       return NextResponse.json(
-        { error: 'Ce formulaire a déjà été complété' },
+        { error: 'Ce formulaire a d\u00e9j\u00e0 \u00e9t\u00e9 compl\u00e9t\u00e9' },
         { status: 400 }
       )
     }
 
-    // Déterminer le mode de livraison basé sur le depot_retrait_id
+    // D\u00e9terminer le mode de livraison bas\u00e9 sur le depot_retrait_id
     const modeLivraison = client.depot_retrait_id ? 'retrait' : 'domicile'
     const depotId = client.depot_retrait_id || client.depot_logistique_id
 
-    // 1. Créer le compte utilisateur si un mot de passe a été fourni
+    // 1. Cr\u00e9er le compte utilisateur si un mot de passe a \u00e9t\u00e9 fourni
     let userId: string | null = null
     if (data.password && client.email) {
       try {
-        // Créer l'utilisateur auth
+        // Cr\u00e9er l'utilisateur auth
         const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
           email: client.email,
           password: data.password,
@@ -60,14 +60,14 @@ export async function POST(request: NextRequest) {
         })
 
         if (authError) {
-          // Si l'utilisateur existe déjà, ne pas bloquer la soumission
+          // Si l'utilisateur existe d\u00e9j\u00e0, ne pas bloquer la soumission
           if (!authError.message.includes('already been registered')) {
-            console.error('Erreur création auth user:', authError)
+            console.error('Erreur cr\u00e9ation auth user:', authError)
           }
         } else if (authData.user) {
           userId = authData.user.id
 
-          // Créer le profil utilisateur
+          // Cr\u00e9er le profil utilisateur
           await adminClient.from('users_profile').insert({
             id: userId,
             email: client.email,
@@ -84,20 +84,20 @@ export async function POST(request: NextRequest) {
             is_primary: true,
           })
 
-          console.log(`Compte client créé pour ${client.email}`)
+          console.log(`Compte client cr\u00e9\u00e9 pour ${client.email}`)
         }
       } catch (userError) {
-        console.error('Erreur création compte client:', userError)
-        // Ne pas bloquer la soumission si la création du compte échoue
+        console.error('Erreur cr\u00e9ation compte client:', userError)
+        // Ne pas bloquer la soumission si la cr\u00e9ation du compte \u00e9choue
       }
     }
 
-    // 2. Mettre à jour le client
+    // 2. Mettre \u00e0 jour le client
     const { error: updateError } = await adminClient
       .from('clients')
       .update({
         statut_formulaire: 'formulaire_complete',
-        statut_commercial: 'formulaire_valide',
+        statut_commercial: 'a_livrer',
         updated_at: new Date().toISOString(),
       })
       .eq('id', clientId)
@@ -105,12 +105,12 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       console.error('Erreur update client:', updateError)
       return NextResponse.json(
-        { error: 'Erreur lors de la mise à jour du client' },
+        { error: 'Erreur lors de la mise \u00e0 jour du client' },
         { status: 500 }
       )
     }
 
-    // 3. Créer la livraison
+    // 3. Cr\u00e9er la livraison
     const { error: livraisonError } = await adminClient.from('livraisons').insert({
       client_id: clientId,
       mode_livraison: modeLivraison,
@@ -119,6 +119,8 @@ export async function POST(request: NextRequest) {
       adresse_livraison_ligne2: modeLivraison === 'domicile' ? data.adresseLivraison?.ligne2 : null,
       adresse_livraison_cp: modeLivraison === 'domicile' ? data.adresseLivraison?.codePostal : null,
       adresse_livraison_ville: modeLivraison === 'domicile' ? data.adresseLivraison?.ville : null,
+      complement_adresse: data.complementAdresse || null,
+      preferences_livraison: data.preferencesLivraison || null,
       document_identite_type: data.documentIdentite?.type,
       document_identite_url: data.documentIdentite?.url,
       document_identite_nom_fichier: data.documentIdentite?.nomFichier,
@@ -126,14 +128,14 @@ export async function POST(request: NextRequest) {
     })
 
     if (livraisonError) {
-      console.error('Erreur création livraison:', livraisonError)
+      console.error('Erreur cr\u00e9ation livraison:', livraisonError)
       return NextResponse.json(
-        { error: 'Erreur lors de la création de la livraison' },
+        { error: 'Erreur lors de la cr\u00e9ation de la livraison' },
         { status: 500 }
       )
     }
 
-    // 4. Logger l'étape formulaire
+    // 4. Logger l'\u00e9tape formulaire
     await adminClient.from('formulaires_log').insert({
       client_id: clientId,
       etape_numero: 6,
@@ -141,22 +143,22 @@ export async function POST(request: NextRequest) {
       donnees_saisies: { ...data, password: '[REDACTED]' }, // Ne pas logger le mot de passe
     })
 
-    // 5. Créer transition workflow
+    // 5. Cr\u00e9er transition workflow
     await adminClient.from('workflow_transitions').insert({
       entity_type: 'client',
       entity_id: clientId,
       statut_avant: 'formulaire_envoye',
       statut_apres: 'formulaire_complete',
-      raison: 'Formulaire complété par le client',
+      raison: 'Formulaire compl\u00e9t\u00e9 par le client',
     })
 
-    // 6. Envoyer l'email récapitulatif
+    // 6. Envoyer l'email r\u00e9capitulatif
     const clientName = client.contact_prenom && client.contact_nom
       ? `${client.contact_prenom} ${client.contact_nom}`
       : client.raison_sociale
 
     try {
-      // Si mode retrait, récupérer les infos du dépôt
+      // Si mode retrait, r\u00e9cup\u00e9rer les infos du d\u00e9p\u00f4t
       let depotRetraitInfo = null
       if (modeLivraison === 'retrait' && client.depot_retrait_id) {
         const { data: depot } = await adminClient
@@ -174,7 +176,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Envoyer l'email au bénéficiaire en priorité, sinon au commercial
+      // Envoyer l'email au b\u00e9n\u00e9ficiaire en priorit\u00e9, sinon au commercial
       const emailDestinataire = client.email_beneficiaire || client.email
       await sendFormulaireRecapEmail(emailDestinataire, clientName, {
         raisonSociale: client.raison_sociale,
@@ -184,16 +186,16 @@ export async function POST(request: NextRequest) {
         depotRetrait: depotRetraitInfo || undefined,
         userCreated: !!userId,
       })
-      console.log(`Email récapitulatif envoyé à ${emailDestinataire}`)
+      console.log(`Email r\u00e9capitulatif envoy\u00e9 \u00e0 ${emailDestinataire}`)
     } catch (emailError) {
-      console.error('Erreur envoi email récapitulatif:', emailError)
-      // Ne pas bloquer si l'email échoue
+      console.error('Erreur envoi email r\u00e9capitulatif:', emailError)
+      // Ne pas bloquer si l'email \u00e9choue
     }
 
     // 7. Sync vers Monday - statut + adresse livraison + type livraison
     if (client.monday_item_id && isMondayConfigured()) {
       try {
-        // Déterminer le type de livraison pour Monday
+        // D\u00e9terminer le type de livraison pour Monday
         let typeLivraison: string
         if (modeLivraison === 'retrait') {
           typeLivraison = 'retrait_depot'
@@ -203,22 +205,22 @@ export async function POST(request: NextRequest) {
           typeLivraison = 'livraison_gratuite'
         }
 
-        // Préparer les données à synchroniser
+        // Pr\u00e9parer les donn\u00e9es \u00e0 synchroniser
         const syncData: { monday_item_id: string | number } & Record<string, any> = {
           monday_item_id: client.monday_item_id,
-          statut_commercial: 'formulaire_valide',
+          statut_commercial: 'a_livrer',
           type_livraison: typeLivraison,
         }
 
         // Ajouter l'adresse de livraison
         if (modeLivraison === 'domicile' && data.adresseLivraison) {
-          // Livraison à domicile: utiliser l'adresse saisie
+          // Livraison \u00e0 domicile: utiliser l'adresse saisie
           syncData.adresse_livraison_ligne1 = data.adresseLivraison.ligne1 || ''
           syncData.adresse_livraison_ligne2 = data.adresseLivraison.ligne2 || ''
           syncData.adresse_livraison_cp = data.adresseLivraison.codePostal || ''
           syncData.adresse_livraison_ville = data.adresseLivraison.ville || ''
         } else if (modeLivraison === 'retrait' && client.depot_retrait_id) {
-          // Retrait en dépôt: utiliser l'adresse du dépôt
+          // Retrait en d\u00e9p\u00f4t: utiliser l'adresse du d\u00e9p\u00f4t
           const { data: depot } = await adminClient
             .from('depots')
             .select('adresse, code_postal, ville, nom')
@@ -242,10 +244,10 @@ export async function POST(request: NextRequest) {
         ]
 
         await syncClientToMonday(syncData, fieldsToSync)
-        console.log(`Sync Monday pour ${client.raison_sociale}: statut=FORMULAIRE VALIDÉ, type=${typeLivraison}`)
+        console.log(`Sync Monday pour ${client.raison_sociale}: statut=FORMULAIRE VALID\u00c9, type=${typeLivraison}`)
       } catch (syncError) {
         console.error('Erreur sync Monday:', syncError)
-        // Ne pas bloquer si la sync échoue
+        // Ne pas bloquer si la sync \u00e9choue
       }
     }
 

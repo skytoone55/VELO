@@ -109,9 +109,9 @@ export default function AdminLivraisonsPage() {
   const [pageSize, setPageSize] = useState(20)
   const [pagination, setPagination] = useState({ totalPages: 0, totalFiltered: 0, startIndex: 0, endIndex: 0 })
 
-  const [depotOptions, setDepotOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Dépôt' }])
+  const [depotOptions, setDepotOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'D\u00e9p\u00f4t' }])
   const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
-  const [deptOptions, setDeptOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Départements' }])
+  const [deptOptions, setDeptOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'D\u00e9partements' }])
 
   // Load filter options
   useEffect(() => {
@@ -119,7 +119,7 @@ export default function AdminLivraisonsPage() {
     fetch('/api/depots').then(r => r.json()).then(data => {
       const depots = Array.isArray(data) ? data : data.depots || []
       setDepotOptions([
-        { value: 'all', label: 'Dépôt' },
+        { value: 'all', label: 'D\u00e9p\u00f4t' },
         ...depots.map((d: { id: string; nom: string }) => ({ value: d.id, label: d.nom }))
       ])
     }).catch(() => {})
@@ -139,11 +139,11 @@ export default function AdminLivraisonsPage() {
     // Departements
     const staticDept = getStaticDepartementOptions()
     if (staticDept) {
-      setDeptOptions([{ value: 'all', label: 'Départements' }, ...staticDept])
+      setDeptOptions([{ value: 'all', label: 'D\u00e9partements' }, ...staticDept])
     } else {
-      fetch('/api/clients/departements').then(r => r.json()).then((depts: string[]) => {
+      fetch('/api/clients/departements').then(r => r.json()).then((depts: { value: string; label: string }[]) => {
         if (Array.isArray(depts)) {
-          setDeptOptions([{ value: 'all', label: 'Départements' }, ...depts.map(d => ({ value: d, label: d }))])
+          setDeptOptions([{ value: 'all', label: 'D\u00e9partements' }, ...depts])
         }
       }).catch(() => {})
     }
@@ -268,7 +268,7 @@ export default function AdminLivraisonsPage() {
         </Select>
         <Select value={depotFilter} onValueChange={setDepotFilter}>
           <SelectTrigger className="h-8 w-auto min-w-[70px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Dépôt" />
+            <SelectValue placeholder="D\u00e9p\u00f4t" />
           </SelectTrigger>
           <SelectContent>
             {depotOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
@@ -284,7 +284,7 @@ export default function AdminLivraisonsPage() {
         </Select>
         <Select value={departementFilter} onValueChange={setDepartementFilter}>
           <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Dép." />
+            <SelectValue placeholder="D\u00e9p." />
           </SelectTrigger>
           <SelectContent>
             {deptOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
@@ -302,7 +302,7 @@ export default function AdminLivraisonsPage() {
         </Select>
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={resetFilters} className="h-8 text-xs text-muted-foreground px-2">
-            Réinitialiser
+            R\u00e9initialiser
           </Button>
         )}
       </div>
@@ -324,11 +324,11 @@ export default function AdminLivraisonsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableHeader label="Société" column="created_at" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Soci\u00e9t\u00e9" column="created_at" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <TableHead className="hidden xl:table-cell">Email</TableHead>
-                  <TableHead className="hidden xl:table-cell">Tél.</TableHead>
+                  <TableHead className="hidden xl:table-cell">T\u00e9l.</TableHead>
                   <TableHead className="hidden lg:table-cell">Commercial</TableHead>
-                  <TableHead className="hidden md:table-cell">Dép.</TableHead>
+                  <TableHead className="hidden md:table-cell">D\u00e9p.</TableHead>
                   <SortableHeader label="Mode" column="mode_livraison" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <TableHead className="hidden lg:table-cell">Adresse</TableHead>
                   <SortableHeader label="Date" column="date_programmation" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
