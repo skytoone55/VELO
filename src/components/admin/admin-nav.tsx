@@ -67,7 +67,7 @@ const adminNavItems: NavItem[] = [
     href: '/admin/planning',
     label: 'Planning',
     icon: Calendar,
-    roles: ['super_admin', 'admin', 'agent_secteur'],
+    roles: ['super_admin', 'admin', 'agent_secteur', 'livreur'],
   },
   {
     href: '/admin/map',

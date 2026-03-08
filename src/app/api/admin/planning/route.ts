@@ -6,7 +6,7 @@ import { requireRole, isAuthError } from '@/lib/auth/require-role'
 export async function GET(request: Request) {
   try {
     // Auth: require admin, super_admin or agent_secteur
-    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
     if (isAuthError(authResult)) return authResult
 
     const { searchParams } = new URL(request.url)

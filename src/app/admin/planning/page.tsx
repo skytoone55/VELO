@@ -327,8 +327,9 @@ function PlanningContent() {
           .order('nom')
         const livreurList = (data || []) as LivreurOption[]
         setLivreurs(livreurList)
-        // Auto-select first livreur when a depot is chosen
-        setSelectedLivreurId(livreurList.length > 0 ? livreurList[0].id : '')
+        // Auto-select: si le user est livreur, sélectionner lui-même, sinon le premier
+        const selfMatch = livreurList.find(l => l.id === adminUser.id)
+        setSelectedLivreurId(selfMatch ? selfMatch.id : (livreurList.length > 0 ? livreurList[0].id : ''))
       } catch (err) {
         console.error('Erreur chargement livreurs:', err)
       }
