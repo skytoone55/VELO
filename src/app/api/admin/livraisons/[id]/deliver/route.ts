@@ -17,6 +17,10 @@ interface DeliverBody {
   notes?: string
 }
 
+/**
+ * POST /api/admin/livraisons/[id]/deliver
+ * Confirme la livraison : valide FNUCI, met a jour statuts, enregistre signature
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -29,6 +33,7 @@ export async function POST(
     const body: DeliverBody = await request.json()
     const { fnuci_codes, nb_velos_livres, checklist, signature_base64, photo_identite_base64, notes } = body
 
+    // --- Validations de base ---
     if (!fnuci_codes || !Array.isArray(fnuci_codes) || fnuci_codes.length === 0) {
       return NextResponse.json(
         { error: 'Au moins un code FNUCI est requis' },
@@ -52,6 +57,7 @@ export async function POST(
 
     const supabase = createAdminClient()
 
+    // --- 1. Récupérer la livraison avec données client ---
     const { data: livraison, error: livraisonError } = await supabase
       .from('livraisons')
       .select('*')
@@ -72,6 +78,7 @@ export async function POST(
       )
     }
 
+    // Récupérer le client
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('*')
@@ -85,6 +92,7 @@ export async function POST(
       )
     }
 
+    // --- 2. Valider le nombre de vélos ---
     const maxBikes = client.velo_valide || client.velo_devis || 1
     const nbLivres = nb_velos_livres || fnuci_codes.length
     if (fnuci_codes.length !== nbLivres) {
@@ -100,6 +108,7 @@ export async function POST(
       )
     }
 
+    // --- 3. Vérifier les doublons dans la liste ---
     const uniqueCodes = new Set(fnuci_codes.map(c => c.toUpperCase()))
     if (uniqueCodes.size !== fnuci_codes.length) {
       return NextResponse.json(
@@ -108,6 +117,7 @@ export async function POST(
       )
     }
 
+    // --- 4. Valider chaque code FNUCI ---
     const normalizedCodes = fnuci_codes.map(c => c.trim().toUpperCase())
     const { data: fnuciRecords, error: fnuciError } = await supabase
       .from('fnuci')
@@ -131,6 +141,7 @@ export async function POST(
       )
     }
 
+    // Vérifier qu'aucun n'est déjà attribué à un autre client
     const alreadyAttribue = fnuciRecords.filter(
       r => r.statut === 'attribue' && r.client_id !== client.id
     )
@@ -149,6 +160,7 @@ export async function POST(
       )
     }
 
+    // --- 5. Marquer chaque FNUCI comme attribué ---
     const now = new Date().toISOString()
     for (const fnuci of fnuciRecords) {
       const { error: updateError } = await supabase
@@ -170,6 +182,7 @@ export async function POST(
       }
     }
 
+    // --- 6. Mettre à jour la livraison ---
     const { error: updateLivraisonError } = await supabase
       .from('livraisons')
       .update({
@@ -192,6 +205,7 @@ export async function POST(
       )
     }
 
+    // --- 7. Mettre à jour le client ---
     const { error: updateClientError } = await supabase
       .from('clients')
       .update({
@@ -210,6 +224,7 @@ export async function POST(
       )
     }
 
+    // --- 8. Logger la transition workflow ---
     await supabase.from('workflow_transitions').insert({
       entity_type: 'client',
       entity_id: client.id,
@@ -228,6 +243,7 @@ export async function POST(
       raison: 'Livraison confirmée par le livreur',
     })
 
+    // --- 9. Log audit ---
     await supabase.from('audit_log').insert({
       user_id: auth.id,
       action: 'livraison_confirmee',
@@ -241,6 +257,7 @@ export async function POST(
       },
     })
 
+    // --- Réponse succès ---
     return NextResponse.json({
       success: true,
       message: 'Livraison confirmée avec succès',

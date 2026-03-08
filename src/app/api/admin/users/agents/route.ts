@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { createClient } from '@/lib/supabase/server'
 
+/**
+ * GET /api/admin/users/agents
+ * Liste les agents secteur (pour le select lors de la création d'un livreur)
+ * Filtre optionnel: ?departement=974
+ */
 export async function GET(request: NextRequest) {
   try {
     const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
@@ -9,6 +14,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient()
     const departement = request.nextUrl.searchParams.get('departement')
+
     const role = request.nextUrl.searchParams.get('role')
 
     let query = supabase
