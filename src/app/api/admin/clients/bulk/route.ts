@@ -25,15 +25,15 @@ interface BulkResponse {
 
 export async function POST(request: NextRequest) {
   try {
-    // Vérifier l'authentification
+    // V\u00e9rifier l'authentification
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+      return NextResponse.json({ error: 'Non autoris\u00e9' }, { status: 401 })
     }
 
-    // Vérifier les permissions
+    // V\u00e9rifier les permissions
     const { data: profile } = await supabase
       .from('users_profile')
       .select('role, territoire')
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!profile || !['super_admin', 'admin', 'agent_secteur'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+      return NextResponse.json({ error: 'Non autoris\u00e9' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -57,22 +57,22 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    // Récupérer tous les clients concernés
+    // R\u00e9cup\u00e9rer tous les clients concern\u00e9s
     const { data: clients, error: fetchError } = await adminClient
       .from('clients')
       .select('*')
       .in('id', clientIds)
 
     if (fetchError || !clients) {
-      return NextResponse.json({ error: 'Erreur récupération clients' }, { status: 500 })
+      return NextResponse.json({ error: 'Erreur r\u00e9cup\u00e9ration clients' }, { status: 500 })
     }
 
-    // Vérifier les permissions territoriales pour admin
+    // V\u00e9rifier les permissions territoriales pour admin
     if (profile.role === 'admin') {
       const unauthorizedClients = clients.filter(c => c.departement !== profile.territoire)
       if (unauthorizedClients.length > 0) {
         return NextResponse.json({
-          error: `Non autorisé pour ${unauthorizedClients.length} client(s) hors de votre territoire`
+          error: `Non autoris\u00e9 pour ${unauthorizedClients.length} client(s) hors de votre territoire`
         }, { status: 403 })
       }
     }
@@ -104,13 +104,13 @@ async function geocodeAndAssignDepot(
   client: any,
   adminClient: ReturnType<typeof createAdminClient>
 ): Promise<void> {
-  // Skip si déjà géocodé avec dépôt assigné
+  // Skip si d\u00e9j\u00e0 g\u00e9ocod\u00e9 avec d\u00e9p\u00f4t assign\u00e9
   if (client.latitude && client.longitude && (client.depot_retrait_id || client.depot_logistique_id)) return
 
   const address = buildClientAddress(client)
   if (!address) return
 
-  // Géocoder si pas de coordonnées
+  // G\u00e9ocoder si pas de coordonn\u00e9es
   let lat = client.latitude ? parseFloat(client.latitude) : null
   let lng = client.longitude ? parseFloat(client.longitude) : null
 
@@ -121,7 +121,7 @@ async function geocodeAndAssignDepot(
     lng = geo.lng
   }
 
-  // Récupérer les dépôts pour classification
+  // R\u00e9cup\u00e9rer les d\u00e9p\u00f4ts pour classification
   const { data: depots } = await adminClient
     .from('depots')
     .select('id, nom, latitude, longitude, rayon_couverture_km, rayon_livraison_payant_km, prix_livraison_payante, type, agence')
@@ -152,16 +152,23 @@ async function handleBulkSendForm(
 
   for (const client of clients) {
     try {
-      // Géocoder + assigner dépôt si pas encore fait
+      // === GARDE NAF ===
+      const nafValid = ['OUI', 'ok', 'oui'].includes(client.validation_naf || '')
+      if (!nafValid) {
+        results.push({ clientId: client.id, success: false, error: `NAF non valid\u00e9 (${client.validation_naf || 'vide'})` })
+        continue
+      }
+
+      // G\u00e9ocoder + assigner d\u00e9p\u00f4t si pas encore fait
       try { await geocodeAndAssignDepot(client, adminClient) } catch (e) { console.error('Geocoding error:', e) }
 
-      // Générer un token unique + code validation
+      // G\u00e9n\u00e9rer un token unique + code validation
       const newCode = generateValidationCode()
       const newCodeHash = hashValidationCode(newCode)
       const token = `${client.id}-${Date.now()}-${Math.random().toString(36).substring(7)}`
       const formulaireUrl = `${baseUrl}/formulaire?token=${token}`
 
-      // Mettre à jour le client (token formulaire + code validation)
+      // Mettre \u00e0 jour le client (token formulaire + code validation)
       const { error: updateError } = await adminClient
         .from('clients')
         .update({
@@ -182,20 +189,20 @@ async function handleBulkSendForm(
         continue
       }
 
-      // Envoyer l'email au bénéficiaire (prioritaire) ou commercial (fallback)
+      // Envoyer l'email au b\u00e9n\u00e9ficiaire (prioritaire) ou commercial (fallback)
       const clientName = client.contact_prenom
         ? `${client.contact_prenom} ${client.contact_nom || ''}`
         : client.raison_sociale || 'Client'
 
       const recipientEmail = client.email_beneficiaire || client.email
       if (!recipientEmail || !recipientEmail.includes('@')) {
-        results.push({ clientId: client.id, success: false, error: 'Email bénéficiaire manquant' })
+        results.push({ clientId: client.id, success: false, error: 'Email b\u00e9n\u00e9ficiaire manquant' })
         continue
       }
 
       await sendFormulaireLinkEmail(recipientEmail, clientName, formulaireUrl, newCode)
 
-      // Synchroniser vers Monday si configuré
+      // Synchroniser vers Monday si configur\u00e9
       if (client.monday_item_id && isMondayConfigured()) {
         try {
           await syncClientToMonday(
@@ -209,7 +216,7 @@ async function handleBulkSendForm(
 
       results.push({ clientId: client.id, success: true })
     } catch (error: any) {
-      // Remettre le statut en attente si l'email échoue
+      // Remettre le statut en attente si l'email \u00e9choue
       await adminClient
         .from('clients')
         .update({ statut_formulaire: 'en_attente' })
@@ -233,26 +240,18 @@ async function handleBulkChangeStatus(
   newStatut: string
 ): Promise<BulkResponse> {
   const results: BulkResult[] = []
-  // Statuts Monday valides (snake_case Supabase)
+  // 10 statuts process valides
   const validStatuts = [
-    'dossier_complet',
-    'devis_signe',
-    'devis_cree',
     'controle_valide',
-    'controle_a_regulariser',
-    'controle_a_jour',
-    'client_contacte',
-    'client_injoignable',
-    'client_hs',
-    'ah_signee',
-    'livre',
-    'paye',
-    'doublon',
-    'franck',
-    'code_envoye',
     'formulaire_envoye',
     'formulaire_valide',
-    'inconnu',
+    'a_livrer',
+    'en_livraison',
+    'livre',
+    'probleme_livraison',
+    'a_relivrer',
+    'retractation',
+    'anomalie',
   ]
 
   if (!validStatuts.includes(newStatut)) {
@@ -267,7 +266,7 @@ async function handleBulkChangeStatus(
 
   for (const client of clients) {
     try {
-      // Mettre à jour le statut_commercial (pas statut_formulaire)
+      // Mettre \u00e0 jour le statut_commercial (pas statut_formulaire)
       const { error: updateError } = await adminClient
         .from('clients')
         .update({
@@ -282,7 +281,7 @@ async function handleBulkChangeStatus(
         continue
       }
 
-      // Synchroniser vers Monday si configuré
+      // Synchroniser vers Monday si configur\u00e9
       if (client.monday_item_id && isMondayConfigured()) {
         try {
           await syncClientToMonday(
