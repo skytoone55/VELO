@@ -160,8 +160,49 @@ export async function POST(
       )
     }
 
-    // --- 5. Marquer chaque FNUCI comme attribué ---
+    // --- 5. Mettre à jour la livraison ---
     const now = new Date().toISOString()
+    const { error: updateLivraisonError } = await supabase
+      .from('livraisons')
+      .update({
+        statut: 'livree',
+        date_livraison: now,
+        date_livraison_effective: now,
+        signature_client: signature_base64,
+        photos_livraison: photo_identite_base64 ? { photo_identite: photo_identite_base64 } : undefined,
+        notes_internes: notes || null,
+        updated_at: now,
+      })
+      .eq('id', livraisonId)
+
+    if (updateLivraisonError) {
+      console.error('Erreur mise à jour livraison:', updateLivraisonError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la mise à jour de la livraison' },
+        { status: 500 }
+      )
+    }
+
+    // --- 6. Mettre à jour le client ---
+    const { error: updateClientError } = await supabase
+      .from('clients')
+      .update({
+        statut_commercial: 'livre',
+        date_statut: now,
+        fnuci_ids: normalizedCodes,
+        updated_at: now,
+      })
+      .eq('id', client.id)
+
+    if (updateClientError) {
+      console.error('Erreur mise à jour client:', updateClientError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la mise à jour du client' },
+        { status: 500 }
+      )
+    }
+
+    // --- 7. Marquer chaque FNUCI comme attribué (APRÈS updates livraison + client) ---
     for (const fnuci of fnuciRecords) {
       const { error: updateError } = await supabase
         .from('fnuci')
@@ -182,69 +223,31 @@ export async function POST(
       }
     }
 
-    // --- 6. Mettre à jour la livraison ---
-    const { error: updateLivraisonError } = await supabase
-      .from('livraisons')
-      .update({
-        statut: 'livree',
-        date_livraison: now,
-        date_livraison_effective: now,
-        nb_velos_livres: nbLivres,
-        signature_client: signature_base64,
-        photos_livraison: photo_identite_base64 ? { photo_identite: photo_identite_base64 } : undefined,
-        notes_internes: notes || null,
-        updated_at: now,
-      })
-      .eq('id', livraisonId)
-
-    if (updateLivraisonError) {
-      console.error('Erreur mise à jour livraison:', updateLivraisonError)
-      return NextResponse.json(
-        { error: 'Erreur lors de la mise à jour de la livraison' },
-        { status: 500 }
-      )
-    }
-
-    // --- 7. Mettre à jour le client ---
-    const { error: updateClientError } = await supabase
-      .from('clients')
-      .update({
-        statut_commercial: 'livre',
-        date_statut: now,
-        fnuci_ids: normalizedCodes,
-        updated_at: now,
-      })
-      .eq('id', client.id)
-
-    if (updateClientError) {
-      console.error('Erreur mise à jour client:', updateClientError)
-      return NextResponse.json(
-        { error: 'Erreur lors de la mise à jour du client' },
-        { status: 500 }
-      )
-    }
-
     // --- 8. Logger la transition workflow ---
-    await supabase.from('workflow_transitions').insert({
+    const { error: wt1Error } = await supabase.from('workflow_transitions').insert({
       entity_type: 'client',
       entity_id: client.id,
-      statut_avant: client.statut_commercial,
+      statut_avant: client.statut_commercial || null,
       statut_apres: 'livre',
+      user_id: auth.id,
       effectue_par: auth.id,
       raison: `Livraison effectuée - ${normalizedCodes.length} vélo(s) - FNUCI: ${normalizedCodes.join(', ')}`,
     })
+    if (wt1Error) console.error('Erreur workflow_transitions client:', wt1Error)
 
-    await supabase.from('workflow_transitions').insert({
+    const { error: wt2Error } = await supabase.from('workflow_transitions').insert({
       entity_type: 'livraison',
       entity_id: livraisonId,
-      statut_avant: livraison.statut,
+      statut_avant: livraison.statut || null,
       statut_apres: 'livree',
+      user_id: auth.id,
       effectue_par: auth.id,
       raison: 'Livraison confirmée par le livreur',
     })
+    if (wt2Error) console.error('Erreur workflow_transitions livraison:', wt2Error)
 
     // --- 9. Log audit ---
-    await supabase.from('audit_log').insert({
+    const { error: auditError } = await supabase.from('audit_log').insert({
       user_id: auth.id,
       action: 'livraison_confirmee',
       entity_type: 'livraison',
@@ -256,6 +259,7 @@ export async function POST(
         notes: notes || null,
       },
     })
+    if (auditError) console.error('Erreur audit_log:', auditError)
 
     // --- Réponse succès ---
     return NextResponse.json({
