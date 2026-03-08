@@ -52,6 +52,7 @@ export async function GET(request: Request) {
         date_livraison,
         date_programmation,
         depot_id,
+        livreur_id,
         adresse_livraison_ligne1,
         adresse_livraison_cp,
         adresse_livraison_ville,
