@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+/**
+ * POST /api/documents/upload
+ * FormData: token, docType (urssaf|dsn|benevoles), file
+ * Upload le fichier dans Supabase Storage et met à jour le client
+ */
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
@@ -19,6 +24,7 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
+    // Vérifier le token
     const { data: client, error: clientError } = await adminClient
       .from('clients')
       .select('id, documents_demandes')
@@ -29,6 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 404 })
     }
 
+    // Upload dans Supabase Storage
     const ext = file.name.split('.').pop() || 'pdf'
     const storagePath = `${client.id}/${docType}.${ext}`
 
@@ -45,6 +52,7 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) throw uploadError
 
+    // Générer une URL signée (valide 1 an)
     const { data: signedData } = await adminClient
       .storage
       .from('client-documents')
@@ -52,12 +60,14 @@ export async function POST(request: NextRequest) {
 
     const fileUrl = signedData?.signedUrl || storagePath
 
+    // Mapper docType \u2192 colonne en base
     const columnMap: Record<string, string> = {
       urssaf: 'attestation_urssaf_url',
       dsn: 'attestation_dsn_url',
       benevoles: 'declaration_benevoles_url',
     }
 
+    // Mettre \u00e0 jour le client : URL du document + statut received
     const demandes = (client.documents_demandes as Record<string, Record<string, string>>) || {}
     if (demandes[docType]) {
       demandes[docType].status = 'received'

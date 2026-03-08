@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -51,10 +51,10 @@ function buildDisponibilites(
     parts.push(`Autre contact / téléphone : ${autreContact.trim()}`)
   }
 
-  return parts.join(' — ')
+  return parts.join(' \u2014 ')
 }
 
-export default function RelancePage() {
+function RelanceContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
 
@@ -77,7 +77,7 @@ export default function RelancePage() {
   const [autreContact, setAutreContact]               = useState('')
 
   const validate = useCallback(async () => {
-    if (!token) { setError('Lien invalide ou expiré.'); setLoading(false); return }
+    if (!token) { setError('Lien invalide ou expir\u00e9.'); setLoading(false); return }
 
     try {
       const res = await fetch('/api/relance', {
@@ -87,14 +87,14 @@ export default function RelancePage() {
       })
       const data = await res.json()
 
-      if (!res.ok) { setError(data.error || 'Lien invalide ou expiré.'); setLoading(false); return }
+      if (!res.ok) { setError(data.error || 'Lien invalide ou expir\u00e9.'); setLoading(false); return }
 
       setClientName(data.raisonSociale || '')
       setPreferencesActuelles(data.preferencesActuelles || '')
       setAdresse(data.adresse || '')
       setTelephone(data.telephone || '')
     } catch {
-      setError('Erreur de connexion. Veuillez réessayer.')
+      setError('Erreur de connexion. Veuillez r\u00e9essayer.')
     } finally {
       setLoading(false)
     }
@@ -112,7 +112,7 @@ export default function RelancePage() {
 
   const handleSubmit = async () => {
     if (joursSelectionnes.length === 0 && creneauxSelectionnes.length === 0 && !detailsComplementaires.trim()) {
-      setError('Veuillez indiquer au moins un jour, un créneau ou des informations complémentaires.')
+      setError('Veuillez indiquer au moins un jour, un cr\u00e9neau ou des informations compl\u00e9mentaires.')
       return
     }
 
@@ -142,7 +142,7 @@ export default function RelancePage() {
     }
   }
 
-  // ── Loading ────────────────────────────────────────────────
+  // \u2500\u2500 Loading \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -151,7 +151,7 @@ export default function RelancePage() {
     )
   }
 
-  // ── Fatal error (token invalid) ─────────────────────────────────────────
+  // \u2500\u2500 Fatal error (token invalid) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   if (error && !clientName) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -166,7 +166,7 @@ export default function RelancePage() {
     )
   }
 
-  // ── Success ──────────────────────────────────────────────────
+  // \u2500\u2500 Success \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   if (done) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -175,9 +175,9 @@ export default function RelancePage() {
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">Merci !</h2>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Vos disponibilités ont bien été enregistrées.<br />
-              Notre équipe vous recontactera dans les plus brefs délais<br />
-              pour planifier la livraison de votre vélo cargo.
+              Vos disponibilit\u00e9s ont bien \u00e9t\u00e9 enregistr\u00e9es.<br />
+              Notre \u00e9quipe vous recontactera dans les plus brefs d\u00e9lais<br />
+              pour planifier la livraison de votre v\u00e9lo cargo.
             </p>
           </CardContent>
         </Card>
@@ -185,12 +185,12 @@ export default function RelancePage() {
     )
   }
 
-  // ── Main form ────────────────────────────────────────────────────
+  // \u2500\u2500 Main form \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-xl mx-auto space-y-5">
 
-        {/* ── Header card ── */}
+        {/* \u2500\u2500 Header card \u2500\u2500 */}
         <Card className="shadow-sm border-amber-200 bg-amber-50/60">
           <CardHeader className="pb-4">
             <div className="flex items-start gap-4">
@@ -199,21 +199,21 @@ export default function RelancePage() {
               </div>
               <div className="space-y-1">
                 <CardTitle className="text-lg leading-tight">
-                  Planification de votre livraison de vélo cargo
+                  Planification de votre livraison de v\u00e9lo cargo
                 </CardTitle>
                 <CardDescription className="text-sm leading-relaxed text-gray-600">
                   {clientName ? (
                     <>Bonjour <strong className="text-gray-800">{clientName}</strong>,<br /></>
                   ) : null}
-                  Nous n&apos;avons pas réussi à vous joindre pour fixer un rendez-vous de livraison.
-                  Merci de nous indiquer vos disponibilités ci-dessous — nous reviendrons vers vous rapidement.
+                  Nous n&apos;avons pas r\u00e9ussi \u00e0 vous joindre pour fixer un rendez-vous de livraison.
+                  Merci de nous indiquer vos disponibilit\u00e9s ci-dessous \u2014 nous reviendrons vers vous rapidement.
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
         </Card>
 
-        {/* ── Current info card ── */}
+        {/* \u2500\u2500 Current info card \u2500\u2500 */}
         {(adresse || telephone || preferencesActuelles) && (
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
@@ -235,7 +235,7 @@ export default function RelancePage() {
                 <div className="flex items-start gap-3">
                   <Phone className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Téléphone enregistré</p>
+                    <p className="text-xs text-muted-foreground mb-0.5">T\u00e9l\u00e9phone enregistr\u00e9</p>
                     <p className="text-sm font-medium text-gray-800">{telephone}</p>
                   </div>
                 </div>
@@ -244,7 +244,7 @@ export default function RelancePage() {
                 <div className="flex items-start gap-3">
                   <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Préférences indiquées lors de votre inscription</p>
+                    <p className="text-xs text-muted-foreground mb-0.5">Pr\u00e9f\u00e9rences indiqu\u00e9es lors de votre inscription</p>
                     <p className="text-sm text-gray-700 italic">{preferencesActuelles}</p>
                   </div>
                 </div>
@@ -253,12 +253,12 @@ export default function RelancePage() {
           </Card>
         )}
 
-        {/* ── Availability form card ── */}
+        {/* \u2500\u2500 Availability form card \u2500\u2500 */}
         <Card className="shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Vos nouvelles disponibilités</CardTitle>
+            <CardTitle className="text-base">Vos nouvelles disponibilit\u00e9s</CardTitle>
             <CardDescription className="text-sm">
-              Cochez les jours et créneaux qui vous conviennent le mieux.
+              Cochez les jours et cr\u00e9neaux qui vous conviennent le mieux.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -296,9 +296,9 @@ export default function RelancePage() {
               </div>
             </div>
 
-            {/* Créneaux horaires */}
+            {/* Cr\u00e9neaux horaires */}
             <div className="space-y-3">
-              <p className="text-sm font-medium text-gray-800">Créneaux horaires préférés</p>
+              <p className="text-sm font-medium text-gray-800">Cr\u00e9neaux horaires pr\u00e9f\u00e9r\u00e9s</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {CRENEAUX.map(creneau => (
                   <label
@@ -324,26 +324,26 @@ export default function RelancePage() {
               </div>
             </div>
 
-            {/* Informations complémentaires */}
+            {/* Informations compl\u00e9mentaires */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-800">
-                Informations complémentaires
+                Informations compl\u00e9mentaires
                 <span className="ml-1 font-normal text-muted-foreground">(optionnel)</span>
               </label>
               <Textarea
                 value={detailsComplementaires}
                 onChange={(e) => setDetailsComplementaires(e.target.value)}
-                placeholder="Code d'interphone, nom sur la boîte aux lettres, accès particulier, consignes pour le livreur…"
+                placeholder="Code d'interphone, nom sur la bo\u00eete aux lettres, acc\u00e8s particulier, consignes pour le livreur\u2026"
                 rows={3}
                 className="resize-none text-sm"
               />
             </div>
 
-            {/* Autre numéro de téléphone */}
+            {/* Autre num\u00e9ro de t\u00e9l\u00e9phone */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-800">
-                Autre numéro de contact
-                <span className="ml-1 font-normal text-muted-foreground">(si différent de celui enregistré)</span>
+                Autre num\u00e9ro de contact
+                <span className="ml-1 font-normal text-muted-foreground">(si diff\u00e9rent de celui enregistr\u00e9)</span>
               </label>
               <input
                 type="tel"
@@ -367,8 +367,8 @@ export default function RelancePage() {
               }
             >
               {submitting
-                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Envoi en cours…</>
-                : 'Confirmer mes disponibilités'
+                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Envoi en cours\u2026</>
+                : 'Confirmer mes disponibilit\u00e9s'
               }
             </Button>
 
@@ -377,11 +377,19 @@ export default function RelancePage() {
 
         {/* Footer note */}
         <p className="text-center text-xs text-muted-foreground pb-4">
-          Ces informations seront transmises à notre équipe logistique.<br />
-          Nous vous confirmerons la date de livraison par téléphone ou par email.
+          Ces informations seront transmises \u00e0 notre \u00e9quipe logistique.<br />
+          Nous vous confirmerons la date de livraison par t\u00e9l\u00e9phone ou par email.
         </p>
 
       </div>
     </div>
+  )
+}
+
+export default function RelancePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Chargement...</div>}>
+      <RelanceContent />
+    </Suspense>
   )
 }

@@ -5,6 +5,14 @@ import { getTenantConfig } from '@/lib/tenants'
 import crypto from 'crypto'
 import { sendEmail } from '@/lib/email/gmail'
 
+/**
+ * POST /api/admin/clients/request-documents
+ *
+ * Body: { clientId: string, documents: string[] }
+ * documents = ['urssaf', 'dsn', 'benevoles']
+ *
+ * Génère un token, enregistre la demande, envoie un email au client.
+ */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -25,6 +33,7 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
+    // Récupérer le client
     const { data: client, error: clientError } = await adminClient
       .from('clients')
       .select('id, raison_sociale, email_beneficiaire, email, documents_demandes')
@@ -40,16 +49,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Aucun email pour ce client' }, { status: 400 })
     }
 
+    // Générer token unique
     const token = crypto.randomBytes(32).toString('hex')
+
+    // Construire le JSONB documents_demandes
     const now = new Date().toISOString()
     const demandes: Record<string, { status: string; demande_date: string }> = {}
     for (const doc of filteredDocs) {
       demandes[doc] = { status: 'pending', demande_date: now }
     }
 
+    // Fusionner avec les demandes existantes
     const existingDemandes = (client.documents_demandes as Record<string, unknown>) || {}
     const mergedDemandes = { ...existingDemandes, ...demandes }
 
+    // Mettre à jour le client
     const { error: updateError } = await adminClient
       .from('clients')
       .update({
@@ -60,20 +74,23 @@ export async function POST(request: NextRequest) {
 
     if (updateError) throw updateError
 
+    // Construire le lien formulaire
     const tenant = getTenantConfig()
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${tenant.id === 'ecovolt' ? 'velo-ecovolt' : 'velo-ppe'}.vercel.app`
     const formLink = `${baseUrl}/documents?token=${token}`
 
+    // Labels des documents
     const docLabels: Record<string, string> = {
-      urssaf: 'Attestation URSSAF à jour de moins de 3 mois',
+      urssaf: 'Attestation URSSAF \u00e0 jour de moins de 3 mois',
       dsn: 'Attestation DSN au format EDI',
-      benevoles: 'Attestation de déclaration de Bénévoles',
+      benevoles: 'Attestation de d\u00e9claration de B\u00e9n\u00e9voles',
     }
 
     const docListHtml = filteredDocs
       .map((d: string) => `<li>${docLabels[d] || d}</li>`)
       .join('')
 
+    // Envoyer l'email
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: ${tenant.branding.colors.primary || '#333'};">Demande de documents</h2>
@@ -92,10 +109,11 @@ export async function POST(request: NextRequest) {
       </div>
     `
 
+    // Envoi email direct via gmail.ts
     try {
       await sendEmail({
         to: clientEmail,
-        subject: `${tenant.name} — Demande de documents`,
+        subject: `${tenant.name} \u2014 Demande de documents`,
         html: emailHtml,
       })
     } catch (emailErr) {

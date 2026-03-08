@@ -4,6 +4,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/email/gmail'
 import { getTenantConfig } from '@/lib/tenants'
 
+/**
+ * POST /api/admin/clients/send-relance
+ * Body: { clientId: string, token: string }
+ * Envoie un email de relance au client avec lien vers /relance?token=xxx
+ */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -56,13 +61,13 @@ export async function POST(request: NextRequest) {
           </a>
         </div>
         <p>Si vous préférez nous contacter directement : <strong>${tenant.phone}</strong></p>
-        <p style="color: #888; font-size: 12px;">Ce lien est personnel et sécurisé. — ${tenant.name}</p>
+        <p style="color: #888; font-size: 12px;">Ce lien est personnel et sécurisé. \u2014 ${tenant.name}</p>
       </div>
     `
 
     await sendEmail({
       to: clientEmail,
-      subject: `${tenant.name} — Planification de votre livraison vélo cargo`,
+      subject: `${tenant.name} \u2014 Planification de votre livraison vélo cargo`,
       html: emailHtml,
     })
 
