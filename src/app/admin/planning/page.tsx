@@ -250,7 +250,7 @@ function PlanningContent() {
   // Filter livraisons by selected livreur (empty string = no livreur selected, show all read-only)
   const filteredLivraisons = useMemo(() => {
     if (!selectedLivreurId) return livraisons
-    return livraisons.filter(l => (l as any).livreur_id === selectedLivreurId)
+    return livraisons.filter(l => (l as any).livreur_id === selectedLivreurId || !(l as any).livreur_id)
   }, [livraisons, selectedLivreurId])
 
   // Search: filter filteredLivraisons by client name
@@ -615,37 +615,67 @@ function PlanningContent() {
     setSearchDropdownOpen(true)
   }
 
-  // Search results from ALL livraisons (not just filtered)
-  const searchDropdownResults = useMemo(() => {
+  // Search results from livraisons + unscheduled clients (clientsALivrer)
+  type SearchResult = { type: 'livraison'; livraison: PlanningLivraison } | { type: 'client'; client: PlanningClient }
+  const searchDropdownResults = useMemo((): SearchResult[] => {
     if (!searchQuery.trim()) return []
     const q = searchQuery.toLowerCase()
-    return livraisons.filter(l =>
-      l.client?.raison_sociale?.toLowerCase().includes(q)
-    ).slice(0, 10)
-  }, [livraisons, searchQuery])
+    const seenClientIds = new Set<string>()
+    const results: SearchResult[] = []
 
-  // Handle clicking a search result
-  const handleSearchResultClick = (livraison: PlanningLivraison) => {
+    // 1. Scheduled livraisons matching the query
+    for (const l of livraisons) {
+      if (l.client?.raison_sociale?.toLowerCase().includes(q)) {
+        if (l.client_id) seenClientIds.add(l.client_id)
+        results.push({ type: 'livraison', livraison: l })
+      }
+      if (results.length >= 10) break
+    }
+
+    // 2. Unscheduled clients not already matched via livraisons
+    if (results.length < 10) {
+      for (const c of clientsALivrer) {
+        if (seenClientIds.has(c.id)) continue
+        if (c.raison_sociale?.toLowerCase().includes(q)) {
+          results.push({ type: 'client', client: c })
+          if (results.length >= 10) break
+        }
+      }
+    }
+
+    return results
+  }, [livraisons, clientsALivrer, searchQuery])
+
+  // Handle clicking a search result (livraison or unscheduled client)
+  const handleSearchResultClick = (result: SearchResult) => {
     setSearchDropdownOpen(false)
-    setSearchQuery(livraison.client?.raison_sociale || '')
-    if (livraison.creneau_date && livraison.creneau_heure_debut) {
-      // Navigate to date and select the créneau
-      const d = new Date(livraison.creneau_date + 'T00:00:00')
-      setSelectedDate(d)
-      setWeekStart(getMonday(d))
-      setMiniCalMonth(getFirstOfMonth(d))
-      const creneauConf = depot?.creneaux?.find(
-        c => c.heure_debut.slice(0, 5) === livraison.creneau_heure_debut!.slice(0, 5)
-      )
-      setSelectedCreneau({
-        date: livraison.creneau_date,
-        heure_debut: livraison.creneau_heure_debut.slice(0, 5),
-        heure_fin: livraison.creneau_heure_fin?.slice(0, 5) || creneauConf?.heure_fin.slice(0, 5) || '',
-        capacite: creneauConf?.capacite_velos || 0,
-      })
-    } else if (livraison.client_id) {
-      // No creneau — navigate to client fiche
-      window.location.href = `/admin/clients/${livraison.client_id}`
+    if (result.type === 'livraison') {
+      const livraison = result.livraison
+      setSearchQuery(livraison.client?.raison_sociale || '')
+      if (livraison.creneau_date && livraison.creneau_heure_debut) {
+        // Navigate to date and select the créneau
+        const d = new Date(livraison.creneau_date + 'T00:00:00')
+        setSelectedDate(d)
+        setWeekStart(getMonday(d))
+        setMiniCalMonth(getFirstOfMonth(d))
+        const creneauConf = depot?.creneaux?.find(
+          c => c.heure_debut.slice(0, 5) === livraison.creneau_heure_debut!.slice(0, 5)
+        )
+        setSelectedCreneau({
+          date: livraison.creneau_date,
+          heure_debut: livraison.creneau_heure_debut.slice(0, 5),
+          heure_fin: livraison.creneau_heure_fin?.slice(0, 5) || creneauConf?.heure_fin.slice(0, 5) || '',
+          capacite: creneauConf?.capacite_velos || 0,
+        })
+      } else if (livraison.client_id) {
+        // No creneau — navigate to client fiche
+        window.location.href = `/admin/clients/${livraison.client_id}`
+      }
+    } else {
+      // Unscheduled client — navigate to client fiche
+      const client = result.client
+      setSearchQuery(client.raison_sociale || '')
+      window.location.href = `/admin/clients/${client.id}`
     }
   }
 
@@ -684,7 +714,7 @@ function PlanningContent() {
   )
 
   const selectedCreneauDayLabel = selectedCreneau
-    ? new Date(selectedCreneau.date + 'T00:00:00').toLocaleDateString('fr-FR', {
+    ? new Date(selectedCreneau.date + 'T12:00:00').toLocaleDateString('fr-FR', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
@@ -728,39 +758,58 @@ function PlanningContent() {
                 Aucun résultat
               </div>
             ) : (
-              searchDropdownResults.map((livraison) => {
-                const hasDate = !!livraison.creneau_date
-                const dateLabel = hasDate
-                  ? (() => {
-                      const d = new Date(livraison.creneau_date! + 'T00:00:00')
-                      const day = d.getDate().toString().padStart(2, '0')
-                      const month = (d.getMonth() + 1).toString().padStart(2, '0')
-                      const heure = livraison.creneau_heure_debut
-                        ? livraison.creneau_heure_debut.slice(0, 5)
-                        : null
-                      return `${day}/${month}${heure ? ` à ${heure}` : ''}`
-                    })()
-                  : null
-                return (
-                  <button
-                    key={livraison.id}
-                    onClick={() => handleSearchResultClick(livraison)}
-                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 flex items-center justify-between gap-3"
-                  >
-                    <span className="text-sm font-medium truncate">
-                      {livraison.client?.raison_sociale || 'Client inconnu'}
-                    </span>
-                    {hasDate ? (
-                      <span className="text-xs font-medium text-green-600 shrink-0 whitespace-nowrap">
-                        {dateLabel} — Programmé
+              searchDropdownResults.map((result, idx) => {
+                if (result.type === 'livraison') {
+                  const livraison = result.livraison
+                  const hasDate = !!livraison.creneau_date
+                  const dateLabel = hasDate
+                    ? (() => {
+                        const d = new Date(livraison.creneau_date! + 'T00:00:00')
+                        const day = d.getDate().toString().padStart(2, '0')
+                        const month = (d.getMonth() + 1).toString().padStart(2, '0')
+                        const heure = livraison.creneau_heure_debut
+                          ? livraison.creneau_heure_debut.slice(0, 5)
+                          : null
+                        return `${day}/${month}${heure ? ` à ${heure}` : ''}`
+                      })()
+                    : null
+                  return (
+                    <button
+                      key={`liv-${livraison.id}`}
+                      onClick={() => handleSearchResultClick(result)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 flex items-center justify-between gap-3"
+                    >
+                      <span className="text-sm font-medium truncate">
+                        {livraison.client?.raison_sociale || 'Client inconnu'}
                       </span>
-                    ) : (
+                      {hasDate ? (
+                        <span className="text-xs font-medium text-green-600 shrink-0 whitespace-nowrap">
+                          {dateLabel} — Programmé
+                        </span>
+                      ) : (
+                        <span className="text-xs font-medium text-orange-500 shrink-0">
+                          À placer
+                        </span>
+                      )}
+                    </button>
+                  )
+                } else {
+                  const client = result.client
+                  return (
+                    <button
+                      key={`cli-${client.id}`}
+                      onClick={() => handleSearchResultClick(result)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 flex items-center justify-between gap-3"
+                    >
+                      <span className="text-sm font-medium truncate">
+                        {client.raison_sociale || 'Client inconnu'}
+                      </span>
                       <span className="text-xs font-medium text-orange-500 shrink-0">
-                        À placer
+                        À livrer
                       </span>
-                    )}
-                  </button>
-                )
+                    </button>
+                  )
+                }
               })
             )}
           </div>
@@ -1069,7 +1118,7 @@ function PlanningContent() {
               <button onClick={() => setPlacementOpen(false)} className="text-muted-foreground hover:text-foreground">&times;</button>
             </div>
             <p className="text-sm text-muted-foreground mb-3">
-              Date : {new Date(placementDate + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+              Date : {new Date(placementDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
               {placementCreneau && <> &mdash; Créneau : <span className="font-medium text-blue-600">{placementCreneau.slice(0, 5)}</span></>}
               {selectedLivreurId && livreurs.length > 0 && (
                 <> &mdash; Livreur : {livreurs.find(l => l.id === selectedLivreurId)?.prenom} {livreurs.find(l => l.id === selectedLivreurId)?.nom}</>
