@@ -576,11 +576,13 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 ) : (
                   <span className="font-medium text-muted-foreground">-</span>
                 )}
-                {client.email && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Commercial : {getCommercialName(client)}
-                  </p>
-                )}
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Building2 className="h-3.5 w-3.5" />
+                  Commercial
+                </p>
+                <p className="font-medium">{getCommercialName(client)}</p>
               </div>
               {client.telephone && (
                 <div>
