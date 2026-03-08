@@ -4,11 +4,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/email/gmail'
 import { getTenantConfig } from '@/lib/tenants'
 
-/**
- * POST /api/admin/clients/send-relance
- * Body: { clientId: string, token: string }
- * Envoie un email de relance au client avec lien vers /relance?token=xxx
- */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()

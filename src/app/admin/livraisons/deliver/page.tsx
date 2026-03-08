@@ -6,11 +6,6 @@ import { Loader2, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import DeliveryModule, { type LivraisonWithClient } from '@/components/admin/delivery-module'
 
-/**
- * Page plein écran pour le module de livraison.
- * Usage : /admin/livraisons/deliver?id=LIVRAISON_ID
- * Charge la livraison + client depuis l'API, puis rend le DeliveryModule.
- */
 export default function DeliverPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -36,7 +31,6 @@ export default function DeliverPage() {
         }
         const data = await res.json()
 
-        // Construire l'objet LivraisonWithClient
         const liv = data.livraison || data
         const client = liv.client || {}
 
