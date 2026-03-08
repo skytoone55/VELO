@@ -91,7 +91,7 @@ export function Step3Adresse() {
         return
       }
 
-      // Stocker le r\u00e9sultat
+      // Stocker le résultat
       setValidationResult({
         modeLivraison: result.modeLivraison,
         zoneLivraison: result.zoneLivraison,
@@ -102,7 +102,7 @@ export function Step3Adresse() {
         horsZone: result.horsZone,
       })
 
-      // Mettre \u00e0 jour le store avec l'adresse, le mode et les infos de zone
+      // Mettre à jour le store avec l'adresse, le mode et les infos de zone
       updateData({
         adresseLivraison: facturationAddress!,
         complementAdresse: complementAdresse.trim() || undefined,
@@ -116,12 +116,12 @@ export function Step3Adresse() {
 
       setHorsZone(result.horsZone)
 
-      // Passer directement \u00e0 l'\u00e9tape suivante (pr\u00e9f\u00e9rence de r\u00e9ception)
+      // Passer directement à l'étape suivante (préférence de réception)
       nextStep()
       return
     } catch (err) {
       console.error('Erreur validation adresse:', err)
-      setError('Une erreur est survenue. R\u00e9essayez.')
+      setError('Une erreur est survenue. Réessayez.')
     } finally {
       setValidating(false)
     }
@@ -146,7 +146,7 @@ export function Step3Adresse() {
     )
   }
 
-  // Vue r\u00e9sultat : affiche o\u00f9 le client doit r\u00e9cup\u00e9rer/recevoir son v\u00e9lo
+  // Vue résultat : affiche où le client doit récupérer/recevoir son vélo
   if (viewState === 'result' && validationResult) {
     const { modeLivraison, depotRetrait, depotLogistique, horsZone } = validationResult
     const finalAddress = data.adresseLivraison
@@ -159,9 +159,9 @@ export function Step3Adresse() {
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <Truck className="w-8 h-8 text-green-600" />
             </div>
-            <CardTitle>Livraison \u00e0 votre adresse</CardTitle>
+            <CardTitle>Livraison à votre adresse</CardTitle>
             <CardDescription>
-              Votre v\u00e9lo cargo sera livr\u00e9 directement chez vous
+              Votre vélo cargo sera livré directement chez vous
             </CardDescription>
           </CardHeader>
 
@@ -169,7 +169,7 @@ export function Step3Adresse() {
             <Alert className="bg-green-50 border-green-200">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                Votre adresse a bien \u00e9t\u00e9 enregistr\u00e9e. Notre \u00e9quipe vous contactera pour programmer la livraison.
+                Votre adresse a bien été enregistrée. Notre équipe vous contactera pour programmer la livraison.
               </AlertDescription>
             </Alert>
 
@@ -205,9 +205,9 @@ export function Step3Adresse() {
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <Store className="w-8 h-8 text-green-600" />
             </div>
-            <CardTitle>Point de retrait assign\u00e9</CardTitle>
+            <CardTitle>Point de retrait assigné</CardTitle>
             <CardDescription>
-              Vous r\u00e9cup\u00e9rerez votre v\u00e9lo cargo \u00e0 ce point relais
+              Vous récupérerez votre vélo cargo à ce point relais
             </CardDescription>
           </CardHeader>
 
@@ -215,7 +215,7 @@ export function Step3Adresse() {
             <Alert className="bg-green-50 border-green-200">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                Bonne nouvelle ! Vous \u00eates \u00e0 seulement {depotRetrait.distance} km d'un de nos points de retrait.
+                Bonne nouvelle ! Vous êtes à seulement {depotRetrait.distance} km d'un de nos points de retrait.
               </AlertDescription>
             </Alert>
 
@@ -250,16 +250,16 @@ export function Step3Adresse() {
       )
     }
 
-    // Livraison \u00e0 domicile
+    // Livraison à domicile
     return (
       <Card>
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
             <Truck className="w-8 h-8 text-blue-600" />
           </div>
-          <CardTitle>Livraison \u00e0 domicile confirm\u00e9e</CardTitle>
+          <CardTitle>Livraison à domicile confirmée</CardTitle>
           <CardDescription>
-            Votre v\u00e9lo cargo sera livr\u00e9 \u00e0 l'adresse indiqu\u00e9e
+            Votre vélo cargo sera livré à l'adresse indiquée
           </CardDescription>
         </CardHeader>
 
@@ -267,7 +267,7 @@ export function Step3Adresse() {
           <Alert className="bg-green-50 border-green-200">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              Votre adresse est \u00e9ligible \u00e0 la livraison gratuite \u00e0 domicile.
+              Votre adresse est éligible à la livraison gratuite à domicile.
             </AlertDescription>
           </Alert>
 
@@ -302,7 +302,7 @@ export function Step3Adresse() {
     )
   }
 
-  // Vue confirmation d'adresse \u2014 toujours l'adresse soci\u00e9t\u00e9
+  // Vue confirmation d'adresse — toujours l'adresse société
   return (
     <Card>
       <CardHeader className="text-center">
@@ -311,7 +311,7 @@ export function Step3Adresse() {
         </div>
         <CardTitle>Adresse de livraison</CardTitle>
         <CardDescription>
-          V\u00e9rifiez l'adresse de livraison de votre v\u00e9lo cargo
+          Vérifiez l'adresse de livraison de votre vélo cargo
         </CardDescription>
       </CardHeader>
 
@@ -320,8 +320,8 @@ export function Step3Adresse() {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Votre adresse sera utilis\u00e9e pour d\u00e9terminer automatiquement
-            le mode de livraison de votre v\u00e9lo cargo.
+            Votre adresse sera utilisée pour déterminer automatiquement
+            le mode de livraison de votre vélo cargo.
           </AlertDescription>
         </Alert>
 
@@ -332,7 +332,7 @@ export function Step3Adresse() {
           </Alert>
         )}
 
-        {/* Adresse soci\u00e9t\u00e9 (non modifiable) */}
+        {/* Adresse société (non modifiable) */}
         {facturationAddress && facturationAddress.ligne1 ? (
           <div className="bg-muted/30 rounded-xl p-6 space-y-4 border">
             <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
@@ -351,22 +351,22 @@ export function Step3Adresse() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Aucune adresse trouv\u00e9e dans votre dossier. Veuillez contacter votre conseiller.
+              Aucune adresse trouvée dans votre dossier. Veuillez contacter votre conseiller.
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Compl\u00e9ment d'adresse */}
+        {/* Complément d'adresse */}
         <div className="space-y-2">
-          <Label htmlFor="complement">Compl\u00e9ment d'adresse (optionnel)</Label>
+          <Label htmlFor="complement">Complément d'adresse (optionnel)</Label>
           <Input
             id="complement"
-            placeholder="B\u00e2timent, \u00e9tage, digicode, interphone..."
+            placeholder="Bâtiment, étage, digicode, interphone..."
             value={complementAdresse}
             onChange={(e) => setComplementAdresse(e.target.value)}
           />
           <p className="text-xs text-muted-foreground">
-            Pr\u00e9cisez les informations utiles pour le livreur
+            Précisez les informations utiles pour le livreur
           </p>
         </div>
 
@@ -383,7 +383,7 @@ export function Step3Adresse() {
             {validating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                V\u00e9rification...
+                Vérification...
               </>
             ) : (
               <>

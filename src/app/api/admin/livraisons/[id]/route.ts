@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
+/**
+ * GET /api/admin/livraisons/[id]
+ * Récupère une livraison avec les données client
+ */
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
