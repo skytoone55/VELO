@@ -3,14 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validatePagination } from '@/lib/constants'
 
-/**
- * GET /api/livraisons
- * Liste paginee des livraisons avec jointures client + depot.
- * Filtres : search, statut, depot, commercial, departement, zone, sortBy, sortOrder
- */
 export async function GET(request: NextRequest) {
   try {
-    // Auth — même pattern que /api/admin/clients (qui marche)
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -55,7 +49,6 @@ export async function GET(request: NextRequest) {
     const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
     const adminClient = createAdminClient()
 
-    // Etape 1 : si filtres sur champs client, recuperer les IDs matching
     let clientIds: string[] | null = null
 
     if (search || commercialFilter && commercialFilter !== 'all' || departementFilter && departementFilter !== 'all' || zoneFilter && zoneFilter !== 'all') {
@@ -71,7 +64,6 @@ export async function GET(request: NextRequest) {
       }
 
       if (departementFilter && departementFilter !== 'all') {
-        // PPE: departement vaut souvent 'FR' (pays Monday), filtrer par CP
         clientQuery = clientQuery.ilike('adresse_societe_cp', `${departementFilter}%`)
       }
 
@@ -90,7 +82,6 @@ export async function GET(request: NextRequest) {
       const { data: matchingClients } = await clientQuery
       clientIds = matchingClients?.map(c => c.id) || []
 
-      // Aucun client ne correspond = aucune livraison
       if (clientIds.length === 0) {
         return NextResponse.json({
           livraisons: [],
@@ -99,7 +90,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Etape 2 : requete livraisons
     let query = adminClient
       .from('livraisons')
       .select(`
@@ -122,7 +112,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (depotFilter && depotFilter !== 'all') {
-      // Chercher sur depot_id de la livraison OU depot_retrait_id/depot_logistique_id du client
       const { data: depotClientIds } = await adminClient
         .from('clients')
         .select('id')
@@ -137,14 +126,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Role-based data filtering
     if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
       query = query.in('depot_id', currentUser.depot_ids)
     } else if (currentUser.role === 'livreur') {
       query = query.eq('livreur_id', currentUser.id)
     }
 
-    // Pagination + tri
     const startIndex = (page - 1) * pageSize
     query = query
       .order(safeSortBy, { ascending })

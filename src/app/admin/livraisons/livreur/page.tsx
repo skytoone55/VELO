@@ -14,10 +14,6 @@ import type { ProcessStatut } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface LivraisonClient {
   id: string
   client_id: string
@@ -49,10 +45,6 @@ interface LivraisonClient {
   } | null
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
   return d.toLocaleDateString('fr-FR', {
@@ -77,7 +69,6 @@ function getTomorrow(): string {
   return d.toISOString().split('T')[0]
 }
 
-/** Nearest-neighbor route suggestion based on coordinates */
 function suggestOrder(livraisons: LivraisonClient[]): number[] {
   const coords = livraisons.map((l, i) => ({
     index: i,
@@ -90,7 +81,6 @@ function suggestOrder(livraisons: LivraisonClient[]): number[] {
   const visited: boolean[] = new Array(coords.length).fill(false)
   const order: number[] = []
 
-  // Start from the first delivery
   let current = 0
   visited[current] = true
   order.push(coords[current].index)
@@ -120,10 +110,6 @@ function suggestOrder(livraisons: LivraisonClient[]): number[] {
   return order
 }
 
-// ---------------------------------------------------------------------------
-// Status card colors (livreur-specific)
-// ---------------------------------------------------------------------------
-
 const CARD_BORDER_COLORS: Record<string, string> = {
   en_attente: 'border-l-blue-500',
   programmee: 'border-l-blue-500',
@@ -131,10 +117,6 @@ const CARD_BORDER_COLORS: Record<string, string> = {
   livree: 'border-l-green-500',
   annulee: 'border-l-gray-400',
 }
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 export default function LivreurDashboardPage() {
   const user = useAdminUser()
@@ -149,18 +131,12 @@ export default function LivreurDashboardPage() {
   const deliveryRouter = useRouter()
   const [problemNote, setProblemNote] = useState('')
 
-  // -----------------------------------------------------------------------
-  // Fetch livraisons
-  // -----------------------------------------------------------------------
-
   const fetchLivraisons = useCallback(async () => {
     setLoading(true)
     try {
       const today = getToday()
       const tomorrow = getTomorrow()
 
-      // Build query: livraisons for today or tomorrow, assigned to this livreur
-      // or matching livreur's depot
       let query = supabase
         .from('livraisons')
         .select(`
@@ -176,10 +152,7 @@ export default function LivreurDashboardPage() {
         .in('creneau_date', [today, tomorrow])
         .order('creneau_heure_debut', { ascending: true })
 
-      // Filter by livreur assignment or depot
       if (user.role === 'livreur') {
-        // Livreur sees their own assigned livraisons
-        // OR livraisons from their depot that are unassigned
         query = query.or(
           `livreur_id.eq.${user.id}${
             user.depot_ids?.length
@@ -188,7 +161,6 @@ export default function LivreurDashboardPage() {
           }`
         )
       }
-      // admin/super_admin see all livraisons (no extra filter)
 
       const { data, error } = await query
 
@@ -222,10 +194,6 @@ export default function LivreurDashboardPage() {
     fetchLivraisons()
   }, [fetchLivraisons])
 
-  // -----------------------------------------------------------------------
-  // Actions
-  // -----------------------------------------------------------------------
-
   const updateStatus = useCallback(
     async (livraisonId: string, statut: string, note?: string) => {
       setActionLoading(livraisonId)
@@ -242,7 +210,6 @@ export default function LivreurDashboardPage() {
           return
         }
 
-        // Refresh data
         await fetchLivraisons()
         setProblemId(null)
         setProblemNote('')
@@ -253,20 +220,12 @@ export default function LivreurDashboardPage() {
     [fetchLivraisons]
   )
 
-  // -----------------------------------------------------------------------
-  // Route suggestion
-  // -----------------------------------------------------------------------
-
   const suggestedOrder = useMemo(() => {
     const pending = todayLivraisons.filter((l) => l.statut !== 'livree' && l.statut !== 'annulee')
     if (pending.length < 2) return null
     const order = suggestOrder(pending)
     return order.map((idx) => pending[idx])
   }, [todayLivraisons])
-
-  // -----------------------------------------------------------------------
-  // Render card
-  // -----------------------------------------------------------------------
 
   function renderLivraisonCard(livraison: LivraisonClient) {
     const client = livraison.client
@@ -281,7 +240,6 @@ export default function LivreurDashboardPage() {
         className={`border-l-4 ${borderColor} mb-3 shadow-sm`}
       >
         <CardContent className="p-4">
-          {/* Header: time + client name */}
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
@@ -308,7 +266,6 @@ export default function LivreurDashboardPage() {
             )}
           </div>
 
-          {/* Address */}
           <div className="flex items-start gap-2 mb-2 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
             <span>
@@ -322,7 +279,6 @@ export default function LivreurDashboardPage() {
             </span>
           </div>
 
-          {/* Vélos count */}
           <div className="flex items-center gap-2 mb-3 text-sm">
             <Bike className="h-4 w-4 text-muted-foreground" />
             <span>
@@ -331,7 +287,6 @@ export default function LivreurDashboardPage() {
             </span>
           </div>
 
-          {/* Phone */}
           {client?.telephone && (
             <a
               href={`tel:${client.telephone}`}
@@ -342,7 +297,6 @@ export default function LivreurDashboardPage() {
             </a>
           )}
 
-          {/* Action buttons */}
           {statut !== 'livree' && statut !== 'annulee' && (
             <div className="flex flex-wrap gap-2">
               {statut !== 'en_cours' && (
@@ -396,7 +350,6 @@ export default function LivreurDashboardPage() {
             </div>
           )}
 
-          {/* Problem note textarea */}
           {problemId === livraison.id && (
             <div className="mt-3 space-y-2">
               <textarea
@@ -440,10 +393,6 @@ export default function LivreurDashboardPage() {
     )
   }
 
-  // -----------------------------------------------------------------------
-  // Main render
-  // -----------------------------------------------------------------------
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -454,7 +403,6 @@ export default function LivreurDashboardPage() {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-      {/* ---- Today ---- */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -480,7 +428,6 @@ export default function LivreurDashboardPage() {
         )}
       </section>
 
-      {/* ---- Route suggestion ---- */}
       {suggestedOrder && suggestedOrder.length >= 2 && (
         <section>
           <div className="flex items-center gap-2 mb-3">
@@ -511,7 +458,6 @@ export default function LivreurDashboardPage() {
         </section>
       )}
 
-      {/* ---- Tomorrow (collapsible) ---- */}
       <section>
         <button
           className="flex items-center justify-between w-full py-3 text-left"
