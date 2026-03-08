@@ -39,7 +39,10 @@ function DeliverContent() {
       try {
         const res = await fetch(`/api/admin/livraisons/${livraisonId}`)
         if (!res.ok) {
-          setError('Livraison introuvable')
+          const errData = await res.json().catch(() => ({}))
+          const detail = errData?.error || res.statusText || 'Erreur inconnue'
+          setError(`Erreur ${res.status} : ${detail}`)
+          console.error('Deliver page fetch error:', res.status, detail)
           return
         }
         const data = await res.json()

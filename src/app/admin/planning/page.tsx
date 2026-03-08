@@ -1169,7 +1169,7 @@ function PlanningContent() {
               <button onClick={() => setPlacementOpen(false)} className="text-muted-foreground hover:text-foreground">&times;</button>
             </div>
             <p className="text-sm text-muted-foreground mb-3">
-              Date : {new Date(placementDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+              Date : {(() => { const [y, m, d] = placementDate.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) })()}
               {placementCreneau && <> &mdash; Créneau : <span className="font-medium text-blue-600">{placementCreneau.slice(0, 5)}</span></>}
               {selectedLivreurId && livreurs.length > 0 && (
                 <> &mdash; Livreur : {livreurs.find(l => l.id === selectedLivreurId)?.prenom} {livreurs.find(l => l.id === selectedLivreurId)?.nom}</>
@@ -1820,40 +1820,21 @@ function WeekView({
                             </button>
                           </div>
 
-                          {/* Livraisons in créneau */}
-                          {slotLivraisons.length > 0 && (
-                            <div className="px-1.5 pb-1.5 space-y-1">
-                              {slotLivraisons.map((livraison) => (
-                                <LivraisonCard
-                                  key={livraison.id}
-                                  livraison={livraison}
-                                  onRemove={onRemoveLivraison}
-                                  removing={removingLivraisonId === livraison.id}
-                                />
-                              ))}
-                            </div>
-                          )}
+                          {/* Résumé compact — pas de cartes individuelles */}
                         </div>
                       )
                     })}
 
-                    {/* Livraisons not matching any créneau */}
+                    {/* Livraisons non assignées — compteur simple */}
                     {(() => {
                       const assignedIds = new Set(
                         creneaux.flatMap((c) => getLivraisonsForCreneau(c).map((l) => l.id))
                       )
                       const unassigned = dayLivraisons.filter((l) => !assignedIds.has(l.id))
                       return unassigned.length > 0 ? (
-                        <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-1.5 space-y-1">
-                          <p className="text-[9px] text-gray-400 font-medium uppercase tracking-wide">Autres</p>
-                          {unassigned.map((livraison) => (
-                            <LivraisonCard
-                              key={livraison.id}
-                              livraison={livraison}
-                              onRemove={onRemoveLivraison}
-                              removing={removingLivraisonId === livraison.id}
-                            />
-                          ))}
+                        <div className="rounded-lg border border-amber-200 bg-amber-50/50 px-1.5 py-1 flex items-center gap-1.5">
+                          <Bike className="h-3 w-3 text-amber-600" />
+                          <span className="text-[10px] text-amber-700">{unassigned.length} hors créneau</span>
                         </div>
                       ) : null
                     })()}

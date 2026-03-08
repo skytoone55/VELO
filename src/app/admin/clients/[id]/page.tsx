@@ -49,7 +49,6 @@ import { getCommercialName } from '@/lib/tenants/commercial'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import type { LivraisonWithClient } from '@/components/admin/delivery-module'
 
 const MiniMap = dynamic(() => import('@/components/ui/mini-map').then(m => ({ default: m.MiniMap })), {
   ssr: false,
@@ -676,8 +675,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </CardContent>
         </Card>
 
-        {/* Livraison — pleine largeur, en premier visuellement via order */}
-        <Card className="shadow-sm border-2 lg:col-span-2 -order-1">
+        {/* Livraison — pleine largeur */}
+        <Card className="shadow-sm border-2 lg:col-span-2">
           <CardContent className="px-5 py-3.5">
             <SectionTitle
               icon={Truck}
@@ -855,88 +854,60 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               {/* Slot 1 — Pièce d'identité (photo livreur lors livraison) */}
               <div className="p-3 bg-muted/30 rounded-lg border flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${livraison?.document_identite_url ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <div className={`w-2 h-2 rounded-full ${livraison?.document_identite_url || (livraison as any)?.photos_livraison?.photo_identite ? 'bg-green-500' : 'bg-gray-300'}`} />
                   <div>
                     <p className="font-medium text-sm">Pièce d&apos;identité</p>
                     <p className="text-xs text-muted-foreground">
-                      {livraison?.document_identite_url ? livraison.document_identite_nom_fichier || 'Reçu' : 'Manquant — pris en photo lors de la livraison'}
+                      {livraison?.document_identite_url || (livraison as any)?.photos_livraison?.photo_identite
+                        ? livraison?.document_identite_nom_fichier || 'Reçu'
+                        : 'Manquant — pris en photo lors de la livraison'}
                     </p>
                   </div>
                 </div>
-                {livraison?.document_identite_url && (
+                {(livraison?.document_identite_url || (livraison as any)?.photos_livraison?.photo_identite) && (
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => window.open(livraison.document_identite_url!, '_blank')}>
+                    <Button variant="ghost" size="sm" onClick={() => {
+                      if (livraison?.document_identite_url) {
+                        window.open(livraison.document_identite_url, '_blank')
+                      } else {
+                        const w = window.open('', '_blank')
+                        if (w) w.document.write(`<img src="${(livraison as any).photos_livraison.photo_identite}" style="max-width:100%"/>`)
+                      }
+                    }}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" asChild>
-                      <a href={livraison.document_identite_url!} download><Download className="h-4 w-4" /></a>
-                    </Button>
                   </div>
                 )}
               </div>
 
-              {/* Slot 2 — PDF de livraison (généré auto par module delivery) */}
+              {/* Slot 2 — Signature / PDF de livraison */}
               <div className="p-3 bg-muted/30 rounded-lg border flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${(livraison as any)?.pdf_livraison_url ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <div className={`w-2 h-2 rounded-full ${(livraison as any)?.pdf_livraison_url || livraison?.signature_client ? 'bg-green-500' : 'bg-gray-300'}`} />
                   <div>
-                    <p className="font-medium text-sm">PDF de livraison</p>
+                    <p className="font-medium text-sm">{(livraison as any)?.pdf_livraison_url ? 'PDF de livraison' : 'Signature de livraison'}</p>
                     <p className="text-xs text-muted-foreground">
-                      {(livraison as any)?.pdf_livraison_url ? 'Généré' : 'Sera généré automatiquement après livraison'}
+                      {(livraison as any)?.pdf_livraison_url
+                        ? 'Généré'
+                        : livraison?.signature_client
+                          ? 'Signée lors de la livraison'
+                          : 'Sera généré automatiquement après livraison'}
                     </p>
                   </div>
                 </div>
-                {(livraison as any)?.pdf_livraison_url && (
+                {((livraison as any)?.pdf_livraison_url || livraison?.signature_client) && (
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => window.open((livraison as any).pdf_livraison_url, '_blank')}>
+                    <Button variant="ghost" size="sm" onClick={() => {
+                      if ((livraison as any)?.pdf_livraison_url) {
+                        window.open((livraison as any).pdf_livraison_url, '_blank')
+                      } else if (livraison?.signature_client) {
+                        const w = window.open('', '_blank')
+                        if (w) w.document.write(`<img src="${livraison.signature_client}" style="max-width:100%;background:#fff;padding:20px"/>`)
+                      }
+                    }}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" asChild>
-                      <a href={(livraison as any).pdf_livraison_url} download><Download className="h-4 w-4" /></a>
-                    </Button>
                   </div>
-                )}
-              </div>
-
-              {/* Slot 2b — Signature client (depuis livraison) */}
-              <div className="p-3 bg-muted/30 rounded-lg border flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${livraison?.signature_client ? 'bg-green-500' : 'bg-gray-300'}`} />
-                  <div>
-                    <p className="font-medium text-sm">Signature client</p>
-                    <p className="text-xs text-muted-foreground">
-                      {livraison?.signature_client ? 'Signée lors de la livraison' : 'Sera capturée lors de la livraison'}
-                    </p>
-                  </div>
-                </div>
-                {livraison?.signature_client && (
-                  <Button variant="ghost" size="sm" onClick={() => {
-                    const w = window.open('', '_blank')
-                    if (w) { w.document.write(`<img src="${livraison.signature_client}" style="max-width:100%;background:#fff;padding:20px"/>`) }
-                  }}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-
-              {/* Slot 2c — Photo d'identité livraison */}
-              <div className="p-3 bg-muted/30 rounded-lg border flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${(livraison as any)?.photos_livraison?.photo_identite ? 'bg-green-500' : 'bg-gray-300'}`} />
-                  <div>
-                    <p className="font-medium text-sm">Photo pièce d&apos;identité (livraison)</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(livraison as any)?.photos_livraison?.photo_identite ? 'Prise lors de la livraison' : 'Sera prise lors de la livraison'}
-                    </p>
-                  </div>
-                </div>
-                {(livraison as any)?.photos_livraison?.photo_identite && (
-                  <Button variant="ghost" size="sm" onClick={() => {
-                    const w = window.open('', '_blank')
-                    if (w) { w.document.write(`<img src="${(livraison as any).photos_livraison.photo_identite}" style="max-width:100%"/>`) }
-                  }}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
                 )}
               </div>
 
