@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,14 @@ const DOC_LABELS: Record<string, string> = {
 }
 
 export default function DocumentsUploadPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>}>
+      <DocumentsContent />
+    </Suspense>
+  )
+}
+
+function DocumentsContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
 

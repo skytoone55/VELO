@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+/**
+ * POST /api/relance — valider token + récupérer client
+ * Body: { token: string }
+ * Cherche par token_formulaire OU token_documents (les 2 sont valides)
+ */
 export async function POST(request: NextRequest) {
   try {
     const { token } = await request.json()
@@ -8,6 +13,7 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
+    // Chercher par token_formulaire d'abord, puis token_documents
     let client = null
     const { data: c1 } = await adminClient
       .from('clients')
@@ -45,6 +51,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * PUT /api/relance — soumettre nouvelles disponibilités
+ * Body: { token: string, disponibilites: string }
+ */
 export async function PUT(request: NextRequest) {
   try {
     const { token, disponibilites } = await request.json()
@@ -54,6 +64,7 @@ export async function PUT(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
+    // Vérifier le token
     const { data: client, error: findError } = await adminClient
       .from('clients')
       .select('id')
@@ -64,6 +75,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Lien invalide' }, { status: 404 })
     }
 
+    // Mettre à jour les préférences
     const { error: updateError } = await adminClient
       .from('clients')
       .update({

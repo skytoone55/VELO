@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+/**
+ * POST /api/documents/validate-token
+ * Body: { token: string }
+ * Retourne les infos client + documents demandés
+ */
 export async function POST(request: NextRequest) {
   try {
     const { token } = await request.json()
@@ -21,6 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide ou expiré' }, { status: 404 })
     }
 
+    // Filtrer les documents en statut pending
     const demandes = (client.documents_demandes as Record<string, { status: string }>) || {}
     const pendingDocs = Object.entries(demandes)
       .filter(([, v]) => v.status === 'pending')

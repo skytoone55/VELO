@@ -1,12 +1,25 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Loader2, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import DeliveryModule, { type LivraisonWithClient } from '@/components/admin/delivery-module'
 
+/**
+ * Page plein écran pour le module de livraison.
+ * Usage : /admin/livraisons/deliver?id=LIVRAISON_ID
+ * Charge la livraison + client depuis l'API, puis rend le DeliveryModule.
+ */
 export default function DeliverPage() {
+  return (
+    <Suspense fallback={<div>Chargement...</div>}>
+      <DeliverContent />
+    </Suspense>
+  )
+}
+
+function DeliverContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const livraisonId = searchParams.get('id')
@@ -31,6 +44,7 @@ export default function DeliverPage() {
         }
         const data = await res.json()
 
+        // Construire l'objet LivraisonWithClient
         const liv = data.livraison || data
         const client = liv.client || {}
 

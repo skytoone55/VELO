@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+/**
+ * GET /api/depots
+ * Retourne la liste des dépôts actifs (id, nom)
+ * Utilisé par les filtres dropdown (livraisons, planning, etc.)
+ */
 export async function GET() {
   try {
     const adminClient = createAdminClient()
