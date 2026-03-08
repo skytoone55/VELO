@@ -118,11 +118,56 @@ export const FORM_STATUS = {
 export type FormStatus = keyof typeof FORM_STATUS
 
 // =================================================================
+// STATUTS PROCESS (parcours client — 10 statuts)
+// =================================================================
+export const PROCESS_STATUTS = {
+  controle_valide: 'Contrôle validé',
+  formulaire_envoye: 'Formulaire envoyé',
+  formulaire_valide: 'Formulaire validé',
+  a_livrer: 'À livrer',
+  en_livraison: 'En livraison',
+  livre: 'Livré',
+  probleme_livraison: 'Problème de livraison',
+  a_relivrer: 'À relivrer',
+  retractation: 'Rétractation',
+  anomalie: 'Anomalie',
+} as const
+
+export type ProcessStatut = keyof typeof PROCESS_STATUTS
+
+// Couleurs par statut process (pour badges)
+export const STATUT_COLORS: Record<ProcessStatut, string> = {
+  controle_valide: 'bg-blue-100 text-blue-800',
+  formulaire_envoye: 'bg-cyan-100 text-cyan-800',
+  formulaire_valide: 'bg-emerald-100 text-emerald-800',
+  a_livrer: 'bg-amber-100 text-amber-800',
+  en_livraison: 'bg-orange-100 text-orange-800',
+  livre: 'bg-green-100 text-green-800',
+  probleme_livraison: 'bg-red-100 text-red-800',
+  a_relivrer: 'bg-pink-100 text-pink-800',
+  retractation: 'bg-gray-100 text-gray-800',
+  anomalie: 'bg-rose-100 text-rose-800',
+}
+
+// Transitions autorisées entre statuts
+export const STATUT_TRANSITIONS: Record<ProcessStatut, ProcessStatut[]> = {
+  controle_valide: ['formulaire_envoye', 'retractation', 'anomalie'],
+  formulaire_envoye: ['formulaire_valide', 'retractation', 'anomalie'],
+  formulaire_valide: ['a_livrer', 'retractation', 'anomalie'],
+  a_livrer: ['en_livraison', 'retractation', 'anomalie'],
+  en_livraison: ['livre', 'probleme_livraison', 'retractation', 'anomalie'],
+  livre: ['retractation', 'anomalie'],
+  probleme_livraison: ['a_relivrer', 'retractation', 'anomalie'],
+  a_relivrer: ['en_livraison', 'retractation', 'anomalie'],
+  retractation: [],
+  anomalie: [],
+}
+
+// =================================================================
 // ZONES DE LIVRAISON
 // =================================================================
 export const DELIVERY_ZONES = {
   gratuit: 'Zone gratuite',
-  payant: 'Zone payante',
   hors_zone: 'Hors zone',
 } as const
 
@@ -133,8 +178,7 @@ export type DeliveryZone = keyof typeof DELIVERY_ZONES
 // =================================================================
 export const DELIVERY_MODES = {
   retrait: 'Retrait en dépôt',
-  livraison_gratuite: 'Livraison gratuite',
-  livraison_payante: 'Livraison payante',
+  livraison: 'Livraison à domicile',
 } as const
 
 export type DeliveryMode = keyof typeof DELIVERY_MODES
@@ -148,6 +192,23 @@ export const ROLE_COLORS: Record<UserRole, string> = {
   agent_secteur: 'bg-blue-100 text-blue-800',
   livreur: 'bg-teal-100 text-teal-800',
   client: 'bg-gray-100 text-gray-800',
+}
+
+// =================================================================
+// STATUTS CONFIRMATION TOURNÉE
+// =================================================================
+export const CONFIRMATION_STATUTS = {
+  en_attente: 'En attente',
+  confirmee: 'Confirmée',
+  refusee: 'Refusée',
+} as const
+
+export type ConfirmationStatut = keyof typeof CONFIRMATION_STATUTS
+
+export const CONFIRMATION_COLORS: Record<ConfirmationStatut, string> = {
+  en_attente: 'bg-yellow-100 text-yellow-800',
+  confirmee: 'bg-green-100 text-green-800',
+  refusee: 'bg-red-100 text-red-800',
 }
 
 // =================================================================
