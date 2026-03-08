@@ -31,7 +31,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Pencil, Trash2, MoreHorizontal, Navigation, Eye, Phone, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Trash2, MoreHorizontal, Navigation, Eye, Phone, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import {
@@ -852,10 +852,10 @@ export default function AdminClientsPage() {
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
                       <div className="text-sm">
-                        {(client.email_beneficiaire || client.email) ? (
+                        {client.email_beneficiaire ? (
                           <div className="text-muted-foreground flex items-center gap-1">
                             <Mail className="h-3 w-3" />
-                            {client.email_beneficiaire || client.email}
+                            {client.email_beneficiaire}
                           </div>
                         ) : (
                           <span className="text-muted-foreground">-</span>
@@ -938,10 +938,6 @@ export default function AdminClientsPage() {
                             <DropdownMenuItem onClick={() => window.location.href = `/admin/clients/${client.id}`}>
                               <Eye className="h-4 w-4 mr-2" />
                               Voir la fiche
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditClient(client)}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Modifier
                             </DropdownMenuItem>
                             {client.email && (
                               <DropdownMenuItem onClick={() => setSelectedClient(client)}>
@@ -1146,7 +1142,8 @@ export default function AdminClientsPage() {
       </Dialog>
 
       {/* Edit Client Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+      {/* Dialog édition supprimé — les données viennent de l'import, pas modifiables dans l'interface */}
+      <Dialog open={false} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Modifier le client</DialogTitle>
