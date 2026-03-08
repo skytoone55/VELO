@@ -56,10 +56,6 @@ const MiniMap = dynamic(() => import('@/components/ui/mini-map').then(m => ({ de
   loading: () => <div className="h-[200px] w-full bg-muted/30 rounded animate-pulse" />,
 })
 
-const DeliveryModule = dynamic(() => import('@/components/admin/delivery-module'), {
-  ssr: false,
-  loading: () => null,
-})
 
 // Composant pour les titres de section - design épuré
 function SectionTitle({
@@ -167,9 +163,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   // Dialogs
   const [sendEmailOpen, setSendEmailOpen] = useState(false)
   const [resetFormOpen, setResetFormOpen] = useState(false)
-  const [deliveryOpen, setDeliveryOpen] = useState(false)
-  const [deliveryLivraison, setDeliveryLivraison] = useState<LivraisonWithClient | null>(null)
-  const [deliveryLoading, setDeliveryLoading] = useState(false)
   const [docRequestOpen, setDocRequestOpen] = useState(false)
   const [docRequestLoading, setDocRequestLoading] = useState(false)
   const [selectedDocs, setSelectedDocs] = useState<string[]>([])
@@ -315,7 +308,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  const handleOpenDelivery = async () => {
+  const handleOpenDelivery = () => {
     if (!client) return
 
     // Ecovolt → redirection vers le module externe
@@ -325,46 +318,12 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       return
     }
 
-    // PPE → module de livraison interne (page séparée)
-    setDeliveryLoading(true)
-    setError(null)
-
-    try {
-      const res = await fetch(`/api/admin/livraisons?client_id=${client.id}`)
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur chargement livraison')
-
-      const livraisonData = data.livraisons?.[0]
-      if (!livraisonData) {
-        setError('Aucune livraison trouvée pour ce client')
-        return
-      }
-
-      setDeliveryLivraison({
-        id: livraisonData.id,
-        client_id: livraisonData.client_id,
-        mode_livraison: livraisonData.mode_livraison,
-        statut: livraisonData.statut,
-        client: livraisonData.client || {
-          id: client.id,
-          raison_sociale: client.raison_sociale,
-          contact_nom: client.contact_nom || client.nom_contact,
-          contact_prenom: client.contact_prenom || client.prenom_contact,
-          velo_valide: client.velo_valide,
-          velo_devis: client.velo_devis,
-          email_beneficiaire: client.email_beneficiaire,
-          telephone: client.telephone,
-          adresse_societe_ligne1: client.adresse_societe_ligne1,
-          adresse_societe_cp: client.adresse_societe_cp,
-          adresse_societe_ville: client.adresse_societe_ville,
-        },
-      })
-      setDeliveryOpen(true)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erreur inconnue'
-      setError(message)
-    } finally {
-      setDeliveryLoading(false)
+    // PPE → ouvrir le module de livraison dans un nouvel onglet
+    const liv = livraisons[0]
+    if (liv) {
+      window.open(`/admin/livraisons/deliver?id=${liv.id}`, '_blank')
+    } else {
+      setError('Aucune livraison trouvée pour ce client')
     }
   }
 
@@ -526,7 +485,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             )}
 
             {/* Boutons d'action principaux — centrés et espacés */}
-            {client.statut_commercial === 'a_livrer' && (
+            {client.statut_commercial === 'a_livrer' && !livraisons[0]?.creneau_date && (
               <Button
                 size="sm"
                 asChild
@@ -543,10 +502,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <Button
                 size="sm"
                 onClick={handleOpenDelivery}
-                disabled={deliveryLoading}
                 className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 px-6 font-semibold"
               >
-                {deliveryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <Truck className="mr-2 h-4 w-4" />
                 Livrer
               </Button>
@@ -621,6 +578,25 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               {modeLivraison === 'retrait' ? 'Point relais' : 'Domicile'}
             </div>
           </div>
+          {livraisons[0]?.creneau_date && (
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 text-slate-300 text-xs uppercase tracking-wide mb-1">
+                <Calendar className="h-4 w-4" />
+                Programmé le
+              </div>
+              <div className="text-lg font-semibold">
+                {(() => {
+                  const [y, m, d] = livraisons[0].creneau_date!.split('-').map(Number)
+                  return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+                })()}
+                {livraisons[0].creneau_heure_debut && (
+                  <span className="text-sm text-slate-400 ml-1">
+                    {livraisons[0].creneau_heure_debut.slice(0, 5)}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 text-slate-300 text-xs uppercase tracking-wide mb-1">
               <Calendar className="h-4 w-4" />
@@ -700,8 +676,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </CardContent>
         </Card>
 
-        {/* Colonne droite - Livraison */}
-        <Card className="shadow-sm border-2 lg:row-span-2">
+        {/* Livraison — pleine largeur, en premier visuellement via order */}
+        <Card className="shadow-sm border-2 lg:col-span-2 -order-1">
           <CardContent className="px-5 py-3.5">
             <SectionTitle
               icon={Truck}
@@ -922,6 +898,48 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 )}
               </div>
 
+              {/* Slot 2b — Signature client (depuis livraison) */}
+              <div className="p-3 bg-muted/30 rounded-lg border flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full ${livraison?.signature_client ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <div>
+                    <p className="font-medium text-sm">Signature client</p>
+                    <p className="text-xs text-muted-foreground">
+                      {livraison?.signature_client ? 'Signée lors de la livraison' : 'Sera capturée lors de la livraison'}
+                    </p>
+                  </div>
+                </div>
+                {livraison?.signature_client && (
+                  <Button variant="ghost" size="sm" onClick={() => {
+                    const w = window.open('', '_blank')
+                    if (w) { w.document.write(`<img src="${livraison.signature_client}" style="max-width:100%;background:#fff;padding:20px"/>`) }
+                  }}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Slot 2c — Photo d'identité livraison */}
+              <div className="p-3 bg-muted/30 rounded-lg border flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full ${(livraison as any)?.photos_livraison?.photo_identite ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <div>
+                    <p className="font-medium text-sm">Photo pièce d&apos;identité (livraison)</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(livraison as any)?.photos_livraison?.photo_identite ? 'Prise lors de la livraison' : 'Sera prise lors de la livraison'}
+                    </p>
+                  </div>
+                </div>
+                {(livraison as any)?.photos_livraison?.photo_identite && (
+                  <Button variant="ghost" size="sm" onClick={() => {
+                    const w = window.open('', '_blank')
+                    if (w) { w.document.write(`<img src="${(livraison as any).photos_livraison.photo_identite}" style="max-width:100%"/>`) }
+                  }}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
               {/* Slot 3 — Attestation URSSAF */}
               <div className="p-3 bg-muted/30 rounded-lg border flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1018,22 +1036,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         </Card>
       </div>
 
-      {/* Modal de livraison */}
-      {deliveryOpen && deliveryLivraison && (
-        <DeliveryModule
-          livraison={deliveryLivraison}
-          onComplete={() => {
-            setDeliveryOpen(false)
-            setDeliveryLivraison(null)
-            // Recharger la page pour voir le statut mis à jour
-            window.location.reload()
-          }}
-          onClose={() => {
-            setDeliveryOpen(false)
-            setDeliveryLivraison(null)
-          }}
-        />
-      )}
     </div>
   )
 }

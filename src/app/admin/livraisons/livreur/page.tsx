@@ -435,7 +435,7 @@ export default function LivreurDashboardPage() {
                   if (tenantId === 'ecovolt') {
                     window.open('https://ecovolt-retrait.vercel.app/', '_blank')
                   } else {
-                    deliveryRouter.push(`/admin/livraisons/deliver?id=${livraison.id}`)
+                    window.open(`/admin/livraisons/deliver?id=${livraison.id}`, '_blank')
                   }
                 }}
               >

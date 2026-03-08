@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/popover'
 import {
   Loader2, ChevronLeft, ChevronRight, Calendar, Truck,
-  Send, MapPin, Bike, Clock, Search, Eye, X,
+  Send, MapPin, Bike, Clock, Search, Eye, X, Trash2,
 } from 'lucide-react'
 import { DELIVERY_STATUS } from '@/lib/constants'
 import Link from 'next/link'
@@ -514,6 +514,16 @@ function PlanningContent() {
         .update(updateData)
         .eq('id', livraison.id)
 
+      // Mettre à jour le statut client → en_livraison
+      await supabase
+        .from('clients')
+        .update({
+          statut_commercial: 'en_livraison',
+          date_statut: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', clientId)
+
       // Refresh
       setPlacementOpen(false)
       setPlacementSearch('')
@@ -540,6 +550,14 @@ function PlanningContent() {
     setRemovingLivraisonId(livraisonId)
     try {
       const supabase = createClient()
+
+      // Récupérer le client_id avant de déprogrammer
+      const { data: livData } = await supabase
+        .from('livraisons')
+        .select('client_id')
+        .eq('id', livraisonId)
+        .single()
+
       await supabase
         .from('livraisons')
         .update({
@@ -547,8 +565,22 @@ function PlanningContent() {
           creneau_heure_debut: null,
           creneau_heure_fin: null,
           statut: 'a_livrer',
+          livreur_id: null,
         })
         .eq('id', livraisonId)
+
+      // Réverter le statut client → a_livrer
+      if (livData?.client_id) {
+        await supabase
+          .from('clients')
+          .update({
+            statut_commercial: 'a_livrer',
+            date_statut: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', livData.client_id)
+      }
+
       loadPlanningData()
     } catch (err) {
       console.error('Erreur suppression créneau:', err)
@@ -623,9 +655,12 @@ function PlanningContent() {
     const seenClientIds = new Set<string>()
     const results: SearchResult[] = []
 
+    const matchClient = (name?: string | null, phone?: string | null, email?: string | null) =>
+      name?.toLowerCase().includes(q) || phone?.includes(q) || email?.toLowerCase().includes(q)
+
     // 1. Scheduled livraisons matching the query
     for (const l of livraisons) {
-      if (l.client?.raison_sociale?.toLowerCase().includes(q)) {
+      if (matchClient(l.client?.raison_sociale, l.client?.telephone, l.client?.email)) {
         if (l.client_id) seenClientIds.add(l.client_id)
         results.push({ type: 'livraison', livraison: l })
       }
@@ -636,7 +671,7 @@ function PlanningContent() {
     if (results.length < 10) {
       for (const c of clientsALivrer) {
         if (seenClientIds.has(c.id)) continue
-        if (c.raison_sociale?.toLowerCase().includes(q)) {
+        if (matchClient(c.raison_sociale, c.telephone, c.email)) {
           results.push({ type: 'client', client: c })
           if (results.length >= 10) break
         }
@@ -714,11 +749,14 @@ function PlanningContent() {
   )
 
   const selectedCreneauDayLabel = selectedCreneau
-    ? new Date(selectedCreneau.date + 'T12:00:00').toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-      })
+    ? (() => {
+        const [y, m, d] = selectedCreneau.date.split('-').map(Number)
+        return new Date(y, m - 1, d).toLocaleDateString('fr-FR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        })
+      })()
     : ''
 
   return (
@@ -1081,14 +1119,27 @@ function PlanningContent() {
                                   </button>
                                 </Link>
                               )}
-                              <Link href={`/admin/livraisons/deliver/${livraison.id}`}>
-                                <button
-                                  className="w-7 h-7 rounded flex items-center justify-center text-green-600 hover:bg-green-50 transition-colors"
-                                  title="Démarrer la livraison"
-                                >
-                                  <Truck className="h-3.5 w-3.5" />
-                                </button>
-                              </Link>
+                              <a
+                                href={`/admin/livraisons/deliver?id=${livraison.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-7 h-7 rounded flex items-center justify-center text-green-600 hover:bg-green-50 transition-colors"
+                                title="Démarrer la livraison"
+                              >
+                                <Truck className="h-3.5 w-3.5" />
+                              </a>
+                              <button
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveLivraison(livraison.id) }}
+                                disabled={removingLivraisonId === livraison.id}
+                                className="w-7 h-7 rounded flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
+                                title="Retirer du planning"
+                              >
+                                {removingLivraisonId === livraison.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                )}
+                              </button>
                             </div>
                           </div>
                         )
@@ -1279,29 +1330,14 @@ function LivraisonCard({
         href={livraison.client_id ? `/admin/clients/${livraison.client_id}` : '#'}
         className="block"
       >
-        <div className="border rounded p-1.5 hover:bg-gray-50 transition-colors cursor-pointer space-y-1">
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-xs font-medium line-clamp-1 flex-1">
-              {clientName}
-            </span>
-            <Badge
-              variant="secondary"
-              className={`text-[10px] px-1 py-0 shrink-0 ${getStatutColor(livraison.statut)}`}
-            >
-              {getStatutLabel(livraison.statut)}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2 text-[10px] text-gray-500">
+        <div className="border rounded p-1 hover:bg-gray-50 transition-colors cursor-pointer">
+          <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
+            <div className={`w-2 h-2 rounded-full shrink-0 ${getStatutColor(livraison.statut).split(' ')[0].replace('text-', 'bg-')}`} />
+            <Bike className="h-2.5 w-2.5" />
+            <span>{nbVelos}</span>
             {heureDebut && (
-              <span className="flex items-center gap-0.5">
-                <Clock className="h-2.5 w-2.5" />
-                {heureDebut}{heureFin ? `-${heureFin}` : ''}
-              </span>
+              <span className="text-gray-400">{heureDebut}</span>
             )}
-            <span className="flex items-center gap-0.5">
-              <Bike className="h-2.5 w-2.5" />
-              {nbVelos} vélo{nbVelos > 1 ? 's' : ''}
-            </span>
           </div>
         </div>
       </Link>

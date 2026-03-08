@@ -38,6 +38,8 @@ import {
   Info,
   Download,
   AlertCircle,
+  Copy,
+  ExternalLink,
 } from 'lucide-react'
 
 // ---------- Types ----------
@@ -60,6 +62,7 @@ export interface LivraisonWithClient {
     adresse_societe_cp: string
     adresse_societe_ville: string
     code_enemat?: string | null
+    reference_retina?: string | null
   }
 }
 
@@ -151,24 +154,24 @@ function SignaturePad({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const isDrawingRef = useRef(false)
   const lastPointRef = useRef<{ x: number; y: number } | null>(null)
+  const [hasDrawn, setHasDrawn] = useState(false)
 
   const getPos = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     const canvas = canvasRef.current
     if (!canvas) return { x: 0, y: 0 }
     const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-
+    // ctx.scale(dpr, dpr) already handles DPR — do NOT multiply by canvas.width/rect.width
+    // as that would double-apply the DPR scaling and cause an offset
     if ('touches' in e) {
       const touch = e.touches[0]
       return {
-        x: (touch.clientX - rect.left) * scaleX,
-        y: (touch.clientY - rect.top) * scaleY,
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top,
       }
     }
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
     }
   }, [])
 
@@ -210,6 +213,7 @@ function SignaturePad({
     if (isDrawingRef.current) {
       isDrawingRef.current = false
       lastPointRef.current = null
+      setHasDrawn(true)
       const canvas = canvasRef.current
       if (canvas) {
         onSignatureChange(canvas.toDataURL('image/png'))
@@ -222,6 +226,7 @@ function SignaturePad({
     const ctx = canvas?.getContext('2d')
     if (ctx && canvas) {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
+      setHasDrawn(false)
       onSignatureChange(null)
     }
   }, [onSignatureChange])
@@ -229,13 +234,42 @@ function SignaturePad({
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * dpr
-    canvas.height = rect.height * dpr
-    const ctx = canvas.getContext('2d')
-    if (ctx) {
-      ctx.scale(dpr, dpr)
+    const resizeCanvas = () => {
+      const dpr = window.devicePixelRatio || 1
+      const rect = canvas.getBoundingClientRect()
+      // Save current content
+      const imageData = canvas.width > 0 ? canvas.toDataURL() : null
+      canvas.width = rect.width * dpr
+      canvas.height = rect.height * dpr
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.scale(dpr, dpr)
+        ctx.lineWidth = 2
+        ctx.lineCap = 'round'
+        ctx.strokeStyle = '#000'
+        // Restore content if any
+        if (imageData && hasDrawn) {
+          const img = new Image()
+          img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height)
+          img.src = imageData
+        }
+      }
+    }
+    resizeCanvas()
+    const observer = new ResizeObserver(resizeCanvas)
+    observer.observe(canvas)
+    return () => observer.disconnect()
+  }, [hasDrawn])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const prevent = (e: TouchEvent) => e.preventDefault()
+    canvas.addEventListener('touchstart', prevent, { passive: false })
+    canvas.addEventListener('touchmove', prevent, { passive: false })
+    return () => {
+      canvas.removeEventListener('touchstart', prevent)
+      canvas.removeEventListener('touchmove', prevent)
     }
   }, [])
 
@@ -245,7 +279,7 @@ function SignaturePad({
         <canvas
           ref={canvasRef}
           className="w-full touch-none cursor-crosshair"
-          style={{ height: '200px' }}
+          style={{ touchAction: 'none', height: '200px' }}
           onMouseDown={startDraw}
           onMouseMove={draw}
           onMouseUp={endDraw}
@@ -307,8 +341,12 @@ function QrScanner({ onScan, onClose }: { onScan: (code: string) => void; onClos
 
     return () => {
       mounted = false
-      if (html5QrRef.current) {
-        html5QrRef.current.stop().catch(() => {})
+      try {
+        if (html5QrRef.current) {
+          html5QrRef.current.stop().catch(() => {})
+        }
+      } catch {
+        // Scanner may not have fully started
       }
     }
   }, [onScan])
@@ -366,11 +404,14 @@ async function generateAttestation(data: {
   photoIdentite: string | null
   signature: string
   date: string
+  modeLivraison?: string
 }) {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF()
   const pageW = doc.internal.pageSize.getWidth()
   let y = 20
+
+  const modeLabel = data.modeLivraison === 'retrait' ? 'retrait' : 'livraison'
 
   // Header
   doc.setFontSize(18)
@@ -378,7 +419,7 @@ async function generateAttestation(data: {
   doc.text('PPE Energie', pageW / 2, y, { align: 'center' })
   y += 10
   doc.setFontSize(14)
-  doc.text('Attestation de retrait vélo cargo', pageW / 2, y, { align: 'center' })
+  doc.text(`Attestation de ${modeLabel} vélo cargo`, pageW / 2, y, { align: 'center' })
   y += 8
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
@@ -481,7 +522,7 @@ async function generateAttestation(data: {
   y += 5
   doc.setFontSize(8)
   doc.setTextColor(128)
-  doc.text('PPE Energie — Attestation de retrait vélo cargo', pageW / 2, y, { align: 'center' })
+  doc.text(`PPE Energie — Attestation de ${modeLabel} vélo cargo`, pageW / 2, y, { align: 'center' })
 
   return doc
 }
@@ -493,6 +534,14 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+
+  const refRetina = livraison.client.reference_retina
+
+  const copyRetina = () => {
+    if (refRetina) {
+      navigator.clipboard.writeText(refRetina).catch(() => {})
+    }
+  }
 
   // Step 1 — Vélos
   const maxVelos = livraison.client.velo_valide || livraison.client.velo_devis || 1
@@ -690,6 +739,7 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
         photoIdentite,
         signature: signature!,
         date: dateStr,
+        modeLivraison: livraison.mode_livraison,
       })
 
       setPdfBlob(doc.output('blob'))
@@ -706,7 +756,8 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
     const url = URL.createObjectURL(pdfBlob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `attestation-retrait-${livraison.client.raison_sociale.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
+    const dlMode = livraison.mode_livraison === 'retrait' ? 'retrait' : 'livraison'
+    a.download = `attestation-${dlMode}-${livraison.client.raison_sociale.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -876,21 +927,34 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
   const renderStep2 = () => (
     <div className="space-y-5">
       {/* Bloc Retina */}
-      <Card className="border-blue-200 bg-blue-50">
-        <CardContent className="pt-4">
-          <div className="flex gap-2 mb-2">
-            <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+      <Card className="border-blue-300 bg-blue-50 shadow-md">
+        <CardContent className="pt-5 pb-5 space-y-4">
+          <div className="flex gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-200 shrink-0">
+              <Info className="h-5 w-5 text-blue-700" />
+            </div>
             <div>
-              <p className="font-medium text-blue-800 text-sm">Instructions Retina / ENEMAT</p>
-              <p className="text-xs text-blue-700 mt-1">Rendez-vous sur retina.enemat.fr pour :</p>
+              <p className="font-semibold text-blue-900 text-base">Instructions Retina / ENEMAT</p>
+              <p className="text-sm text-blue-700 mt-1">Rendez-vous sur retina.enemat.fr pour :</p>
             </div>
           </div>
-          <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1 ml-7">
+          <ol className="list-decimal list-inside text-sm text-blue-800 space-y-2 ml-3">
             <li>Générer la facture du bénéficiaire</li>
             <li>Entrer les numéros FNUCI dans Retina</li>
             <li>Signer l&apos;AH et prendre les photos</li>
             <li>Revenir ici pour finaliser</li>
           </ol>
+          <Button
+            variant="default"
+            size="lg"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-6 font-bold"
+            onClick={() => window.open('https://retina.enemat.fr', '_blank')}
+          >
+            <ExternalLink className="h-5 w-5 mr-2" />
+            {refRetina
+              ? `Ouvrir Retina — Réf. ${refRetina}`
+              : 'Ouvrir retina.enemat.fr'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -927,7 +991,7 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
             <img
               src={photoIdentite}
               alt="Pièce d'identité"
-              className="w-full max-w-[300px] rounded-lg border"
+              className="w-full max-w-full sm:max-w-[300px] rounded-lg border"
             />
             <Button
               variant="outline"
@@ -1075,6 +1139,22 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
             : `Étape ${step + 1} sur ${STEPS.length} — ${STEPS[step].label}`
           }
         </p>
+        <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 pb-2">
+        <div className="flex items-center gap-2 mt-2 text-sm font-mono bg-muted/50 rounded px-3 py-1.5">
+          <span className="text-muted-foreground">Réf. Retina :</span>
+          <span className="font-semibold">{refRetina || '—'}</span>
+          {refRetina && (
+            <button
+              type="button"
+              onClick={copyRetina}
+              className="ml-1 p-1 rounded hover:bg-muted-foreground/10 transition-colors"
+              title="Copier la référence"
+            >
+              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+          )}
+        </div>
+        </div>
       </div>
 
       {!success && <StepIndicator currentStep={step} totalSteps={STEPS.length} />}
@@ -1114,7 +1194,7 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open && !loading) onClose() }}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full max-w-lg mx-2 max-h-[90vh] overflow-y-auto">
         {content}
       </DialogContent>
     </Dialog>

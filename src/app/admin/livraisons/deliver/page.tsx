@@ -66,6 +66,7 @@ function DeliverContent() {
             adresse_societe_cp: client.adresse_societe_cp || '',
             adresse_societe_ville: client.adresse_societe_ville || '',
             code_enemat: client.code_enemat || null,
+            reference_retina: client.reference_retina || null,
           },
         })
       } catch {
@@ -99,7 +100,7 @@ function DeliverContent() {
   }
 
   return (
-    <div className="max-w-lg mx-auto py-4 px-2">
+    <div className="max-w-lg mx-auto py-4 px-4">
       <DeliveryModule
         livraison={livraison}
         onComplete={() => router.push('/admin/livraisons/livreur')}
