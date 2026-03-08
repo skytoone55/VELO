@@ -387,62 +387,34 @@ export async function sendFormulaireRecapEmail(
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
     <tr>
       <td>
-        <!-- Header -->
         ${getEmailHeader(tenant)}
-
-        <!-- Content -->
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: white; padding: 40px; border-radius: 0 0 12px 12px;">
           <tr>
             <td>
               <div style="text-align: center; margin-bottom: 30px;">
-                <div style="display: inline-block; width: 64px; height: 64px; background-color: #dcfce7; border-radius: 50%; line-height: 64px; font-size: 32px;">
-                  \u2713
-                </div>
+                <div style="display: inline-block; width: 64px; height: 64px; background-color: #dcfce7; border-radius: 50%; line-height: 64px; font-size: 32px;">\u2713</div>
               </div>
-
-              <h2 style="margin: 0 0 20px 0; color: #18181b; font-size: 22px; text-align: center;">
-                Demande enregistr\u00e9e avec succ\u00e8s !
-              </h2>
-
-              <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Bonjour ${clientName},
-              </p>
-
+              <h2 style="margin: 0 0 20px 0; color: #18181b; font-size: 22px; text-align: center;">Demande enregistr\u00e9e avec succ\u00e8s !</h2>
+              <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">Bonjour ${clientName},</p>
               <p style="margin: 0 0 30px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
                 Nous avons bien re\u00e7u votre demande de ${data.modeLivraison === 'retrait' ? 'retrait' : 'livraison'} de v\u00e9lo cargo \u00e9lectrique. Voici le r\u00e9capitulatif :
               </p>
-
-              <!-- R\u00e9cap soci\u00e9t\u00e9 -->
               <div style="background-color: #f4f4f5; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-                <p style="margin: 0 0 8px 0; color: #52525b; font-weight: 600; font-size: 14px;">
-                  Soci\u00e9t\u00e9
-                </p>
-                <p style="margin: 0; color: #18181b; font-size: 16px;">
-                  ${data.raisonSociale}
-                </p>
-                <p style="margin: 4px 0 0 0; color: #71717a; font-size: 14px;">
-                  SIRET: ${data.siret}
-                </p>
+                <p style="margin: 0 0 8px 0; color: #52525b; font-weight: 600; font-size: 14px;">Soci\u00e9t\u00e9</p>
+                <p style="margin: 0; color: #18181b; font-size: 16px;">${data.raisonSociale}</p>
+                <p style="margin: 4px 0 0 0; color: #71717a; font-size: 14px;">SIRET: ${data.siret}</p>
               </div>
-
-              <!-- R\u00e9cap livraison -->
               ${livraisonDetails}
-
               ${accountSection}
-
               <p style="margin: 30px 0 0 0; color: #52525b; font-size: 16px; line-height: 1.6;">
                 <strong>Prochaines \u00e9tapes :</strong><br>
                 Notre \u00e9quipe va traiter votre demande et vous contactera prochainement pour ${data.modeLivraison === 'retrait' ? 'convenir du retrait' : 'programmer la livraison'} de votre v\u00e9lo cargo.
               </p>
-
               <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
-
               ${getFullContactSection(tenant)}
             </td>
           </tr>
         </table>
-
-        <!-- Footer -->
         ${getEmailFooter(tenant)}
       </td>
     </tr>
@@ -490,86 +462,47 @@ export async function sendUserInvitationEmail(
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
     <tr>
       <td>
-        <!-- Header -->
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${tenant.branding.colors.secondary}; border-radius: 12px 12px 0 0; padding: 30px;">
-          <tr>
-            <td align="center">
-              <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">
-                ${tenant.branding.emailEmoji} ${tenant.name}
-              </h1>
-              <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">
-                Plateforme de gestion
-              </p>
-            </td>
-          </tr>
+          <tr><td align="center">
+            <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">${tenant.branding.emailEmoji} ${tenant.name}</h1>
+            <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Plateforme de gestion</p>
+          </td></tr>
         </table>
-
-        <!-- Content -->
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: white; padding: 40px; border-radius: 0 0 12px 12px;">
-          <tr>
-            <td>
-              <h2 style="margin: 0 0 20px 0; color: #18181b; font-size: 22px;">
-                Bienvenue ${userName} !
-              </h2>
-
-              <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Un compte a \u00e9t\u00e9 cr\u00e9\u00e9 pour vous sur la plateforme ${tenant.name} avec le r\u00f4le <strong style="color: ${tenant.branding.colors.secondary};">${roleLabel}</strong>.
-              </p>
-
-              <p style="margin: 0 0 10px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Voici vos identifiants de connexion :
-              </p>
-
-              <!-- Credentials box -->
-              <div style="background-color: #f4f4f5; border-radius: 8px; padding: 20px; margin: 0 0 30px 0;">
-                <table width="100%" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td style="padding: 6px 0; color: #71717a; font-size: 14px;">Email :</td>
-                    <td style="padding: 6px 0; color: #18181b; font-size: 14px; font-weight: 600;">${userEmail}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0; color: #71717a; font-size: 14px;">Mot de passe :</td>
-                    <td style="padding: 6px 0; color: #18181b; font-size: 14px; font-weight: 600; font-family: monospace; letter-spacing: 1px;">${password}</td>
-                  </tr>
-                </table>
-              </div>
-
-              <!-- CTA Button -->
+          <tr><td>
+            <h2 style="margin: 0 0 20px 0; color: #18181b; font-size: 22px;">Bienvenue ${userName} !</h2>
+            <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+              Un compte a \u00e9t\u00e9 cr\u00e9\u00e9 pour vous sur la plateforme ${tenant.name} avec le r\u00f4le <strong style="color: ${tenant.branding.colors.secondary};">${roleLabel}</strong>.
+            </p>
+            <div style="background-color: #f4f4f5; border-radius: 8px; padding: 20px; margin: 0 0 30px 0;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center">
-                    <a href="${loginUrl}"
-                       style="display: inline-block; background-color: ${tenant.branding.colors.secondary}; color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-                      Se connecter
-                    </a>
-                  </td>
+                  <td style="padding: 6px 0; color: #71717a; font-size: 14px;">Email :</td>
+                  <td style="padding: 6px 0; color: #18181b; font-size: 14px; font-weight: 600;">${userEmail}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #71717a; font-size: 14px;">Mot de passe :</td>
+                  <td style="padding: 6px 0; color: #18181b; font-size: 14px; font-weight: 600; font-family: monospace; letter-spacing: 1px;">${password}</td>
                 </tr>
               </table>
-
-              <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 30px 0; border-radius: 0 8px 8px 0;">
-                <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
-                  <strong>\u26a0\ufe0f Important :</strong> Nous vous recommandons de changer votre mot de passe apr\u00e8s votre premi\u00e8re connexion. Si vous oubliez votre mot de passe, utilisez la fonction "Mot de passe oubli\u00e9" sur la page de connexion.
-                </p>
-              </div>
-
-              <p style="margin: 30px 0 0 0; color: #71717a; font-size: 14px; line-height: 1.6;">
-                Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
-                <a href="${loginUrl}" style="color: ${tenant.branding.colors.secondary}; word-break: break-all;">
-                  ${loginUrl}
-                </a>
+            </div>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td align="center">
+                <a href="${loginUrl}" style="display: inline-block; background-color: ${tenant.branding.colors.secondary}; color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">Se connecter</a>
+              </td></tr>
+            </table>
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 30px 0; border-radius: 0 8px 8px 0;">
+              <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
+                <strong>\u26a0\ufe0f Important :</strong> Nous vous recommandons de changer votre mot de passe apr\u00e8s votre premi\u00e8re connexion.
               </p>
-
-              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
-
-              <p style="margin: 0; color: #71717a; font-size: 13px; line-height: 1.5;">
-                Votre identifiant de connexion : <strong>${userEmail}</strong><br><br>
-                En cas de question, contactez votre administrateur ou \u00e9crivez \u00e0 <a href="mailto:${tenant.email}" style="color: ${tenant.branding.colors.secondary};">${tenant.email}</a>
-              </p>
-            </td>
-          </tr>
+            </div>
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
+            <p style="margin: 0; color: #71717a; font-size: 13px; line-height: 1.5;">
+              Votre identifiant de connexion : <strong>${userEmail}</strong><br><br>
+              En cas de question, contactez votre administrateur ou \u00e9crivez \u00e0 <a href="mailto:${tenant.email}" style="color: ${tenant.branding.colors.secondary};">${tenant.email}</a>
+            </p>
+          </td></tr>
         </table>
-
-        <!-- Footer -->
         ${getEmailFooter(tenant)}
       </td>
     </tr>
@@ -612,72 +545,39 @@ export async function sendFormulaireLivraisonEmail(params: {
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
     <tr>
       <td>
-        <!-- Header -->
         ${getEmailHeader(tenant)}
-
-        <!-- Content -->
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: white; padding: 40px; border-radius: 0 0 12px 12px;">
-          <tr>
-            <td>
-              <h2 style="margin: 0 0 20px 0; color: #18181b; font-size: 22px;">
-                Bonjour ${clientName},
-              </h2>
-
-              <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Bonne nouvelle ! Votre v\u00e9lo cargo \u00e9lectrique est pr\u00eat ${isRetrait ? '\u00e0 \u00eatre r\u00e9cup\u00e9r\u00e9' : '\u00e0 \u00eatre livr\u00e9'}.
+          <tr><td>
+            <h2 style="margin: 0 0 20px 0; color: #18181b; font-size: 22px;">Bonjour ${clientName},</h2>
+            <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+              Bonne nouvelle ! Votre v\u00e9lo cargo \u00e9lectrique est pr\u00eat ${isRetrait ? '\u00e0 \u00eatre r\u00e9cup\u00e9r\u00e9' : '\u00e0 \u00eatre livr\u00e9'}.
+            </p>
+            <div style="background-color: #f0f9ff; border-radius: 8px; padding: 16px; margin: 0 0 30px 0;">
+              <p style="margin: 0 0 8px 0; color: #0369a1; font-weight: 600; font-size: 14px;">
+                ${isRetrait ? '\ud83d\udccd Point de retrait' : '\ud83d\ude9a D\u00e9p\u00f4t de d\u00e9part'}
               </p>
-
-              <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Pour finaliser ${isRetrait ? 'le retrait' : 'la livraison'}, veuillez choisir un cr\u00e9neau qui vous convient en cliquant sur le bouton ci-dessous.
-              </p>
-
-              <!-- Depot info -->
-              <div style="background-color: #f0f9ff; border-radius: 8px; padding: 16px; margin: 0 0 30px 0;">
-                <p style="margin: 0 0 8px 0; color: #0369a1; font-weight: 600; font-size: 14px;">
-                  ${isRetrait ? '\ud83d\udccd Point de retrait' : '\ud83d\ude9a D\u00e9p\u00f4t de d\u00e9part'}
-                </p>
-                <p style="margin: 0; color: #0369a1; font-size: 14px;">
-                  ${depotName}
-                </p>
-              </div>
-
-              <!-- CTA Button -->
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center">
-                    <a href="${formulaireUrl}"
-                       style="display: inline-block; background-color: ${tenant.branding.colors.secondary}; color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-                      Choisir mon cr\u00e9neau de ${modeLabel}
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 30px 0; border-radius: 0 8px 8px 0;">
-                <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
-                  <strong>\u26a0\ufe0f Rappel important</strong><br>
-                  Une <strong>pi\u00e8ce d'identit\u00e9</strong> sera demand\u00e9e lors ${isRetrait ? 'du retrait' : 'de la livraison'} du v\u00e9lo cargo. Assurez-vous que la personne d\u00e9sign\u00e9e pour r\u00e9ceptionner le v\u00e9lo dispose d'un document d'identit\u00e9 valide.
-                </p>
-              </div>
-
-              <p style="margin: 30px 0 0 0; color: #71717a; font-size: 14px; line-height: 1.6;">
-                Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
-                <a href="${formulaireUrl}" style="color: ${tenant.branding.colors.secondary}; word-break: break-all;">
-                  ${formulaireUrl}
+              <p style="margin: 0; color: #0369a1; font-size: 14px;">${depotName}</p>
+            </div>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td align="center">
+                <a href="${formulaireUrl}" style="display: inline-block; background-color: ${tenant.branding.colors.secondary}; color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                  Choisir mon cr\u00e9neau de ${modeLabel}
                 </a>
+              </td></tr>
+            </table>
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 30px 0; border-radius: 0 8px 8px 0;">
+              <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
+                <strong>\u26a0\ufe0f Rappel important</strong><br>
+                Une <strong>pi\u00e8ce d'identit\u00e9</strong> sera demand\u00e9e lors ${isRetrait ? 'du retrait' : 'de la livraison'} du v\u00e9lo cargo.
               </p>
-
-              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
-
-              <p style="margin: 0; color: #71717a; font-size: 13px; line-height: 1.5;">
-                Ce lien est personnel et unique. Veuillez ne pas le partager.<br>
-                ${getContactSection(tenant)}
-              </p>
-            </td>
-          </tr>
+            </div>
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
+            <p style="margin: 0; color: #71717a; font-size: 13px; line-height: 1.5;">
+              Ce lien est personnel et unique. Veuillez ne pas le partager.<br>
+              ${getContactSection(tenant)}
+            </p>
+          </td></tr>
         </table>
-
-        <!-- Footer -->
         ${getEmailFooter(tenant)}
       </td>
     </tr>
@@ -689,6 +589,78 @@ export async function sendFormulaireLivraisonEmail(params: {
   return sendEmail({
     to,
     subject: `${tenant.name} - Choisissez votre cr\u00e9neau de ${modeLabel}`,
+    html,
+  })
+}
+
+/**
+ * Email de confirmation de tourn\u00e9e \u2014 le client confirme ou refuse la date propos\u00e9e
+ */
+export async function sendTourneeConfirmationEmail({
+  to,
+  clientName,
+  date,
+  creneauDebut,
+  creneauFin,
+  confirmUrl,
+}: {
+  to: string
+  clientName: string
+  date: string
+  creneauDebut: string
+  creneauFin: string
+  confirmUrl: string
+}) {
+  const tenant = getTenantConfig()
+
+  const dateFormatted = (() => {
+    try {
+      return new Date(date + 'T00:00:00').toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    } catch {
+      return date
+    }
+  })()
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 20px; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <tr><td>
+      ${getEmailHeader(tenant)}
+      <div style="padding: 30px;">
+        <h2 style="margin: 0 0 15px 0; color: #1f2937; font-size: 22px;">Votre livraison est programm\u00e9e !</h2>
+        <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">Bonjour <strong>${clientName}</strong>,</p>
+        <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">Votre v\u00e9lo cargo est pr\u00eat ! Nous avons programm\u00e9 votre livraison :</p>
+        <div style="background-color: #eff6ff; border-radius: 12px; padding: 20px; margin-bottom: 25px; border-left: 4px solid ${tenant.branding.colors.primary};">
+          <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold; color: #1e40af;">\ud83d\udcc5 ${dateFormatted}</p>
+          <p style="margin: 0; font-size: 16px; color: #3b82f6;">\ud83d\udd50 Entre ${creneauDebut} et ${creneauFin}</p>
+        </div>
+        <p style="color: #4b5563; line-height: 1.6; margin-bottom: 25px;">Merci de confirmer votre disponibilit\u00e9 en cliquant sur le bouton ci-dessous :</p>
+        <div style="text-align: center; margin-bottom: 20px;">
+          <a href="${confirmUrl}" style="display: inline-block; background-color: ${tenant.branding.colors.primary}; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">Confirmer ou modifier</a>
+        </div>
+        <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 20px;">
+          Si le bouton ne fonctionne pas, copiez ce lien :<br/>
+          <a href="${confirmUrl}" style="color: #6b7280; word-break: break-all;">${confirmUrl}</a>
+        </p>
+      </div>
+      ${getEmailFooter(tenant)}
+    </td></tr>
+  </table>
+</body>
+</html>
+`
+
+  return sendEmail({
+    to,
+    subject: `${tenant.name} - Confirmez votre livraison du ${dateFormatted}`,
     html,
   })
 }
