@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react'
 import { useAdminUser } from '@/components/admin/admin-user-provider'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -208,7 +208,7 @@ function getStatutColor(statut: string | null): string {
 // Component
 // ---------------------------------------------------------------------------
 
-export default function PlanningPage() {
+function PlanningContent() {
   const adminUser = useAdminUser()
   const searchParams = useSearchParams()
   const initialDepotId = searchParams.get('depot_id')
@@ -1914,5 +1914,13 @@ function MonthView({
         })}
       </div>
     </div>
+  )
+}
+
+export default function PlanningPage() {
+  return (
+    <Suspense fallback={<div>Chargement...</div>}>
+      <PlanningContent />
+    </Suspense>
   )
 }
