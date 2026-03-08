@@ -327,7 +327,7 @@ export default function LivraisonDetailPage({ params }: { params: Promise<{ id: 
                   Programmer la livraison
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
+              <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Programmer la livraison</DialogTitle>
                   <DialogDescription>

@@ -54,6 +54,7 @@ import {
 import { Client } from '@/lib/types/database'
 import { toast } from 'sonner'
 import { getTenantId } from '@/lib/tenants'
+import { PROCESS_STATUTS, STATUT_COLORS, type ProcessStatut } from '@/lib/constants'
 import { getCommercialName, getDepartementLabel, getStaticDepartementOptions, getStaticCommercialOptions } from '@/lib/tenants/commercial'
 import { getSimpleZoneStatus, type DepotWithCoords } from '@/lib/geo/utils'
 
@@ -79,34 +80,14 @@ const departementOptions = [
   { value: 'hors_dom', label: 'Hors DOM' },
 ]
 
-// Mapping statut Supabase -> label et couleur
-const statutConfig: Record<string, { label: string; color: string }> = {
-  dossier_complet: { label: 'DOSSIER COMPLET', color: 'bg-lime-100 text-lime-800' },
-  devis_signe: { label: 'DEVIS SIGNÉ', color: 'bg-green-100 text-green-800' },
-  devis_cree: { label: 'DEVIS CREE', color: 'bg-blue-100 text-blue-800' },
-  controle_valide: { label: 'CONTROLE VALIDÉ', color: 'bg-purple-100 text-purple-800' },
-  controle_a_regulariser: { label: 'CONTROLE A REGULARISER', color: 'bg-pink-100 text-pink-800' },
-  controle_a_jour: { label: 'CONTROLE A JOUR', color: 'bg-fuchsia-100 text-fuchsia-800' },
-  client_contacte: { label: 'CLIENT CONTACTÉ', color: 'bg-sky-100 text-sky-800' },
-  client_injoignable: { label: 'CLIENT INJOIGNABLE', color: 'bg-violet-100 text-violet-800' },
-  client_hs: { label: 'CLIENT HS', color: 'bg-red-100 text-red-800' },
-  ah_signee: { label: 'AH SIGNÉE', color: 'bg-yellow-100 text-yellow-800' },
-  livre: { label: 'LIVRÉ', color: 'bg-emerald-100 text-emerald-800' },
-  paye: { label: 'PAYÉ', color: 'bg-amber-100 text-amber-800' },
-  doublon: { label: 'DOUBLON', color: 'bg-rose-100 text-rose-800' },
-  inconnu: { label: 'Inconnu', color: 'bg-gray-100 text-gray-800' },
-  franck: { label: 'FRANCK', color: 'bg-orange-100 text-orange-800' },
-  code_envoye: { label: 'CODE ENVOYÉ', color: 'bg-indigo-100 text-indigo-800' },
-  formulaire_envoye: { label: 'FORMULAIRE ENVOYÉ', color: 'bg-cyan-100 text-cyan-800' },
-  formulaire_valide: { label: 'FORMULAIRE VALIDÉ', color: 'bg-teal-100 text-teal-800' },
-  a_livrer: { label: 'À LIVRER', color: 'bg-orange-100 text-orange-800' },
-  en_livraison: { label: 'EN LIVRAISON', color: 'bg-blue-200 text-blue-900' },
-}
-
-// Helper pour obtenir le label et la couleur d'un statut
+// Helper pour obtenir le label et la couleur d'un statut (basé sur PROCESS_STATUTS + STATUT_COLORS)
 function getStatutDisplay(statut: string | null | undefined): { label: string; color: string } {
   if (!statut) return { label: 'Inconnu', color: 'bg-gray-100 text-gray-800' }
-  return statutConfig[statut] || { label: statut, color: 'bg-gray-100 text-gray-800' }
+  const label = PROCESS_STATUTS[statut as ProcessStatut]
+  const color = STATUT_COLORS[statut as ProcessStatut]
+  if (label && color) return { label: label.toUpperCase(), color }
+  // Fallback pour statuts legacy ou inconnus
+  return { label: statut.toUpperCase().replace(/_/g, ' '), color: 'bg-gray-100 text-gray-800' }
 }
 
 // Options de pagination
@@ -203,20 +184,13 @@ export default function AdminClientsPage() {
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
 
 
-  // Charger les statuts dynamiquement depuis l'API
+  // Charger les statuts : utiliser PROCESS_STATUTS comme source de vérité
   useEffect(() => {
-    fetch('/api/clients/statuses')
-      .then(res => res.json())
-      .then((statuses: string[]) => {
-        if (Array.isArray(statuses)) {
-          const options = statuses.map(s => ({
-            value: s,
-            label: s === '__null__' ? 'Non défini' : (statutConfig[s]?.label ?? s),
-          }))
-          setStatutOptions([{ value: 'all', label: 'Statut' }, ...options])
-        }
-      })
-      .catch(() => {}) // Keep defaults on error
+    const options = Object.entries(PROCESS_STATUTS).map(([value, label]) => ({
+      value,
+      label,
+    }))
+    setStatutOptions([{ value: 'all', label: 'Statut' }, ...options])
   }, [])
 
   // Load commercial options
@@ -247,11 +221,11 @@ export default function AdminClientsPage() {
     } else {
       fetch('/api/clients/departements')
         .then(res => res.json())
-        .then((depts: string[]) => {
+        .then((depts: { value: string; label: string }[]) => {
           if (Array.isArray(depts)) {
             setDynamicDeptOptions([
               { value: 'all', label: 'Départements' },
-              ...depts.map(d => ({ value: d, label: d }))
+              ...depts,
             ])
           }
         })
@@ -264,7 +238,7 @@ export default function AdminClientsPage() {
     const supabase = createClient()
     supabase
       .from('depots')
-      .select('id, nom, latitude, longitude, rayon_couverture_km, rayon_livraison_payant_km, prix_livraison_payante, type, agence')
+      .select('id, nom, latitude, longitude, rayon_couverture_km, type, agence')
       .then(({ data }) => {
         if (data) setDepots(data as DepotWithCoords[])
       })
@@ -372,7 +346,7 @@ export default function AdminClientsPage() {
     setSendingEmail(true)
 
     try {
-      const response = await fetch('/api/clients/send-form', {
+      const response = await fetch('/api/admin/clients/send-formulaire', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientId: client.id }),
@@ -384,7 +358,7 @@ export default function AdminClientsPage() {
         throw new Error(result.error || 'Erreur lors de l\'envoi')
       }
 
-      toast.success(`Email envoyé à ${client.email}`)
+      toast.success(`Code + formulaire envoyés à ${client.email_beneficiaire || client.email}`)
 
       // Rafraîchir la liste
       await fetchClients()
@@ -939,7 +913,7 @@ export default function AdminClientsPage() {
                               <Eye className="h-4 w-4 mr-2" />
                               Voir la fiche
                             </DropdownMenuItem>
-                            {client.email && (
+                            {client.statut_commercial === 'controle_valide' && ['OUI', 'ok', 'oui'].includes(client.validation_naf || '') && (client.email_beneficiaire || client.email) && (
                               <DropdownMenuItem onClick={() => setSelectedClient(client)}>
                                 <Send className="h-4 w-4 mr-2" />
                                 Envoyer formulaire
@@ -1038,16 +1012,9 @@ export default function AdminClientsPage() {
                   <SelectValue placeholder="Changer statut" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="dossier_complet">Dossier complet</SelectItem>
-                  <SelectItem value="devis_signe">Devis signé</SelectItem>
-                  <SelectItem value="controle_valide">Contrôle validé</SelectItem>
-                  <SelectItem value="controle_a_regulariser">Contrôle à régulariser</SelectItem>
-                  <SelectItem value="client_contacte">Client contacté</SelectItem>
-                  <SelectItem value="client_injoignable">Client injoignable</SelectItem>
-                  <SelectItem value="code_envoye">Code envoyé</SelectItem>
-                  <SelectItem value="formulaire_envoye">Formulaire envoyé</SelectItem>
-                  <SelectItem value="formulaire_valide">Formulaire validé</SelectItem>
-                  <SelectItem value="livre">Livré</SelectItem>
+                  {Object.entries(PROCESS_STATUTS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Button
@@ -1144,7 +1111,7 @@ export default function AdminClientsPage() {
       {/* Edit Client Dialog */}
       {/* Dialog édition supprimé — les données viennent de l'import, pas modifiables dans l'interface */}
       <Dialog open={false} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifier le client</DialogTitle>
             <DialogDescription>
@@ -1311,23 +1278,9 @@ export default function AdminClientsPage() {
                       <SelectValue placeholder="Statut" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="dossier_complet">Dossier complet</SelectItem>
-                      <SelectItem value="devis_signe">Devis signé</SelectItem>
-                      <SelectItem value="devis_cree">Devis créé</SelectItem>
-                      <SelectItem value="controle_valide">Contrôle validé</SelectItem>
-                      <SelectItem value="controle_a_regulariser">Contrôle à régulariser</SelectItem>
-                      <SelectItem value="controle_a_jour">Contrôle à jour</SelectItem>
-                      <SelectItem value="client_contacte">Client contacté</SelectItem>
-                      <SelectItem value="client_injoignable">Client injoignable</SelectItem>
-                      <SelectItem value="client_hs">Client HS</SelectItem>
-                      <SelectItem value="ah_signee">AH signée</SelectItem>
-                      <SelectItem value="livre">Livré</SelectItem>
-                      <SelectItem value="paye">Payé</SelectItem>
-                      <SelectItem value="doublon">Doublon</SelectItem>
-                      <SelectItem value="code_envoye">Code envoyé</SelectItem>
-                      <SelectItem value="formulaire_envoye">Formulaire envoyé</SelectItem>
-                      <SelectItem value="formulaire_valide">Formulaire validé</SelectItem>
-                      <SelectItem value="inconnu">Inconnu</SelectItem>
+                      {Object.entries(PROCESS_STATUTS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Circle } from '@react-google-maps/api'
+import { GOOGLE_MAPS_OPTIONS } from '@/lib/google-maps'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -168,7 +169,7 @@ const CLIENT_DEFAULT_COLOR = '#3B82F6'
 
 const MARKER_SIZE = 3
 const DEPOT_MARKER_SIZE = 8
-const GMAP_LIBRARIES: ('places')[] = ['places']
+// Libraries centralisées dans @/lib/google-maps
 
 // Fonction haversine pour calculer la distance entre deux points GPS
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -226,8 +227,7 @@ export default function MapPage() {
   const [depotVisualRayon, setDepotVisualRayon] = useState<number | null>(null)
 
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries: GMAP_LIBRARIES,
+    ...GOOGLE_MAPS_OPTIONS,
   })
 
   const loadData = useCallback(async () => {
@@ -652,7 +652,7 @@ export default function MapPage() {
   const defaultCenter = agenceCenters['all']
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="space-y-2">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -1006,26 +1006,7 @@ export default function MapPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Légende couleurs par dépôt */}
-                {filteredDepots.length > 0 && (
-                  <div className="mt-3 pt-3 border-t space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">Couleurs par dépôt</p>
-                    {filteredDepots.map(depot => (
-                      <div key={`legend-${depot.id}`} className="flex items-center gap-2 text-xs">
-                        <div
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: depotColorMap[depot.id] || '#3B82F6' }}
-                        />
-                        <span className="truncate" title={depot.nom}>{depot.nom}</span>
-                        {horsZoneCountByDepot[depot.id] > 0 && (
-                          <span className="text-orange-500 text-xs flex-shrink-0">
-                            +{horsZoneCountByDepot[depot.id]}hz
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {/* Légende déplacée sous la carte */}
               </div>
             </div>
 
@@ -1173,7 +1154,7 @@ export default function MapPage() {
 
         {/* Carte - sans padding, bords arrondis intégrés */}
         <Card className="lg:col-span-3 overflow-hidden rounded-lg">
-          <CardContent className="p-0 h-[calc(100vh-320px)] min-h-[500px]">
+          <CardContent className="p-0 h-[calc(100vh-180px)] min-h-[500px]">
             {mapNotAvailable ? (
               <div className="h-full flex flex-col items-center justify-center bg-muted/30">
                 <MapPin className="h-16 w-16 text-muted-foreground mb-4" />
@@ -1385,6 +1366,25 @@ export default function MapPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Légende couleurs par dépôt */}
+      {filteredDepots.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1">
+          <span className="text-xs font-medium text-muted-foreground">Légende :</span>
+          {filteredDepots.map(depot => (
+            <div key={`legend-${depot.id}`} className="flex items-center gap-1.5 text-xs">
+              <div
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: depotColorMap[depot.id] || '#3B82F6' }}
+              />
+              <span className="text-muted-foreground">{depot.nom}</span>
+              {horsZoneCountByDepot[depot.id] > 0 && (
+                <span className="text-orange-500">+{horsZoneCountByDepot[depot.id]}hz</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Liste des dépôts */}
       <Card>

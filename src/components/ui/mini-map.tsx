@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api'
 import { Loader2, MapPin } from 'lucide-react'
+import { GOOGLE_MAPS_OPTIONS } from '@/lib/google-maps'
 
 interface MiniMapProps {
   clientLat: number
@@ -36,9 +37,7 @@ export function MiniMap({
 }: MiniMapProps) {
   const [map, setMap] = useState<google.maps.Map | null>(null)
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-  })
+  const { isLoaded, loadError } = useJsApiLoader(GOOGLE_MAPS_OPTIONS)
 
   // Adapter le zoom pour inclure client et dépôt
   const onMapLoad = useCallback((mapInstance: google.maps.Map) => {

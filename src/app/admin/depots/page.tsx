@@ -96,6 +96,22 @@ const typeColors: Record<string, string> = {
   logistique: 'bg-orange-100 text-orange-800',
 }
 
+const JOURS_SEMAINE = [
+  { value: 'lundi', label: 'Lundi', abbr: 'L' },
+  { value: 'mardi', label: 'Mardi', abbr: 'M' },
+  { value: 'mercredi', label: 'Mercredi', abbr: 'Me' },
+  { value: 'jeudi', label: 'Jeudi', abbr: 'J' },
+  { value: 'vendredi', label: 'Vendredi', abbr: 'V' },
+  { value: 'samedi', label: 'Samedi', abbr: 'S' },
+  { value: 'dimanche', label: 'Dimanche', abbr: 'D' },
+]
+
+interface CreneauConfig {
+  heure_debut: string
+  heure_fin: string
+  capacite_velos: number
+}
+
 interface DepotForm {
   nom: string
   type: 'retrait' | 'logistique'
@@ -111,6 +127,8 @@ interface DepotForm {
   telephone: string
   email: string
   actif: boolean
+  jours_ouverture: string[]
+  creneaux: CreneauConfig[]
 }
 
 const initialForm: DepotForm = {
@@ -128,6 +146,8 @@ const initialForm: DepotForm = {
   telephone: '',
   email: '',
   actif: true,
+  jours_ouverture: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'],
+  creneaux: [{ heure_debut: '09:00', heure_fin: '12:00', capacite_velos: 5 }],
 }
 
 export default function AdminDepotsPage() {
@@ -241,6 +261,10 @@ export default function AdminDepotsPage() {
       telephone: depot.telephone || '',
       email: depot.email || '',
       actif: depot.actif ?? true,
+      jours_ouverture: depot.jours_ouverture || ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'],
+      creneaux: (depot as Record<string, unknown>).creneaux
+        ? (Array.isArray((depot as Record<string, unknown>).creneaux) ? (depot as Record<string, unknown>).creneaux as CreneauConfig[] : [])
+        : [{ heure_debut: '09:00', heure_fin: '12:00', capacite_velos: 5 }],
     })
     setError(null)
     setDialogOpen(true)
@@ -273,6 +297,8 @@ export default function AdminDepotsPage() {
         telephone: form.telephone || null,
         email: form.email || null,
         actif: form.actif,
+        jours_ouverture: form.jours_ouverture,
+        creneaux: JSON.parse(JSON.stringify(form.creneaux)),
         updated_at: new Date().toISOString(),
       }
 
@@ -507,6 +533,7 @@ export default function AdminDepotsPage() {
                   <TableHead className="text-center">Zone gratuite (km)</TableHead>
                   <TableHead className="text-center">Zone payante (km)</TableHead>
                   <TableHead className="text-center">Prix livraison (€)</TableHead>
+                  <TableHead>Jours</TableHead>
                   <TableHead>Actif</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -541,6 +568,17 @@ export default function AdminDepotsPage() {
                     </TableCell>
                     <TableCell className="text-center">
                       {depot.prix_livraison_payante ? `${depot.prix_livraison_payante} €` : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs text-muted-foreground">
+                        {(depot.jours_ouverture || []).map(j => {
+                          const abbr: Record<string, string> = {
+                            lundi: 'L', mardi: 'M', mercredi: 'Me',
+                            jeudi: 'J', vendredi: 'V', samedi: 'S', dimanche: 'D'
+                          }
+                          return abbr[j] || j
+                        }).join(' ')}
+                      </span>
                     </TableCell>
                     <TableCell>
                       {depot.actif ? (
@@ -597,7 +635,7 @@ export default function AdminDepotsPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[690px]">
+        <DialogContent className="sm:max-w-[690px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingDepot ? 'Modifier le depot' : 'Nouveau depot'}
@@ -807,6 +845,115 @@ export default function AdminDepotsPage() {
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   placeholder="depot@example.com"
                 />
+              </div>
+            </div>
+
+            {/* Paramètres de planification */}
+            <div className="border-t pt-4 mt-2">
+              <Label className="text-sm font-medium mb-3 block">Paramètres de planification</Label>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Jours d'ouverture</Label>
+                  <div className="flex flex-wrap gap-3">
+                    {JOURS_SEMAINE.map((jour) => (
+                      <div key={jour.value} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`jour-${jour.value}`}
+                          checked={form.jours_ouverture.includes(jour.value)}
+                          onCheckedChange={(checked) => {
+                            setForm({
+                              ...form,
+                              jours_ouverture: checked
+                                ? [...form.jours_ouverture, jour.value]
+                                : form.jours_ouverture.filter(j => j !== jour.value),
+                            })
+                          }}
+                        />
+                        <Label htmlFor={`jour-${jour.value}`} className="cursor-pointer text-sm">
+                          {jour.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-xs text-muted-foreground">Créneaux de livraison</Label>
+                  {form.creneaux.map((creneau, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 rounded-md border bg-muted/30">
+                      <div className="flex items-center gap-1 flex-1">
+                        <Input
+                          type="time"
+                          value={creneau.heure_debut}
+                          onChange={(e) => {
+                            const updated = [...form.creneaux]
+                            updated[index] = { ...updated[index], heure_debut: e.target.value }
+                            setForm({ ...form, creneaux: updated })
+                          }}
+                          className="w-[110px] text-sm"
+                        />
+                        <span className="text-muted-foreground text-sm">-</span>
+                        <Input
+                          type="time"
+                          value={creneau.heure_fin}
+                          onChange={(e) => {
+                            const updated = [...form.creneaux]
+                            updated[index] = { ...updated[index], heure_fin: e.target.value }
+                            setForm({ ...form, creneaux: updated })
+                          }}
+                          className="w-[110px] text-sm"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          min={1}
+                          value={creneau.capacite_velos}
+                          onChange={(e) => {
+                            const updated = [...form.creneaux]
+                            updated[index] = { ...updated[index], capacite_velos: parseInt(e.target.value) || 1 }
+                            setForm({ ...form, creneaux: updated })
+                          }}
+                          className="w-[60px] text-sm"
+                        />
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">vélos</span>
+                      </div>
+                      {form.creneaux.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                          onClick={() => {
+                            setForm({ ...form, creneaux: form.creneaux.filter((_, i) => i !== index) })
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      const last = form.creneaux[form.creneaux.length - 1]
+                      setForm({
+                        ...form,
+                        creneaux: [...form.creneaux, {
+                          heure_debut: last?.heure_fin || '09:00',
+                          heure_fin: last ? `${String(parseInt(last.heure_fin.split(':')[0]) + 2).padStart(2, '0')}:${last.heure_fin.split(':')[1]}` : '11:00',
+                          capacite_velos: last?.capacite_velos || 5,
+                        }],
+                      })
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Ajouter un créneau
+                  </Button>
+                </div>
               </div>
             </div>
 

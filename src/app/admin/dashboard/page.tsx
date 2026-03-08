@@ -11,6 +11,7 @@ import {
   Users,
   Building2,
   Settings,
+  Calendar,
 } from 'lucide-react'
 
 interface MenuCard {
@@ -38,6 +39,14 @@ const menuCards: MenuCard[] = [
     icon: Truck,
     color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
     roles: ['super_admin', 'admin', 'agent_secteur', 'livreur'],
+  },
+  {
+    href: '/admin/planning',
+    label: 'Planning',
+    description: 'Creneaux et planification',
+    icon: Calendar,
+    color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    roles: ['super_admin', 'admin', 'agent_secteur'],
   },
   {
     href: '/admin/map',

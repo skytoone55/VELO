@@ -93,7 +93,7 @@ function FormulaireContent() {
         updateData({
           raisonSociale: client.raison_sociale,
           siret: client.siret,
-          email: client.email,
+          email: client.email_beneficiaire || client.email,
           telephone: client.telephone,
           contactNom: client.contact_nom,
           contactPrenom: client.contact_prenom,
