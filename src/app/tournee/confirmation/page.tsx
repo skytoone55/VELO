@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { CheckCircle, XCircle, Calendar, Clock, Loader2, AlertTriangle } from 'lucide-react'
 
-export default function TourneeConfirmationPage() {
+function ConfirmationContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
 
@@ -248,5 +248,13 @@ export default function TourneeConfirmationPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function TourneeConfirmationPage() {
+  return (
+    <Suspense fallback={<div>Chargement...</div>}>
+      <ConfirmationContent />
+    </Suspense>
   )
 }
