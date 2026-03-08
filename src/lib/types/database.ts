@@ -119,10 +119,6 @@ export type Database = {
           preferences_livraison: string | null
           type_de_zone: string | null
           reference_retina: string | null
-          token_documents: string | null
-          documents_requis: Json | null
-          documents_recus: Json | null
-          token_relance: string | null
         }
         Insert: {
           adresse_livraison_cp?: string | null
@@ -192,10 +188,6 @@ export type Database = {
           preferences_livraison?: string | null
           type_de_zone?: string | null
           reference_retina?: string | null
-          token_documents?: string | null
-          documents_requis?: Json | null
-          documents_recus?: Json | null
-          token_relance?: string | null
         }
         Update: {
           adresse_livraison_cp?: string | null
@@ -265,10 +257,6 @@ export type Database = {
           preferences_livraison?: string | null
           type_de_zone?: string | null
           reference_retina?: string | null
-          token_documents?: string | null
-          documents_requis?: Json | null
-          documents_recus?: Json | null
-          token_relance?: string | null
         }
         Relationships: []
       }
