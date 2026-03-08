@@ -42,6 +42,7 @@ import {
   CloudUpload,
 } from 'lucide-react'
 import { Client, Livraison, Depot } from '@/lib/types/database'
+import { getCommercialName } from '@/lib/tenants/commercial'
 import { createClient } from '@/lib/supabase/client'
 import dynamic from 'next/dynamic'
 
@@ -568,12 +569,16 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                   <Mail className="h-3.5 w-3.5" />
                   Email bénéficiaire
                 </p>
-                <a href={`mailto:${client.email_beneficiaire || client.email}`} className="font-medium hover:underline">
-                  {client.email_beneficiaire || client.email}
-                </a>
-                {client.email_beneficiaire && client.email && client.email_beneficiaire !== client.email && (
+                {client.email_beneficiaire ? (
+                  <a href={`mailto:${client.email_beneficiaire}`} className="font-medium hover:underline">
+                    {client.email_beneficiaire}
+                  </a>
+                ) : (
+                  <span className="font-medium text-muted-foreground">-</span>
+                )}
+                {client.email && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Agent: {client.email}
+                    Commercial : {getCommercialName(client)}
                   </p>
                 )}
               </div>
