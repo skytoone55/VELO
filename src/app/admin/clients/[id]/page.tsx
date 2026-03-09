@@ -781,7 +781,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <h3 className="font-semibold text-sm">Contact</h3>
             </div>
             <div className="space-y-0">
-              <InfoRow label="Nom" value={(client.prenom_contact || client.nom_contact) ? `${client.prenom_contact || ''} ${client.nom_contact || ''}`.trim() : null} />
+              <InfoRow label="Nom" value={(client.contact_prenom || client.contact_nom || client.prenom_contact || client.nom_contact) ? `${client.contact_prenom || client.prenom_contact || ''} ${client.contact_nom || client.nom_contact || ''}`.trim() : null} />
               <InfoRow label="Email" value={client.email_beneficiaire ? (
                 <a href={`mailto:${client.email_beneficiaire}`} className="hover:underline text-sm">
                   {client.email_beneficiaire}
