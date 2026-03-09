@@ -166,6 +166,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [docRequestLoading, setDocRequestLoading] = useState(false)
   const [selectedDocs, setSelectedDocs] = useState<string[]>([])
 
+  // Mail livraison / confirmation créneau
+  const [mailLivraisonLoading, setMailLivraisonLoading] = useState(false)
+  const [confirmationCreneauLoading, setConfirmationCreneauLoading] = useState(false)
+
   // Zone calculée à partir de la distance au dépôt
   const computedZone = (() => {
     if (!distanceKm) return null
@@ -371,6 +375,48 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       setError(message)
     } finally {
       setDocRequestLoading(false)
+    }
+  }
+
+  const handleSendMailLivraison = async () => {
+    if (!client) return
+    setMailLivraisonLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/admin/livraisons/send-mail-livraison', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur envoi')
+      setSuccess('Mail livraison envoyé')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur inconnue'
+      setError(message)
+    } finally {
+      setMailLivraisonLoading(false)
+    }
+  }
+
+  const handleSendConfirmationCreneau = async () => {
+    if (!client || !livraisons[0]) return
+    setConfirmationCreneauLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/admin/livraisons/send-confirmation-creneau', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ livraisonId: livraisons[0].id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur envoi')
+      setSuccess('Mail confirmation créneau envoyé')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur inconnue'
+      setError(message)
+    } finally {
+      setConfirmationCreneauLoading(false)
     }
   }
 
@@ -801,6 +847,42 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                   distanceKm={distanceKm || undefined}
                   height="300px"
                 />
+              </div>
+            )}
+
+            {/* Actions mail livraison */}
+            {['a_livrer', 'en_livraison', 'retrait_planifie'].includes(client.statut_commercial || '') && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {!client.depot_retrait_id && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSendMailLivraison}
+                    disabled={mailLivraisonLoading}
+                  >
+                    {mailLivraisonLoading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4 mr-2" />
+                    )}
+                    Mail livraison
+                  </Button>
+                )}
+                {livraisons[0]?.creneau_date && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSendConfirmationCreneau}
+                    disabled={confirmationCreneauLoading}
+                  >
+                    {confirmationCreneauLoading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                    )}
+                    Mail confirmation créneau
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>

@@ -50,6 +50,7 @@ interface LivraisonRow {
     monday_board_id: string | null
     statut_commercial: string | null
     velo_devis: number
+    velo_valide: number | null
     type_de_zone: string | null
     depot_retrait_id: string | null
     depot_logistique_id: string | null
@@ -60,7 +61,6 @@ interface LivraisonRow {
 const statutOptions = [
   { value: 'all', label: 'Statut' },
   { value: 'a_livrer', label: 'À livrer' },
-  { value: 'programme', label: 'Programmé' },
   { value: 'en_livraison', label: 'En livraison' },
   { value: 'livre', label: 'Livré' },
   { value: 'probleme_livraison', label: 'Problème livraison' },
@@ -73,7 +73,6 @@ const statutOptions = [
 
 const statutColors: Record<string, string> = {
   a_livrer: 'bg-amber-100 text-amber-800',
-  programme: 'bg-blue-100 text-blue-800',
   en_livraison: 'bg-orange-100 text-orange-800',
   livre: 'bg-green-100 text-green-800',
   probleme_livraison: 'bg-red-100 text-red-800',
@@ -86,7 +85,6 @@ const statutColors: Record<string, string> = {
 
 const statutLabels: Record<string, string> = {
   a_livrer: 'À livrer',
-  programme: 'Programmé',
   en_livraison: 'En livraison',
   livre: 'Livré',
   probleme_livraison: 'Problème livraison',
@@ -133,6 +131,8 @@ export default function AdminLivraisonsPage() {
 
   const [selectedLivraisons, setSelectedLivraisons] = useState<Set<string>>(new Set())
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
+  const [mailLivraisonLoading, setMailLivraisonLoading] = useState(false)
+  const [confirmationCreneauLoading, setConfirmationCreneauLoading] = useState(false)
 
   const [depotOptions, setDepotOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Dépôt' }])
   const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
@@ -294,11 +294,53 @@ export default function AdminLivraisonsPage() {
         // TODO: implement formulaire retrait email
         alert('Fonctionnalité en cours de développement')
       } else if (action === 'send_mail_livraison') {
-        // TODO: implement mail livraison email
-        alert('Fonctionnalité en cours de développement')
+        setMailLivraisonLoading(true)
+        let successCount = 0
+        let errorCount = 0
+        for (const livId of Array.from(selectedLivraisons)) {
+          const liv = livraisons.find(l => l.id === livId)
+          if (!liv?.client) continue
+          try {
+            const res = await fetch('/api/admin/livraisons/send-mail-livraison', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ clientId: liv.client.id }),
+            })
+            if (res.ok) successCount++
+            else errorCount++
+          } catch {
+            errorCount++
+          }
+        }
+        setMailLivraisonLoading(false)
+        alert(errorCount === 0
+          ? `Mail livraison envoyé à ${successCount} client${successCount > 1 ? 's' : ''}`
+          : `${successCount} envoyé${successCount > 1 ? 's' : ''}, ${errorCount} erreur${errorCount > 1 ? 's' : ''}`
+        )
       } else if (action === 'send_confirmation_creneau') {
-        // TODO: implement mail confirmation créneau
-        alert('Fonctionnalité en cours de développement')
+        setConfirmationCreneauLoading(true)
+        let successCount = 0
+        let errorCount = 0
+        for (const livId of Array.from(selectedLivraisons)) {
+          const liv = livraisons.find(l => l.id === livId)
+          if (!liv?.client) continue
+          try {
+            const res = await fetch('/api/admin/livraisons/send-confirmation-creneau', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ livraisonId: liv.id }),
+            })
+            if (res.ok) successCount++
+            else errorCount++
+          } catch {
+            errorCount++
+          }
+        }
+        setConfirmationCreneauLoading(false)
+        alert(errorCount === 0
+          ? `Mail confirmation créneau envoyé à ${successCount} client${successCount > 1 ? 's' : ''}`
+          : `${successCount} envoyé${successCount > 1 ? 's' : ''}, ${errorCount} erreur${errorCount > 1 ? 's' : ''}`
+        )
       } else if (action === 'change_status' && params?.statut) {
         const res = await fetch('/api/admin/livraisons/bulk-status', {
           method: 'POST',
@@ -438,15 +480,15 @@ export default function AdminLivraisonsPage() {
                     />
                   </TableHead>
                   <SortableHeader label="Société" column="created_at" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <TableHead className="hidden lg:table-cell w-14 text-center">Vélos</TableHead>
                   <TableHead className="hidden xl:table-cell">Email</TableHead>
                   <TableHead className="hidden xl:table-cell">Tél.</TableHead>
+                  <TableHead className="hidden lg:table-cell">Commercial</TableHead>
                   <TableHead className="hidden md:table-cell">Dép.</TableHead>
                   <TableHead className="hidden md:table-cell">Zone</TableHead>
                   <TableHead className="hidden md:table-cell">Dépôt</TableHead>
                   <SortableHeader label="Mode" column="mode_livraison" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <TableHead className="hidden lg:table-cell">Adresse</TableHead>
-                  <TableHead className="hidden lg:table-cell">Commercial</TableHead>
+                  <TableHead className="hidden lg:table-cell w-14 text-center">Vélos</TableHead>
                   <SortableHeader label="Date" column="date_programmation" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <SortableHeader label="Statut" column="statut" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <TableHead className="text-right">Actions</TableHead>
@@ -466,11 +508,6 @@ export default function AdminLivraisonsPage() {
                       <div className="font-medium">{liv.client?.raison_sociale || 'N/A'}</div>
                       <div className="text-xs text-muted-foreground">{liv.client?.siret}</div>
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell text-center">
-                      {liv.client?.velo_devis != null ? (
-                        <span className="text-sm font-medium">{liv.client.velo_devis}</span>
-                      ) : <span className="text-sm text-muted-foreground">-</span>}
-                    </TableCell>
                     <TableCell className="hidden xl:table-cell text-sm">
                       {liv.client?.email_beneficiaire || liv.client?.email || '-'}
                     </TableCell>
@@ -481,6 +518,11 @@ export default function AdminLivraisonsPage() {
                           {liv.client.telephone}
                         </a>
                       ) : <span className="text-sm text-muted-foreground">-</span>}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <Badge variant="outline" className="text-xs font-normal">
+                        {liv.client ? getCommercialName(liv.client) : '-'}
+                      </Badge>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm">
                       {getDepartementLabel(liv.client?.departement, liv.client?.adresse_societe_cp)}
@@ -520,10 +562,11 @@ export default function AdminLivraisonsPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge variant="outline" className="text-xs font-normal">
-                        {liv.client ? getCommercialName(liv.client) : '-'}
-                      </Badge>
+                    <TableCell className="hidden lg:table-cell text-center">
+                      <div className="text-sm">
+                        <span className="font-medium">{liv.client?.velo_valide ?? 0}</span>
+                        <span className="text-muted-foreground"> / {liv.client?.velo_devis ?? 0}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {liv.date_programmation ? (
@@ -637,9 +680,13 @@ export default function AdminLivraisonsPage() {
                   size="sm"
                   variant="outline"
                   onClick={() => handleBulkAction('send_mail_livraison')}
-                  disabled={bulkActionLoading || !canSendMailLivraison}
+                  disabled={bulkActionLoading || mailLivraisonLoading || !canSendMailLivraison}
                 >
-                  <Mail className="h-4 w-4 mr-2" />
+                  {mailLivraisonLoading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Mail className="h-4 w-4 mr-2" />
+                  )}
                   Mail livraison
                 </Button>
               </div>
@@ -650,9 +697,13 @@ export default function AdminLivraisonsPage() {
                   size="sm"
                   variant="outline"
                   onClick={() => handleBulkAction('send_confirmation_creneau')}
-                  disabled={bulkActionLoading || !canSendConfirmationCreneau}
+                  disabled={bulkActionLoading || confirmationCreneauLoading || !canSendConfirmationCreneau}
                 >
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {confirmationCreneauLoading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                  )}
                   Mail confirmation créneau
                 </Button>
               </div>
