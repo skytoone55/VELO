@@ -244,7 +244,7 @@ export function Step4Preference() {
               <Alert className="bg-green-50 border-green-200">
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-800">
-                  Bonne nouvelle ! Votre adresse est éligible à la livraison gratuite.
+                  Votre adresse est éligible à la livraison gratuite.
                 </AlertDescription>
               </Alert>
             </>

@@ -184,6 +184,8 @@ export async function POST(request: NextRequest) {
         modeLivraison: modeLivraison as 'domicile' | 'retrait',
         adresseLivraison: modeLivraison === 'domicile' ? data.adresseLivraison : undefined,
         depotRetrait: depotRetraitInfo || undefined,
+        complementAdresse: data.complementAdresse || undefined,
+        preferencesLivraison: data.preferencesLivraison || undefined,
         userCreated: !!userId,
       })
       console.log(`Email récapitulatif envoyé à ${emailDestinataire}`)

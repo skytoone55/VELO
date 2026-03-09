@@ -233,7 +233,14 @@ export function Step6Confirmation() {
                   <div className="text-muted-foreground mt-1">
                     {data.adresseLivraison.ligne1}<br />
                     {data.adresseLivraison.ligne2 && <>{data.adresseLivraison.ligne2}<br /></>}
+                    {data.complementAdresse && <>{data.complementAdresse}<br /></>}
                     {data.adresseLivraison.codePostal} {data.adresseLivraison.ville}
+                  </div>
+                )}
+                {data.preferencesLivraison && (
+                  <div className="mt-2 pt-2 border-t border-muted-foreground/20">
+                    <span className="text-xs font-medium text-foreground">Préférences de livraison :</span>
+                    <div className="text-muted-foreground text-xs mt-0.5">{data.preferencesLivraison}</div>
                   </div>
                 )}
               </>

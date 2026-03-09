@@ -161,11 +161,7 @@ export async function sendCodeValidationEmail(
               </h2>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                ${tenant.texts.welcomeMessage} Votre compte a été créé avec succès.
-              </p>
-
-              <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Voici votre <strong>code de validation personnel</strong> :
+                Voici votre <strong>code de validation personnel</strong> pour la livraison de votre vélo cargo à assistance électrique :
               </p>
 
               <!-- Code Box -->
@@ -328,6 +324,8 @@ interface RecapEmailData {
     codePostal: string
     ville: string
   }
+  complementAdresse?: string
+  preferencesLivraison?: string
   userCreated: boolean
 }
 
@@ -427,6 +425,30 @@ export async function sendFormulaireRecapEmail(
 
               <!-- Récap livraison -->
               ${livraisonDetails}
+
+              ${data.complementAdresse ? `
+              <!-- Complément d'adresse -->
+              <div style="background-color: #f4f4f5; border-radius: 8px; padding: 16px; margin-top: 12px;">
+                <p style="margin: 0 0 4px 0; color: #52525b; font-weight: 600; font-size: 14px;">
+                  Complément d'adresse
+                </p>
+                <p style="margin: 0; color: #18181b; font-size: 14px; line-height: 1.5;">
+                  ${data.complementAdresse}
+                </p>
+              </div>
+              ` : ''}
+
+              ${data.preferencesLivraison ? `
+              <!-- Préférences de livraison -->
+              <div style="background-color: #f4f4f5; border-radius: 8px; padding: 16px; margin-top: 12px;">
+                <p style="margin: 0 0 4px 0; color: #52525b; font-weight: 600; font-size: 14px;">
+                  Préférences de livraison
+                </p>
+                <p style="margin: 0; color: #18181b; font-size: 14px; line-height: 1.5;">
+                  ${data.preferencesLivraison}
+                </p>
+              </div>
+              ` : ''}
 
               ${accountSection}
 
