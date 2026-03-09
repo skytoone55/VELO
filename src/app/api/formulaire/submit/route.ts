@@ -98,6 +98,7 @@ export async function POST(request: NextRequest) {
       .update({
         statut_formulaire: 'formulaire_complete',
         statut_commercial: 'a_livrer',
+        preferences_livraison: data.preferencesLivraison || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', clientId)
