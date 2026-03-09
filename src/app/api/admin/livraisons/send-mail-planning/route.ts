@@ -1,0 +1,107 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { sendMailPlanningEmail } from '@/lib/email/gmail'
+
+export async function POST(request: NextRequest) {
+  const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
+  if (isAuthError(authResult)) return authResult
+
+  const { livraisonIds } = await request.json()
+
+  if (!livraisonIds || !Array.isArray(livraisonIds) || livraisonIds.length === 0) {
+    return NextResponse.json({ error: 'livraisonIds requis (tableau)' }, { status: 400 })
+  }
+
+  const adminClient = createAdminClient()
+
+  let sent = 0
+  let errors = 0
+  const errorDetails: string[] = []
+
+  for (const livraisonId of livraisonIds) {
+    try {
+      // Fetch livraison avec client joint
+      const { data: livraison } = await adminClient
+        .from('livraisons')
+        .select(`
+          id, date_prevue, creneau_heure_debut, creneau_heure_fin,
+          clients!inner(
+            id, email_beneficiaire, email, raison_sociale,
+            contact_nom, contact_prenom, nom_contact, prenom_contact
+          )
+        `)
+        .eq('id', livraisonId)
+        .single()
+
+      if (!livraison) {
+        errors++
+        errorDetails.push(`Livraison ${livraisonId} non trouvée`)
+        continue
+      }
+
+      const client = Array.isArray(livraison.clients)
+        ? livraison.clients[0]
+        : livraison.clients
+
+      if (!client) {
+        errors++
+        errorDetails.push(`Client non trouvé pour livraison ${livraisonId}`)
+        continue
+      }
+
+      const recipientEmail = client.email_beneficiaire || client.email
+      if (!recipientEmail) {
+        errors++
+        errorDetails.push(`Pas d'email pour ${client.raison_sociale}`)
+        continue
+      }
+
+      // Formater la date en français
+      const dateLivraison = (() => {
+        try {
+          return new Date(livraison.date_prevue + 'T00:00:00').toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        } catch {
+          return livraison.date_prevue || 'Date à confirmer'
+        }
+      })()
+
+      // Formater le créneau
+      const creneauHoraire = livraison.creneau_heure_debut && livraison.creneau_heure_fin
+        ? `${livraison.creneau_heure_debut} - ${livraison.creneau_heure_fin}`
+        : 'Créneau à confirmer'
+
+      // Nom du réceptionnaire
+      const nomReceptionnaire = [
+        client.prenom_contact || client.contact_prenom,
+        client.nom_contact || client.contact_nom,
+      ].filter(Boolean).join(' ') || client.raison_sociale
+
+      const success = await sendMailPlanningEmail({
+        to: recipientEmail,
+        clientName: nomReceptionnaire,
+        raisonSociale: client.raison_sociale,
+        dateLivraison,
+        creneauHoraire,
+        nomReceptionnaire,
+      })
+
+      if (success) {
+        sent++
+      } else {
+        errors++
+        errorDetails.push(`Echec envoi pour ${client.raison_sociale}`)
+      }
+    } catch (err) {
+      errors++
+      errorDetails.push(`Erreur livraison ${livraisonId}: ${err instanceof Error ? err.message : 'Erreur inconnue'}`)
+    }
+  }
+
+  return NextResponse.json({ sent, errors, errorDetails: errorDetails.slice(0, 10) })
+}

@@ -827,6 +827,110 @@ export async function sendMailLivraisonEmail(data: {
 }
 
 /**
+ * Email de confirmation de planning — rappel RDV avec date, créneau et identité
+ * Envoyé aux clients au statut "programmé" pour confirmer leur rendez-vous
+ */
+export async function sendMailPlanningEmail(data: {
+  to: string
+  clientName: string
+  raisonSociale: string
+  dateLivraison: string
+  creneauHoraire: string
+  nomReceptionnaire: string
+  tenantId?: string
+}): Promise<boolean> {
+  const tenant = getTenantConfig()
+  const { to, clientName, raisonSociale, dateLivraison, creneauHoraire, nomReceptionnaire } = data
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${tenant.name} - Confirmation de votre rendez-vous</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+    <tr>
+      <td>
+        <!-- Header -->
+        ${getEmailHeader(tenant)}
+
+        <!-- Content -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: white; padding: 40px; border-radius: 0 0 12px 12px;">
+          <tr>
+            <td>
+              <div style="text-align: center; margin-bottom: 30px;">
+                <div style="display: inline-block; width: 64px; height: 64px; background-color: #dbeafe; border-radius: 50%; line-height: 64px; font-size: 32px;">
+                  📅
+                </div>
+              </div>
+
+              <h2 style="margin: 0 0 20px 0; color: #18181b; font-size: 22px; text-align: center;">
+                Votre rendez-vous est confirmé !
+              </h2>
+
+              <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Bonjour ${clientName},
+              </p>
+
+              <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Nous vous confirmons votre rendez-vous de livraison de vélo cargo électrique au nom de <strong>${raisonSociale}</strong>.
+              </p>
+
+              <!-- Bloc info RDV -->
+              <div style="background-color: #eff6ff; border-radius: 12px; padding: 20px; margin: 25px 0; border-left: 4px solid ${tenant.branding.colors.secondary};">
+                <p style="margin: 0 0 4px 0; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                  Détails du rendez-vous
+                </p>
+                <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold; color: #1e40af;">
+                  📅 ${dateLivraison}
+                </p>
+                <p style="margin: 0 0 8px 0; font-size: 16px; color: #3b82f6;">
+                  🕐 Créneau : ${creneauHoraire}
+                </p>
+                <p style="margin: 0; font-size: 14px; color: #64748b;">
+                  👤 Réceptionnaire : <strong>${nomReceptionnaire}</strong>
+                </p>
+              </div>
+
+              ${getIdentityReminderHtml(nomReceptionnaire, false)}
+
+              <p style="margin: 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                En cas d'annulation ou de modification, n'hésitez pas à contacter notre service dans les meilleurs délais.
+              </p>
+
+              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
+
+              ${getFullContactSection(tenant)}
+            </td>
+          </tr>
+        </table>
+
+        <!-- Footer -->
+        ${getEmailFooter(tenant)}
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`
+
+  try {
+    await sendEmail({
+      to,
+      subject: `${tenant.name} - Confirmation de votre rendez-vous de livraison du ${dateLivraison}`,
+      html,
+    })
+    return true
+  } catch (error) {
+    console.error('Erreur sendMailPlanningEmail:', error)
+    return false
+  }
+}
+
+/**
  * Email de confirmation de créneau — retrait dépôt ou livraison à domicile
  * Anciennement sendTourneeConfirmationEmail
  */
