@@ -188,12 +188,14 @@ export async function POST(
     }
 
     // --- 6. Mettre à jour le client ---
+    // velo_valide = nombre réellement livré (remplace l'ancien devis validé)
     const { error: updateClientError } = await supabase
       .from('clients')
       .update({
         statut_commercial: 'livre',
         date_statut: now,
         fnuci_ids: normalizedCodes,
+        velo_valide: nbLivres,
         updated_at: now,
       })
       .eq('id', client.id)

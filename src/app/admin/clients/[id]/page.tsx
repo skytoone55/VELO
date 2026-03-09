@@ -1093,39 +1093,37 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                   </div>
                 )}
               </div>
+
+              {/* FNUCI attribués — PPE only, inside Documents */}
+              {tenantId !== 'ecovolt' && fnuciRecords.length > 0 && (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Bike className="h-4 w-4 text-muted-foreground" />
+                    <h4 className="font-semibold text-sm text-foreground">FNUCI attribués ({fnuciRecords.length})</h4>
+                  </div>
+                  <div className="space-y-1.5">
+                    {fnuciRecords.map((f) => (
+                      <div key={f.id} className="p-2 bg-muted/30 rounded-lg border flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-3">
+                          <Badge variant={f.statut === 'attribue' ? 'default' : f.statut === 'bloque' ? 'destructive' : 'secondary'} className="text-xs">
+                            {f.statut}
+                          </Badge>
+                          <span className="font-mono font-medium">{f.reference}</span>
+                          <span className="text-muted-foreground">N°{f.numero}</span>
+                        </div>
+                        {f.attribue_at && (
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(f.attribue_at).toLocaleDateString('fr-FR')}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
-
-        {/* FNUCI attribués — PPE only */}
-        {tenantId !== 'ecovolt' && fnuciRecords.length > 0 && (
-          <Card className="shadow-sm border-2">
-            <CardContent className="px-4 py-3">
-              <div className="flex items-center gap-3 mb-3">
-                <Bike className="h-5 w-5 text-muted-foreground" />
-                <h3 className="font-semibold text-foreground">FNUCI attribués ({fnuciRecords.length})</h3>
-              </div>
-              <div className="space-y-2">
-                {fnuciRecords.map((f) => (
-                  <div key={f.id} className="p-2 bg-muted/30 rounded-lg border flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3">
-                      <Badge variant={f.statut === 'attribue' ? 'default' : f.statut === 'bloque' ? 'destructive' : 'secondary'} className="text-xs">
-                        {f.statut}
-                      </Badge>
-                      <span className="font-mono font-medium">{f.reference}</span>
-                      <span className="text-muted-foreground">N°{f.numero}</span>
-                    </div>
-                    {f.attribue_at && (
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(f.attribue_at).toLocaleDateString('fr-FR')}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Historique - pleine largeur en bas */}
         <Card className="lg:col-span-2 shadow-sm border-2">
