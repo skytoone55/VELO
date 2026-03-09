@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendConfirmationCreneauEmail } from '@/lib/email/gmail'
+import { getTenantConfig } from '@/lib/tenants'
 
 export async function POST(request: NextRequest) {
   const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
@@ -107,9 +108,9 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-  const confirmUrl = `${baseUrl}/tournee/confirmation?token=${token}`
+  const tenant = getTenantConfig()
+  const baseUrl = tenant.url || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+  const confirmUrl = `${baseUrl}/livraisons/confirm-creneau?token=${token}`
 
   try {
     await sendConfirmationCreneauEmail({
