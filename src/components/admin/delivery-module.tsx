@@ -698,29 +698,7 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
     setError(null)
 
     try {
-      const res = await fetch(`/api/admin/livraisons/${livraison.id}/deliver`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fnuci_codes: fnuciList.map((f) => f.code),
-          nb_velos_livres: nbVelos,
-          checklist: {
-            fonctionnement: checklist.fonctionnement,
-            cable_recharge: checklist.cable_recharge,
-            photos_cee: checklist.photos_cee,
-          },
-          signature_base64: signature,
-          photo_identite_base64: photoIdentite,
-        }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || data.message || 'Erreur lors de la livraison')
-      }
-
-      // Generate PDF
+      // Generate PDF FIRST so we can send it to the server
       const client = livraison.client
       const beneficiaire = [client.contact_prenom, client.contact_nom].filter(Boolean).join(' ') || client.raison_sociale
       const adresse = [client.adresse_societe_ligne1, client.adresse_societe_cp, client.adresse_societe_ville].filter(Boolean).join(', ')
@@ -741,6 +719,32 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
         date: dateStr,
         modeLivraison: livraison.mode_livraison,
       })
+
+      // Convert PDF to base64 for server storage
+      const pdfBase64 = doc.output('datauristring')
+
+      const res = await fetch(`/api/admin/livraisons/${livraison.id}/deliver`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fnuci_codes: fnuciList.map((f) => f.code),
+          nb_velos_livres: nbVelos,
+          checklist: {
+            fonctionnement: checklist.fonctionnement,
+            cable_recharge: checklist.cable_recharge,
+            photos_cee: checklist.photos_cee,
+          },
+          signature_base64: signature,
+          photo_identite_base64: photoIdentite,
+          attestation_pdf_base64: pdfBase64,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || data.message || 'Erreur lors de la livraison')
+      }
 
       setPdfBlob(doc.output('blob'))
       setSuccess(true)

@@ -166,9 +166,13 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [docRequestLoading, setDocRequestLoading] = useState(false)
   const [selectedDocs, setSelectedDocs] = useState<string[]>([])
 
-  // Mail livraison / confirmation créneau / formulaire retrait
+  // Mail livraison / formulaire retrait
   const [mailLivraisonLoading, setMailLivraisonLoading] = useState(false)
   const [formulaireRetraitLoading, setFormulaireRetraitLoading] = useState(false)
+
+  // FNUCI (PPE only)
+  const [fnuciRecords, setFnuciRecords] = useState<Array<{ id: string; numero: number; reference: string; statut: string; attribue_at: string | null }>>([])
+  const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
 
   // Zone calculée à partir de la distance au dépôt
   const computedZone = (() => {
@@ -196,6 +200,21 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         if (data.depotRetrait) setDepotRetrait(data.depotRetrait)
         if (data.depotLogistique) setDepotLogistique(data.depotLogistique)
         if (data.distanceKm) setDistanceKm(data.distanceKm)
+
+        // Fetch FNUCI records (PPE only)
+        if (process.env.NEXT_PUBLIC_TENANT_ID !== 'ecovolt' && data.client?.id) {
+          try {
+            const supabase = createClient()
+            const { data: fnuci } = await supabase
+              .from('fnuci')
+              .select('id, numero, reference, statut, attribue_at')
+              .eq('client_id', data.client.id)
+              .order('numero', { ascending: true })
+            if (fnuci) setFnuciRecords(fnuci)
+          } catch {
+            // Non-blocking
+          }
+        }
       } catch (err) {
         setError('Erreur lors du chargement')
       } finally {
@@ -988,20 +1007,26 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               {/* Slot 2 — PDF de livraison (attestation complète) */}
               <div className="p-3 bg-muted/30 rounded-lg border flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${(livraison as any)?.pdf_livraison_url ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <div className={`w-2 h-2 rounded-full ${(livraison as any)?.pdf_livraison_url || (livraison as any)?.photos_livraison?.attestation_pdf ? 'bg-green-500' : 'bg-gray-300'}`} />
                   <div>
                     <p className="font-medium text-sm">PDF de livraison</p>
                     <p className="text-xs text-muted-foreground">
-                      {(livraison as any)?.pdf_livraison_url
+                      {(livraison as any)?.pdf_livraison_url || (livraison as any)?.photos_livraison?.attestation_pdf
                         ? 'Généré après livraison'
                         : 'Sera généré automatiquement après livraison'}
                     </p>
                   </div>
                 </div>
-                {(livraison as any)?.pdf_livraison_url && (
+                {((livraison as any)?.pdf_livraison_url || (livraison as any)?.photos_livraison?.attestation_pdf) && (
                   <div className="flex gap-1">
                     <Button variant="ghost" size="sm" onClick={() => {
-                      window.open((livraison as any).pdf_livraison_url, '_blank')
+                      if ((livraison as any)?.pdf_livraison_url) {
+                        window.open((livraison as any).pdf_livraison_url, '_blank')
+                      } else {
+                        const pdfData = (livraison as any).photos_livraison.attestation_pdf
+                        const w = window.open('', '_blank')
+                        if (w) w.document.write(`<iframe src="${pdfData}" style="width:100%;height:100vh;border:none"></iframe>`)
+                      }
                     }}>
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -1071,6 +1096,36 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </CardContent>
         </Card>
+
+        {/* FNUCI attribués — PPE only */}
+        {tenantId !== 'ecovolt' && fnuciRecords.length > 0 && (
+          <Card className="shadow-sm border-2">
+            <CardContent className="px-4 py-3">
+              <div className="flex items-center gap-3 mb-3">
+                <Bike className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold text-foreground">FNUCI attribués ({fnuciRecords.length})</h3>
+              </div>
+              <div className="space-y-2">
+                {fnuciRecords.map((f) => (
+                  <div key={f.id} className="p-2 bg-muted/30 rounded-lg border flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-3">
+                      <Badge variant={f.statut === 'attribue' ? 'default' : f.statut === 'bloque' ? 'destructive' : 'secondary'} className="text-xs">
+                        {f.statut}
+                      </Badge>
+                      <span className="font-mono font-medium">{f.reference}</span>
+                      <span className="text-muted-foreground">N°{f.numero}</span>
+                    </div>
+                    {f.attribue_at && (
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(f.attribue_at).toLocaleDateString('fr-FR')}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Historique - pleine largeur en bas */}
         <Card className="lg:col-span-2 shadow-sm border-2">

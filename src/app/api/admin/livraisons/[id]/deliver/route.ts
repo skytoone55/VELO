@@ -14,6 +14,7 @@ interface DeliverBody {
   checklist: DeliveryChecklist
   signature_base64: string
   photo_identite_base64?: string
+  attestation_pdf_base64?: string
   notes?: string
 }
 
@@ -31,7 +32,7 @@ export async function POST(
 
     const { id: livraisonId } = await params
     const body: DeliverBody = await request.json()
-    const { fnuci_codes, nb_velos_livres, checklist, signature_base64, photo_identite_base64, notes } = body
+    const { fnuci_codes, nb_velos_livres, checklist, signature_base64, photo_identite_base64, attestation_pdf_base64, notes } = body
 
     // --- Validations de base ---
     if (!fnuci_codes || !Array.isArray(fnuci_codes) || fnuci_codes.length === 0) {
@@ -169,7 +170,10 @@ export async function POST(
         date_livraison: now,
         date_livraison_effective: now,
         signature_client: signature_base64,
-        photos_livraison: photo_identite_base64 ? { photo_identite: photo_identite_base64 } : undefined,
+        photos_livraison: {
+          ...(photo_identite_base64 ? { photo_identite: photo_identite_base64 } : {}),
+          ...(attestation_pdf_base64 ? { attestation_pdf: attestation_pdf_base64 } : {}),
+        },
         notes_internes: notes || null,
         updated_at: now,
       })

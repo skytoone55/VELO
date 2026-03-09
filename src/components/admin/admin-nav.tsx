@@ -105,6 +105,12 @@ const adminNavItems: NavItem[] = [
         icon: Calendar,
         roles: ['super_admin'],
       },
+      ...(process.env.NEXT_PUBLIC_TENANT_ID !== 'ecovolt' ? [{
+        href: '/admin/settings/fnuci',
+        label: 'FNUCI',
+        icon: FileText,
+        roles: ['super_admin', 'admin'] as UserRole[],
+      }] : []),
     ],
   },
 ]
