@@ -82,6 +82,24 @@ export default function AdminSettingsPage() {
             </CardHeader>
           </Card>
         </Link>
+        {/* Lien vers gestion FNUCI (PPE only) */}
+        {process.env.NEXT_PUBLIC_TENANT_ID !== 'ecovolt' && (
+          <Link href="/admin/settings/fnuci">
+            <Card className="hover:border-primary transition-colors cursor-pointer">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Gestion FNUCI</CardTitle>
+                    <CardDescription>
+                      Suivi et gestion des codes FNUCI — attribution, blocage, deblocage
+                    </CardDescription>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </CardHeader>
+            </Card>
+          </Link>
+        )}
       </div>
     </div>
   )
