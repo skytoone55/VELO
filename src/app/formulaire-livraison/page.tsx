@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { getTenantConfig } from '@/lib/tenants'
 
-// ─── Types ─────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────
 
 interface LivraisonData {
   id: string
@@ -25,6 +25,12 @@ interface ClientData {
   velo_devis: number
 }
 
+interface DepotCreneau {
+  heure_debut: string
+  heure_fin: string
+  capacite_velos: number
+}
+
 interface DepotData {
   id: string
   nom: string
@@ -35,6 +41,7 @@ interface DepotData {
   jours_ouverture: string[] | null
   capacite_velos_jour: number | null
   creneau_duree_minutes: number | null
+  creneaux: DepotCreneau[] | null
 }
 
 interface ValidateResponse {
@@ -56,7 +63,7 @@ interface TimeSlot {
   label: string
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────
 
 const JOUR_LABELS: Record<string, string> = {
   lundi: 'Lun',
@@ -76,6 +83,14 @@ const JOUR_INDEX: Record<string, number> = {
   jeudi: 4,
   vendredi: 5,
   samedi: 6,
+}
+
+function slotsFromDepotCreneaux(creneaux: { heure_debut: string; heure_fin: string }[]): TimeSlot[] {
+  return creneaux.map(c => ({
+    debut: c.heure_debut,
+    fin: c.heure_fin,
+    label: `${c.heure_debut} - ${c.heure_fin}`,
+  }))
 }
 
 function generateTimeSlots(durationMinutes: number): TimeSlot[] {
@@ -126,7 +141,7 @@ function formatDateFr(dateStr: string): string {
   return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-// ─── Main Content ──────────────────────────────────────────────────
+// ─── Main Content ────────────────────────────────────────────────
 
 function FormulaireLivraisonContent() {
   const tenant = getTenantConfig()
@@ -192,9 +207,15 @@ function FormulaireLivraisonContent() {
 
   // Available dates & time slots
   const availableDates = depot ? getAvailableDates(depot.jours_ouverture) : []
-  const timeSlots = depot?.creneau_duree_minutes ? generateTimeSlots(depot.creneau_duree_minutes) : generateTimeSlots(30)
+  // Prefer depot.creneaux (configured slots) over auto-generated half-hour blocks
+  const timeSlots = depot?.creneaux && depot.creneaux.length > 0
+    ? slotsFromDepotCreneaux(depot.creneaux)
+    : depot?.creneau_duree_minutes
+      ? generateTimeSlots(depot.creneau_duree_minutes)
+      : generateTimeSlots(30)
 
-  const canSubmit = selectedDate && (isRetrait || selectedSlot) && confirmPersonne && confirmIdentite && !submitting
+  const hasCreneaux = timeSlots.length > 0
+  const canSubmit = selectedDate && (!hasCreneaux || selectedSlot) && confirmPersonne && confirmIdentite && !submitting
 
   const handleSubmit = async () => {
     if (!canSubmit || !token || !selectedDate) return
@@ -231,7 +252,7 @@ function FormulaireLivraisonContent() {
     }
   }
 
-  // ─── Loading ─────────────────────────────────
+  // ─── Loading ─────────────────────────────────────
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -243,7 +264,7 @@ function FormulaireLivraisonContent() {
     )
   }
 
-  // ─── Error ───────────────────────────────────
+  // ─── Error ───────────────────────────────────────
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -264,7 +285,7 @@ function FormulaireLivraisonContent() {
     )
   }
 
-  // ─── Already Submitted ───────────────────────
+  // ─── Already Submitted ───────────────────────────
   if (alreadySubmitted && existingCreneau) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -296,7 +317,7 @@ function FormulaireLivraisonContent() {
     )
   }
 
-  // ─── Success ─────────────────────────────────
+  // ─── Success ─────────────────────────────────────
   if (success) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -353,7 +374,7 @@ function FormulaireLivraisonContent() {
     )
   }
 
-  // ─── Main Form ───────────────────────────────
+  // ─── Main Form ───────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -465,14 +486,14 @@ function FormulaireLivraisonContent() {
           </div>
         </div>
 
-        {/* Time slot picker (logistique only) */}
-        {isLogistique && selectedDate && (
+        {/* Time slot picker (shown for any depot that has configured creneaux) */}
+        {hasCreneaux && selectedDate && (
           <div className="bg-white rounded-xl shadow-sm p-5">
             <h2 className="text-base font-semibold text-gray-900 mb-1">
               Choisissez un creneau horaire
             </h2>
             <p className="text-sm text-gray-500 mb-4">
-              Selectionnez le creneau de {depot?.creneau_duree_minutes || 30} minutes qui vous convient.
+              Selectionnez le creneau qui vous convient.
             </p>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1">
@@ -501,7 +522,7 @@ function FormulaireLivraisonContent() {
         )}
 
         {/* Confirmations */}
-        {selectedDate && (isRetrait || selectedSlot) && (
+        {selectedDate && (!hasCreneaux || selectedSlot) && (
           <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
             <h2 className="text-base font-semibold text-gray-900">Confirmations obligatoires</h2>
 

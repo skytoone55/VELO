@@ -859,6 +859,7 @@ export async function sendConfirmationCreneauEmail({
   const modeLabel = isRetrait ? 'retrait' : 'livraison'
   const baseUrl = tenant.url || process.env.NEXT_PUBLIC_APP_URL || ''
   const cancelUrl = `${baseUrl}/api/livraisons/cancel-creneau?token=${token || ''}`
+  const confirmCreneauUrl = `${baseUrl}/livraisons/confirm-creneau?token=${token || ''}`
 
   const dateFormatted = (() => {
     try {
@@ -924,29 +925,26 @@ export async function sendConfirmationCreneauEmail({
           ${depotSection}
 
           <p style="color: #4b5563; line-height: 1.6; margin-bottom: 25px;">
-            Merci de confirmer votre disponibilité en cliquant sur le bouton ci-dessous :
+            Merci de confirmer votre présence en cliquant sur le bouton ci-dessous :
           </p>
 
+          <div style="text-align: center; margin-bottom: 12px;">
+            <a href="${confirmCreneauUrl}" style="display: inline-block; background-color: #16a34a; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+              Je confirme ma présence
+            </a>
+          </div>
+
           <div style="text-align: center; margin-bottom: 20px;">
-            <a href="${confirmUrl}" style="display: inline-block; background-color: ${tenant.branding.colors.primary}; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
-              Confirmer ou modifier
+            <a href="${cancelUrl}" style="display: inline-block; padding: 12px 24px; background-color: #f4f4f5; color: #71717a; border: 1px solid #d4d4d8; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500;">
+              Je refuse ce créneau
             </a>
           </div>
 
           ${getIdentityReminderHtml(clientName, isRetrait)}
 
-          <div style="text-align: center; margin-top: 30px; margin-bottom: 8px;">
-            <a href="${cancelUrl}" style="display: inline-block; padding: 12px 24px; background-color: #f4f4f5; color: #71717a; border: 1px solid #d4d4d8; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500;">
-              Je ne serai pas disponible à ce créneau
-            </a>
-          </div>
-          <p style="color: #a1a1aa; font-size: 12px; text-align: center; margin: 0 0 20px 0;">
-            Si vous ne pouvez pas être présent(e), cliquez ci-dessus et un agent vous recontactera.
-          </p>
-
           <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 20px;">
             Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/>
-            <a href="${confirmUrl}" style="color: #6b7280; word-break: break-all;">${confirmUrl}</a>
+            <a href="${confirmCreneauUrl}" style="color: #6b7280; word-break: break-all;">${confirmCreneauUrl}</a>
           </p>
         </div>
 

@@ -26,6 +26,12 @@ interface ClientData {
   velo_devis: number
 }
 
+interface DepotCreneau {
+  heure_debut: string
+  heure_fin: string
+  capacite_velos: number
+}
+
 interface DepotData {
   id: string
   nom: string
@@ -36,6 +42,7 @@ interface DepotData {
   jours_ouverture: string[] | null
   capacite_velos_jour: number | null
   creneau_duree_minutes: number | null
+  creneaux: DepotCreneau[] | null
 }
 
 /**
@@ -99,7 +106,7 @@ export async function GET(request: NextRequest) {
     if (typedLivraison.depot_id) {
       const { data: depotData } = await adminClient
         .from('depots')
-        .select('id, nom, type, adresse, code_postal, ville, jours_ouverture, capacite_velos_jour, creneau_duree_minutes')
+        .select('id, nom, type, adresse, code_postal, ville, jours_ouverture, capacite_velos_jour, creneau_duree_minutes, creneaux')
         .eq('id', typedLivraison.depot_id)
         .single()
 
@@ -137,6 +144,7 @@ export async function GET(request: NextRequest) {
         jours_ouverture: depot.jours_ouverture,
         capacite_velos_jour: depot.capacite_velos_jour,
         creneau_duree_minutes: depot.creneau_duree_minutes,
+        creneaux: depot.creneaux,
       } : null,
     })
   } catch (error: unknown) {

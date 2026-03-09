@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
- * GET /api/livraisons/cancel-creneau?token=TOKEN
+ * GET /api/livraisons/confirm-creneau?token=TOKEN
  * Route publique (pas d'auth) — lien email client.
- * Marque le client "anomalie" + la livraison "indisponible", puis redirige vers la page de confirmation.
+ * Marque la livraison confirmée par le client.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     // Recherche la livraison par token
     const { data: livraison, error: livraisonError } = await adminClient
       .from('livraisons')
-      .select('id, client_id')
+      .select('id')
       .eq('token_livraison', token)
       .single()
 
@@ -28,42 +28,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Livraison introuvable' }, { status: 404 })
     }
 
-    const { id: livraisonId, client_id: clientId } = livraison
-
-    // Mise a jour du client : statut anomalie
-    const { error: clientError } = await adminClient
-      .from('clients')
-      .update({
-        statut_commercial: 'anomalie',
-        statut_anomalie:
-          'Le client a refusé le créneau de livraison prévu — à replanifier',
-      })
-      .eq('id', clientId)
-
-    if (clientError) {
-      console.error('[cancel-creneau] Erreur mise a jour client:', clientError)
-      throw clientError
-    }
-
-    // Mise a jour de la livraison : confirmation indisponible
+    // Mise à jour de la livraison : confirmation client
     const { error: livraisonUpdateError } = await adminClient
       .from('livraisons')
       .update({
-        confirmation_statut: 'indisponible',
-        confirmation_commentaire: 'Client indisponible au créneau prévu',
+        confirmation_statut: 'confirme',
+        confirmation_date: new Date().toISOString(),
       })
-      .eq('id', livraisonId)
+      .eq('id', livraison.id)
 
     if (livraisonUpdateError) {
-      console.error('[cancel-creneau] Erreur mise a jour livraison:', livraisonUpdateError)
+      console.error('[confirm-creneau] Erreur mise à jour livraison:', livraisonUpdateError)
       throw livraisonUpdateError
     }
 
-    return NextResponse.redirect(
-      new URL('/livraisons/cancel-creneau/confirme', request.url)
-    )
+    return NextResponse.json({ success: true })
   } catch (error: any) {
-    console.error('[cancel-creneau] Erreur serveur:', error)
+    console.error('[confirm-creneau] Erreur serveur:', error)
     return NextResponse.json(
       { error: error?.message || error?.details || 'Erreur serveur' },
       { status: 500 }

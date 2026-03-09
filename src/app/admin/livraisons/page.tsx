@@ -133,6 +133,14 @@ export default function AdminLivraisonsPage() {
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
   const [mailLivraisonLoading, setMailLivraisonLoading] = useState(false)
   const [confirmationCreneauLoading, setConfirmationCreneauLoading] = useState(false)
+  const [bulkMessage, setBulkMessage] = useState<{ text: string; isError: boolean } | null>(null)
+  const bulkMessageTimerRef = useRef<NodeJS.Timeout>(null)
+
+  const showBulkMessage = (text: string, isError = false) => {
+    if (bulkMessageTimerRef.current) clearTimeout(bulkMessageTimerRef.current)
+    setBulkMessage({ text, isError })
+    bulkMessageTimerRef.current = setTimeout(() => setBulkMessage(null), 5000)
+  }
 
   const [depotOptions, setDepotOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Dépôt' }])
   const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
@@ -304,7 +312,10 @@ export default function AdminLivraisonsPage() {
             else errorCount++
           } catch { errorCount++ }
         }
-        alert(`Formulaire retrait envoyé : ${successCount} succès, ${errorCount} erreur(s)`)
+        showBulkMessage(
+          `Formulaire retrait envoyé : ${successCount} succès${errorCount > 0 ? `, ${errorCount} erreur(s)` : ''}`,
+          errorCount > 0,
+        )
       } else if (action === 'send_mail_livraison') {
         setMailLivraisonLoading(true)
         let successCount = 0
@@ -325,9 +336,11 @@ export default function AdminLivraisonsPage() {
           }
         }
         setMailLivraisonLoading(false)
-        alert(errorCount === 0
-          ? `Mail livraison envoyé à ${successCount} client${successCount > 1 ? 's' : ''}`
-          : `${successCount} envoyé${successCount > 1 ? 's' : ''}, ${errorCount} erreur${errorCount > 1 ? 's' : ''}`
+        showBulkMessage(
+          errorCount === 0
+            ? `Mail livraison envoyé à ${successCount} client${successCount > 1 ? 's' : ''}`
+            : `${successCount} envoyé${successCount > 1 ? 's' : ''}, ${errorCount} erreur${errorCount > 1 ? 's' : ''}`,
+          errorCount > 0,
         )
       } else if (action === 'send_confirmation_creneau') {
         setConfirmationCreneauLoading(true)
@@ -349,9 +362,11 @@ export default function AdminLivraisonsPage() {
           }
         }
         setConfirmationCreneauLoading(false)
-        alert(errorCount === 0
-          ? `Mail confirmation créneau envoyé à ${successCount} client${successCount > 1 ? 's' : ''}`
-          : `${successCount} envoyé${successCount > 1 ? 's' : ''}, ${errorCount} erreur${errorCount > 1 ? 's' : ''}`
+        showBulkMessage(
+          errorCount === 0
+            ? `Mail confirmation créneau envoyé à ${successCount} client${successCount > 1 ? 's' : ''}`
+            : `${successCount} envoyé${successCount > 1 ? 's' : ''}, ${errorCount} erreur${errorCount > 1 ? 's' : ''}`,
+          errorCount > 0,
         )
       } else if (action === 'change_status' && params?.statut) {
         const res = await fetch('/api/admin/livraisons/bulk-status', {
@@ -729,6 +744,11 @@ export default function AdminLivraisonsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {bulkMessage && (
+                <span className={`text-xs font-medium px-2 py-1 rounded ${bulkMessage.isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                  {bulkMessage.text}
+                </span>
+              )}
               <Button size="sm" variant="ghost" onClick={handleClearSelection} disabled={bulkActionLoading}>
                 <X className="h-4 w-4" />
               </Button>
