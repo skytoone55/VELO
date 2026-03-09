@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/popover'
 import {
   Loader2, ChevronLeft, ChevronRight, Calendar, Truck,
-  Send, MapPin, Bike, Clock, Search, Eye, X, Trash2,
+  Send, MapPin, Bike, Clock, Search, Eye, X, Trash2, Mail,
 } from 'lucide-react'
 import { DELIVERY_STATUS } from '@/lib/constants'
 import Link from 'next/link'
@@ -238,6 +238,8 @@ function PlanningContent() {
   const [placementResults, setPlacementResults] = useState<PlanningClient[]>([])
   const [placementLoading, setPlacementLoading] = useState(false)
   const [removingLivraisonId, setRemovingLivraisonId] = useState<string | null>(null)
+  const [sendingMailPlanning, setSendingMailPlanning] = useState(false)
+  const [mailPlanningMessage, setMailPlanningMessage] = useState<{ text: string; isError: boolean } | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false)
   const [selectedCreneau, setSelectedCreneau] = useState<SelectedCreneau | null>(null)
@@ -607,6 +609,32 @@ function PlanningContent() {
       alert('Erreur lors de la suppression')
     } finally {
       setRemovingLivraisonId(null)
+    }
+  }
+
+  const handleSendMailPlanning = async (livraisonIds: string[]) => {
+    if (livraisonIds.length === 0) return
+    setSendingMailPlanning(true)
+    setMailPlanningMessage(null)
+    try {
+      const res = await fetch('/api/admin/livraisons/send-mail-planning', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ livraisonIds }),
+      })
+      const data = await res.json()
+      setMailPlanningMessage({
+        text: data.errors === 0
+          ? `Mail planning envoyé à ${data.sent} client${data.sent > 1 ? 's' : ''}`
+          : `${data.sent} envoyé${data.sent > 1 ? 's' : ''}, ${data.errors} erreur${data.errors > 1 ? 's' : ''}`,
+        isError: data.errors > 0,
+      })
+      setTimeout(() => setMailPlanningMessage(null), 5000)
+    } catch {
+      setMailPlanningMessage({ text: 'Erreur envoi mail planning', isError: true })
+      setTimeout(() => setMailPlanningMessage(null), 5000)
+    } finally {
+      setSendingMailPlanning(false)
     }
   }
 
@@ -1010,6 +1038,8 @@ function PlanningContent() {
                     setSelectedCreneau({ date, heure_debut, heure_fin, capacite })
                   }
                   selectedCreneau={selectedCreneau}
+                  onSendMailPlanning={handleSendMailPlanning}
+                  sendingMailPlanning={sendingMailPlanning}
                 />
               ) : viewMode === 'mois' ? (
                 <MonthView
@@ -1040,6 +1070,8 @@ function PlanningContent() {
                     setSelectedCreneau({ date, heure_debut, heure_fin, capacite })
                   }
                   selectedCreneau={selectedCreneau}
+                  onSendMailPlanning={handleSendMailPlanning}
+                  sendingMailPlanning={sendingMailPlanning}
                 />
               ) : (
                 /* Week view */
@@ -1060,6 +1092,8 @@ function PlanningContent() {
                     setSelectedCreneau({ date, heure_debut, heure_fin, capacite })
                   }
                   selectedCreneau={selectedCreneau}
+                  onSendMailPlanning={handleSendMailPlanning}
+                  sendingMailPlanning={sendingMailPlanning}
                 />
               )}
             </CardContent>
@@ -1098,6 +1132,31 @@ function PlanningContent() {
                       <X className="h-4 w-4" />
                     </button>
                   </div>
+
+                  {/* Mail planning button */}
+                  {creneauLivraisons.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full text-xs"
+                        onClick={() => handleSendMailPlanning(creneauLivraisons.map(l => l.id))}
+                        disabled={sendingMailPlanning}
+                      >
+                        {sendingMailPlanning ? (
+                          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        ) : (
+                          <Mail className="h-3.5 w-3.5 mr-1.5" />
+                        )}
+                        Mail planning ({creneauLivraisons.length})
+                      </Button>
+                    </div>
+                  )}
+                  {mailPlanningMessage && (
+                    <p className={`text-xs font-medium px-2 py-1 rounded ${mailPlanningMessage.isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                      {mailPlanningMessage.text}
+                    </p>
+                  )}
 
                   {/* Client list */}
                   {creneauLivraisons.length === 0 ? (
@@ -1464,6 +1523,8 @@ function DayView({
   removingLivraisonId,
   onSelectCreneau,
   selectedCreneau,
+  onSendMailPlanning,
+  sendingMailPlanning,
 }: {
   day: Date
   livraisons: PlanningLivraison[]
@@ -1478,6 +1539,8 @@ function DayView({
   removingLivraisonId: string | null
   onSelectCreneau: (date: string, heure_debut: string, heure_fin: string, capacite: number) => void
   selectedCreneau: SelectedCreneau | null
+  onSendMailPlanning?: (livraisonIds: string[]) => void
+  sendingMailPlanning?: boolean
 }) {
   if (!isOpen) {
     return (
@@ -1510,6 +1573,26 @@ function DayView({
 
   return (
     <div className="space-y-4">
+      {/* Mail planning button for the day */}
+      {livraisons.length > 0 && onSendMailPlanning && (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onSendMailPlanning(livraisons.map(l => l.id))}
+            disabled={sendingMailPlanning}
+            className="text-xs"
+          >
+            {sendingMailPlanning ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Mail className="h-3.5 w-3.5 mr-1.5" />
+            )}
+            Mail planning ({livraisons.length} client{livraisons.length > 1 ? 's' : ''})
+          </Button>
+        </div>
+      )}
+
       {hasCreneaux ? (
         /* Créneau blocks */
         <div className="space-y-3">
@@ -1690,6 +1773,8 @@ function WeekView({
   removingLivraisonId,
   onSelectCreneau,
   selectedCreneau,
+  onSendMailPlanning,
+  sendingMailPlanning,
 }: {
   weekDays: Date[]
   today: Date
@@ -1705,6 +1790,8 @@ function WeekView({
   removingLivraisonId: string | null
   onSelectCreneau: (date: string, heure_debut: string, heure_fin: string, capacite: number) => void
   selectedCreneau: SelectedCreneau | null
+  onSendMailPlanning?: (livraisonIds: string[]) => void
+  sendingMailPlanning?: boolean
 }) {
   const hasCreneaux = creneaux.length > 0
   const numDays = weekDays.length
@@ -1748,6 +1835,25 @@ function WeekView({
               <div>{JOURS_LABELS[day.getDay()]}</div>
               <div className="text-xs">{formatDateShort(day)}</div>
             </button>
+
+            {/* Mail planning button per day */}
+            {open && dayLivraisons.length > 0 && onSendMailPlanning && (
+              <div className="px-1 py-1 border-b bg-gray-50 flex justify-center">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onSendMailPlanning(dayLivraisons.map(l => l.id)) }}
+                  disabled={sendingMailPlanning}
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-0.5 rounded transition-colors disabled:opacity-50"
+                  title={`Envoyer mail planning à ${dayLivraisons.length} client(s)`}
+                >
+                  {sendingMailPlanning ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Mail className="h-3 w-3" />
+                  )}
+                  <span>{dayLivraisons.length}</span>
+                </button>
+              </div>
+            )}
 
             {!open ? (
               <div className="flex-1 flex items-center justify-center text-gray-400 text-xs">
