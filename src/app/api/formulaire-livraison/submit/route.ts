@@ -65,10 +65,10 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    // Chercher la livraison par token
+    // Chercher la livraison par token (+ depot_retrait_id du client pour le planning)
     const { data: livraison, error: livraisonError } = await adminClient
       .from('livraisons')
-      .select('id, client_id, creneau_date, statut')
+      .select('id, client_id, creneau_date, statut, depot_id, client:clients!inner(depot_retrait_id)')
       .eq('token_livraison', token)
       .single()
 
@@ -84,7 +84,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Mettre a jour la livraison avec le creneau choisi
+    // Mettre a jour la livraison avec le creneau choisi + depot_id pour le planning
+    const depotId = livraison.depot_id || (livraison.client as any)?.depot_retrait_id || null
     const { error: updateError } = await adminClient
       .from('livraisons')
       .update({
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
         creneau_heure_debut: creneau_heure_debut || null,
         creneau_heure_fin: creneau_heure_fin || null,
         statut: 'retrait_planifie',
+        depot_id: depotId,
         date_programmation: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
