@@ -123,7 +123,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Construire l'URL du formulaire
-    const tenant = (await import('@/lib/tenants')).getTenantConfig()
     const baseUrl = tenant.url || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
     const formulaireUrl = `${baseUrl}/formulaire-livraison?token=${token}`
 
