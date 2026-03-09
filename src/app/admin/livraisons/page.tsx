@@ -420,9 +420,9 @@ export default function AdminLivraisonsPage() {
   const canSendMailLivraison = selectedLivraisonsData.length > 0 &&
     selectedLivraisonsData.every(l => !l.client?.depot_retrait_id)
 
-  // "Mail planning" — enabled only if ALL selected livraisons have statut 'programme'
+  // "Mail planning" — enabled only if ALL selected livraisons have statut 'en_livraison' (= programmé)
   const canSendMailPlanning = selectedLivraisonsData.length > 0 &&
-    selectedLivraisonsData.every(l => l.statut === 'programme')
+    selectedLivraisonsData.every(l => l.statut === 'en_livraison')
 
   return (
     <div className="space-y-3">
