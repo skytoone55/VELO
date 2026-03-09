@@ -291,8 +291,20 @@ export default function AdminLivraisonsPage() {
         .map(l => l.client_id!)
 
       if (action === 'send_formulaire_retrait') {
-        // TODO: implement formulaire retrait email
-        alert('Fonctionnalité en cours de développement')
+        let successCount = 0
+        let errorCount = 0
+        for (const cId of clientIds) {
+          try {
+            const res = await fetch('/api/admin/clients/send-formulaire-livraison', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ clientId: cId }),
+            })
+            if (res.ok) successCount++
+            else errorCount++
+          } catch { errorCount++ }
+        }
+        alert(`Formulaire retrait envoyé : ${successCount} succès, ${errorCount} erreur(s)`)
       } else if (action === 'send_mail_livraison') {
         setMailLivraisonLoading(true)
         let successCount = 0
