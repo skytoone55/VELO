@@ -191,7 +191,7 @@ function getLastOfMonth(d: Date): Date {
 
 const LIVRAISON_STATUT_COLORS: Record<string, string> = {
   en_attente: 'bg-yellow-100 text-yellow-800',
-  programmee: 'bg-blue-100 text-blue-800',
+  en_livraison: 'bg-blue-100 text-blue-800',
   en_cours: 'bg-orange-100 text-orange-800',
   livree: 'bg-green-100 text-green-800',
   annulee: 'bg-gray-100 text-gray-800',
@@ -519,7 +519,7 @@ function PlanningContent() {
       const updateData: Record<string, unknown> = {
         creneau_date: placementDate,
         depot_id: selectedDepotId,
-        statut: 'programmee',
+        statut: 'en_livraison',
         date_programmation: new Date().toISOString(),
       }
       if (placementCreneau) {

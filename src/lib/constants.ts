@@ -95,11 +95,15 @@ export type Territoire = keyof typeof TERRITOIRES
 // STATUTS LIVRAISON
 // =================================================================
 export const DELIVERY_STATUS = {
-  en_attente: 'En attente',
-  programmee: 'Programmée',
-  en_cours: 'En cours',
-  livree: 'Livrée',
-  annulee: 'Annulée',
+  a_livrer: 'À livrer',
+  en_livraison: 'En livraison',
+  livre: 'Livré',
+  probleme_livraison: 'Problème livraison',
+  a_relivrer: 'À relivrer',
+  retrait_planifie: 'Retrait planifié',
+  retrait_effectue: 'Retrait effectué',
+  annule: 'Annulé',
+  refuse: 'Refusé',
 } as const
 
 export type DeliveryStatus = keyof typeof DELIVERY_STATUS

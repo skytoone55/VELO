@@ -36,6 +36,9 @@ interface LivraisonRow {
   adresse_livraison_cp: string | null
   adresse_livraison_ville: string | null
   complement_adresse: string | null
+  creneau_date: string | null
+  creneau_heure_debut: string | null
+  creneau_heure_fin: string | null
   date_programmation: string | null
   date_livraison: string | null
   statut: string | null
@@ -137,7 +140,6 @@ export default function AdminLivraisonsPage() {
   const [selectedLivraisons, setSelectedLivraisons] = useState<Set<string>>(new Set())
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
   const [mailLivraisonLoading, setMailLivraisonLoading] = useState(false)
-  const [confirmationCreneauLoading, setConfirmationCreneauLoading] = useState(false)
   const [bulkMessage, setBulkMessage] = useState<{ text: string; isError: boolean } | null>(null)
   const bulkMessageTimerRef = useRef<NodeJS.Timeout>(null)
 
@@ -364,32 +366,6 @@ export default function AdminLivraisonsPage() {
             : `${successCount} envoyé${successCount > 1 ? 's' : ''}, ${errorCount} erreur${errorCount > 1 ? 's' : ''}`,
           errorCount > 0,
         )
-      } else if (action === 'send_confirmation_creneau') {
-        setConfirmationCreneauLoading(true)
-        let successCount = 0
-        let errorCount = 0
-        for (const livId of Array.from(selectedLivraisons)) {
-          const liv = livraisons.find(l => l.id === livId)
-          if (!liv?.client) continue
-          try {
-            const res = await fetch('/api/admin/livraisons/send-confirmation-creneau', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ livraisonId: liv.id }),
-            })
-            if (res.ok) successCount++
-            else errorCount++
-          } catch {
-            errorCount++
-          }
-        }
-        setConfirmationCreneauLoading(false)
-        showBulkMessage(
-          errorCount === 0
-            ? `Mail confirmation créneau envoyé à ${successCount} client${successCount > 1 ? 's' : ''}`
-            : `${successCount} envoyé${successCount > 1 ? 's' : ''}, ${errorCount} erreur${errorCount > 1 ? 's' : ''}`,
-          errorCount > 0,
-        )
       } else if (action === 'change_status' && params?.statut) {
         const res = await fetch('/api/admin/livraisons/bulk-status', {
           method: 'POST',
@@ -404,7 +380,7 @@ export default function AdminLivraisonsPage() {
           console.error('Erreur bulk status:', data.error)
         }
       }
-      if (action !== 'send_formulaire_retrait' && action !== 'send_mail_livraison' && action !== 'send_confirmation_creneau') {
+      if (action !== 'send_formulaire_retrait' && action !== 'send_mail_livraison') {
         setSelectedLivraisons(new Set())
         fetchLivraisons()
       }
@@ -426,9 +402,7 @@ export default function AdminLivraisonsPage() {
   const canSendMailLivraison = selectedLivraisonsData.length > 0 &&
     selectedLivraisonsData.every(l => !l.client?.depot_retrait_id)
 
-  // "Mail confirmation créneau" — enabled only if ALL selected clients have date_programmation
-  const canSendConfirmationCreneau = selectedLivraisonsData.length > 0 &&
-    selectedLivraisonsData.every(l => !!l.date_programmation)
+  // Mail confirmation créneau désactivé (non fonctionnel)
 
   return (
     <div className="space-y-3">
@@ -659,7 +633,7 @@ export default function AdminLivraisonsPage() {
                   <SortableHeader label="Mode" column="mode_livraison" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <TableHead className="hidden lg:table-cell">Adresse</TableHead>
                   <TableHead className="hidden lg:table-cell w-14 text-center">Vélos</TableHead>
-                  <SortableHeader label="Date" column="date_programmation" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Date prévue" column="creneau_date" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <SortableHeader label="Statut" column="statut" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -739,10 +713,15 @@ export default function AdminLivraisonsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {liv.date_programmation ? (
+                      {liv.creneau_date ? (
                         <div className="flex items-center gap-1 text-sm">
                           <Calendar className="h-3 w-3 text-muted-foreground" />
-                          {new Date(liv.date_programmation).toLocaleDateString('fr-FR')}
+                          {new Date(liv.creneau_date + 'T00:00:00').toLocaleDateString('fr-FR')}
+                          {liv.creneau_heure_debut && (
+                            <span className="text-muted-foreground text-xs ml-1">
+                              {liv.creneau_heure_debut}
+                            </span>
+                          )}
                         </div>
                       ) : <span className="text-sm text-muted-foreground">-</span>}
                     </TableCell>
@@ -858,23 +837,6 @@ export default function AdminLivraisonsPage() {
                     <Mail className="h-4 w-4 mr-2" />
                   )}
                   Mail livraison
-                </Button>
-              </div>
-              <div
-                title={!canSendConfirmationCreneau ? 'Uniquement pour clients avec créneau planifié' : undefined}
-              >
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleBulkAction('send_confirmation_creneau')}
-                  disabled={bulkActionLoading || confirmationCreneauLoading || !canSendConfirmationCreneau}
-                >
-                  {confirmationCreneauLoading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                  )}
-                  Mail confirmation créneau
                 </Button>
               </div>
               <Select onValueChange={(value) => handleBulkAction('change_status', { statut: value })} disabled={bulkActionLoading}>

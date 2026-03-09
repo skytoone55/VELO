@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     const sortByParam = searchParams.get('sortBy') || 'created_at'
     const sortOrderParam = searchParams.get('sortOrder') || 'desc'
     const SORTABLE_COLUMNS = [
-      'created_at', 'updated_at', 'statut', 'mode_livraison', 'date_programmation',
+      'created_at', 'updated_at', 'statut', 'mode_livraison', 'date_programmation', 'creneau_date',
     ]
     const safeSortBy = SORTABLE_COLUMNS.includes(sortByParam) ? sortByParam : 'created_at'
     const ascending = sortOrderParam === 'asc'
@@ -118,7 +118,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (statutFilter && statutFilter !== 'all') {
-      query = query.eq('statut', statutFilter)
+      // Support multi-select: "en_livraison,livre" → .in()
+      const statuts = statutFilter.split(',').filter(Boolean)
+      if (statuts.length === 1) {
+        query = query.eq('statut', statuts[0])
+      } else if (statuts.length > 1) {
+        query = query.in('statut', statuts)
+      }
     }
 
     if (depotFilter && depotFilter !== 'all') {

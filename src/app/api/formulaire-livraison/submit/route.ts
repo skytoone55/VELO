@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         creneau_date,
         creneau_heure_debut: creneau_heure_debut || null,
         creneau_heure_fin: creneau_heure_fin || null,
-        statut: 'programmee',
+        statut: 'retrait_planifie',
         date_programmation: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })

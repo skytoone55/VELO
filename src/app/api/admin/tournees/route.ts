@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
           creneau_date: date,
           creneau_heure_debut: creneau_debut || null,
           creneau_heure_fin: creneau_fin || null,
-          statut: 'programmee',
+          statut: 'en_livraison',
           token_livraison: confirmToken,
           updated_at: new Date().toISOString(),
         })
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
         entity_type: 'livraison',
         entity_id: liv.id,
         statut_avant: 'en_attente',
-        statut_apres: 'programmee',
+        statut_apres: 'en_livraison',
         effectue_par: auth.id,
         raison: `Tournée programmée le ${date}`,
       })
