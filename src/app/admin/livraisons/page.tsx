@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   Loader2, Search, Truck, MapPin, Calendar, Phone, RefreshCw,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
-  Eye, X, Send, Mail, CheckCircle, ChevronDown,
+  Eye, X, Send, Mail, CheckCircle, ChevronDown, CalendarCheck,
 } from 'lucide-react'
 import {
   Popover,
@@ -366,6 +366,24 @@ export default function AdminLivraisonsPage() {
             : `${successCount} envoyé${successCount > 1 ? 's' : ''}, ${errorCount} erreur${errorCount > 1 ? 's' : ''}`,
           errorCount > 0,
         )
+      } else if (action === 'send_mail_planning') {
+        const livIds = Array.from(selectedLivraisons)
+        try {
+          const res = await fetch('/api/admin/livraisons/send-mail-planning', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ livraisonIds: livIds }),
+          })
+          const data = await res.json()
+          showBulkMessage(
+            data.errors === 0
+              ? `Mail planning envoyé à ${data.sent} client${data.sent > 1 ? 's' : ''}`
+              : `${data.sent} envoyé${data.sent > 1 ? 's' : ''}, ${data.errors} erreur${data.errors > 1 ? 's' : ''}`,
+            data.errors > 0,
+          )
+        } catch {
+          showBulkMessage('Erreur lors de l\'envoi des mails planning', true)
+        }
       } else if (action === 'change_status' && params?.statut) {
         const res = await fetch('/api/admin/livraisons/bulk-status', {
           method: 'POST',
@@ -402,7 +420,9 @@ export default function AdminLivraisonsPage() {
   const canSendMailLivraison = selectedLivraisonsData.length > 0 &&
     selectedLivraisonsData.every(l => !l.client?.depot_retrait_id)
 
-  // Mail confirmation créneau désactivé (non fonctionnel)
+  // "Mail planning" — enabled only if ALL selected livraisons have statut 'programme'
+  const canSendMailPlanning = selectedLivraisonsData.length > 0 &&
+    selectedLivraisonsData.every(l => l.statut === 'programme')
 
   return (
     <div className="space-y-3">
@@ -837,6 +857,19 @@ export default function AdminLivraisonsPage() {
                     <Mail className="h-4 w-4 mr-2" />
                   )}
                   Mail livraison
+                </Button>
+              </div>
+              <div
+                title={!canSendMailPlanning ? 'Uniquement pour clients au statut "programmé"' : undefined}
+              >
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleBulkAction('send_mail_planning')}
+                  disabled={bulkActionLoading || !canSendMailPlanning}
+                >
+                  <CalendarCheck className="h-4 w-4 mr-2" />
+                  Mail planning
                 </Button>
               </div>
               <Select onValueChange={(value) => handleBulkAction('change_status', { statut: value })} disabled={bulkActionLoading}>
