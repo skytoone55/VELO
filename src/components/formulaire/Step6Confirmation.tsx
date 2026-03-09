@@ -206,7 +206,6 @@ export function Step6Confirmation() {
               <>
                 <div className="font-medium flex items-center gap-2">
                   Retrait en point relais
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gratuit</span>
                 </div>
                 {data.depotRetrait && (
                   <div className="text-muted-foreground mt-1">
@@ -225,8 +224,6 @@ export function Step6Confirmation() {
                       <Euro className="h-3 w-3" />
                       Payant
                     </span>
-                  ) : (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gratuit</span>
                   )}
                 </div>
                 {data.adresseLivraison && (

@@ -406,23 +406,51 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       {/* Header amélioré avec gradient */}
       <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-xl p-6 text-white shadow-lg">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
+          {/* Gauche — retour + nom société */}
+          <div className="flex items-center gap-4 min-w-0">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => router.push('/admin/clients')}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold">{client.raison_sociale}</h1>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold truncate">{client.raison_sociale}</h1>
               <p className="text-slate-300 mt-1">{getDepartementLabel(client.departement || '')}</p>
             </div>
           </div>
 
-          {/* Actions rapides dans le header */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Centre — boutons Planifier + Livrer */}
+          <div className="flex items-center justify-center gap-3 flex-1">
+            {client.statut_commercial === 'a_livrer' && !livraisons[0]?.creneau_date && (
+              <Button
+                size="sm"
+                asChild
+                className="bg-blue-500 hover:bg-blue-600 text-white border-0 px-6 font-semibold"
+              >
+                <Link href={`/admin/planning${client.depot_retrait_id ? `?depot_id=${client.depot_retrait_id}` : client.depot_logistique_id ? `?depot_id=${client.depot_logistique_id}` : ''}`}>
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Planifier
+                </Link>
+              </Button>
+            )}
+
+            {['a_livrer', 'en_livraison'].includes(client.statut_commercial || '') && (
+              <Button
+                size="sm"
+                onClick={handleOpenDelivery}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 px-6 font-semibold"
+              >
+                <Truck className="mr-2 h-4 w-4" />
+                Livrer
+              </Button>
+            )}
+          </div>
+
+          {/* Droite — actions secondaires + badges statut */}
+          <div className="flex flex-wrap items-center gap-2 justify-end">
             {/* Envoyer formulaire — visible seulement si controle_valide + NAF OUI */}
             {client.statut_commercial === 'controle_valide' && ['OUI', 'ok', 'oui'].includes(client.validation_naf || '') && (
               <Dialog open={sendEmailOpen} onOpenChange={setSendEmailOpen}>
@@ -506,33 +534,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </Dialog>
             )}
 
-            {/* Boutons d'action principaux — centrés et espacés */}
-            {client.statut_commercial === 'a_livrer' && !livraisons[0]?.creneau_date && (
-              <Button
-                size="sm"
-                asChild
-                className="bg-blue-500 hover:bg-blue-600 text-white border-0 px-6 font-semibold"
-              >
-                <Link href={`/admin/planning${client.depot_retrait_id ? `?depot_id=${client.depot_retrait_id}` : client.depot_logistique_id ? `?depot_id=${client.depot_logistique_id}` : ''}`}>
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Planifier
-                </Link>
-              </Button>
-            )}
-
-            {['a_livrer', 'en_livraison'].includes(client.statut_commercial || '') && (
-              <Button
-                size="sm"
-                onClick={handleOpenDelivery}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 px-6 font-semibold"
-              >
-                <Truck className="mr-2 h-4 w-4" />
-                Livrer
-              </Button>
-            )}
-
             {/* Séparateur avant badges statut */}
-            <div className="h-6 w-px bg-white/20 mx-3" />
+            <div className="h-6 w-px bg-white/20 mx-1" />
 
             {/* Statut commercial */}
             <Badge className={`${statutCommercialColors[client.statut_commercial || 'inconnu']} text-sm px-3 py-1`}>
@@ -555,7 +558,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         </div>
 
         {/* Métriques rapides */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6 pt-4 border-t border-white/20">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-white/20">
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 text-slate-300 text-xs uppercase tracking-wide mb-1">
               <Bike className="h-4 w-4" />
@@ -566,10 +569,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 text-slate-300 text-xs uppercase tracking-wide mb-1">
               <KeyRound className="h-4 w-4" />
-              Code PPE
+              REF ENEMAT
             </div>
             <div className="text-lg font-mono font-bold">
-              {codePpeSaisi || '—'}
+              {(client as any).reference_retina || '—'}
             </div>
           </div>
           <div className="text-center">
@@ -619,15 +622,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </div>
             </div>
           )}
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 text-slate-300 text-xs uppercase tracking-wide mb-1">
-              <Calendar className="h-4 w-4" />
-              Créé le
-            </div>
-            <div className="text-lg font-semibold">
-              {new Date(client.created_at).toLocaleDateString('fr-FR')}
-            </div>
-          </div>
         </div>
       </div>
 
