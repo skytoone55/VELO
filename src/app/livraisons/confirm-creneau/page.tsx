@@ -2,7 +2,82 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { CheckCircle, UserCheck, IdCard, Loader2, AlertCircle } from 'lucide-react'
+import { CheckCircle, UserCheck, IdCard, Loader2, AlertCircle, Calendar, Clock, MapPin } from 'lucide-react'
+
+interface CreneauInfo {
+  creneauDate: string | null
+  creneauDebut: string | null
+  creneauFin: string | null
+  modeLivraison: string | null
+  confirmationStatut: string | null
+  clientName: string | null
+  depotNom: string | null
+  adresse: string | null
+}
+
+function formatDate(dateStr: string): string {
+  try {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+  } catch {
+    return dateStr
+  }
+}
+
+function CreneauInfoCard({ info }: { info: CreneauInfo }) {
+  const isRetrait =
+    info.modeLivraison === 'retrait' || info.modeLivraison === 'point_relais'
+
+  return (
+    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 space-y-2">
+      {info.creneauDate && (
+        <div className="flex items-center gap-2 text-blue-800">
+          <Calendar className="h-4 w-4 shrink-0" />
+          <span className="text-sm font-medium capitalize">
+            {formatDate(info.creneauDate)}
+          </span>
+        </div>
+      )}
+      {info.creneauDebut && info.creneauFin && (
+        <div className="flex items-center gap-2 text-blue-800">
+          <Clock className="h-4 w-4 shrink-0" />
+          <span className="text-sm font-medium">
+            Entre {info.creneauDebut} et {info.creneauFin}
+          </span>
+        </div>
+      )}
+      {(info.adresse || info.depotNom) && (
+        <div className="flex items-start gap-2 text-blue-800">
+          <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
+          <span className="text-sm">
+            {info.depotNom ? (
+              <>
+                <span className="font-medium">{info.depotNom}</span>
+                {info.adresse && (
+                  <>
+                    <br />
+                    <span className="text-blue-600">{info.adresse}</span>
+                  </>
+                )}
+              </>
+            ) : (
+              <span className="font-medium">{info.adresse}</span>
+            )}
+          </span>
+        </div>
+      )}
+      {isRetrait ? (
+        <p className="text-xs text-blue-600 pt-1">Retrait au dépôt</p>
+      ) : (
+        <p className="text-xs text-blue-600 pt-1">Livraison à domicile</p>
+      )}
+    </div>
+  )
+}
 
 function ConfirmCreneauContent() {
   const searchParams = useSearchParams()
@@ -14,18 +89,19 @@ function ConfirmCreneauContent() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch client name from token to personalise checkbox label
-  const [clientName, setClientName] = useState<string | null>(null)
+  const [creneauInfo, setCreneauInfo] = useState<CreneauInfo | null>(null)
 
   useEffect(() => {
     if (!token) return
     fetch(`/api/livraisons/info-creneau?token=${encodeURIComponent(token)}`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.clientName) setClientName(d.clientName)
+        if (!d.error) {
+          setCreneauInfo(d as CreneauInfo)
+        }
       })
       .catch(() => {
-        // non-critical — label will use generic text
+        // non-critical
       })
   }, [token])
 
@@ -65,6 +141,7 @@ function ConfirmCreneauContent() {
     )
   }
 
+  const clientName = creneauInfo?.clientName ?? null
   const bothChecked = confirmPersonne && confirmIdentite
 
   return (
@@ -76,9 +153,14 @@ function ConfirmCreneauContent() {
       <h1 className="text-xl font-semibold text-gray-900 mb-2 text-center">
         Confirmation de votre créneau
       </h1>
-      <p className="text-gray-500 text-sm text-center mb-8 leading-relaxed">
-        Avant de confirmer votre présence, veuillez cocher les deux cases ci-dessous.
+      <p className="text-gray-500 text-sm text-center mb-6 leading-relaxed">
+        Avant de confirmer votre présence, veuillez vérifier le créneau et cocher les deux cases ci-dessous.
       </p>
+
+      {/* Créneau info card */}
+      {creneauInfo && (creneauInfo.creneauDate || creneauInfo.adresse || creneauInfo.depotNom) && (
+        <CreneauInfoCard info={creneauInfo} />
+      )}
 
       {error && (
         <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-4 mb-6">

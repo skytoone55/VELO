@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendConfirmationCreneauEmail } from '@/lib/email/gmail'
@@ -92,8 +93,20 @@ export async function POST(request: NextRequest) {
     ville: string | null
   } | null
 
-  // Build confirm URL using token (reuse or generate a placeholder if missing)
-  const token = livraison.token_livraison || ''
+  // Ensure token exists — generate and persist if missing
+  let token = livraison.token_livraison || ''
+  if (!token) {
+    token = randomBytes(32).toString('hex')
+    const { error: tokenError } = await adminClient
+      .from('livraisons')
+      .update({ token_livraison: token })
+      .eq('id', livraisonId)
+    if (tokenError) {
+      console.error('[send-confirmation-creneau] Erreur génération token:', tokenError)
+      return NextResponse.json({ error: 'Impossible de générer le token de livraison' }, { status: 500 })
+    }
+  }
+
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
   const confirmUrl = `${baseUrl}/tournee/confirmation?token=${token}`

@@ -45,12 +45,15 @@ export async function GET(request: NextRequest) {
       throw clientError
     }
 
-    // Mise a jour de la livraison : confirmation indisponible
+    // Mise a jour de la livraison : confirmation indisponible + effacement du créneau
     const { error: livraisonUpdateError } = await adminClient
       .from('livraisons')
       .update({
         confirmation_statut: 'indisponible',
         confirmation_commentaire: 'Client indisponible au créneau prévu',
+        creneau_date: null,
+        creneau_heure_debut: null,
+        creneau_heure_fin: null,
       })
       .eq('id', livraisonId)
 

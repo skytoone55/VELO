@@ -205,15 +205,20 @@ function FormulaireLivraisonContent() {
     validateToken()
   }, [validateToken])
 
-  // Available dates & time slots
-  const availableDates = depot ? getAvailableDates(depot.jours_ouverture) : []
-  // Prefer depot.creneaux (configured slots) over auto-generated half-hour blocks
-  const timeSlots = depot?.creneaux && depot.creneaux.length > 0
-    ? slotsFromDepotCreneaux(depot.creneaux)
-    : depot?.creneau_duree_minutes
-      ? generateTimeSlots(depot.creneau_duree_minutes)
-      : generateTimeSlots(30)
+  // Available dates — always generate even when depot is null (domicile livraison)
+  const availableDates = getAvailableDates(depot?.jours_ouverture ?? null)
 
+  // Time slots — only use configured depot creneaux or duration-based slots when depot exists
+  // When no depot (domicile), no slots are required
+  const timeSlots: TimeSlot[] = depot
+    ? depot.creneaux && depot.creneaux.length > 0
+      ? slotsFromDepotCreneaux(depot.creneaux)
+      : depot.creneau_duree_minutes
+        ? generateTimeSlots(depot.creneau_duree_minutes)
+        : generateTimeSlots(30)
+    : []
+
+  // hasCreneaux is true only when there are actual slots AND a depot exists
   const hasCreneaux = timeSlots.length > 0
   const canSubmit = selectedDate && (!hasCreneaux || selectedSlot) && confirmPersonne && confirmIdentite && !submitting
 

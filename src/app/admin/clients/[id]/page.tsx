@@ -166,9 +166,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [docRequestLoading, setDocRequestLoading] = useState(false)
   const [selectedDocs, setSelectedDocs] = useState<string[]>([])
 
-  // Mail livraison / confirmation créneau
+  // Mail livraison / confirmation créneau / formulaire retrait
   const [mailLivraisonLoading, setMailLivraisonLoading] = useState(false)
   const [confirmationCreneauLoading, setConfirmationCreneauLoading] = useState(false)
+  const [formulaireRetraitLoading, setFormulaireRetraitLoading] = useState(false)
 
   // Zone calculée à partir de la distance au dépôt
   const computedZone = (() => {
@@ -420,6 +421,27 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     }
   }
 
+  const handleSendFormulaireRetrait = async () => {
+    if (!client) return
+    setFormulaireRetraitLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/admin/clients/send-formulaire-livraison', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur envoi')
+      setSuccess('Formulaire de retrait envoyé')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur inconnue'
+      setError(message)
+    } finally {
+      setFormulaireRetraitLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -468,13 +490,13 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
 
-          {/* Centre — boutons Planifier + Livrer */}
-          <div className="flex items-center justify-center gap-3 flex-1">
-            {client.statut_commercial === 'a_livrer' && !livraisons[0]?.creneau_date && (
+          {/* Centre — boutons Planifier + Livrer + mails livraison */}
+          <div className="flex items-center justify-center gap-2 flex-1 flex-wrap">
+            {client.statut_commercial !== 'livre' && client.statut_commercial === 'a_livrer' && !livraisons[0]?.creneau_date && (
               <Button
                 size="sm"
                 asChild
-                className="bg-blue-500 hover:bg-blue-600 text-white border-0 px-6 font-semibold"
+                className="bg-blue-500 hover:bg-blue-600 text-white border-0 px-4 font-semibold"
               >
                 <Link href={`/admin/planning${client.depot_retrait_id ? `?depot_id=${client.depot_retrait_id}` : client.depot_logistique_id ? `?depot_id=${client.depot_logistique_id}` : ''}`}>
                   <Calendar className="mr-2 h-4 w-4" />
@@ -483,14 +505,65 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </Button>
             )}
 
-            {['a_livrer', 'en_livraison'].includes(client.statut_commercial || '') && (
+            {client.statut_commercial !== 'livre' && ['a_livrer', 'en_livraison'].includes(client.statut_commercial || '') && (
               <Button
                 size="sm"
                 onClick={handleOpenDelivery}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 px-6 font-semibold"
+                className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 px-4 font-semibold"
               >
                 <Truck className="mr-2 h-4 w-4" />
                 Livrer
+              </Button>
+            )}
+
+            {client.statut_commercial !== 'livre' && ['a_livrer', 'en_livraison', 'retrait_planifie'].includes(client.statut_commercial || '') && !client.depot_retrait_id && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleSendMailLivraison}
+                disabled={mailLivraisonLoading}
+                className="text-white hover:bg-white/20 px-3"
+              >
+                {mailLivraisonLoading ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Mail className="h-4 w-4 mr-1.5" />
+                )}
+                Mail livraison
+              </Button>
+            )}
+
+            {client.statut_commercial !== 'livre' && ['a_livrer', 'en_livraison', 'retrait_planifie'].includes(client.statut_commercial || '') && livraisons[0]?.creneau_date && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleSendConfirmationCreneau}
+                disabled={confirmationCreneauLoading}
+                className="text-white hover:bg-white/20 px-3"
+              >
+                {confirmationCreneauLoading ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 mr-1.5" />
+                )}
+                Mail confirmation
+              </Button>
+            )}
+
+            {client.statut_commercial !== 'livre' && ['a_livrer', 'retrait_planifie'].includes(client.statut_commercial || '') && client.depot_retrait_id && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleSendFormulaireRetrait}
+                disabled={formulaireRetraitLoading}
+                className="text-white hover:bg-white/20 px-3"
+              >
+                {formulaireRetraitLoading ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-1.5" />
+                )}
+                Formulaire retrait
               </Button>
             )}
           </div>
@@ -604,36 +677,36 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         </div>
 
         {/* Métriques rapides */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-white/20">
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mt-6 pt-4 border-t border-white/20">
           <div className="text-center">
-            <div className="flex items-center justify-center gap-2 text-slate-300 text-xs uppercase tracking-wide mb-1">
-              <Bike className="h-4 w-4" />
+            <div className="flex items-center justify-center gap-1 text-slate-300 text-xs uppercase tracking-wide mb-1">
+              <Bike className="h-3.5 w-3.5" />
               Vélos
             </div>
-            <div className="text-2xl font-bold">{client.velo_valide || 0}<span className="text-slate-400">/{client.velo_devis}</span></div>
+            <div className="text-xl font-bold">{client.velo_valide || 0}<span className="text-slate-400">/{client.velo_devis}</span></div>
           </div>
           <div className="text-center">
-            <div className="flex items-center justify-center gap-2 text-slate-300 text-xs uppercase tracking-wide mb-1">
-              <KeyRound className="h-4 w-4" />
+            <div className="flex items-center justify-center gap-1 text-slate-300 text-xs uppercase tracking-wide mb-1">
+              <KeyRound className="h-3.5 w-3.5" />
               REF ENEMAT
             </div>
-            <div className="text-lg font-mono font-bold">
+            <div className="text-sm font-mono font-bold truncate px-1">
               {(client as any).reference_retina || '—'}
             </div>
           </div>
           <div className="text-center">
-            <div className="flex items-center justify-center gap-2 text-slate-300 text-xs uppercase tracking-wide mb-1">
-              <Shield className="h-4 w-4" />
-              Statut NAF
+            <div className="flex items-center justify-center gap-1 text-slate-300 text-xs uppercase tracking-wide mb-1">
+              <Shield className="h-3.5 w-3.5" />
+              NAF
             </div>
-            <div className="text-lg font-semibold">
+            <div className="text-sm font-semibold">
               {['OUI', 'ok', 'oui'].includes(client.validation_naf || '') ? (
                 <span className="text-emerald-400 flex items-center justify-center gap-1">
-                  <CheckCircle className="h-5 w-5" /> Éligible
+                  <CheckCircle className="h-4 w-4" /> Éligible
                 </span>
               ) : client.validation_naf === 'NON' ? (
                 <span className="text-red-400 flex items-center justify-center gap-1">
-                  <AlertCircle className="h-5 w-5" /> Non éligible
+                  <AlertCircle className="h-4 w-4" /> Non éligible
                 </span>
               ) : (
                 <span className="text-slate-400">À vérifier</span>
@@ -641,33 +714,37 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
           <div className="text-center">
-            <div className="flex items-center justify-center gap-2 text-slate-300 text-xs uppercase tracking-wide mb-1">
-              <Truck className="h-4 w-4" />
+            <div className="flex items-center justify-center gap-1 text-slate-300 text-xs uppercase tracking-wide mb-1">
+              <Truck className="h-3.5 w-3.5" />
               Livraison
             </div>
-            <div className="text-lg font-semibold">
+            <div className="text-sm font-semibold">
               {modeLivraison === 'retrait' ? 'Point relais' : 'Domicile'}
             </div>
           </div>
-          {livraisons[0]?.creneau_date && (
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 text-slate-300 text-xs uppercase tracking-wide mb-1">
-                <Calendar className="h-4 w-4" />
-                Programmé le
-              </div>
-              <div className="text-lg font-semibold">
-                {(() => {
-                  const [y, m, d] = livraisons[0].creneau_date!.split('-').map(Number)
-                  return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
-                })()}
-                {livraisons[0].creneau_heure_debut && (
-                  <span className="text-sm text-slate-400 ml-1">
-                    {livraisons[0].creneau_heure_debut.slice(0, 5)}
-                  </span>
-                )}
-              </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 text-slate-300 text-xs uppercase tracking-wide mb-1">
+              <Calendar className="h-3.5 w-3.5" />
+              Programmé
             </div>
-          )}
+            <div className="text-sm font-semibold">
+              {livraisons[0]?.creneau_date ? (
+                <>
+                  {(() => {
+                    const [y, m, d] = livraisons[0].creneau_date!.split('-').map(Number)
+                    return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+                  })()}
+                  {livraisons[0].creneau_heure_debut && (
+                    <span className="text-xs text-slate-400 ml-1">
+                      {livraisons[0].creneau_heure_debut.slice(0, 5)}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-slate-400">—</span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -850,41 +927,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </div>
             )}
 
-            {/* Actions mail livraison */}
-            {['a_livrer', 'en_livraison', 'retrait_planifie'].includes(client.statut_commercial || '') && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {!client.depot_retrait_id && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleSendMailLivraison}
-                    disabled={mailLivraisonLoading}
-                  >
-                    {mailLivraisonLoading ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Mail className="h-4 w-4 mr-2" />
-                    )}
-                    Mail livraison
-                  </Button>
-                )}
-                {livraisons[0]?.creneau_date && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleSendConfirmationCreneau}
-                    disabled={confirmationCreneauLoading}
-                  >
-                    {confirmationCreneauLoading ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                    )}
-                    Mail confirmation créneau
-                  </Button>
-                )}
-              </div>
-            )}
           </CardContent>
         </Card>
 

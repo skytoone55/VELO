@@ -935,7 +935,7 @@ export async function sendConfirmationCreneauEmail({
           </div>
 
           <div style="text-align: center; margin-bottom: 20px;">
-            <a href="${cancelUrl}" style="display: inline-block; padding: 12px 24px; background-color: #f4f4f5; color: #71717a; border: 1px solid #d4d4d8; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500;">
+            <a href="${cancelUrl}" style="display: inline-block; padding: 12px 24px; background-color: #ef4444; color: white; border: 1px solid #dc2626; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500;">
               Je refuse ce créneau
             </a>
           </div>
