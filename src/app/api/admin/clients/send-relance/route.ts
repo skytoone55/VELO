@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const tenant = getTenantConfig()
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://velo-${tenant.id}.vercel.app`
+    const baseUrl = tenant.url || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
     const relanceLink = `${baseUrl}/relance?token=${token}`
 
     const emailHtml = `

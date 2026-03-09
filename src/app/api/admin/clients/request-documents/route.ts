@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     // Construire le lien formulaire
     const tenant = getTenantConfig()
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${tenant.id === 'ecovolt' ? 'velo-ecovolt' : 'velo-ppe'}.vercel.app`
+    const baseUrl = tenant.url || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
     const formLink = `${baseUrl}/documents?token=${token}`
 
     // Labels des documents
