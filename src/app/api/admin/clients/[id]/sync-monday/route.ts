@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
 
 /**
@@ -14,13 +14,8 @@ export async function POST(
   try {
     const { id } = await params
 
-    // Vérifier l'authentification
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+    if (isAuthError(authResult)) return authResult
 
     // Vérifier si Monday est configuré
     if (!isMondayConfigured()) {

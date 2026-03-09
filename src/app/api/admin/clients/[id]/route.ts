@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { syncClientToMonday, getChangedFields } from '@/lib/monday/api'
 import { isMondayConfigured } from '@/lib/monday/config'
 
@@ -12,24 +13,8 @@ export async function GET(
   try {
     const { id } = await params
 
-    // Vérifier l'authentification
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
-    // Récupérer le profil pour vérifier les permissions
-    const { data: profile } = await supabase
-      .from('users_profile')
-      .select('role, territoire')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role === 'client') {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
-    }
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+    if (isAuthError(authResult)) return authResult
 
     // Utiliser le client admin pour bypasser RLS
     const adminClient = createAdminClient()
@@ -45,7 +30,7 @@ export async function GET(
     }
 
     // Vérifier le territoire pour admin
-    if (profile.role === 'admin' && profile.territoire !== client.departement) {
+    if (authResult.role === 'admin' && authResult.territoire !== client.departement) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
@@ -114,24 +99,8 @@ export async function PUT(
   try {
     const { id } = await params
 
-    // Vérifier l'authentification
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
-    // Récupérer le profil pour vérifier les permissions
-    const { data: profile } = await supabase
-      .from('users_profile')
-      .select('role, territoire')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || !['super_admin', 'admin', 'agent_secteur'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
-    }
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+    if (isAuthError(authResult)) return authResult
 
     const body = await request.json()
 
@@ -150,7 +119,7 @@ export async function PUT(
     }
 
     // Vérifier le territoire pour admin
-    if (profile.role === 'admin' && profile.territoire !== existingClient.departement) {
+    if (authResult.role === 'admin' && authResult.territoire !== existingClient.departement) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 

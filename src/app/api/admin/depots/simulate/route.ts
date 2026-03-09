@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { calculateHaversineDistance } from '@/lib/geo/utils'
 
 /**
@@ -16,6 +17,9 @@ import { calculateHaversineDistance } from '@/lib/geo/utils'
  */
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await requireRole(['super_admin', 'admin'])
+    if (isAuthError(authResult)) return authResult
+
     const body = await request.json()
     const { latitude, longitude, rayonKm = 30, rayonPayantKm } = body
 

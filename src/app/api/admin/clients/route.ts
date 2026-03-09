@@ -1,27 +1,11 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 export async function GET(request: Request) {
   try {
-    // Vérifier l'authentification
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
-    // Récupérer le profil pour vérifier les permissions
-    const { data: profile } = await supabase
-      .from('users_profile')
-      .select('role, territoire, departement, depot_ids')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role === 'client') {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
-    }
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+    if (isAuthError(authResult)) return authResult
 
     // Utiliser le client admin pour bypasser RLS
     const adminClient = createAdminClient()
@@ -32,10 +16,10 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false })
 
     // Filtrer par territoire/département
-    if (profile.role === 'admin' && profile.territoire) {
-      query = query.eq('departement', profile.territoire)
-    } else if (profile.role === 'agent_secteur') {
-      const dept = profile.departement || profile.territoire
+    if (authResult.role === 'admin' && authResult.territoire) {
+      query = query.eq('departement', authResult.territoire)
+    } else if (authResult.role === 'agent_secteur') {
+      const dept = authResult.departement || authResult.territoire
       if (dept) query = query.eq('departement', dept)
     }
 

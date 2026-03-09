@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { sendEmail } from '@/lib/email/gmail'
 import { getTenantConfig } from '@/lib/tenants'
 
@@ -11,9 +11,8 @@ import { getTenantConfig } from '@/lib/tenants'
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+    if (isAuthError(authResult)) return authResult
 
     const { clientId, token } = await request.json()
     if (!clientId || !token) {
@@ -61,13 +60,13 @@ export async function POST(request: NextRequest) {
           </a>
         </div>
         <p>Si vous préférez nous contacter directement : <strong>${tenant.phone}</strong></p>
-        <p style="color: #888; font-size: 12px;">Ce lien est personnel et sécurisé. \u2014 ${tenant.name}</p>
+        <p style="color: #888; font-size: 12px;">Ce lien est personnel et sécurisé. — ${tenant.name}</p>
       </div>
     `
 
     await sendEmail({
       to: clientEmail,
-      subject: `${tenant.name} \u2014 Planification de votre livraison vélo cargo`,
+      subject: `${tenant.name} — Planification de votre livraison vélo cargo`,
       html: emailHtml,
     })
 

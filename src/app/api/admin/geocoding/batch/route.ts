@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { buildClientAddress, geocodeAddress } from '@/lib/geo/utils'
 
 /**
@@ -20,6 +21,9 @@ const MIN_SCORE_THRESHOLD = 0.4
 
 export async function GET() {
   try {
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+    if (isAuthError(authResult)) return authResult
+
     const adminClient = createAdminClient()
 
     // Total clients
@@ -77,6 +81,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+    if (isAuthError(authResult)) return authResult
+
     const body = await request.json().catch(() => ({}))
     const { dryRun = false } = body
 

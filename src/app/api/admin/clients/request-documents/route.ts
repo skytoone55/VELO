@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { getTenantConfig } from '@/lib/tenants'
 import crypto from 'crypto'
 import { sendEmail } from '@/lib/email/gmail'
@@ -15,9 +15,8 @@ import { sendEmail } from '@/lib/email/gmail'
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+    if (isAuthError(authResult)) return authResult
 
     const { clientId, documents } = await request.json()
 
@@ -81,9 +80,9 @@ export async function POST(request: NextRequest) {
 
     // Labels des documents
     const docLabels: Record<string, string> = {
-      urssaf: 'Attestation URSSAF \u00e0 jour de moins de 3 mois',
+      urssaf: 'Attestation URSSAF à jour de moins de 3 mois',
       dsn: 'Attestation DSN au format EDI',
-      benevoles: 'Attestation de d\u00e9claration de B\u00e9n\u00e9voles',
+      benevoles: 'Attestation de déclaration de Bénévoles',
     }
 
     const docListHtml = filteredDocs
@@ -113,7 +112,7 @@ export async function POST(request: NextRequest) {
     try {
       await sendEmail({
         to: clientEmail,
-        subject: `${tenant.name} \u2014 Demande de documents`,
+        subject: `${tenant.name} — Demande de documents`,
         html: emailHtml,
       })
     } catch (emailErr) {
