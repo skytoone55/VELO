@@ -307,7 +307,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  const handleOpenDelivery = () => {
+  const handleOpenDelivery = async () => {
     if (!client) return
 
     // Ecovolt → redirection vers le module externe
@@ -318,12 +318,35 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     }
 
     // PPE → ouvrir le module de livraison dans un nouvel onglet
-    const liv = livraisons[0]
-    if (liv) {
-      window.open(`/admin/livraisons/deliver?id=${liv.id}`, '_blank')
-    } else {
-      setError('Aucune livraison trouvée pour ce client')
+    let liv = livraisons[0]
+    if (!liv) {
+      // Auto-créer la livraison si elle n'existe pas
+      try {
+        const supabase = createClient()
+        const { data: newLiv, error: createErr } = await supabase
+          .from('livraisons')
+          .insert({
+            client_id: client.id,
+            depot_id: client.depot_logistique_id || client.depot_retrait_id,
+            mode_livraison: client.adresse_livraison_ligne1 ? 'domicile' : 'retrait',
+            adresse_livraison_ligne1: client.adresse_livraison_ligne1 || client.adresse_societe_ligne1,
+            adresse_livraison_cp: client.adresse_livraison_cp || client.adresse_societe_cp,
+            adresse_livraison_ville: client.adresse_livraison_ville || client.adresse_societe_ville,
+            statut: 'a_livrer',
+          })
+          .select('id')
+          .single()
+        if (createErr || !newLiv) {
+          setError('Erreur création livraison: ' + (createErr?.message || 'inconnue'))
+          return
+        }
+        liv = newLiv as any
+      } catch {
+        setError('Erreur création livraison')
+        return
+      }
     }
+    window.open(`/admin/livraisons/deliver?id=${liv.id}`, '_blank')
   }
 
   const handleRequestDocuments = async () => {
@@ -675,8 +698,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </CardContent>
         </Card>
 
-        {/* Livraison — pleine largeur */}
-        <Card className="shadow-sm border-2 lg:col-span-2">
+        {/* Livraison */}
+        <Card className="shadow-sm border-2">
           <CardContent className="px-5 py-3.5">
             <SectionTitle
               icon={Truck}
@@ -880,30 +903,23 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 )}
               </div>
 
-              {/* Slot 2 — Signature / PDF de livraison */}
+              {/* Slot 2 — PDF de livraison (attestation complète) */}
               <div className="p-3 bg-muted/30 rounded-lg border flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${(livraison as any)?.pdf_livraison_url || livraison?.signature_client ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <div className={`w-2 h-2 rounded-full ${(livraison as any)?.pdf_livraison_url ? 'bg-green-500' : 'bg-gray-300'}`} />
                   <div>
-                    <p className="font-medium text-sm">{(livraison as any)?.pdf_livraison_url ? 'PDF de livraison' : 'Signature de livraison'}</p>
+                    <p className="font-medium text-sm">PDF de livraison</p>
                     <p className="text-xs text-muted-foreground">
                       {(livraison as any)?.pdf_livraison_url
-                        ? 'Généré'
-                        : livraison?.signature_client
-                          ? 'Signée lors de la livraison'
-                          : 'Sera généré automatiquement après livraison'}
+                        ? 'Généré après livraison'
+                        : 'Sera généré automatiquement après livraison'}
                     </p>
                   </div>
                 </div>
-                {((livraison as any)?.pdf_livraison_url || livraison?.signature_client) && (
+                {(livraison as any)?.pdf_livraison_url && (
                   <div className="flex gap-1">
                     <Button variant="ghost" size="sm" onClick={() => {
-                      if ((livraison as any)?.pdf_livraison_url) {
-                        window.open((livraison as any).pdf_livraison_url, '_blank')
-                      } else if (livraison?.signature_client) {
-                        const w = window.open('', '_blank')
-                        if (w) w.document.write(`<img src="${livraison.signature_client}" style="max-width:100%;background:#fff;padding:20px"/>`)
-                      }
+                      window.open((livraison as any).pdf_livraison_url, '_blank')
                     }}>
                       <Eye className="h-4 w-4" />
                     </Button>

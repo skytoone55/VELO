@@ -283,18 +283,15 @@ function PlanningContent() {
     return { start: weekStart, end: weekEnd }
   }, [viewMode, selectedDate, weekStart, weekEnd])
 
-  // Load depots on mount
+  // Load depots on mount (via API pour bypass RLS)
   useEffect(() => {
     async function loadDepots() {
       try {
-        const supabase = createClient()
-        const { data } = await supabase
-          .from('depots')
-          .select('id, nom, type, jours_ouverture, capacite_velos_jour, creneau_duree_minutes, actif')
-          .eq('actif', true)
-          .order('nom')
+        const res = await fetch('/api/admin/depots')
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error || 'Erreur chargement dépôts')
 
-        const depotList = (data || []) as DepotOption[]
+        const depotList = (json.depots || []) as DepotOption[]
         setDepots(depotList)
 
         // Auto-select: prefer depot_id from URL, then user's depot, otherwise first depot
@@ -488,15 +485,34 @@ function PlanningContent() {
     try {
       const supabase = createClient()
       // Trouver la livraison du client
-      const { data: livraison } = await supabase
+      let { data: livraison } = await supabase
         .from('livraisons')
         .select('id')
         .eq('client_id', clientId)
         .single()
 
       if (!livraison) {
-        alert('Aucune livraison trouvée pour ce client')
-        return
+        // Auto-créer la livraison si elle n'existe pas
+        const clientInfo = clientsALivrer.find((c: any) => c.id === clientId)
+        const { data: newLiv, error: createErr } = await supabase
+          .from('livraisons')
+          .insert({
+            client_id: clientId,
+            depot_id: selectedDepotId,
+            mode_livraison: clientInfo?.adresse_livraison_ligne1 ? 'domicile' : 'retrait',
+            adresse_livraison_ligne1: clientInfo?.adresse_livraison_ligne1 || clientInfo?.adresse_societe_ligne1,
+            adresse_livraison_cp: clientInfo?.adresse_livraison_cp || clientInfo?.adresse_societe_cp,
+            adresse_livraison_ville: clientInfo?.adresse_livraison_ville || clientInfo?.adresse_societe_ville,
+            statut: 'a_livrer',
+          })
+          .select('id')
+          .single()
+
+        if (createErr || !newLiv) {
+          alert('Erreur création livraison: ' + (createErr?.message || 'inconnue'))
+          return
+        }
+        livraison = newLiv
       }
 
       // Mettre à jour la livraison avec la date et le dépôt
