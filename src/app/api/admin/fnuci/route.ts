@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
     const statut = searchParams.get('statut')
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
-    const pageSize = Math.min(100, Math.max(10, parseInt(searchParams.get('pageSize') || '50')))
+    const pageSize = Math.min(500, Math.max(10, parseInt(searchParams.get('pageSize') || '50')))
     const sortBy = searchParams.get('sortBy') || 'numero'
     const sortOrder = searchParams.get('sortOrder') || 'asc'
 

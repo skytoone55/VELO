@@ -61,6 +61,7 @@ const STATUT_LABELS: Record<string, string> = {
 export default function FnuciManagementPage() {
   const [records, setRecords] = useState<FnuciRecord[]>([])
   const [pagination, setPagination] = useState<Pagination>({ page: 1, pageSize: 50, totalPages: 0, totalFiltered: 0 })
+  const [pageSize, setPageSize] = useState(50)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -84,7 +85,7 @@ export default function FnuciManagementPage() {
     try {
       const params = new URLSearchParams({
         page: String(pagination.page),
-        pageSize: '50',
+        pageSize: String(pageSize),
         sortBy,
         sortOrder,
       })
@@ -104,7 +105,7 @@ export default function FnuciManagementPage() {
       setLoading(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, search, statutFilter, sortBy, sortOrder])
+  }, [pagination.page, pageSize, search, statutFilter, sortBy, sortOrder])
 
   useEffect(() => {
     fetchData()
@@ -176,6 +177,18 @@ export default function FnuciManagementPage() {
             <SelectItem value="distribue">Distribue</SelectItem>
             <SelectItem value="attribue">Attribue</SelectItem>
             <SelectItem value="bloque">Bloque</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPagination(p => ({ ...p, page: 1 })) }}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="20">20 / page</SelectItem>
+            <SelectItem value="50">50 / page</SelectItem>
+            <SelectItem value="100">100 / page</SelectItem>
+            <SelectItem value="250">250 / page</SelectItem>
+            <SelectItem value="500">500 / page</SelectItem>
           </SelectContent>
         </Select>
       </div>
