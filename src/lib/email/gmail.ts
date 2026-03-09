@@ -71,6 +71,26 @@ export async function sendEmail({ to, subject, html, from }: EmailOptions) {
 }
 
 /**
+ * Génère le bloc rappel d'identité standard (style amber warning)
+ */
+function getIdentityReminderHtml(clientName: string, isRetrait: boolean): string {
+  const action = isRetrait ? 'du retrait' : 'de la livraison'
+  return `
+    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 30px 0; border-radius: 0 8px 8px 0;">
+      <p style="margin: 0 0 8px 0; color: #92400e; font-size: 14px; font-weight: bold; line-height: 1.5;">
+        ⚠️ Rappel important
+      </p>
+      <p style="margin: 0 0 8px 0; color: #92400e; font-size: 14px; line-height: 1.5;">
+        C'est bien <strong>Monsieur/Madame ${clientName}</strong> qui réceptionnera le(s) vélo(s) cargo.
+      </p>
+      <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
+        Un <strong>justificatif d'identité valide</strong> sera obligatoire lors ${action}.
+      </p>
+    </div>
+  `
+}
+
+/**
  * Génère le header HTML commun pour tous les emails
  */
 function getEmailHeader(tenant: ReturnType<typeof getTenantConfig>): string {
@@ -607,17 +627,19 @@ export async function sendUserInvitationEmail(
   })
 }
 
-// Email d'envoi du formulaire de choix de créneau de livraison
+// Email d'envoi du formulaire de choix de créneau de retrait au dépôt
 export async function sendFormulaireLivraisonEmail(params: {
   to: string
   clientName: string
   depotName: string
+  depotAddress?: string
+  depotContact?: string
   modeLivraison: string
   formulaireUrl: string
   tenantName: string
 }) {
   const tenant = getTenantConfig()
-  const { to, clientName, depotName, modeLivraison, formulaireUrl } = params
+  const { to, clientName, depotName, depotAddress, depotContact, modeLivraison, formulaireUrl } = params
 
   const isRetrait = modeLivraison === 'point_relais' || modeLivraison === 'retrait'
   const modeLabel = isRetrait ? 'retrait' : 'livraison'
@@ -646,21 +668,23 @@ export async function sendFormulaireLivraisonEmail(params: {
               </h2>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Bonne nouvelle ! Votre vélo cargo électrique est prêt ${isRetrait ? 'à être récupéré' : 'à être livré'}.
+                Bonne nouvelle ! Votre vélo cargo à assistance électrique est disponible à votre point de retrait.
               </p>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Pour finaliser ${isRetrait ? 'le retrait' : 'la livraison'}, veuillez choisir un créneau qui vous convient en cliquant sur le bouton ci-dessous.
+                Pour finaliser le retrait, veuillez choisir un créneau qui vous convient en cliquant sur le bouton ci-dessous. Seuls les créneaux disponibles sur votre point de retrait sont proposés.
               </p>
 
               <!-- Depot info -->
               <div style="background-color: #f0f9ff; border-radius: 8px; padding: 16px; margin: 0 0 30px 0;">
                 <p style="margin: 0 0 8px 0; color: #0369a1; font-weight: 600; font-size: 14px;">
-                  ${isRetrait ? '📍 Point de retrait' : '🚚 Dépôt de départ'}
+                  📍 Votre point de retrait
                 </p>
-                <p style="margin: 0; color: #0369a1; font-size: 14px;">
+                <p style="margin: 0 0 4px 0; color: #0369a1; font-size: 14px; font-weight: 600;">
                   ${depotName}
                 </p>
+                ${depotAddress ? `<p style="margin: 0 0 4px 0; color: #0369a1; font-size: 14px;">${depotAddress}</p>` : ''}
+                ${depotContact ? `<p style="margin: 0; color: #0369a1; font-size: 13px;">${depotContact}</p>` : ''}
               </div>
 
               <!-- CTA Button -->
@@ -669,18 +693,13 @@ export async function sendFormulaireLivraisonEmail(params: {
                   <td align="center">
                     <a href="${formulaireUrl}"
                        style="display: inline-block; background-color: ${tenant.branding.colors.secondary}; color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-                      Choisir mon créneau de ${modeLabel}
+                      Choisir mon créneau de retrait
                     </a>
                   </td>
                 </tr>
               </table>
 
-              <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 30px 0; border-radius: 0 8px 8px 0;">
-                <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
-                  <strong>⚠️ Rappel important</strong><br>
-                  Une <strong>pièce d'identité</strong> sera demandée lors ${isRetrait ? 'du retrait' : 'de la livraison'} du vélo cargo. Assurez-vous que la personne désignée pour réceptionner le vélo dispose d'un document d'identité valide.
-                </p>
-              </div>
+              ${getIdentityReminderHtml(clientName, true)}
 
               <p style="margin: 30px 0 0 0; color: #71717a; font-size: 14px; line-height: 1.6;">
                 Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
@@ -710,21 +729,118 @@ export async function sendFormulaireLivraisonEmail(params: {
 
   return sendEmail({
     to,
-    subject: `${tenant.name} - Choisissez votre créneau de ${modeLabel}`,
+    subject: `${tenant.name} - Choisissez votre créneau de retrait`,
     html,
   })
 }
 
 /**
- * Email de confirmation de tournée — le client confirme ou refuse la date proposée
+ * Email informatif livraison à domicile — le client est informé que son vélo est prêt
+ * et qu'il sera contacté par un livreur ou recevra un email avec les infos de livraison
  */
-export async function sendTourneeConfirmationEmail({
+export async function sendMailLivraisonEmail(data: {
+  to: string
+  clientName: string
+  raisonSociale: string
+  tenantId?: string
+}): Promise<boolean> {
+  const tenant = getTenantConfig()
+  const { to, clientName, raisonSociale } = data
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${tenant.name} - Votre vélo cargo est prêt</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+    <tr>
+      <td>
+        <!-- Header -->
+        ${getEmailHeader(tenant)}
+
+        <!-- Content -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: white; padding: 40px; border-radius: 0 0 12px 12px;">
+          <tr>
+            <td>
+              <div style="text-align: center; margin-bottom: 30px;">
+                <div style="display: inline-block; width: 64px; height: 64px; background-color: #dcfce7; border-radius: 50%; line-height: 64px; font-size: 32px;">
+                  🚲
+                </div>
+              </div>
+
+              <h2 style="margin: 0 0 20px 0; color: #18181b; font-size: 22px; text-align: center;">
+                Votre vélo cargo est prêt !
+              </h2>
+
+              <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Bonjour ${clientName},
+              </p>
+
+              <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Nous avons le plaisir de vous informer que votre vélo cargo à assistance électrique est prêt pour la livraison au nom de <strong>${raisonSociale}</strong>.
+              </p>
+
+              <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Vous serez prochainement contacté par l'un de nos livreurs pour convenir des modalités de livraison, ou vous recevrez un email contenant les informations et le créneau de livraison.
+              </p>
+
+              <div style="background-color: #f0fdf4; border-radius: 8px; padding: 16px; margin: 0 0 20px 0;">
+                <p style="margin: 0; color: #166534; font-size: 14px; line-height: 1.6;">
+                  <strong>🚚 Livraison à domicile</strong><br>
+                  Notre équipe prendra contact avec vous dans les prochains jours pour fixer la date et le créneau de livraison qui vous convient.
+                </p>
+              </div>
+
+              ${getIdentityReminderHtml(clientName, false)}
+
+              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
+
+              ${getFullContactSection(tenant)}
+            </td>
+          </tr>
+        </table>
+
+        <!-- Footer -->
+        ${getEmailFooter(tenant)}
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`
+
+  try {
+    await sendEmail({
+      to,
+      subject: `${tenant.name} - Votre vélo cargo est prêt — informations de livraison`,
+      html,
+    })
+    return true
+  } catch (error) {
+    console.error('Erreur sendMailLivraisonEmail:', error)
+    return false
+  }
+}
+
+/**
+ * Email de confirmation de créneau — retrait dépôt ou livraison à domicile
+ * Anciennement sendTourneeConfirmationEmail
+ */
+export async function sendConfirmationCreneauEmail({
   to,
   clientName,
   date,
   creneauDebut,
   creneauFin,
   confirmUrl,
+  isRetrait = false,
+  depotName,
+  depotAddress,
+  depotContact,
 }: {
   to: string
   clientName: string
@@ -732,8 +848,13 @@ export async function sendTourneeConfirmationEmail({
   creneauDebut: string
   creneauFin: string
   confirmUrl: string
+  isRetrait?: boolean
+  depotName?: string
+  depotAddress?: string
+  depotContact?: string
 }) {
   const tenant = getTenantConfig()
+  const modeLabel = isRetrait ? 'retrait' : 'livraison'
 
   const dateFormatted = (() => {
     try {
@@ -748,6 +869,19 @@ export async function sendTourneeConfirmationEmail({
     }
   })()
 
+  const depotSection = isRetrait && depotName ? `
+    <div style="background-color: #f0f9ff; border-radius: 8px; padding: 16px; margin-bottom: 25px;">
+      <p style="margin: 0 0 8px 0; color: #0369a1; font-weight: 600; font-size: 14px;">
+        📍 Votre point de retrait
+      </p>
+      <p style="margin: 0 0 4px 0; color: #0369a1; font-size: 14px; font-weight: 600;">
+        ${depotName}
+      </p>
+      ${depotAddress ? `<p style="margin: 0 0 4px 0; color: #0369a1; font-size: 14px;">${depotAddress}</p>` : ''}
+      ${depotContact ? `<p style="margin: 0; color: #0369a1; font-size: 13px;">${depotContact}</p>` : ''}
+    </div>
+  ` : ''
+
   const html = `
 <!DOCTYPE html>
 <html>
@@ -760,7 +894,7 @@ export async function sendTourneeConfirmationEmail({
 
         <div style="padding: 30px;">
           <h2 style="margin: 0 0 15px 0; color: #1f2937; font-size: 22px;">
-            Votre livraison est programmée !
+            Votre ${modeLabel} est confirmé${isRetrait ? '' : 'e'} !
           </h2>
 
           <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">
@@ -768,10 +902,13 @@ export async function sendTourneeConfirmationEmail({
           </p>
 
           <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">
-            Votre vélo cargo est prêt ! Nous avons programmé votre livraison :
+            Votre vélo cargo est prêt ! Voici le créneau de ${modeLabel} confirmé :
           </p>
 
           <div style="background-color: #eff6ff; border-radius: 12px; padding: 20px; margin-bottom: 25px; border-left: 4px solid ${tenant.branding.colors.primary};">
+            <p style="margin: 0 0 4px 0; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+              ${isRetrait ? 'Retrait au dépôt' : 'Livraison à domicile'}
+            </p>
             <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold; color: #1e40af;">
               📅 ${dateFormatted}
             </p>
@@ -779,6 +916,8 @@ export async function sendTourneeConfirmationEmail({
               🕐 Entre ${creneauDebut} et ${creneauFin}
             </p>
           </div>
+
+          ${depotSection}
 
           <p style="color: #4b5563; line-height: 1.6; margin-bottom: 25px;">
             Merci de confirmer votre disponibilité en cliquant sur le bouton ci-dessous :
@@ -789,6 +928,8 @@ export async function sendTourneeConfirmationEmail({
               Confirmer ou modifier
             </a>
           </div>
+
+          ${getIdentityReminderHtml(clientName, isRetrait)}
 
           <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 20px;">
             Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/>
@@ -806,7 +947,21 @@ export async function sendTourneeConfirmationEmail({
 
   return sendEmail({
     to,
-    subject: `${tenant.name} - Confirmez votre livraison du ${dateFormatted}`,
+    subject: `${tenant.name} - Confirmation de votre ${modeLabel} du ${dateFormatted}`,
     html,
   })
+}
+
+/**
+ * @deprecated Utiliser sendConfirmationCreneauEmail à la place
+ */
+export async function sendTourneeConfirmationEmail(params: {
+  to: string
+  clientName: string
+  date: string
+  creneauDebut: string
+  creneauFin: string
+  confirmUrl: string
+}) {
+  return sendConfirmationCreneauEmail({ ...params, isRetrait: false })
 }

@@ -172,6 +172,8 @@ export async function PUT(
       'validation_naf',
       // Notes
       'notes_internes',
+      // Livraison
+      'preferences_livraison',
     ]
 
     // Préparer les données de mise à jour dynamiquement

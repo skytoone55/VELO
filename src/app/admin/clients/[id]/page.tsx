@@ -774,17 +774,18 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             )}
 
             {/* Préférences de livraison (saisies par le client dans le formulaire) */}
-            {client.preferences_livraison && (
-              <div className="mt-3">
-                <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
-                    <Info className="h-3 w-3" />
-                    Préférences du client (formulaire)
-                  </p>
-                  <p className="text-sm font-medium">{client.preferences_livraison}</p>
-                </div>
+            <div className="mt-3">
+              <div className={`p-3 rounded-lg border ${client.preferences_livraison ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800' : 'bg-muted/30 border-dashed'}`}>
+                <p className={`text-xs mb-1 flex items-center gap-1 ${client.preferences_livraison ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>
+                  <Info className="h-3 w-3" />
+                  Préférences du client (formulaire)
+                </p>
+                {client.preferences_livraison
+                  ? <p className="text-sm font-medium">{client.preferences_livraison}</p>
+                  : <p className="text-sm text-muted-foreground italic">Non renseigné</p>
+                }
               </div>
-            )}
+            </div>
 
             {/* Mini carte client/dépôt */}
             {client.latitude && client.longitude && (

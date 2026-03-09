@@ -13,13 +13,9 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import {
   Loader2, Search, Truck, MapPin, Calendar, Phone, RefreshCw,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
-  Eye, X, Send, Route,
+  Eye, X, Send, Mail, CheckCircle,
 } from 'lucide-react'
 import { getTenantId } from '@/lib/tenants'
 import {
@@ -64,26 +60,41 @@ interface LivraisonRow {
 const statutOptions = [
   { value: 'all', label: 'Statut' },
   { value: 'a_livrer', label: 'À livrer' },
+  { value: 'programme', label: 'Programmé' },
   { value: 'en_livraison', label: 'En livraison' },
   { value: 'livre', label: 'Livré' },
-  { value: 'probleme_livraison', label: 'Problème' },
+  { value: 'probleme_livraison', label: 'Problème livraison' },
   { value: 'a_relivrer', label: 'À relivrer' },
+  { value: 'retrait_planifie', label: 'Retrait planifié' },
+  { value: 'retrait_effectue', label: 'Retrait effectué' },
+  { value: 'annule', label: 'Annulé' },
+  { value: 'refuse', label: 'Refusé' },
 ]
 
 const statutColors: Record<string, string> = {
   a_livrer: 'bg-amber-100 text-amber-800',
+  programme: 'bg-blue-100 text-blue-800',
   en_livraison: 'bg-orange-100 text-orange-800',
   livre: 'bg-green-100 text-green-800',
   probleme_livraison: 'bg-red-100 text-red-800',
   a_relivrer: 'bg-pink-100 text-pink-800',
+  retrait_planifie: 'bg-indigo-100 text-indigo-800',
+  retrait_effectue: 'bg-teal-100 text-teal-800',
+  annule: 'bg-gray-100 text-gray-500',
+  refuse: 'bg-slate-100 text-slate-600',
 }
 
 const statutLabels: Record<string, string> = {
   a_livrer: 'À livrer',
+  programme: 'Programmé',
   en_livraison: 'En livraison',
   livre: 'Livré',
-  probleme_livraison: 'Problème de livraison',
+  probleme_livraison: 'Problème livraison',
   a_relivrer: 'À relivrer',
+  retrait_planifie: 'Retrait planifié',
+  retrait_effectue: 'Retrait effectué',
+  annule: 'Annulé',
+  refuse: 'Refusé',
 }
 
 function SortableHeader({ label, column, currentSort, currentOrder, onSort, className }: {
@@ -123,15 +134,6 @@ export default function AdminLivraisonsPage() {
   const [selectedLivraisons, setSelectedLivraisons] = useState<Set<string>>(new Set())
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
 
-  // Dialog tournée
-  const [tourneeDialogOpen, setTourneeDialogOpen] = useState(false)
-  const [tourneeDate, setTourneeDate] = useState('')
-  const [tourneeLivreurId, setTourneeLivreurId] = useState('')
-  const [tourneeCreneauDebut, setTourneeCreneauDebut] = useState('09:00')
-  const [tourneeCreneauFin, setTourneeCreneauFin] = useState('18:00')
-  const [tourneeLoading, setTourneeLoading] = useState(false)
-  const [livreurOptions, setLivreurOptions] = useState<{value: string; label: string}[]>([])
-
   const [depotOptions, setDepotOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Dépôt' }])
   const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
   const [deptOptions, setDeptOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Départements' }])
@@ -170,53 +172,7 @@ export default function AdminLivraisonsPage() {
         }
       }).catch(() => {})
     }
-
-    // Livreurs
-    fetch('/api/admin/users/agents').then(r => r.json()).then(data => {
-      const agents = Array.isArray(data) ? data : data.agents || []
-      setLivreurOptions(agents
-        .filter((a: { role: string }) => a.role === 'livreur' || a.role === 'admin' || a.role === 'super_admin')
-        .map((a: { id: string; nom: string; prenom: string }) => ({
-          value: a.id,
-          label: [a.prenom, a.nom].filter(Boolean).join(' ') || 'Sans nom',
-        }))
-      )
-    }).catch(() => {})
   }, [])
-
-  const handleProgrammerTournee = async () => {
-    if (!tourneeDate || selectedLivraisons.size === 0) return
-    setTourneeLoading(true)
-    try {
-      const livraisonIds = Array.from(selectedLivraisons)
-      const res = await fetch('/api/admin/tournees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          livraison_ids: livraisonIds,
-          date: tourneeDate,
-          livreur_id: tourneeLivreurId || null,
-          depot_id: depotFilter !== 'all' ? depotFilter : null,
-          creneau_debut: tourneeCreneauDebut,
-          creneau_fin: tourneeCreneauFin,
-        }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setTourneeDialogOpen(false)
-        setSelectedLivraisons(new Set())
-        setTourneeDate('')
-        setTourneeLivreurId('')
-        fetchLivraisons()
-      } else {
-        console.error('Erreur tournée:', data.error)
-      }
-    } catch (err) {
-      console.error('Erreur programmation tournée:', err)
-    } finally {
-      setTourneeLoading(false)
-    }
-  }
 
   const fetchLivraisons = useCallback(async () => {
     setLoading(true)
@@ -334,27 +290,15 @@ export default function AdminLivraisonsPage() {
         .filter(l => selectedLivraisons.has(l.id) && l.client_id)
         .map(l => l.client_id!)
 
-      if (action === 'send_form') {
-        // L'API attend un clientId unique — on boucle
-        let errors = 0
-        for (const clientId of clientIds) {
-          try {
-            const res = await fetch('/api/admin/clients/send-formulaire-livraison', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ clientId }),
-            })
-            if (!res.ok) {
-              const data = await res.json()
-              console.error(`Erreur envoi formulaire client ${clientId}:`, data.error)
-              errors++
-            }
-          } catch (err) {
-            console.error(`Erreur réseau client ${clientId}:`, err)
-            errors++
-          }
-        }
-        if (errors > 0) console.error(`${errors}/${clientIds.length} envois en erreur`)
+      if (action === 'send_formulaire_retrait') {
+        // TODO: implement formulaire retrait email
+        alert('Fonctionnalité en cours de développement')
+      } else if (action === 'send_mail_livraison') {
+        // TODO: implement mail livraison email
+        alert('Fonctionnalité en cours de développement')
+      } else if (action === 'send_confirmation_creneau') {
+        // TODO: implement mail confirmation créneau
+        alert('Fonctionnalité en cours de développement')
       } else if (action === 'change_status' && params?.statut) {
         const res = await fetch('/api/admin/livraisons/bulk-status', {
           method: 'POST',
@@ -369,14 +313,31 @@ export default function AdminLivraisonsPage() {
           console.error('Erreur bulk status:', data.error)
         }
       }
-      setSelectedLivraisons(new Set())
-      fetchLivraisons()
+      if (action !== 'send_formulaire_retrait' && action !== 'send_mail_livraison' && action !== 'send_confirmation_creneau') {
+        setSelectedLivraisons(new Set())
+        fetchLivraisons()
+      }
     } catch (err) {
       console.error('Erreur bulk action:', err)
     } finally {
       setBulkActionLoading(false)
     }
   }
+
+  // Computed helpers for bulk action button states
+  const selectedLivraisonsData = livraisons.filter(l => selectedLivraisons.has(l.id))
+
+  // "Formulaire retrait" — enabled only if ALL selected clients have depot_retrait_id (retrait clients)
+  const canSendFormulaireRetrait = selectedLivraisonsData.length > 0 &&
+    selectedLivraisonsData.every(l => l.client?.depot_retrait_id)
+
+  // "Mail livraison" — enabled only if ALL selected clients do NOT have depot_retrait_id (domicile/logistique)
+  const canSendMailLivraison = selectedLivraisonsData.length > 0 &&
+    selectedLivraisonsData.every(l => !l.client?.depot_retrait_id)
+
+  // "Mail confirmation créneau" — enabled only if ALL selected clients have date_programmation
+  const canSendConfirmationCreneau = selectedLivraisonsData.length > 0 &&
+    selectedLivraisonsData.every(l => !!l.date_programmation)
 
   return (
     <div className="space-y-3">
@@ -477,9 +438,11 @@ export default function AdminLivraisonsPage() {
                     />
                   </TableHead>
                   <SortableHeader label="Société" column="created_at" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <TableHead className="hidden lg:table-cell w-14 text-center">Vélos</TableHead>
                   <TableHead className="hidden xl:table-cell">Email</TableHead>
                   <TableHead className="hidden xl:table-cell">Tél.</TableHead>
                   <TableHead className="hidden md:table-cell">Dép.</TableHead>
+                  <TableHead className="hidden md:table-cell">Zone</TableHead>
                   <TableHead className="hidden md:table-cell">Dépôt</TableHead>
                   <SortableHeader label="Mode" column="mode_livraison" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <TableHead className="hidden lg:table-cell">Adresse</TableHead>
@@ -503,6 +466,11 @@ export default function AdminLivraisonsPage() {
                       <div className="font-medium">{liv.client?.raison_sociale || 'N/A'}</div>
                       <div className="text-xs text-muted-foreground">{liv.client?.siret}</div>
                     </TableCell>
+                    <TableCell className="hidden lg:table-cell text-center">
+                      {liv.client?.velo_devis != null ? (
+                        <span className="text-sm font-medium">{liv.client.velo_devis}</span>
+                      ) : <span className="text-sm text-muted-foreground">-</span>}
+                    </TableCell>
                     <TableCell className="hidden xl:table-cell text-sm">
                       {liv.client?.email_beneficiaire || liv.client?.email || '-'}
                     </TableCell>
@@ -516,6 +484,17 @@ export default function AdminLivraisonsPage() {
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm">
                       {getDepartementLabel(liv.client?.departement, liv.client?.adresse_societe_cp)}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {liv.client?.type_de_zone ? (
+                        <Badge className={
+                          liv.client.type_de_zone === 'dans_la_zone'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-orange-100 text-orange-800'
+                        } variant="outline">
+                          {liv.client.type_de_zone === 'dans_la_zone' ? 'En zone' : 'Hors zone'}
+                        </Badge>
+                      ) : <span className="text-sm text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       <span className="text-sm">
@@ -633,19 +612,50 @@ export default function AdminLivraisonsPage() {
       {selectedLivraisons.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <Card className="shadow-lg border-2">
-            <CardContent className="flex items-center gap-4 py-3 px-4">
-              <span className="font-medium text-sm">
+            <CardContent className="flex items-center gap-3 py-3 px-4 flex-wrap">
+              <span className="font-medium text-sm whitespace-nowrap">
                 {selectedLivraisons.size} livraison{selectedLivraisons.size > 1 ? 's' : ''} sélectionnée{selectedLivraisons.size > 1 ? 's' : ''}
               </span>
               <div className="h-6 w-px bg-border" />
-              <Button size="sm" variant="outline" onClick={() => handleBulkAction('send_form')} disabled={bulkActionLoading}>
-                <Send className="h-4 w-4 mr-2" />
-                Envoyer formulaire
-              </Button>
-              <Button size="sm" variant="default" onClick={() => setTourneeDialogOpen(true)} disabled={bulkActionLoading}>
-                <Route className="h-4 w-4 mr-2" />
-                Programmer tournée
-              </Button>
+              <div
+                title={!canSendFormulaireRetrait ? 'Uniquement pour clients en retrait' : undefined}
+              >
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleBulkAction('send_formulaire_retrait')}
+                  disabled={bulkActionLoading || !canSendFormulaireRetrait}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Formulaire retrait
+                </Button>
+              </div>
+              <div
+                title={!canSendMailLivraison ? 'Uniquement pour clients en livraison à domicile' : undefined}
+              >
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleBulkAction('send_mail_livraison')}
+                  disabled={bulkActionLoading || !canSendMailLivraison}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Mail livraison
+                </Button>
+              </div>
+              <div
+                title={!canSendConfirmationCreneau ? 'Uniquement pour clients avec créneau planifié' : undefined}
+              >
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleBulkAction('send_confirmation_creneau')}
+                  disabled={bulkActionLoading || !canSendConfirmationCreneau}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Mail confirmation créneau
+                </Button>
+              </div>
               <Select onValueChange={(value) => handleBulkAction('change_status', { statut: value })} disabled={bulkActionLoading}>
                 <SelectTrigger className="w-48 h-9">
                   <SelectValue placeholder="Changer statut" />
@@ -665,83 +675,6 @@ export default function AdminLivraisonsPage() {
         </div>
       )}
 
-      {/* Dialog Programmer Tournée */}
-      <Dialog open={tourneeDialogOpen} onOpenChange={setTourneeDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Route className="h-5 w-5" />
-              Programmer une tournée
-            </DialogTitle>
-            <DialogDescription>
-              {selectedLivraisons.size} livraison{selectedLivraisons.size > 1 ? 's' : ''} sélectionnée{selectedLivraisons.size > 1 ? 's' : ''}. Un email de confirmation sera envoyé à chaque client.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="tournee-date">Date de livraison *</Label>
-              <Input
-                id="tournee-date"
-                type="date"
-                value={tourneeDate}
-                onChange={(e) => setTourneeDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="tournee-debut">Créneau début</Label>
-                <Input
-                  id="tournee-debut"
-                  type="time"
-                  value={tourneeCreneauDebut}
-                  onChange={(e) => setTourneeCreneauDebut(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="tournee-fin">Créneau fin</Label>
-                <Input
-                  id="tournee-fin"
-                  type="time"
-                  value={tourneeCreneauFin}
-                  onChange={(e) => setTourneeCreneauFin(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tournee-livreur">Livreur (optionnel)</Label>
-              <Select value={tourneeLivreurId} onValueChange={setTourneeLivreurId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir un livreur" />
-                </SelectTrigger>
-                <SelectContent>
-                  {livreurOptions.map(o => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setTourneeDialogOpen(false)} disabled={tourneeLoading}>
-              Annuler
-            </Button>
-            <Button onClick={handleProgrammerTournee} disabled={!tourneeDate || tourneeLoading}>
-              {tourneeLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Programmation...
-                </>
-              ) : (
-                <>
-                  <Route className="h-4 w-4 mr-2" />
-                  Programmer
-                </>
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
