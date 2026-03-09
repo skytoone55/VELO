@@ -25,7 +25,7 @@ export async function GET(
           id, raison_sociale, contact_nom, contact_prenom,
           telephone, email_beneficiaire, velo_devis, velo_valide,
           adresse_societe_ligne1, adresse_societe_cp, adresse_societe_ville,
-          code_enemat, siret, reference_retina
+          siret, reference_retina
         )
       `)
       .eq('id', id)
