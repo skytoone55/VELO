@@ -219,7 +219,7 @@ export function Step6Confirmation() {
               <>
                 <div className="font-medium flex items-center gap-2">
                   Livraison à domicile
-                  {isLivraisonPayante ? (
+                  {isLivraisonPayante && (
                     <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1 border">
                       <Euro className="h-3 w-3" />
                       Payant
