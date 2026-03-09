@@ -121,7 +121,6 @@ export async function POST(request: NextRequest) {
       adresse_livraison_cp: modeLivraison === 'domicile' ? data.adresseLivraison?.codePostal : null,
       adresse_livraison_ville: modeLivraison === 'domicile' ? data.adresseLivraison?.ville : null,
       complement_adresse: data.complementAdresse || null,
-      preferences_livraison: data.preferencesLivraison || null,
       document_identite_type: data.documentIdentite?.type,
       document_identite_url: data.documentIdentite?.url,
       document_identite_nom_fichier: data.documentIdentite?.nomFichier,
