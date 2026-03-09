@@ -3,6 +3,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendFormulaireRecapEmail } from '@/lib/email/gmail'
 import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
 
+export const maxDuration = 30
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

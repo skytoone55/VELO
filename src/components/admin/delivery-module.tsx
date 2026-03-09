@@ -952,7 +952,7 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
             variant="default"
             size="lg"
             className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-6 font-bold"
-            onClick={() => window.open('https://retina.enemat.fr', '_blank')}
+            onClick={() => window.open('https://retina.enemat.fr/#/treetable131', '_blank')}
           >
             <ExternalLink className="h-5 w-5 mr-2" />
             {refRetina
