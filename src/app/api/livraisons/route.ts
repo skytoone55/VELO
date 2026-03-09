@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
           id, raison_sociale, siret, email, email_beneficiaire, telephone,
           departement, adresse_societe_cp, commercial_assigne, monday_board_id,
           statut_commercial, validation_naf, type_de_zone, velo_devis, agence,
-          depot_retrait_id, depot_logistique_id
+          depot_retrait_id, depot_logistique_id, reference_retina
         ),
         depot:depots(id, nom)
       `, { count: 'exact' })

@@ -955,6 +955,7 @@ export default function AdminClientsPage() {
                     />
                   </TableHead>
                   <SortableHeader label="Société" column="raison_sociale" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <TableHead className="hidden xl:table-cell">Réf. Retina</TableHead>
                   <SortableHeader label="Email client" column="email_beneficiaire" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
                   <SortableHeader label="Téléphone" column="telephone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
                   <SortableHeader label="Commercial" column="monday_board_id" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
@@ -970,7 +971,7 @@ export default function AdminClientsPage() {
               <TableBody className={loading ? 'opacity-50' : ''}>
                 {loading && (
                   <TableRow>
-                    <TableCell colSpan={12} className="text-center py-8">
+                    <TableCell colSpan={13} className="text-center py-8">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                     </TableCell>
                   </TableRow>
@@ -991,6 +992,9 @@ export default function AdminClientsPage() {
                           {client.siret || '-'}
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      <span className="text-xs font-mono text-muted-foreground">{client.reference_retina || '-'}</span>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
                       <div className="text-sm">

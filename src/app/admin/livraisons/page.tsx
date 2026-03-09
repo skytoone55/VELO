@@ -62,6 +62,7 @@ interface LivraisonRow {
     type_de_zone: string | null
     depot_retrait_id: string | null
     depot_logistique_id: string | null
+    reference_retina: string | null
   } | null
   depot: { id: string; nom: string } | null
 }
@@ -644,6 +645,7 @@ export default function AdminLivraisonsPage() {
                     />
                   </TableHead>
                   <SortableHeader label="Société" column="created_at" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <TableHead className="hidden xl:table-cell">Réf. Retina</TableHead>
                   <TableHead className="hidden xl:table-cell">Email</TableHead>
                   <TableHead className="hidden xl:table-cell">Tél.</TableHead>
                   <TableHead className="hidden lg:table-cell">Commercial</TableHead>
@@ -671,6 +673,11 @@ export default function AdminLivraisonsPage() {
                     <TableCell>
                       <div className="font-medium">{liv.client?.raison_sociale || 'N/A'}</div>
                       <div className="text-xs text-muted-foreground">{liv.client?.siret}</div>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      <span className="text-xs font-mono text-muted-foreground">
+                        {liv.client?.reference_retina || '-'}
+                      </span>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell text-sm">
                       {liv.client?.email_beneficiaire || liv.client?.email || '-'}
