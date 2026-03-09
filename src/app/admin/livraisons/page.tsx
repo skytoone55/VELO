@@ -15,8 +15,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   Loader2, Search, Truck, MapPin, Calendar, Phone, RefreshCw,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
-  Eye, X, Send, Mail, CheckCircle,
+  Eye, X, Send, Mail, CheckCircle, ChevronDown,
 } from 'lucide-react'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { getTenantId } from '@/lib/tenants'
 import {
   getCommercialName, getDepartementLabel,
@@ -118,11 +123,11 @@ export default function AdminLivraisonsPage() {
   const [livraisons, setLivraisons] = useState<LivraisonRow[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [statutFilter, setStatutFilter] = useState('all')
-  const [depotFilter, setDepotFilter] = useState('all')
-  const [commercialFilter, setCommercialFilter] = useState('all')
-  const [departementFilter, setDepartementFilter] = useState('all')
-  const [zoneFilter, setZoneFilter] = useState('all')
+  const [statutFilter, setStatutFilter] = useState<string[]>([])
+  const [depotFilter, setDepotFilter] = useState<string[]>([])
+  const [commercialFilter, setCommercialFilter] = useState<string[]>([])
+  const [departementFilter, setDepartementFilter] = useState<string[]>([])
+  const [zoneFilter, setZoneFilter] = useState<string[]>([])
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
@@ -189,11 +194,11 @@ export default function AdminLivraisonsPage() {
       params.set('page', page.toString())
       params.set('pageSize', pageSize.toString())
       if (searchQuery) params.set('search', searchQuery)
-      if (statutFilter !== 'all') params.set('statut', statutFilter)
-      if (depotFilter !== 'all') params.set('depot', depotFilter)
-      if (commercialFilter !== 'all') params.set('commercial', commercialFilter)
-      if (departementFilter !== 'all') params.set('departement', departementFilter)
-      if (zoneFilter !== 'all') params.set('zone', zoneFilter)
+      if (statutFilter.length > 0) params.set('statut', statutFilter.join(','))
+      if (depotFilter.length > 0) params.set('depot', depotFilter.join(','))
+      if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
+      if (departementFilter.length > 0) params.set('departement', departementFilter.join(','))
+      if (zoneFilter.length > 0) params.set('zone', zoneFilter.join(','))
       if (sortBy !== 'created_at' || sortOrder !== 'desc') {
         params.set('sortBy', sortBy)
         params.set('sortOrder', sortOrder)
@@ -229,16 +234,33 @@ export default function AdminLivraisonsPage() {
   }, [searchQuery])
 
   // Filter change = reset to page 1
-  const prevFilters = useRef({ statutFilter, depotFilter, commercialFilter, departementFilter, zoneFilter, sortBy, sortOrder })
+  const prevFilters = useRef({
+    statutFilter: statutFilter.join(','),
+    depotFilter: depotFilter.join(','),
+    commercialFilter: commercialFilter.join(','),
+    departementFilter: departementFilter.join(','),
+    zoneFilter: zoneFilter.join(','),
+    sortBy,
+    sortOrder,
+  })
   useEffect(() => {
     const prev = prevFilters.current
+    const cur = {
+      statutFilter: statutFilter.join(','),
+      depotFilter: depotFilter.join(','),
+      commercialFilter: commercialFilter.join(','),
+      departementFilter: departementFilter.join(','),
+      zoneFilter: zoneFilter.join(','),
+      sortBy,
+      sortOrder,
+    }
     if (
-      prev.statutFilter !== statutFilter || prev.depotFilter !== depotFilter ||
-      prev.commercialFilter !== commercialFilter || prev.departementFilter !== departementFilter ||
-      prev.zoneFilter !== zoneFilter || prev.sortBy !== sortBy || prev.sortOrder !== sortOrder
+      prev.statutFilter !== cur.statutFilter || prev.depotFilter !== cur.depotFilter ||
+      prev.commercialFilter !== cur.commercialFilter || prev.departementFilter !== cur.departementFilter ||
+      prev.zoneFilter !== cur.zoneFilter || prev.sortBy !== cur.sortBy || prev.sortOrder !== cur.sortOrder
     ) {
       setPage(1)
-      prevFilters.current = { statutFilter, depotFilter, commercialFilter, departementFilter, zoneFilter, sortBy, sortOrder }
+      prevFilters.current = cur
     }
   }, [statutFilter, depotFilter, commercialFilter, departementFilter, zoneFilter, sortBy, sortOrder])
 
@@ -257,18 +279,18 @@ export default function AdminLivraisonsPage() {
 
   const resetFilters = () => {
     setSearchQuery('')
-    setStatutFilter('all')
-    setDepotFilter('all')
-    setCommercialFilter('all')
-    setDepartementFilter('all')
-    setZoneFilter('all')
+    setStatutFilter([])
+    setDepotFilter([])
+    setCommercialFilter([])
+    setDepartementFilter([])
+    setZoneFilter([])
     setSortBy('created_at')
     setSortOrder('desc')
     setPage(1)
   }
 
-  const hasActiveFilters = searchQuery || statutFilter !== 'all' || depotFilter !== 'all' ||
-    commercialFilter !== 'all' || departementFilter !== 'all' || zoneFilter !== 'all'
+  const hasActiveFilters = searchQuery || statutFilter.length > 0 || depotFilter.length > 0 ||
+    commercialFilter.length > 0 || departementFilter.length > 0 || zoneFilter.length > 0
 
   const handleToggleSelect = (livraisonId: string) => {
     const newSelected = new Set(selectedLivraisons)
@@ -433,48 +455,169 @@ export default function AdminLivraisonsPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select value={statutFilter} onValueChange={setStatutFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Statut" />
-          </SelectTrigger>
-          <SelectContent>
-            {statutOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={depotFilter} onValueChange={setDepotFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[70px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Dépôt" />
-          </SelectTrigger>
-          <SelectContent>
-            {depotOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={commercialFilter} onValueChange={setCommercialFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Commercial" />
-          </SelectTrigger>
-          <SelectContent>
-            {commercialOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={departementFilter} onValueChange={setDepartementFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Dép." />
-          </SelectTrigger>
-          <SelectContent>
-            {deptOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={zoneFilter} onValueChange={setZoneFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[60px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Zone" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Zone</SelectItem>
-            <SelectItem value="dans_la_zone">En zone</SelectItem>
-            <SelectItem value="hors_zone">Hors zone</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Statut multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Statut {statutFilter.length > 0 && `(${statutFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {statutOptions.filter(o => o.value !== 'all').map(o => (
+                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={statutFilter.includes(o.value)}
+                    onChange={(e) => {
+                      setStatutFilter(prev =>
+                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {statutFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setStatutFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+        {/* Dépôt multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Dépôt {depotFilter.length > 0 && `(${depotFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {depotOptions.filter(o => o.value !== 'all').map(o => (
+                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={depotFilter.includes(o.value)}
+                    onChange={(e) => {
+                      setDepotFilter(prev =>
+                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {depotFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setDepotFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+        {/* Commercial multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Commercial {commercialFilter.length > 0 && `(${commercialFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {commercialOptions.filter(o => o.value !== 'all').map(o => (
+                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={commercialFilter.includes(o.value)}
+                    onChange={(e) => {
+                      setCommercialFilter(prev =>
+                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {commercialFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setCommercialFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+        {/* Département multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Dép. {departementFilter.length > 0 && `(${departementFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {deptOptions.filter(o => o.value !== 'all').map(o => (
+                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={departementFilter.includes(o.value)}
+                    onChange={(e) => {
+                      setDepartementFilter(prev =>
+                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {departementFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setDepartementFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+        {/* Zone multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Zone {zoneFilter.length > 0 && `(${zoneFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-40 p-2" align="start">
+            {[{ value: 'dans_la_zone', label: 'En zone' }, { value: 'hors_zone', label: 'Hors zone' }].map(o => (
+              <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                <input
+                  type="checkbox"
+                  checked={zoneFilter.includes(o.value)}
+                  onChange={(e) => {
+                    setZoneFilter(prev =>
+                      e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                    )
+                  }}
+                  className="rounded border-gray-300"
+                />
+                {o.label}
+              </label>
+            ))}
+            {zoneFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setZoneFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={resetFilters} className="h-8 text-xs text-muted-foreground px-2">
             Réinitialiser

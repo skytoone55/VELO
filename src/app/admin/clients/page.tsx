@@ -31,7 +31,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Trash2, MoreHorizontal, Navigation, Eye, Phone, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Trash2, MoreHorizontal, Navigation, Eye, Phone, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import {
@@ -51,6 +51,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { Client } from '@/lib/types/database'
 import { toast } from 'sonner'
 import { getTenantId } from '@/lib/tenants'
@@ -134,13 +139,13 @@ export default function AdminClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [statutFilter, setStatutFilter] = useState('all')
+  const [statutFilter, setStatutFilter] = useState<string[]>([])
   const [statutOptions, setStatutOptions] = useState(defaultStatutOptions)
-  const [nafFilter, setNafFilter] = useState('all')
-  const [departementFilter, setDepartementFilter] = useState('all')
-  const [zoneFilter, setZoneFilter] = useState('all')
-  const [commercialFilter, setCommercialFilter] = useState('all')
-  const [depotFilter, setDepotFilter] = useState('all')
+  const [nafFilter, setNafFilter] = useState<string[]>([])
+  const [departementFilter, setDepartementFilter] = useState<string[]>([])
+  const [zoneFilter, setZoneFilter] = useState<string[]>([])
+  const [commercialFilter, setCommercialFilter] = useState<string[]>([])
+  const [depotFilter, setDepotFilter] = useState<string[]>([])
   const [sortBy, setSortBy] = useState('updated_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
@@ -264,12 +269,12 @@ export default function AdminClientsPage() {
 
       if (forceRefresh) params.set('refresh', 'true')
       if (debouncedSearch) params.set('search', debouncedSearch)
-      if (statutFilter !== 'all') params.set('statut', statutFilter)
-      if (departementFilter !== 'all') params.set('departement', departementFilter)
-      if (nafFilter !== 'all') params.set('naf', nafFilter)
-      if (zoneFilter !== 'all') params.set('zone', zoneFilter)
-      if (commercialFilter !== 'all') params.set('commercial', commercialFilter)
-      if (depotFilter !== 'all') params.set('depot', depotFilter)
+      if (statutFilter.length > 0) params.set('statut', statutFilter.join(','))
+      if (departementFilter.length > 0) params.set('departement', departementFilter.join(','))
+      if (nafFilter.length > 0) params.set('naf', nafFilter.join(','))
+      if (zoneFilter.length > 0) params.set('zone', zoneFilter.join(','))
+      if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
+      if (depotFilter.length > 0) params.set('depot', depotFilter.join(','))
       if (sortBy !== 'updated_at' || sortOrder !== 'desc') {
         params.set('sortBy', sortBy)
         params.set('sortOrder', sortOrder)
@@ -306,32 +311,38 @@ export default function AdminClientsPage() {
 
   // Reset page quand les filtres ou la recherche changent
   const [prevSearch, setPrevSearch] = useState(debouncedSearch)
-  const [prevStatut, setPrevStatut] = useState(statutFilter)
-  const [prevDept, setPrevDept] = useState(departementFilter)
+  const [prevStatut, setPrevStatut] = useState(statutFilter.join(','))
+  const [prevDept, setPrevDept] = useState(departementFilter.join(','))
   const [prevPageSize, setPrevPageSize] = useState(pageSize)
-  const [prevNaf, setPrevNaf] = useState(nafFilter)
-  const [prevZone, setPrevZone] = useState(zoneFilter)
-  const [prevCommercial, setPrevCommercial] = useState(commercialFilter)
-  const [prevDepot, setPrevDepot] = useState(depotFilter)
+  const [prevNaf, setPrevNaf] = useState(nafFilter.join(','))
+  const [prevZone, setPrevZone] = useState(zoneFilter.join(','))
+  const [prevCommercial, setPrevCommercial] = useState(commercialFilter.join(','))
+  const [prevDepot, setPrevDepot] = useState(depotFilter.join(','))
   const [prevSortBy, setPrevSortBy] = useState(sortBy)
   const [prevSortOrder, setPrevSortOrder] = useState(sortOrder)
 
   useEffect(() => {
     // Detect filter change (not page)
-    if (debouncedSearch !== prevSearch || statutFilter !== prevStatut ||
-        departementFilter !== prevDept || pageSize !== prevPageSize ||
-        nafFilter !== prevNaf || zoneFilter !== prevZone ||
-        commercialFilter !== prevCommercial || depotFilter !== prevDepot ||
+    const statutKey = statutFilter.join(',')
+    const deptKey = departementFilter.join(',')
+    const nafKey = nafFilter.join(',')
+    const zoneKey = zoneFilter.join(',')
+    const commercialKey = commercialFilter.join(',')
+    const depotKey = depotFilter.join(',')
+    if (debouncedSearch !== prevSearch || statutKey !== prevStatut ||
+        deptKey !== prevDept || pageSize !== prevPageSize ||
+        nafKey !== prevNaf || zoneKey !== prevZone ||
+        commercialKey !== prevCommercial || depotKey !== prevDepot ||
         sortBy !== prevSortBy || sortOrder !== prevSortOrder) {
       setCurrentPage(1) // Reset to page 1
       setPrevSearch(debouncedSearch)
-      setPrevStatut(statutFilter)
-      setPrevDept(departementFilter)
+      setPrevStatut(statutKey)
+      setPrevDept(deptKey)
       setPrevPageSize(pageSize)
-      setPrevNaf(nafFilter)
-      setPrevZone(zoneFilter)
-      setPrevCommercial(commercialFilter)
-      setPrevDepot(depotFilter)
+      setPrevNaf(nafKey)
+      setPrevZone(zoneKey)
+      setPrevCommercial(commercialKey)
+      setPrevDepot(depotKey)
       setPrevSortBy(sortBy)
       setPrevSortOrder(sortOrder)
     }
@@ -671,71 +682,227 @@ export default function AdminClientsPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select value={statutFilter} onValueChange={setStatutFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Statut" />
-          </SelectTrigger>
-          <SelectContent>
-            {statutOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
+        {/* Statut multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Statut {statutFilter.length > 0 && `(${statutFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {statutOptions.filter(o => o.value !== 'all').map(option => (
+                <label key={option.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={statutFilter.includes(option.value)}
+                    onChange={(e) => {
+                      setStatutFilter(prev =>
+                        e.target.checked
+                          ? [...prev, option.value]
+                          : prev.filter(v => v !== option.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+            {statutFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setStatutFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+        {/* Département multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Dép. {departementFilter.length > 0 && `(${departementFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {(dynamicDeptOptions || departementOptions).filter(o => o.value !== 'all').map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={departementFilter.includes(opt.value)}
+                    onChange={(e) => {
+                      setDepartementFilter(prev =>
+                        e.target.checked
+                          ? [...prev, opt.value]
+                          : prev.filter(v => v !== opt.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+            {departementFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setDepartementFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+        {/* NAF multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              NAF {nafFilter.length > 0 && `(${nafFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-44 p-2" align="start">
+            {nafOptions.filter(o => o.value !== 'all').map(option => (
+              <label key={option.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                <input
+                  type="checkbox"
+                  checked={nafFilter.includes(option.value)}
+                  onChange={(e) => {
+                    setNafFilter(prev =>
+                      e.target.checked
+                        ? [...prev, option.value]
+                        : prev.filter(v => v !== option.value)
+                    )
+                  }}
+                  className="rounded border-gray-300"
+                />
                 {option.label}
-              </SelectItem>
+              </label>
             ))}
-          </SelectContent>
-        </Select>
-        <Select value={departementFilter} onValueChange={setDepartementFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Dép." />
-          </SelectTrigger>
-          <SelectContent>
-            {(dynamicDeptOptions || [{ value: 'all', label: 'Départements' }]).map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            {nafFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setNafFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+        {/* Zone multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Zone {zoneFilter.length > 0 && `(${zoneFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-40 p-2" align="start">
+            {[{ value: 'dans_la_zone', label: 'En zone' }, { value: 'hors_zone', label: 'Hors zone' }].map(opt => (
+              <label key={opt.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                <input
+                  type="checkbox"
+                  checked={zoneFilter.includes(opt.value)}
+                  onChange={(e) => {
+                    setZoneFilter(prev =>
+                      e.target.checked
+                        ? [...prev, opt.value]
+                        : prev.filter(v => v !== opt.value)
+                    )
+                  }}
+                  className="rounded border-gray-300"
+                />
+                {opt.label}
+              </label>
             ))}
-          </SelectContent>
-        </Select>
-        <Select value={nafFilter} onValueChange={setNafFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[60px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="NAF" />
-          </SelectTrigger>
-          <SelectContent>
-            {nafOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={zoneFilter} onValueChange={setZoneFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[60px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Zone" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Zone</SelectItem>
-            <SelectItem value="dans_la_zone">En zone</SelectItem>
-            <SelectItem value="hors_zone">Hors zone</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={depotFilter} onValueChange={setDepotFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[70px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Dépôt" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Dépôt</SelectItem>
-            {depots.map((d) => (
-              <SelectItem key={d.id} value={d.id}>{d.nom}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={commercialFilter} onValueChange={setCommercialFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Commercial" />
-          </SelectTrigger>
-          <SelectContent>
-            {commercialOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            {zoneFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setZoneFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+        {/* Dépôt multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Dépôt {depotFilter.length > 0 && `(${depotFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {depots.map((d) => (
+                <label key={d.id} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={depotFilter.includes(d.id)}
+                    onChange={(e) => {
+                      setDepotFilter(prev =>
+                        e.target.checked
+                          ? [...prev, d.id]
+                          : prev.filter(v => v !== d.id)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {d.nom}
+                </label>
+              ))}
+            </div>
+            {depotFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setDepotFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+        {/* Commercial multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Commercial {commercialFilter.length > 0 && `(${commercialFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {commercialOptions.filter(o => o.value !== 'all').map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={commercialFilter.includes(opt.value)}
+                    onChange={(e) => {
+                      setCommercialFilter(prev =>
+                        e.target.checked
+                          ? [...prev, opt.value]
+                          : prev.filter(v => v !== opt.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+            {commercialFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setCommercialFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+        {/* Réinitialiser */}
+        {(searchQuery || statutFilter.length > 0 || nafFilter.length > 0 || departementFilter.length > 0 || zoneFilter.length > 0 || depotFilter.length > 0 || commercialFilter.length > 0) && (
+          <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground px-2" onClick={() => {
+            setSearchQuery('')
+            setStatutFilter([])
+            setNafFilter([])
+            setDepartementFilter([])
+            setZoneFilter([])
+            setDepotFilter([])
+            setCommercialFilter([])
+            setCurrentPage(1)
+          }}>
+            Réinitialiser
+          </Button>
+        )}
         <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
           <SelectTrigger className="h-8 w-[52px] text-xs px-2 shrink-0">
             <SelectValue />
@@ -758,7 +925,7 @@ export default function AdminClientsPage() {
               <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h3 className="font-medium mb-1">Aucun client</h3>
               <p className="text-muted-foreground text-sm">
-                {searchQuery || statutFilter !== 'all' || departementFilter !== 'all'
+                {searchQuery || statutFilter.length > 0 || departementFilter.length > 0
                   ? 'Aucun client ne correspond à vos critères'
                   : 'Aucun client dans la base de données'}
               </p>
