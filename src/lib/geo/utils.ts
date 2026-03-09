@@ -353,10 +353,10 @@ export function classifyClientZone(
       }
     }
 
-    // Hors zone mais on garde l'info du dépôt le plus proche
+    // Hors zone — rattaché au dépôt logistique le plus proche par défaut
     return {
       depotRetraitId: null,
-      depotLogistiqueId: null,
+      depotLogistiqueId: nearestLogistique.depot.id,
       modeLivraison: 'domicile',
       zoneLivraison: 'hors_zone',
       depotInfo: nearestLogistique.depot,
@@ -365,7 +365,20 @@ export function classifyClientZone(
     }
   }
 
-  // 3. Aucun dépôt trouvé
+  // 3. Aucun dépôt logistique — essayer le dépôt retrait le plus proche
+  if (nearestRetrait) {
+    return {
+      depotRetraitId: nearestRetrait.depot.id,
+      depotLogistiqueId: null,
+      modeLivraison: 'retrait',
+      zoneLivraison: 'hors_zone',
+      depotInfo: nearestRetrait.depot,
+      distanceKm: nearestRetrait.distanceKm,
+      horsZone: true,
+    }
+  }
+
+  // 4. Aucun dépôt trouvé du tout
   return {
     depotRetraitId: null,
     depotLogistiqueId: null,
