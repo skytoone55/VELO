@@ -60,14 +60,14 @@ export async function POST(request: NextRequest) {
 
     const fileUrl = signedData?.signedUrl || storagePath
 
-    // Mapper docType \u2192 colonne en base
+    // Mapper docType → colonne en base
     const columnMap: Record<string, string> = {
       urssaf: 'attestation_urssaf_url',
       dsn: 'attestation_dsn_url',
       benevoles: 'declaration_benevoles_url',
     }
 
-    // Mettre \u00e0 jour le client : URL du document + statut received
+    // Mettre à jour le client : URL du document + statut received
     const demandes = (client.documents_demandes as Record<string, Record<string, string>>) || {}
     if (demandes[docType]) {
       demandes[docType].status = 'received'
