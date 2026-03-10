@@ -839,7 +839,7 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
             </div>
             <div>
               <p className="font-semibold text-blue-900 text-base">Instructions Retina / ENEMAT</p>
-              <p className="text-sm text-blue-700 mt-1">Rendez-vous sur <span className="font-mono">retina.enemat.fr</span> pour :</p>
+              <p className="text-sm text-blue-700 mt-1">Rendez-vous sur <a href="https://retina.enemat.fr/#/treetable131" target="_blank" rel="noopener noreferrer" className="font-mono underline hover:text-blue-900">retina.enemat.fr/#/treetable131</a> pour :</p>
             </div>
           </div>
           <ol className="list-decimal list-inside text-sm text-blue-800 space-y-2 ml-3">
