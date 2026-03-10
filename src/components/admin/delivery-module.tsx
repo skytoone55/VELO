@@ -40,6 +40,7 @@ import {
   AlertCircle,
   Copy,
   ExternalLink,
+  Send,
 } from 'lucide-react'
 
 // ---------- Types ----------
@@ -84,18 +85,18 @@ interface FnuciValidation {
 // ---------- Constantes ----------
 
 const STEPS = [
-  { label: 'Vélos', icon: Bike },
+  { label: 'Instructions', icon: ClipboardCheck },
   { label: 'FNUCI', icon: ScanLine },
-  { label: 'Vérification', icon: ClipboardCheck },
   { label: 'Signature', icon: PenTool },
   { label: 'Confirmation', icon: FileCheck },
 ]
 
-const CHECKLIST_ITEMS = [
-  { key: 'fonctionnement', label: 'Vérification et explication du fonctionnement' },
-  { key: 'cable_recharge', label: 'Câble de recharge remis au bénéficiaire' },
-  { key: 'photos_cee', label: 'Les photos géolocalisées ont été fournies au financeur CEE' },
-] as const
+const CHECKLIST_ITEMS_STATIC = [
+  { key: 'fonctionnement', label: 'Vérification et explication du fonctionnement', highlight: false },
+  { key: 'cable_recharge', label: 'Câble de recharge remis au bénéficiaire', highlight: false },
+  { key: 'photos_cee', label: 'Les photos géolocalisées ont été fournies au financeur CEE', highlight: false },
+  { key: 'signature_faciale', label: 'Le client a bien fait sa signature électronique faciale', highlight: false },
+]
 
 const FNUCI_REGEX = /BC[A-Z0-9]{6,10}/i
 
@@ -537,9 +538,12 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
 
   const refRetina = livraison.client.reference_retina
 
+  const [retinaCopied, setRetinaCopied] = useState(false)
   const copyRetina = () => {
     if (refRetina) {
       navigator.clipboard.writeText(refRetina).catch(() => {})
+      setRetinaCopied(true)
+      setTimeout(() => setRetinaCopied(false), 1500)
     }
   }
 
@@ -553,11 +557,19 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
   const [scannerOpen, setScannerOpen] = useState(false)
   const [scanTargetIndex, setScanTargetIndex] = useState<number>(0)
 
-  // Step 3 — Vérification
+  // Step 1 (nouveau) — Instructions + Checklist
+  const beneficiaire = [livraison.client.contact_prenom, livraison.client.contact_nom]
+    .filter(Boolean).join(' ') || livraison.client.raison_sociale
+  const CHECKLIST_ITEMS = [
+    ...CHECKLIST_ITEMS_STATIC,
+    { key: 'identite_signataire', label: `C'est bien ${beneficiaire} qui a signé`, highlight: true },
+  ]
   const [checklist, setChecklist] = useState<Record<string, boolean>>({
     fonctionnement: false,
     cable_recharge: false,
     photos_cee: false,
+    signature_faciale: false,
+    identite_signataire: false,
   })
   const [photoIdentite, setPhotoIdentite] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -680,14 +692,13 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
 
   // ---- Navigation ----
   const allFnuciValid = fnuciList.length === nbVelos && fnuciList.every((f) => f.valid)
-  const allChecklistDone = Object.values(checklist).every(Boolean) && !!photoIdentite
+  const allChecklistDone = Object.values(checklist).every(Boolean)
 
   const canNext = (() => {
     switch (step) {
-      case 0: return nbVelos >= 1
-      case 1: return allFnuciValid
-      case 2: return allChecklistDone
-      case 3: return !!signature
+      case 0: return allChecklistDone // Instructions + Checklist
+      case 1: return nbVelos >= 1 && allFnuciValid // FNUCI + Vélos
+      case 2: return !!signature && !!photoIdentite // Signature + Photo PI
       default: return false
     }
   })()
@@ -777,86 +788,154 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
 
   // ---- Render Steps ----
 
-  const renderStep0 = () => {
-    const client = livraison.client
-    const beneficiaire = [client.contact_prenom, client.contact_nom].filter(Boolean).join(' ')
-    return (
-      <div className="space-y-4">
-        <Card>
-          <CardContent className="pt-4 space-y-3">
+  // Step 0 — Instructions Retina + Checklist
+  const renderStep0 = () => (
+    <div className="space-y-5">
+      {/* Infos client résumé */}
+      <Card>
+        <CardContent className="pt-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm">
+            <User className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{livraison.client.raison_sociale}</span>
+          </div>
+          {beneficiaire && (
             <div className="flex items-center gap-2 text-sm">
               <User className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{client.raison_sociale}</span>
+              <span>Bénéficiaire : {beneficiaire}</span>
             </div>
-            {beneficiaire && (
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span>Bénéficiaire : {beneficiaire}</span>
-              </div>
-            )}
+          )}
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <span>{[livraison.client.adresse_societe_ligne1, livraison.client.adresse_societe_cp, livraison.client.adresse_societe_ville].filter(Boolean).join(', ')}</span>
+          </div>
+          {livraison.client.telephone && (
             <div className="flex items-center gap-2 text-sm">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span>{[client.adresse_societe_ligne1, client.adresse_societe_cp, client.adresse_societe_ville].filter(Boolean).join(', ')}</span>
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <span>{livraison.client.telephone}</span>
             </div>
-            {client.telephone && (
-              <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{client.telephone}</span>
-              </div>
-            )}
-            {client.email_beneficiaire && (
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{client.email_beneficiaire}</span>
-              </div>
-            )}
-            {client.code_enemat && (
-              <div className="flex items-center gap-2 text-sm">
-                <Badge variant="outline">Code ENEMAT : {client.code_enemat}</Badge>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          )}
+          {livraison.client.email_beneficiaire && (
+            <div className="flex items-center gap-2 text-sm">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <span>{livraison.client.email_beneficiaire}</span>
+            </div>
+          )}
+          {livraison.client.code_enemat && (
+            <div className="flex items-center gap-2 text-sm">
+              <Badge variant="outline">Code ENEMAT : {livraison.client.code_enemat}</Badge>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        <Separator />
+      <Separator />
 
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Nombre de vélos à livrer</Label>
-          <div className="flex items-center justify-center gap-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleVeloChange(-1)}
-              disabled={nbVelos <= 1}
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <span
-              className={`text-3xl font-bold tabular-nums min-w-[3ch] text-center transition-transform ${
-                shakeMax ? 'animate-pulse text-red-500' : ''
+      {/* Bloc Retina */}
+      <Card className="border-blue-300 bg-blue-50 shadow-md">
+        <CardContent className="pt-5 pb-5 space-y-4">
+          <div className="flex gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-200 shrink-0">
+              <Info className="h-5 w-5 text-blue-700" />
+            </div>
+            <div>
+              <p className="font-semibold text-blue-900 text-base">Instructions Retina / ENEMAT</p>
+              <p className="text-sm text-blue-700 mt-1">Rendez-vous sur <span className="font-mono">retina.enemat.fr</span> pour :</p>
+            </div>
+          </div>
+          <ol className="list-decimal list-inside text-sm text-blue-800 space-y-2 ml-3">
+            <li>Générer la facture du bénéficiaire</li>
+            <li>Entrer les numéros FNUCI dans Retina</li>
+            <li>Signer l&apos;AH et prendre les photos</li>
+            <li>Revenir ici pour finaliser</li>
+          </ol>
+          <Button
+            variant="default"
+            size="lg"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-6 font-bold"
+            onClick={() => window.open('https://retina.enemat.fr/#/treetable131', '_blank')}
+          >
+            <ExternalLink className="h-5 w-5 mr-2" />
+            {refRetina
+              ? `Ouvrir Retina — Réf. ${refRetina}`
+              : 'Ouvrir retina.enemat.fr'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Checklist */}
+      <div className="space-y-3">
+        <Label className="text-sm font-medium">Checklist de vérification</Label>
+        {CHECKLIST_ITEMS.map((item) => (
+          <div
+            key={item.key}
+            className={`flex items-start gap-3 ${
+              item.highlight
+                ? 'bg-amber-50 border border-amber-300 rounded-lg p-3'
+                : ''
+            }`}
+          >
+            <Checkbox
+              id={item.key}
+              checked={checklist[item.key]}
+              onCheckedChange={(checked) =>
+                setChecklist((prev) => ({ ...prev, [item.key]: !!checked }))
+              }
+            />
+            <Label
+              htmlFor={item.key}
+              className={`text-sm leading-snug cursor-pointer ${
+                item.highlight ? 'font-semibold text-amber-900' : ''
               }`}
             >
-              {nbVelos}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleVeloChange(1)}
-              disabled={nbVelos >= maxVelos}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+              {item.label}
+            </Label>
           </div>
-          <p className="text-xs text-center text-muted-foreground">
-            Maximum autorisé : {maxVelos} vélo{maxVelos > 1 ? 's' : ''}
-          </p>
-        </div>
+        ))}
       </div>
-    )
-  }
+    </div>
+  )
 
+  // Step 1 — Nombre de vélos + FNUCI
   const renderStep1 = () => (
     <div className="space-y-4">
+      {/* Nombre de vélos */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Nombre de vélos à livrer</Label>
+        <div className="flex items-center justify-center gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleVeloChange(-1)}
+            disabled={nbVelos <= 1}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <span
+            className={`text-3xl font-bold tabular-nums min-w-[3ch] text-center transition-transform ${
+              shakeMax ? 'animate-pulse text-red-500' : ''
+            }`}
+          >
+            {nbVelos}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleVeloChange(1)}
+            disabled={nbVelos >= maxVelos}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        <p className="text-xs text-center text-muted-foreground">
+          Maximum autorisé : {maxVelos} vélo{maxVelos > 1 ? 's' : ''}
+        </p>
+      </div>
+
+      <Separator />
+
+      {/* Codes FNUCI */}
       <div className="flex items-center justify-between">
         <Label className="text-sm font-medium">Codes FNUCI ({fnuciList.filter((f) => f.valid).length}/{nbVelos})</Label>
         <Button
@@ -928,63 +1007,9 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
     </div>
   )
 
+  // Step 2 — Signature + Photo pièce d'identité
   const renderStep2 = () => (
-    <div className="space-y-5">
-      {/* Bloc Retina */}
-      <Card className="border-blue-300 bg-blue-50 shadow-md">
-        <CardContent className="pt-5 pb-5 space-y-4">
-          <div className="flex gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-200 shrink-0">
-              <Info className="h-5 w-5 text-blue-700" />
-            </div>
-            <div>
-              <p className="font-semibold text-blue-900 text-base">Instructions Retina / ENEMAT</p>
-              <p className="text-sm text-blue-700 mt-1">Rendez-vous sur retina.enemat.fr pour :</p>
-            </div>
-          </div>
-          <ol className="list-decimal list-inside text-sm text-blue-800 space-y-2 ml-3">
-            <li>Générer la facture du bénéficiaire</li>
-            <li>Entrer les numéros FNUCI dans Retina</li>
-            <li>Signer l&apos;AH et prendre les photos</li>
-            <li>Revenir ici pour finaliser</li>
-          </ol>
-          <Button
-            variant="default"
-            size="lg"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-6 font-bold"
-            onClick={() => window.open('https://retina.enemat.fr/#/treetable131', '_blank')}
-          >
-            <ExternalLink className="h-5 w-5 mr-2" />
-            {refRetina
-              ? `Ouvrir Retina — Réf. ${refRetina}`
-              : 'Ouvrir retina.enemat.fr'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      {/* Checklist */}
-      <div className="space-y-3">
-        <Label className="text-sm font-medium">Checklist de vérification</Label>
-        {CHECKLIST_ITEMS.map((item) => (
-          <div key={item.key} className="flex items-start gap-3">
-            <Checkbox
-              id={item.key}
-              checked={checklist[item.key]}
-              onCheckedChange={(checked) =>
-                setChecklist((prev) => ({ ...prev, [item.key]: !!checked }))
-              }
-            />
-            <Label htmlFor={item.key} className="text-sm leading-snug cursor-pointer">
-              {item.label}
-            </Label>
-          </div>
-        ))}
-      </div>
-
-      <Separator />
-
+    <div className="space-y-4">
       {/* Photo pièce d'identité */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">
@@ -1029,32 +1054,55 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
             </Button>
           </div>
         )}
-      </div>
-    </div>
-  )
-
-  const renderStep3 = () => {
-    const beneficiaire = [livraison.client.contact_prenom, livraison.client.contact_nom]
-      .filter(Boolean)
-      .join(' ') || livraison.client.raison_sociale
-    return (
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Signataire</Label>
-          <Input value={beneficiaire} readOnly className="bg-muted" />
-        </div>
-        <SignaturePad onSignatureChange={setSignature} />
-        {!signature && (
+        {!photoIdentite && (
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
-            La signature est obligatoire pour continuer
+            La photo de la pièce d&apos;identité est obligatoire
           </p>
         )}
       </div>
-    )
+
+      <Separator />
+
+      {/* Signature */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Signataire</Label>
+        <Input value={beneficiaire} readOnly className="bg-muted" />
+      </div>
+      <SignaturePad onSignatureChange={setSignature} />
+      {!signature && (
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          La signature est obligatoire pour continuer
+        </p>
+      )}
+    </div>
+  )
+
+  // Step 3 — Confirmation
+  const [sendingBon, setSendingBon] = useState(false)
+  const [bonSent, setBonSent] = useState(false)
+
+  const handleSendBonToClient = async () => {
+    setSendingBon(true)
+    try {
+      const res = await fetch(`/api/admin/livraisons/${livraison.id}/send-bon`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Erreur envoi')
+      }
+      setBonSent(true)
+    } catch {
+      setError('Erreur lors de l\'envoi du bon au client')
+    } finally {
+      setSendingBon(false)
+    }
   }
 
-  const renderStep4 = () => {
+  const renderStep3 = () => {
     if (!success) {
       return (
         <div className="space-y-4 text-center">
@@ -1114,6 +1162,20 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
             <Printer className="h-4 w-4 mr-2" />
             Imprimer
           </Button>
+          <Button
+            onClick={handleSendBonToClient}
+            disabled={sendingBon || bonSent || !pdfBlob}
+            variant="outline"
+            className="w-full"
+          >
+            {sendingBon ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Envoi en cours...</>
+            ) : bonSent ? (
+              <><CheckCircle className="h-4 w-4 mr-2 text-emerald-500" />Envoyé au client</>
+            ) : (
+              <><Send className="h-4 w-4 mr-2" />Envoyer au client</>
+            )}
+          </Button>
           <Separator />
           <Button
             variant="ghost"
@@ -1151,10 +1213,14 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
             <button
               type="button"
               onClick={copyRetina}
-              className="ml-1 p-1 rounded hover:bg-muted-foreground/10 transition-colors"
+              className="ml-1 p-1 rounded hover:bg-muted-foreground/10 active:scale-90 active:bg-muted-foreground/20 transition-all"
               title="Copier la référence"
             >
-              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+              {retinaCopied ? (
+                <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
             </button>
           )}
         </div>
@@ -1168,10 +1234,9 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
-        {step === 4 && renderStep4()}
       </div>
 
-      {!success && step < 4 && (
+      {!success && step < 3 && (
         <div className="flex justify-between pt-2">
           <Button
             variant="outline"
