@@ -620,6 +620,15 @@ export default function AdminLivraisonsPage() {
             )}
           </PopoverContent>
         </Popover>
+        {/* PageSize selector */}
+        <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
+          <SelectTrigger className="h-8 w-[52px] text-xs px-2 shrink-0">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {[20, 50, 100, 200].map(n => <SelectItem key={n} value={n.toString()}>{n}</SelectItem>)}
+          </SelectContent>
+        </Select>
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={resetFilters} className="h-8 text-xs text-muted-foreground px-2">
             Réinitialiser
@@ -828,14 +837,6 @@ export default function AdminLivraisonsPage() {
             : '0 résultats'}
         </div>
         <div className="flex items-center gap-2">
-          <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
-            <SelectTrigger className="h-8 w-auto text-xs px-2">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[20, 50, 100, 200].map(n => <SelectItem key={n} value={n.toString()}>{n}</SelectItem>)}
-            </SelectContent>
-          </Select>
           {pagination.totalPages > 1 && (
             <>
               <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
