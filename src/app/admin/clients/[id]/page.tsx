@@ -603,7 +603,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 px-4 font-semibold"
               >
                 <Truck className="mr-2 h-4 w-4" />
-                Livrer
+                Livraison
               </Button>
             )}
 

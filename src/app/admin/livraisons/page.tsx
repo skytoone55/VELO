@@ -818,30 +818,34 @@ export default function AdminLivraisonsPage() {
       </Card>
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-sm text-muted-foreground">
-            {pagination.startIndex}-{pagination.endIndex} sur {pagination.totalFiltered}
-          </div>
-          <div className="flex items-center gap-2">
-            <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
-              <SelectTrigger className="h-8 w-auto text-xs px-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[20, 50, 100].map(n => <SelectItem key={n} value={n.toString()}>{n}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-xs">{page}/{pagination.totalPages}</span>
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="text-sm text-muted-foreground">
+          {pagination.totalFiltered > 0
+            ? `${pagination.startIndex}-${pagination.endIndex} sur ${pagination.totalFiltered}`
+            : '0 résultats'}
         </div>
-      )}
+        <div className="flex items-center gap-2">
+          <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
+            <SelectTrigger className="h-8 w-auto text-xs px-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[20, 50, 100, 200].map(n => <SelectItem key={n} value={n.toString()}>{n}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {pagination.totalPages > 1 && (
+            <>
+              <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-xs">{page}/{pagination.totalPages}</span>
+              <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
       {/* Barre d'actions bulk flottante */}
       {selectedLivraisons.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">

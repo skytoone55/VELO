@@ -3,8 +3,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendFormulaireRecapEmail } from '@/lib/email/gmail'
 import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
 
-export const maxDuration = 30
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -45,62 +43,12 @@ export async function POST(request: NextRequest) {
     const modeLivraison = client.depot_retrait_id ? 'retrait' : 'domicile'
     const depotId = client.depot_retrait_id || client.depot_logistique_id
 
-    // 1. Créer le compte utilisateur si un mot de passe a été fourni
-    let userId: string | null = null
-    if (data.password && client.email) {
-      try {
-        // Créer l'utilisateur auth
-        const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-          email: client.email,
-          password: data.password,
-          email_confirm: true,
-          user_metadata: {
-            nom: client.contact_nom,
-            prenom: client.contact_prenom,
-            role: 'client',
-          }
-        })
-
-        if (authError) {
-          // Si l'utilisateur existe déjà, ne pas bloquer la soumission
-          if (!authError.message.includes('already been registered')) {
-            console.error('Erreur création auth user:', authError)
-          }
-        } else if (authData.user) {
-          userId = authData.user.id
-
-          // Créer le profil utilisateur
-          await adminClient.from('users_profile').insert({
-            id: userId,
-            email: client.email,
-            nom: client.contact_nom,
-            prenom: client.contact_prenom,
-            role: 'client',
-            actif: true,
-          })
-
-          // Lier l'utilisateur au client
-          await adminClient.from('user_societes').insert({
-            user_id: userId,
-            client_id: clientId,
-            is_primary: true,
-          })
-
-          console.log(`Compte client créé pour ${client.email}`)
-        }
-      } catch (userError) {
-        console.error('Erreur création compte client:', userError)
-        // Ne pas bloquer la soumission si la création du compte échoue
-      }
-    }
-
-    // 2. Mettre à jour le client
+    // 1. Mettre à jour le client
     const { error: updateError } = await adminClient
       .from('clients')
       .update({
         statut_formulaire: 'formulaire_complete',
         statut_commercial: 'a_livrer',
-        preferences_livraison: data.preferencesLivraison || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', clientId)
@@ -123,10 +71,11 @@ export async function POST(request: NextRequest) {
       adresse_livraison_cp: modeLivraison === 'domicile' ? data.adresseLivraison?.codePostal : null,
       adresse_livraison_ville: modeLivraison === 'domicile' ? data.adresseLivraison?.ville : null,
       complement_adresse: data.complementAdresse || null,
+      preferences_livraison: data.preferencesLivraison || null,
       document_identite_type: data.documentIdentite?.type,
       document_identite_url: data.documentIdentite?.url,
       document_identite_nom_fichier: data.documentIdentite?.nomFichier,
-      statut: 'a_livrer',
+      statut: 'en_attente',
     })
 
     if (livraisonError) {
@@ -186,9 +135,7 @@ export async function POST(request: NextRequest) {
         modeLivraison: modeLivraison as 'domicile' | 'retrait',
         adresseLivraison: modeLivraison === 'domicile' ? data.adresseLivraison : undefined,
         depotRetrait: depotRetraitInfo || undefined,
-        complementAdresse: data.complementAdresse || undefined,
-        preferencesLivraison: data.preferencesLivraison || undefined,
-        userCreated: !!userId,
+        userCreated: false,
       })
       console.log(`Email récapitulatif envoyé à ${emailDestinataire}`)
     } catch (emailError) {
@@ -259,7 +206,7 @@ export async function POST(request: NextRequest) {
       success: true,
       modeLivraison,
       depotId,
-      userCreated: !!userId,
+      userCreated: false,
     })
   } catch (error: any) {
     console.error('Erreur API submit:', error)
