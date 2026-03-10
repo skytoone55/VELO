@@ -25,10 +25,10 @@ export async function POST(request: NextRequest) {
       const { data: livraison } = await adminClient
         .from('livraisons')
         .select(`
-          id, date_prevue, creneau_heure_debut, creneau_heure_fin,
+          id, creneau_date, creneau_heure_debut, creneau_heure_fin,
           clients!inner(
             id, email_beneficiaire, email, raison_sociale,
-            contact_nom, contact_prenom, nom_contact, prenom_contact
+            contact_nom, contact_prenom
           )
         `)
         .eq('id', livraisonId)
@@ -59,15 +59,17 @@ export async function POST(request: NextRequest) {
 
       // Formater la date en français
       const dateLivraison = (() => {
+        const dateStr = livraison.creneau_date
+        if (!dateStr) return 'Date à confirmer'
         try {
-          return new Date(livraison.date_prevue + 'T00:00:00').toLocaleDateString('fr-FR', {
+          return new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
             year: 'numeric',
           })
         } catch {
-          return livraison.date_prevue || 'Date à confirmer'
+          return dateStr
         }
       })()
 
@@ -78,8 +80,8 @@ export async function POST(request: NextRequest) {
 
       // Nom du réceptionnaire
       const nomReceptionnaire = [
-        client.prenom_contact || client.contact_prenom,
-        client.nom_contact || client.contact_nom,
+        client.contact_prenom,
+        client.contact_nom,
       ].filter(Boolean).join(' ') || client.raison_sociale
 
       const success = await sendMailPlanningEmail({

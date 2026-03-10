@@ -70,6 +70,7 @@ function DeliverContent() {
             adresse_societe_ville: client.adresse_societe_ville || '',
             code_enemat: client.code_enemat || null,
             reference_retina: client.reference_retina || null,
+            siret: client.siret || null,
           },
         })
       } catch {

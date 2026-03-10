@@ -6,7 +6,7 @@ import { requireRole, isAuthError } from '@/lib/auth/require-role'
 export async function GET(request: Request) {
   try {
     // Auth: require admin, super_admin or agent_secteur
-    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
     if (isAuthError(authResult)) return authResult
 
     const { searchParams } = new URL(request.url)
@@ -52,11 +52,12 @@ export async function GET(request: Request) {
         date_livraison,
         date_programmation,
         depot_id,
-        livreur_id,
         adresse_livraison_ligne1,
         adresse_livraison_cp,
         adresse_livraison_ville,
         notes_admin,
+        complement_adresse,
+        heure_precise,
         created_at
       `)
       .eq('depot_id', depotId)
@@ -96,7 +97,7 @@ export async function GET(request: Request) {
     if (clientIds.length > 0) {
       const { data: clients } = await adminClient
         .from('clients')
-        .select('id, raison_sociale, velo_devis, velo_valide, telephone, email, statut_commercial, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville')
+        .select('id, raison_sociale, velo_devis, velo_valide, telephone, email, statut_commercial, preferences_livraison, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville')
         .in('id', clientIds)
 
       if (clients) {
@@ -115,7 +116,7 @@ export async function GET(request: Request) {
     // 4. Fetch clients "a_livrer" for this depot (either depot_logistique_id or depot_retrait_id)
     const { data: clientsALivrer, error: clientsError } = await adminClient
       .from('clients')
-      .select('id, raison_sociale, velo_devis, velo_valide, telephone, email, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville, adresse_societe_ligne1, adresse_societe_cp, adresse_societe_ville, statut_commercial')
+      .select('id, raison_sociale, velo_devis, velo_valide, telephone, email, preferences_livraison, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville, adresse_societe_ligne1, adresse_societe_cp, adresse_societe_ville, statut_commercial')
       .eq('statut_commercial', 'a_livrer')
       .or(`depot_logistique_id.eq.${depotId},depot_retrait_id.eq.${depotId}`)
       .order('raison_sociale', { ascending: true })
