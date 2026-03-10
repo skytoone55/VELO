@@ -119,6 +119,12 @@ export type Database = {
           preferences_livraison: string | null
           type_de_zone: string | null
           reference_retina: string | null
+          attestation_urssaf_url: string | null
+          attestation_dsn_url: string | null
+          declaration_benevoles_url: string | null
+          documents_demandes: Record<string, unknown> | null
+          token_documents: string | null
+          piece_identite_url: string | null
         }
         Insert: {
           adresse_livraison_cp?: string | null
@@ -188,6 +194,12 @@ export type Database = {
           preferences_livraison?: string | null
           type_de_zone?: string | null
           reference_retina?: string | null
+          attestation_urssaf_url?: string | null
+          attestation_dsn_url?: string | null
+          declaration_benevoles_url?: string | null
+          documents_demandes?: Record<string, unknown> | null
+          token_documents?: string | null
+          piece_identite_url?: string | null
         }
         Update: {
           adresse_livraison_cp?: string | null
@@ -257,6 +269,12 @@ export type Database = {
           preferences_livraison?: string | null
           type_de_zone?: string | null
           reference_retina?: string | null
+          attestation_urssaf_url?: string | null
+          attestation_dsn_url?: string | null
+          declaration_benevoles_url?: string | null
+          documents_demandes?: Record<string, unknown> | null
+          token_documents?: string | null
+          piece_identite_url?: string | null
         }
         Relationships: []
       }
@@ -489,6 +507,13 @@ export type Database = {
           creneau_date: string | null
           creneau_heure_debut: string | null
           creneau_heure_fin: string | null
+          nb_velos_livres: number | null
+          tournee_id: string | null
+          confirmation_statut: string | null
+          confirmation_commentaire: string | null
+          confirmation_date: string | null
+          pdf_livraison_url: string | null
+          attestation_pdf_url: string | null
         }
         Insert: {
           adresse_livraison_cp?: string | null
@@ -526,6 +551,13 @@ export type Database = {
           creneau_date?: string | null
           creneau_heure_debut?: string | null
           creneau_heure_fin?: string | null
+          nb_velos_livres?: number | null
+          tournee_id?: string | null
+          confirmation_statut?: string | null
+          confirmation_commentaire?: string | null
+          confirmation_date?: string | null
+          pdf_livraison_url?: string | null
+          attestation_pdf_url?: string | null
         }
         Update: {
           adresse_livraison_cp?: string | null
@@ -563,6 +595,13 @@ export type Database = {
           creneau_date?: string | null
           creneau_heure_debut?: string | null
           creneau_heure_fin?: string | null
+          nb_velos_livres?: number | null
+          tournee_id?: string | null
+          confirmation_statut?: string | null
+          confirmation_commentaire?: string | null
+          confirmation_date?: string | null
+          pdf_livraison_url?: string | null
+          attestation_pdf_url?: string | null
         }
         Relationships: []
       }
@@ -646,6 +685,7 @@ export type Database = {
           telephone: string | null
           territoire: string | null
           updated_at: string | null
+          est_aussi_livreur: boolean | null
         }
         Insert: {
           actif?: boolean | null
@@ -663,6 +703,7 @@ export type Database = {
           telephone?: string | null
           territoire?: string | null
           updated_at?: string | null
+          est_aussi_livreur?: boolean | null
         }
         Update: {
           actif?: boolean | null
@@ -680,6 +721,7 @@ export type Database = {
           telephone?: string | null
           territoire?: string | null
           updated_at?: string | null
+          est_aussi_livreur?: boolean | null
         }
         Relationships: []
       }
@@ -746,6 +788,96 @@ export type Database = {
         }
         Relationships: []
       }
+      tournees: {
+        Row: {
+          id: string
+          date: string
+          livreur_id: string | null
+          depot_id: string | null
+          creneau_debut: string | null
+          creneau_fin: string | null
+          notes: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          date: string
+          livreur_id?: string | null
+          depot_id?: string | null
+          creneau_debut?: string | null
+          creneau_fin?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          date?: string
+          livreur_id?: string | null
+          depot_id?: string | null
+          creneau_debut?: string | null
+          creneau_fin?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      livreur_agents: {
+        Row: {
+          livreur_id: string
+          agent_id: string
+          created_at: string
+        }
+        Insert: {
+          livreur_id: string
+          agent_id: string
+          created_at?: string
+        }
+        Update: {
+          livreur_id?: string
+          agent_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      monday_boards: {
+        Row: {
+          id: string
+          board_id: string
+          board_name: string
+          commercial_name: string | null
+          is_active: boolean | null
+          items_count: number | null
+          last_synced_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          board_id: string
+          board_name: string
+          commercial_name?: string | null
+          is_active?: boolean | null
+          items_count?: number | null
+          last_synced_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          board_id?: string
+          board_name?: string
+          commercial_name?: string | null
+          is_active?: boolean | null
+          items_count?: number | null
+          last_synced_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -792,6 +924,10 @@ export type SyncMondayLog = Tables<'sync_monday_log'>
 export type FormulairesLog = Tables<'formulaires_log'>
 export type DistancesCache = Tables<'distances_cache'>
 export type ClientHorsZone = Tables<'clients_hors_zone'>
+export type NafCode = Tables<'naf_codes'>
+export type Tournee = Tables<'tournees'>
+export type LivreurAgent = Tables<'livreur_agents'>
+export type MondayBoard = Tables<'monday_boards'>
 
 // Role types
 export type UserRole =
