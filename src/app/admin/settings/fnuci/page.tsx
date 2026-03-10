@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -155,6 +155,23 @@ export default function FnuciManagementPage() {
     setPagination(p => ({ ...p, page: 1 }))
   }
 
+  // Client-side sort for join columns (client_raison_sociale, client_reference_retina)
+  const sortedRecords = useMemo(() => {
+    if (!['client_raison_sociale', 'client_reference_retina'].includes(sortBy)) return records
+    return [...records].sort((a, b) => {
+      let aVal = '', bVal = ''
+      if (sortBy === 'client_raison_sociale') {
+        aVal = a.client?.raison_sociale || ''
+        bVal = b.client?.raison_sociale || ''
+      } else {
+        aVal = a.client?.reference_retina || ''
+        bVal = b.client?.reference_retina || ''
+      }
+      const cmp = aVal.localeCompare(bVal, 'fr')
+      return sortOrder === 'asc' ? cmp : -cmp
+    })
+  }, [records, sortBy, sortOrder])
+
   return (
     <div className="space-y-4">
       <div>
@@ -226,8 +243,16 @@ export default function FnuciManagementPage() {
                       Statut <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </th>
-                  <th className="px-3 py-2 text-left">Client</th>
-                  <th className="px-3 py-2 text-left">Ref. Retina</th>
+                  <th className="px-3 py-2 text-left">
+                    <button className="flex items-center gap-1 font-medium" onClick={() => toggleSort('client_raison_sociale')}>
+                      Client <ArrowUpDown className="h-3 w-3" />
+                    </button>
+                  </th>
+                  <th className="px-3 py-2 text-left">
+                    <button className="flex items-center gap-1 font-medium" onClick={() => toggleSort('client_reference_retina')}>
+                      Ref. Retina <ArrowUpDown className="h-3 w-3" />
+                    </button>
+                  </th>
                   <th className="px-3 py-2 text-left">
                     <button className="flex items-center gap-1 font-medium" onClick={() => toggleSort('attribue_at')}>
                       Date attribution <ArrowUpDown className="h-3 w-3" />
@@ -249,7 +274,7 @@ export default function FnuciManagementPage() {
                       Aucun code FNUCI trouve
                     </td>
                   </tr>
-                ) : records.map((r) => (
+                ) : sortedRecords.map((r) => (
                   <tr key={r.id} className="border-b hover:bg-muted/30 transition-colors">
                     <td className="px-3 py-2 font-mono">{r.numero}</td>
                     <td className="px-3 py-2 font-mono font-medium">{r.reference}</td>

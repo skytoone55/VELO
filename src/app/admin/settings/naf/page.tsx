@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,6 +29,7 @@ import {
   XCircle,
   ChevronLeft,
   ChevronRight,
+  ArrowUpDown,
 } from 'lucide-react'
 
 interface NafCode {
@@ -57,6 +58,8 @@ export default function NafCodesPage() {
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [valideFilter, setValideFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('code')
+  const [sortOrder, setSortOrder] = useState('asc')
   const [pendingToggle, setPendingToggle] = useState<NafCode | null>(null)
   const [lastResult, setLastResult] = useState<string | null>(null)
 
@@ -66,6 +69,8 @@ export default function NafCodesPage() {
       const params = new URLSearchParams({
         page: String(pagination.page),
         pageSize: String(pageSize),
+        sortBy: sortBy === 'clients_count' ? 'code' : sortBy,
+        sortOrder,
       })
       if (search) params.set('search', search)
       if (valideFilter !== 'all') params.set('valide', valideFilter)
@@ -82,7 +87,7 @@ export default function NafCodesPage() {
       setLoading(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, pageSize, search, valideFilter])
+  }, [pagination.page, pageSize, search, valideFilter, sortBy, sortOrder])
 
   useEffect(() => {
     fetchData()
@@ -114,6 +119,25 @@ export default function NafCodesPage() {
     setSearch(searchInput)
     setPagination(p => ({ ...p, page: 1 }))
   }
+
+  const toggleSort = (col: string) => {
+    if (sortBy === col) {
+      setSortOrder(o => o === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(col)
+      setSortOrder('asc')
+    }
+    setPagination(p => ({ ...p, page: 1 }))
+  }
+
+  // Client-side sort for computed column (clients_count)
+  const sortedCodes = useMemo(() => {
+    if (sortBy !== 'clients_count') return codes
+    return [...codes].sort((a, b) => {
+      const cmp = a.clients_count - b.clients_count
+      return sortOrder === 'asc' ? cmp : -cmp
+    })
+  }, [codes, sortBy, sortOrder])
 
   // Stats
   const totalOk = codes.filter(c => c.valide).length
@@ -180,10 +204,26 @@ export default function NafCodesPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 border-b">
                 <tr>
-                  <th className="px-3 py-2 text-left font-medium">Code</th>
-                  <th className="px-3 py-2 text-left font-medium">Libelle</th>
-                  <th className="px-3 py-2 text-left font-medium">Statut</th>
-                  <th className="px-3 py-2 text-center font-medium">Clients</th>
+                  <th className="px-3 py-2 text-left">
+                    <button className="flex items-center gap-1 font-medium" onClick={() => toggleSort('code')}>
+                      Code <ArrowUpDown className="h-3 w-3" />
+                    </button>
+                  </th>
+                  <th className="px-3 py-2 text-left">
+                    <button className="flex items-center gap-1 font-medium" onClick={() => toggleSort('label')}>
+                      Libelle <ArrowUpDown className="h-3 w-3" />
+                    </button>
+                  </th>
+                  <th className="px-3 py-2 text-left">
+                    <button className="flex items-center gap-1 font-medium" onClick={() => toggleSort('valide')}>
+                      Statut <ArrowUpDown className="h-3 w-3" />
+                    </button>
+                  </th>
+                  <th className="px-3 py-2 text-center">
+                    <button className="flex items-center gap-1 font-medium justify-center" onClick={() => toggleSort('clients_count')}>
+                      Clients <ArrowUpDown className="h-3 w-3" />
+                    </button>
+                  </th>
                   <th className="px-3 py-2 text-right font-medium">Action</th>
                 </tr>
               </thead>
@@ -200,7 +240,7 @@ export default function NafCodesPage() {
                       Aucun code NAF trouve
                     </td>
                   </tr>
-                ) : codes.map((c) => (
+                ) : sortedCodes.map((c) => (
                   <tr key={c.id} className="border-b hover:bg-muted/30 transition-colors">
                     <td className="px-3 py-2 font-mono font-medium">{c.code}</td>
                     <td className="px-3 py-2 max-w-[400px]">

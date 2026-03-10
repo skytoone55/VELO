@@ -16,15 +16,25 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
     const statut = searchParams.get('statut')
     const detenteur = searchParams.get('detenteur')
-    const limit = parseInt(searchParams.get('limit') || '50')
+
+    const sortByParam = searchParams.get('sortBy') || 'numero'
+    const sortOrderParam = searchParams.get('sortOrder') || 'asc'
+    const SORTABLE_COLS = ['numero', 'reference', 'statut', 'attribue_at', 'created_at']
+    const safeSortBy = SORTABLE_COLS.includes(sortByParam) ? sortByParam : 'numero'
+    const ascending = sortOrderParam === 'asc'
+
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const pageSize = Math.min(500, Math.max(1, parseInt(searchParams.get('pageSize') || '50')))
 
     const supabase = createAdminClient()
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
 
     let query = supabase
       .from('fnuci')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(Math.min(limit, 200))
+      .select('*, client:clients(id, raison_sociale, reference_retina)', { count: 'exact' })
+      .order(safeSortBy, { ascending })
+      .range(from, to)
 
     if (search) {
       query = query.ilike('reference', `${search.toUpperCase()}%`)
@@ -38,14 +48,22 @@ export async function GET(request: NextRequest) {
       query = query.eq('detenteur', detenteur)
     }
 
-    const { data, error } = await query
+    const { data, count, error } = await query
 
     if (error) {
       console.error('Erreur FNUCI:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ fnuci: data || [] })
+    return NextResponse.json({
+      fnuci: data || [],
+      pagination: {
+        page,
+        pageSize,
+        totalPages: Math.ceil((count || 0) / pageSize),
+        totalFiltered: count || 0,
+      },
+    })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erreur interne'
     console.error('Erreur GET /api/admin/fnuci:', message)

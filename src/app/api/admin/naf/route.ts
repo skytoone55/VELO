@@ -18,6 +18,12 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const pageSize = Math.min(500, Math.max(1, parseInt(searchParams.get('pageSize') || '100')))
 
+    const sortByParam = searchParams.get('sortBy') || 'code'
+    const sortOrderParam = searchParams.get('sortOrder') || 'asc'
+    const SORTABLE_COLS = ['code', 'label', 'valide', 'created_at', 'updated_at']
+    const safeSortBy = SORTABLE_COLS.includes(sortByParam) ? sortByParam : 'code'
+    const ascending = sortOrderParam === 'asc'
+
     const supabase = createAdminClient()
 
     const from = (page - 1) * pageSize
@@ -26,7 +32,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('naf_codes')
       .select('*', { count: 'exact' })
-      .order('code', { ascending: true })
+      .order(safeSortBy, { ascending })
       .range(from, to)
 
     if (search) {
