@@ -489,68 +489,115 @@ async function generateAttestation(data: {
   })
   y += 4
 
-  // Photo identité (compact)
-  if (data.photoIdentite) {
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Pièce d\'identité', 20, y)
-    y += 4
-    try {
-      doc.addImage(data.photoIdentite, 'JPEG', 20, y, 45, 30)
-      y += 33
-    } catch {
-      doc.text('[Photo non disponible]', 25, y + 4)
-      y += 8
-    }
-  }
-
-  // Tampon entreprise EN FOND + Signature PAR-DESSUS
+  // === Section signature : photo identité (gauche) + tampon avec signature (droite) ===
   y += 6
   doc.setFontSize(11)
   doc.setFont('helvetica', 'bold')
   doc.text('Signature du bénéficiaire', 20, y)
   y += 8
 
-  // Tampon derrière la signature (dessiné en premier = fond)
-  const stampX = pageW / 2 + 5
-  const stampY = y - 2
-  if (data.siret || data.clientName) {
-    const stampW = pageW / 2 - 25
-    const stampLines: string[] = []
-    if (data.clientName) stampLines.push(data.clientName)
-    if (data.adresse) {
-      const parts = data.adresse.split(', ')
-      if (parts[0]) stampLines.push(parts[0])
-      if (parts[1] || parts[2]) stampLines.push([parts[1], parts[2]].filter(Boolean).join(' '))
+  const sectionStartY = y
+  const leftColW = 80  // largeur colonne gauche (photo)
+  const rightColX = 105 // début colonne droite (tampon+signature)
+  const rightColW = pageW - rightColX - 20 // largeur colonne droite
+  let leftColEndY = sectionStartY
+  let rightColEndY = sectionStartY
+
+  // --- Colonne gauche : Photo d'identité (respect du ratio) ---
+  if (data.photoIdentite) {
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Pièce d\'identité', 20, y)
+    const photoY = y + 4
+    try {
+      // Détecter l'orientation de la photo via un Image element
+      const img = new Image()
+      img.src = data.photoIdentite
+      // Dimensions max pour la photo
+      const maxW = leftColW - 5
+      const maxH = 55
+      let imgW = maxW
+      let imgH = maxH
+      if (img.naturalWidth && img.naturalHeight) {
+        const ratio = img.naturalWidth / img.naturalHeight
+        if (ratio > 1) {
+          // Paysage
+          imgW = maxW
+          imgH = maxW / ratio
+        } else {
+          // Portrait
+          imgH = maxH
+          imgW = maxH * ratio
+        }
+      } else {
+        // Fallback : format portrait par défaut (téléphone)
+        imgW = maxH * 0.65
+        imgH = maxH
+      }
+      doc.addImage(data.photoIdentite, 'JPEG', 20, photoY, imgW, imgH)
+      leftColEndY = photoY + imgH + 4
+    } catch {
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.text('[Photo non disponible]', 25, photoY + 4)
+      leftColEndY = photoY + 10
     }
-    if (data.siret) stampLines.push(`SIRET: ${data.siret}`)
-    const stampH = 8 + stampLines.length * 5
+  }
+
+  // --- Colonne droite : Tampon (fond) puis Signature (par-dessus) ---
+  // 1. Tampon rectangle
+  const stampLines: string[] = []
+  if (data.clientName) stampLines.push(data.clientName)
+  if (data.adresse) {
+    const parts = data.adresse.split(', ')
+    if (parts[0]) stampLines.push(parts[0])
+    if (parts[1] || parts[2]) stampLines.push([parts[1], parts[2]].filter(Boolean).join(' '))
+  }
+  if (data.siret) stampLines.push(`SIRET: ${data.siret}`)
+
+  // Hauteur du tampon : texte info + espace signature + date
+  const infoH = stampLines.length * 5 + 4
+  const sigH = 28
+  const stampH = infoH + sigH + 14  // info + signature + date + padding
+  const stampY = sectionStartY
+
+  if (data.siret || data.clientName) {
     doc.setDrawColor(180)
     doc.setFillColor(248, 248, 248)
-    doc.roundedRect(stampX, stampY, stampW, stampH, 2, 2, 'FD')
+    doc.roundedRect(rightColX, stampY, rightColW, stampH, 2, 2, 'FD')
+
+    // Texte du tampon (en haut du rectangle)
     doc.setTextColor(100)
     let ty = stampY + 6
     stampLines.forEach((line, i) => {
       doc.setFontSize(i === 0 ? 8 : 7)
       doc.setFont('helvetica', i === 0 ? 'bold' : 'normal')
-      doc.text(line, stampX + stampW / 2, ty, { align: 'center' })
+      doc.text(line, rightColX + rightColW / 2, ty, { align: 'center' })
       ty += 5
     })
     doc.setTextColor(0)
   }
 
-  // Signature par-dessus le tampon (côté gauche)
+  // 2. Signature PAR-DESSUS le tampon (centrée dans le tampon)
+  const sigY = stampY + infoH + 2
   try {
-    doc.addImage(data.signature, 'PNG', 20, y, 80, 30)
-    y += 34
+    const sigW = rightColW - 10
+    doc.addImage(data.signature, 'PNG', rightColX + 5, sigY, sigW, sigH)
   } catch {
-    doc.text('[Signature non disponible]', 25, y + 4)
-    y += 10
+    doc.setFontSize(8)
+    doc.text('[Signature non disponible]', rightColX + 10, sigY + 10)
   }
-  y += 4
-  doc.setFontSize(8)
-  doc.text(`Signé le ${data.date}`, 20, y)
-  y += 12
+
+  // 3. Date sous la signature, dans le tampon
+  doc.setFontSize(7)
+  doc.setTextColor(100)
+  doc.text(`Signé le ${data.date}`, rightColX + rightColW / 2, stampY + stampH - 4, { align: 'center' })
+  doc.setTextColor(0)
+
+  rightColEndY = stampY + stampH + 4
+
+  // Avancer y après la plus haute des 2 colonnes
+  y = Math.max(leftColEndY, rightColEndY) + 4
 
   // Footer
   doc.setDrawColor(200)
@@ -749,7 +796,7 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
       const beneficiaire = [client.contact_prenom, client.contact_nom].filter(Boolean).join(' ') || client.raison_sociale
       const adresse = [client.adresse_societe_ligne1, client.adresse_societe_cp, client.adresse_societe_ville].filter(Boolean).join(', ')
       const now = new Date()
-      const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+      const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
       const doc = await generateAttestation({
         clientName: client.raison_sociale,
