@@ -465,6 +465,7 @@ export type Database = {
           complement_adresse: string | null
           created_at: string
           creneau_debut: string | null
+          heure_precise: string | null
           creneau_fin: string | null
           date_livraison: string | null
           date_livraison_effective: string | null
@@ -488,11 +489,6 @@ export type Database = {
           creneau_date: string | null
           creneau_heure_debut: string | null
           creneau_heure_fin: string | null
-          nb_velos_livres: number | null
-          tournee_id: string | null
-          confirmation_statut: string | null
-          confirmation_commentaire: string | null
-          confirmation_date: string | null
         }
         Insert: {
           adresse_livraison_cp?: string | null
@@ -506,6 +502,7 @@ export type Database = {
           complement_adresse?: string | null
           created_at?: string
           creneau_debut?: string | null
+          heure_precise?: string | null
           creneau_fin?: string | null
           date_livraison?: string | null
           date_livraison_effective?: string | null
@@ -529,11 +526,6 @@ export type Database = {
           creneau_date?: string | null
           creneau_heure_debut?: string | null
           creneau_heure_fin?: string | null
-          nb_velos_livres?: number | null
-          tournee_id?: string | null
-          confirmation_statut?: string | null
-          confirmation_commentaire?: string | null
-          confirmation_date?: string | null
         }
         Update: {
           adresse_livraison_cp?: string | null
@@ -547,6 +539,7 @@ export type Database = {
           complement_adresse?: string | null
           created_at?: string
           creneau_debut?: string | null
+          heure_precise?: string | null
           creneau_fin?: string | null
           date_livraison?: string | null
           date_livraison_effective?: string | null
@@ -570,64 +563,8 @@ export type Database = {
           creneau_date?: string | null
           creneau_heure_debut?: string | null
           creneau_heure_fin?: string | null
-          nb_velos_livres?: number | null
-          tournee_id?: string | null
-          confirmation_statut?: string | null
-          confirmation_commentaire?: string | null
-          confirmation_date?: string | null
         }
         Relationships: []
-      }
-      tournees: {
-        Row: {
-          id: string
-          date: string
-          livreur_id: string | null
-          depot_id: string | null
-          creneau_debut: string | null
-          creneau_fin: string | null
-          notes: string | null
-          created_by: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          date: string
-          livreur_id?: string | null
-          depot_id?: string | null
-          creneau_debut?: string | null
-          creneau_fin?: string | null
-          notes?: string | null
-          created_by?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          date?: string
-          livreur_id?: string | null
-          depot_id?: string | null
-          creneau_debut?: string | null
-          creneau_fin?: string | null
-          notes?: string | null
-          created_by?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tournees_livreur_id_fkey"
-            columns: ["livreur_id"]
-            isOneToOne: false
-            referencedRelation: "users_profile"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tournees_depot_id_fkey"
-            columns: ["depot_id"]
-            isOneToOne: false
-            referencedRelation: "depots"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       sync_monday_log: {
         Row: {
@@ -700,7 +637,6 @@ export type Database = {
           depot_id: string | null
           depot_ids: string[] | null
           email: string
-          est_aussi_livreur: boolean | null
           id: string
           is_super_admin: boolean
           nom: string | null
@@ -718,7 +654,6 @@ export type Database = {
           depot_id?: string | null
           depot_ids?: string[] | null
           email: string
-          est_aussi_livreur?: boolean | null
           id: string
           is_super_admin?: boolean
           nom?: string | null
@@ -736,7 +671,6 @@ export type Database = {
           depot_id?: string | null
           depot_ids?: string[] | null
           email?: string
-          est_aussi_livreur?: boolean | null
           id?: string
           is_super_admin?: boolean
           nom?: string | null
@@ -846,12 +780,6 @@ export type DepotUpdate = TablesUpdate<'depots'>
 export type Livraison = Tables<'livraisons'>
 export type LivraisonInsert = TablesInsert<'livraisons'>
 export type LivraisonUpdate = TablesUpdate<'livraisons'>
-
-export type Tournee = Tables<'tournees'>
-export type TourneeInsert = TablesInsert<'tournees'>
-export type TourneeUpdate = TablesUpdate<'tournees'>
-
-export type ConfirmationStatut = 'en_attente' | 'confirmee' | 'refusee'
 
 export type UserSociete = Tables<'user_societes'>
 export type EmailAlert = Tables<'email_alerts'>
