@@ -450,7 +450,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       const res = await fetch('/api/admin/livraisons/send-mail-planning', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ livraison_ids: [livraisons[0].id] }),
+        body: JSON.stringify({ livraisonIds: [livraisons[0].id] }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur envoi')

@@ -848,6 +848,21 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
             <li>Signer l&apos;AH et prendre les photos</li>
             <li>Revenir ici pour finaliser</li>
           </ol>
+          {refRetina && (
+            <div className="flex items-center gap-2 bg-blue-100 border border-blue-200 rounded-lg px-3 py-2">
+              <span className="text-sm font-medium text-blue-800">Réf. Retina :</span>
+              <span className="font-mono text-sm font-bold text-blue-900">{refRetina}</span>
+              <button
+                onClick={copyRetina}
+                className="ml-auto p-1 rounded hover:bg-blue-200 active:scale-90 transition-all"
+                title="Copier la référence"
+              >
+                {retinaCopied
+                  ? <CheckCircle className="h-4 w-4 text-green-600" />
+                  : <Copy className="h-4 w-4 text-blue-600" />}
+              </button>
+            </div>
+          )}
           <Button
             variant="default"
             size="lg"

@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   Loader2, Search, Truck, MapPin, Calendar, Phone, RefreshCw,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
-  Eye, X, Send, Mail, CheckCircle, ChevronDown, CalendarCheck, PackageCheck,
+  Eye, X, Send, Mail, CheckCircle, ChevronDown, CalendarCheck,
 } from 'lucide-react'
 import {
   Popover,
@@ -793,7 +793,7 @@ export default function AdminLivraisonsPage() {
                           title="Module de livraison"
                           className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 active:scale-90 transition-all"
                         >
-                          <PackageCheck className="h-4 w-4" />
+                          <Truck className="h-4 w-4" />
                         </Button>
                       )}
                       <Button
