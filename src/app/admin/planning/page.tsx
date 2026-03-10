@@ -467,12 +467,15 @@ function PlanningContent() {
     setPlacementLoading(true)
     try {
       const supabase = createClient()
-      const { data } = await supabase
+      let q = supabase
         .from('clients')
         .select('id, raison_sociale, velo_devis, velo_valide, telephone, email, statut_commercial, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville')
         .eq('statut_commercial', 'a_livrer')
         .or(`raison_sociale.ilike.%${query}%,telephone.ilike.%${query}%,email.ilike.%${query}%`)
-        .limit(10)
+      if (selectedDepotId) {
+        q = q.or(`depot_logistique_id.eq.${selectedDepotId},depot_retrait_id.eq.${selectedDepotId}`)
+      }
+      const { data } = await q.limit(10)
       setPlacementResults((data || []) as PlanningClient[])
     } catch (err) {
       console.error('Erreur recherche:', err)
