@@ -1080,3 +1080,44 @@ export async function sendTourneeConfirmationEmail(params: {
 }) {
   return sendConfirmationCreneauEmail({ ...params, isRetrait: false })
 }
+
+/**
+ * Envoie le bon de livraison/retrait par email au client avec le PDF en PJ
+ */
+export async function sendBonLivraisonEmail(params: {
+  to: string
+  beneficiaire: string
+  raisonSociale: string
+  modeLivraison: string
+  pdfBuffer: Buffer
+}) {
+  const { to, beneficiaire, raisonSociale, modeLivraison, pdfBuffer } = params
+  const tenant = getTenantConfig()
+  const transporter = await createTransporter()
+  const typeDoc = modeLivraison === 'retrait' ? 'retrait' : 'livraison'
+
+  const html = `
+    ${getEmailHeader(tenant)}
+    <h2 style="color:#1e293b;margin:0 0 16px">Bon de ${typeDoc}</h2>
+    <p>Bonjour ${beneficiaire},</p>
+    <p>Veuillez trouver ci-joint votre attestation de ${typeDoc} pour <strong>${raisonSociale}</strong>.</p>
+    <p>Conservez ce document comme justificatif.</p>
+    ${getContactSection(tenant)}
+    ${getEmailFooter(tenant)}
+  `
+
+  const result = await transporter.sendMail({
+    from: `${tenant.name} <${process.env.SMTP_USER || process.env.GMAIL_USER}>`,
+    to,
+    subject: `Votre bon de ${typeDoc} — ${raisonSociale}`,
+    html,
+    attachments: [{
+      filename: `bon-${typeDoc}-${raisonSociale.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+      content: pdfBuffer,
+      contentType: 'application/pdf',
+    }],
+  })
+
+  console.log('Bon de livraison envoyé:', result.messageId)
+  return { success: true, messageId: result.messageId }
+}
