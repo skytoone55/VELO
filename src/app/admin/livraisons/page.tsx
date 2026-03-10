@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   Loader2, Search, Truck, MapPin, Calendar, Phone, RefreshCw,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
-  Eye, X, Send, Mail, CheckCircle, ChevronDown, CalendarCheck,
+  Eye, X, Send, Mail, CheckCircle, ChevronDown, CalendarCheck, PackageCheck,
 } from 'lucide-react'
 import {
   Popover,
@@ -780,9 +780,20 @@ export default function AdminLivraisonsPage() {
                             window.location.href = `/admin/planning${depotId ? `?depot_id=${depotId}` : ''}`
                           }}
                           title="Programmer la livraison"
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 active:scale-90 transition-all"
                         >
                           <Calendar className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {['en_livraison', 'programme'].includes(liv.statut || '') && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.location.href = `/admin/livraisons/deliver?id=${liv.id}`}
+                          title="Module de livraison"
+                          className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 active:scale-90 transition-all"
+                        >
+                          <PackageCheck className="h-4 w-4" />
                         </Button>
                       )}
                       <Button
@@ -790,6 +801,7 @@ export default function AdminLivraisonsPage() {
                         size="sm"
                         onClick={() => window.location.href = `/admin/clients/${liv.client_id}`}
                         title="Voir la fiche"
+                        className="active:scale-90 transition-all"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
