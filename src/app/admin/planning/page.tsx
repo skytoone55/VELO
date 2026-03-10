@@ -16,7 +16,7 @@ import {
 import {
   Loader2, ChevronLeft, ChevronRight, Calendar, Truck,
   Send, MapPin, Bike, Clock, Search, Eye, X, Trash2, Mail,
-  Phone, Info, Pencil, Check,
+  Phone, Info, Pencil, Check, Users,
 } from 'lucide-react'
 import { DELIVERY_STATUS } from '@/lib/constants'
 import Link from 'next/link'
@@ -1150,7 +1150,7 @@ function PlanningContent() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="w-full text-xs"
+                        className="w-full text-xs bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 shadow-sm"
                         onClick={() => handleSendMailPlanning(creneauLivraisons.map(l => l.id))}
                         disabled={sendingMailPlanning}
                       >
@@ -2009,41 +2009,64 @@ function WeekView({
                                   : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
                           }`}
                         >
-                          {/* Créneau bar header */}
-                          <div className="flex items-center justify-between px-1.5 py-1 gap-1">
-                            <div className="flex-1 min-w-0">
-                              <div className="text-[10px] font-semibold text-gray-700 leading-tight">
-                                {c.heure_debut.slice(0, 5)}-{c.heure_fin.slice(0, 5)}
-                              </div>
-                              <div className="flex items-center gap-1 mt-0.5">
-                                <div className="flex-1 bg-gray-200 rounded-full h-1">
-                                  <div
-                                    className={`h-1 rounded-full ${
-                                      slotRatio > 0.9 ? 'bg-red-500' : slotRatio > 0.7 ? 'bg-amber-500' : 'bg-green-500'
-                                    }`}
-                                    style={{ width: `${Math.min(100, slotRatio * 100)}%` }}
-                                  />
-                                </div>
-                                <span className={`text-[9px] shrink-0 ${isFull ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
-                                  {slotVelos}/{c.capacite_velos}
-                                </span>
-                              </div>
+                          {/* Créneau enrichi */}
+                          <div className="px-2 py-1.5">
+                            {/* Header: heures + bouton + */}
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[11px] font-semibold text-gray-700">
+                                {c.heure_debut.slice(0, 5)} – {c.heure_fin.slice(0, 5)}
+                              </span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onAddClient(day, c.heure_debut) }}
+                                disabled={isFull || !canAddClient}
+                                className={`shrink-0 w-5 h-5 rounded flex items-center justify-center text-xs font-bold transition-colors ${
+                                  isFull || !canAddClient
+                                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                    : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                                }`}
+                                title={!canAddClient ? 'Sélectionnez un livreur pour planifier' : `Ajouter dans ${c.heure_debut.slice(0, 5)}-${c.heure_fin.slice(0, 5)}`}
+                              >
+                                +
+                              </button>
                             </div>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); onAddClient(day, c.heure_debut) }}
-                              disabled={isFull || !canAddClient}
-                              className={`shrink-0 w-5 h-5 rounded flex items-center justify-center text-xs font-bold transition-colors ${
-                                isFull || !canAddClient
-                                  ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                                  : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                              }`}
-                              title={!canAddClient ? 'Sélectionnez un livreur pour planifier' : `Ajouter dans ${c.heure_debut.slice(0, 5)}-${c.heure_fin.slice(0, 5)}`}
-                            >
-                              +
-                            </button>
+                            {/* Stats */}
+                            {(() => {
+                              const nbClients = slotLivraisons.length
+                              const nbLivres = slotLivraisons.filter(l => l.statut === 'livree').length
+                              const nbEnCours = slotLivraisons.filter(l => l.statut === 'en_livraison').length
+                              const pct = nbClients > 0 ? Math.round((nbLivres / nbClients) * 100) : 0
+                              return (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1.5 text-[10px] text-gray-600">
+                                    <Users className="h-3 w-3" />
+                                    <span className="font-medium">{nbClients} client{nbClients > 1 ? 's' : ''}</span>
+                                    {nbLivres > 0 && <span className="text-green-600">{nbLivres} livré{nbLivres > 1 ? 's' : ''}</span>}
+                                    {nbEnCours > 0 && <span className="text-orange-600">{nbEnCours} en cours</span>}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-[10px] text-gray-600">
+                                    <Bike className="h-3 w-3" />
+                                    <span className={isFull ? 'text-red-600 font-bold' : ''}>{slotVelos}/{c.capacite_velos} vélos</span>
+                                  </div>
+                                  {/* Barre de progression */}
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+                                      <div
+                                        className={`h-1.5 rounded-full transition-all ${
+                                          slotRatio > 0.9 ? 'bg-red-500' : slotRatio > 0.7 ? 'bg-amber-500' : 'bg-green-500'
+                                        }`}
+                                        style={{ width: `${Math.min(100, slotRatio * 100)}%` }}
+                                      />
+                                    </div>
+                                    {nbClients > 0 && (
+                                      <span className={`text-[9px] font-bold shrink-0 ${pct === 100 ? 'text-green-600' : 'text-gray-500'}`}>
+                                        {pct}%
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })()}
                           </div>
-
-                          {/* Résumé compact — pas de cartes individuelles */}
                         </div>
                       )
                     })}

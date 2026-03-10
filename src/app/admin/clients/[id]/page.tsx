@@ -782,8 +782,22 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <KeyRound className="h-3.5 w-3.5" />
               REF ENEMAT
             </div>
-            <div className="text-sm font-mono font-bold truncate px-1">
-              {(client as any).reference_retina || '—'}
+            <div className="flex items-center justify-center gap-1">
+              <span className="text-sm font-mono font-bold truncate">
+                {(client as any).reference_retina || '—'}
+              </span>
+              {(client as any).reference_retina && (
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText((client as any).reference_retina)
+                    setSuccess('Référence copiée')
+                  }}
+                  className="text-slate-400 hover:text-slate-200 transition-colors"
+                  title="Copier la référence"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
           </div>
           <div className="text-center">
