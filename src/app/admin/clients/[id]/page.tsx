@@ -185,6 +185,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   // FNUCI (PPE only)
   const [fnuciRecords, setFnuciRecords] = useState<Array<{ id: string; numero: number; reference: string; statut: string; attribue_at: string | null }>>([])
+  const [livreurNom, setLivreurNom] = useState<string | null>(null)
   const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
 
   // Zone calculée à partir de la distance au dépôt
@@ -224,6 +225,22 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               .eq('client_id', data.client.id)
               .order('numero', { ascending: true })
             if (fnuci) setFnuciRecords(fnuci)
+          } catch {
+            // Non-blocking
+          }
+        }
+
+        // Fetch livreur name from livraison
+        const livraisonLivree = (data.livraisons || []).find((l: any) => l.livreur_id)
+        if (livraisonLivree?.livreur_id) {
+          try {
+            const supabase = createClient()
+            const { data: livreur } = await supabase
+              .from('users_profile')
+              .select('nom, prenom')
+              .eq('id', livraisonLivree.livreur_id)
+              .single()
+            if (livreur) setLivreurNom(`${livreur.prenom || ''} ${livreur.nom || ''}`.trim())
           } catch {
             // Non-blocking
           }
@@ -1139,21 +1156,21 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               {/* Slot 2 — PDF de livraison (attestation complète) */}
               <div className="p-3 bg-muted/30 rounded-lg border flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${(livraison as any)?.pdf_livraison_url || (livraison as any)?.photos_livraison?.attestation_pdf ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <div className={`w-2 h-2 rounded-full ${(livraison as any)?.attestation_pdf_url || (livraison as any)?.photos_livraison?.attestation_pdf ? 'bg-green-500' : 'bg-gray-300'}`} />
                   <div>
                     <p className="font-medium text-sm">PDF de livraison</p>
                     <p className="text-xs text-muted-foreground">
-                      {(livraison as any)?.pdf_livraison_url || (livraison as any)?.photos_livraison?.attestation_pdf
+                      {(livraison as any)?.attestation_pdf_url || (livraison as any)?.photos_livraison?.attestation_pdf
                         ? 'Généré après livraison'
                         : 'Sera généré automatiquement après livraison'}
                     </p>
                   </div>
                 </div>
-                {((livraison as any)?.pdf_livraison_url || (livraison as any)?.photos_livraison?.attestation_pdf) && (
+                {((livraison as any)?.attestation_pdf_url || (livraison as any)?.photos_livraison?.attestation_pdf) && (
                   <div className="flex gap-1">
                     <Button variant="ghost" size="sm" onClick={() => {
-                      if ((livraison as any)?.pdf_livraison_url) {
-                        window.open((livraison as any).pdf_livraison_url, '_blank')
+                      if ((livraison as any)?.attestation_pdf_url) {
+                        window.open((livraison as any).attestation_pdf_url, '_blank')
                       } else {
                         const pdfData = (livraison as any).photos_livraison.attestation_pdf
                         const w = window.open('', '_blank')
@@ -1229,9 +1246,16 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               {/* FNUCI attribués — PPE only, inside Documents */}
               {tenantId !== 'ecovolt' && fnuciRecords.length > 0 && (
                 <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Bike className="h-4 w-4 text-muted-foreground" />
-                    <h4 className="font-semibold text-sm text-foreground">FNUCI attribués ({fnuciRecords.length})</h4>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Bike className="h-4 w-4 text-muted-foreground" />
+                      <h4 className="font-semibold text-sm text-foreground">FNUCI attribués ({fnuciRecords.length})</h4>
+                    </div>
+                    {livreurNom && (
+                      <span className="text-xs text-muted-foreground">
+                        Livré par <span className="font-medium text-foreground">{livreurNom}</span>
+                      </span>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     {fnuciRecords.map((f) => (

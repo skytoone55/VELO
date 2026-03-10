@@ -788,15 +788,17 @@ export default function AdminLivraisonsPage() {
                           <Calendar className="h-4 w-4" />
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => window.location.href = `/admin/livraisons/deliver?id=${liv.id}`}
-                        title="Module de livraison"
-                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 active:scale-90 transition-all"
-                      >
-                        <Truck className="h-4 w-4" />
-                      </Button>
+                      {liv.statut !== 'livree' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.location.href = `/admin/livraisons/deliver?id=${liv.id}`}
+                          title="Module de livraison"
+                          className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 active:scale-90 transition-all"
+                        >
+                          <Truck className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
