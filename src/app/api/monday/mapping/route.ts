@@ -3,11 +3,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { invalidateMappingsCache } from '@/lib/monday/dynamic-mapping'
 import { INTERFACE_FIELDS, INTERFACE_SECTIONS } from '@/lib/monday/interface-fields'
 import { MONDAY_CONFIG } from '@/lib/monday/config'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
- * API pour gérer le mapping des champs Monday
- * GET /api/monday/mapping?boardId=xxx - Récupérer tous les mappings (non-mappés + mappés)
- * POST /api/monday/mapping - Créer/Mettre à jour un mapping (ou marquer "supabase_only")
+ * API pour g\u00e9rer le mapping des champs Monday
+ * GET /api/monday/mapping?boardId=xxx - R\u00e9cup\u00e9rer tous les mappings (non-mapp\u00e9s + mapp\u00e9s)
+ * POST /api/monday/mapping - Cr\u00e9er/Mettre \u00e0 jour un mapping (ou marquer "supabase_only")
  * DELETE /api/monday/mapping - Supprimer un mapping
  *
  * En multi-board, boardId est obligatoire pour GET/POST/DELETE
@@ -15,13 +16,16 @@ import { MONDAY_CONFIG } from '@/lib/monday/config'
  */
 
 export async function GET(request: NextRequest) {
+  const auth = await requireRole(['super_admin', 'admin'])
+  if (isAuthError(auth)) return auth
+
   const adminClient = createAdminClient()
 
   try {
     const { searchParams } = new URL(request.url)
     const boardId = searchParams.get('boardId')
 
-    // Construire la requête avec filtre par board_id
+    // Construire la requ\u00eate avec filtre par board_id
     let query = adminClient
       .from('monday_field_mapping')
       .select('*')
@@ -33,14 +37,14 @@ export async function GET(request: NextRequest) {
       // Single-board: charger les mappings sans board_id
       query = query.is('board_id', null)
     }
-    // En multi-board sans boardId spécifié, on charge tout (pour la vue d'ensemble)
+    // En multi-board sans boardId sp\u00e9cifi\u00e9, on charge tout (pour la vue d'ensemble)
 
     const { data: mappings, error } = await query
 
     if (error) throw error
 
-    // Combiner avec la définition des champs interface
-    // Statut: 'unmapped' = pas encore configuré, 'monday' = lié à Monday, 'supabase_only' = pas de sync Monday
+    // Combiner avec la d\u00e9finition des champs interface
+    // Statut: 'unmapped' = pas encore configur\u00e9, 'monday' = li\u00e9 \u00e0 Monday, 'supabase_only' = pas de sync Monday
     const result = INTERFACE_FIELDS.map(field => {
       const mapping = mappings?.find(m => m.interface_field === field.field)
       const hasMapping = !!mapping
@@ -67,15 +71,18 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Erreur récupération mapping:', error)
+    console.error('Erreur r\u00e9cup\u00e9ration mapping:', error)
     return NextResponse.json(
-      { error: error.message || 'Erreur de récupération' },
+      { error: error.message || 'Erreur de r\u00e9cup\u00e9ration' },
       { status: 500 }
     )
   }
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireRole(['super_admin', 'admin'])
+  if (isAuthError(auth)) return auth
+
   const adminClient = createAdminClient()
 
   try {
@@ -89,12 +96,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // En multi-board, boardId est recommandé
+    // En multi-board, boardId est recommand\u00e9
     if (MONDAY_CONFIG.isMultiBoard && !boardId) {
       console.warn('POST mapping en multi-board sans boardId - les mappings seront globaux')
     }
 
-    // Trouver la définition du champ
+    // Trouver la d\u00e9finition du champ
     const fieldDef = INTERFACE_FIELDS.find(f => f.field === interface_field)
     if (!fieldDef) {
       return NextResponse.json(
@@ -121,7 +128,7 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     }
 
-    // Chercher si un mapping existe déjà pour ce champ + board
+    // Chercher si un mapping existe d\u00e9j\u00e0 pour ce champ + board
     let existingQuery = adminClient
       .from('monday_field_mapping')
       .select('id')
@@ -170,15 +177,18 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Erreur mise à jour mapping:', error)
+    console.error('Erreur mise \u00e0 jour mapping:', error)
     return NextResponse.json(
-      { error: error.message || 'Erreur de mise à jour' },
+      { error: error.message || 'Erreur de mise \u00e0 jour' },
       { status: 500 }
     )
   }
 }
 
 export async function DELETE(request: NextRequest) {
+  const auth = await requireRole(['super_admin', 'admin'])
+  if (isAuthError(auth)) return auth
+
   const adminClient = createAdminClient()
 
   try {

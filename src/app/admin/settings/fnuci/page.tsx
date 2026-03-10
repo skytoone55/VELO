@@ -230,7 +230,7 @@ export default function FnuciManagementPage() {
                 <tr>
                   <th className="px-3 py-2 text-left">
                     <button className="flex items-center gap-1 font-medium" onClick={() => toggleSort('numero')}>
-                      N° etiquette <ArrowUpDown className="h-3 w-3" />
+                      N\u00b0 etiquette <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </th>
                   <th className="px-3 py-2 text-left">
@@ -289,14 +289,14 @@ export default function FnuciManagementPage() {
                           {r.client.raison_sociale}
                         </Link>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground">\u2014</span>
                       )}
                     </td>
                     <td className="px-3 py-2 font-mono text-xs">
-                      {r.client?.reference_retina || '—'}
+                      {r.client?.reference_retina || '\u2014'}
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">
-                      {r.attribue_at ? new Date(r.attribue_at).toLocaleDateString('fr-FR') : '—'}
+                      {r.attribue_at ? new Date(r.attribue_at).toLocaleDateString('fr-FR') : '\u2014'}
                     </td>
                     <td className="px-3 py-2 text-right">
                       {actionLoading === r.id ? (

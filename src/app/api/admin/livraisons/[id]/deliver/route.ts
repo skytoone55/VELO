@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireRole, isAuthError } from '@/lib/auth/require-role'
+import { requireRole, isAuthError, type AuthenticatedUser } from '@/lib/auth/require-role'
 
 interface DeliveryChecklist {
   fonctionnement: boolean
@@ -28,6 +28,7 @@ export async function POST(
   try {
     const auth = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
     if (isAuthError(auth)) return auth
+    const currentUser = auth as AuthenticatedUser
 
     const { id: livraisonId } = await params
     const body: DeliverBody = await request.json()
@@ -44,21 +45,21 @@ export async function POST(
     if (!checklist || !checklist.fonctionnement || !checklist.cable_recharge ||
         !checklist.photos_cee) {
       return NextResponse.json(
-        { error: 'Tous les éléments de la checklist doivent être validés' },
+        { error: 'Tous les \u00e9l\u00e9ments de la checklist doivent \u00eatre valid\u00e9s' },
         { status: 400 }
       )
     }
 
     if (!signature_base64) {
       return NextResponse.json(
-        { error: 'La signature du bénéficiaire est requise' },
+        { error: 'La signature du b\u00e9n\u00e9ficiaire est requise' },
         { status: 400 }
       )
     }
 
     const supabase = createAdminClient()
 
-    // --- 1. Récupérer la livraison avec données client ---
+    // --- 1. R\u00e9cup\u00e9rer la livraison avec donn\u00e9es client ---
     const { data: livraison, error: livraisonError } = await supabase
       .from('livraisons')
       .select('*')
@@ -74,12 +75,26 @@ export async function POST(
 
     if (livraison.statut === 'livree') {
       return NextResponse.json(
-        { error: 'Cette livraison a déjà été effectuée' },
+        { error: 'Cette livraison a d\u00e9j\u00e0 \u00e9t\u00e9 effectu\u00e9e' },
         { status: 400 }
       )
     }
 
-    // Récupérer le client
+    // Role-based access check
+    if (currentUser.role === 'livreur' && livraison.livreur_id !== currentUser.id) {
+      return NextResponse.json(
+        { error: 'Acc\u00e8s refus\u00e9' },
+        { status: 403 }
+      )
+    }
+    if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length && !currentUser.depot_ids.includes(livraison.depot_id)) {
+      return NextResponse.json(
+        { error: 'Acc\u00e8s refus\u00e9' },
+        { status: 403 }
+      )
+    }
+
+    // R\u00e9cup\u00e9rer le client
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('*')
@@ -88,21 +103,21 @@ export async function POST(
 
     if (clientError || !client) {
       return NextResponse.json(
-        { error: 'Client associé introuvable' },
+        { error: 'Client associ\u00e9 introuvable' },
         { status: 404 }
       )
     }
 
-    // --- 2. Valider le nombre de vélos ---
+    // --- 2. Valider le nombre de v\u00e9los ---
     const expectedBikes = client.velo_valide || client.velo_devis || 1
     if (fnuci_codes.length !== expectedBikes) {
       return NextResponse.json(
-        { error: `Nombre de codes FNUCI incorrect. Attendu : ${expectedBikes}, reçu : ${fnuci_codes.length}` },
+        { error: `Nombre de codes FNUCI incorrect. Attendu : ${expectedBikes}, re\u00e7u : ${fnuci_codes.length}` },
         { status: 400 }
       )
     }
 
-    // --- 3. Vérifier les doublons dans la liste ---
+    // --- 3. V\u00e9rifier les doublons dans la liste ---
     const uniqueCodes = new Set(fnuci_codes.map(c => c.toUpperCase()))
     if (uniqueCodes.size !== fnuci_codes.length) {
       return NextResponse.json(
@@ -121,7 +136,7 @@ export async function POST(
     if (fnuciError) {
       console.error('Erreur FNUCI:', fnuciError)
       return NextResponse.json(
-        { error: 'Erreur lors de la vérification des codes FNUCI' },
+        { error: 'Erreur lors de la v\u00e9rification des codes FNUCI' },
         { status: 500 }
       )
     }
@@ -135,13 +150,13 @@ export async function POST(
       )
     }
 
-    // Vérifier qu'aucun n'est déjà attribué à un autre client
+    // V\u00e9rifier qu'aucun n'est d\u00e9j\u00e0 attribu\u00e9 \u00e0 un autre client
     const alreadyAttribue = fnuciRecords.filter(
       r => r.statut === 'attribue' && r.client_id !== client.id
     )
     if (alreadyAttribue.length > 0) {
       return NextResponse.json(
-        { error: `Codes déjà attribués : ${alreadyAttribue.map(r => r.reference).join(', ')}` },
+        { error: `Codes d\u00e9j\u00e0 attribu\u00e9s : ${alreadyAttribue.map(r => r.reference).join(', ')}` },
         { status: 400 }
       )
     }
@@ -149,12 +164,12 @@ export async function POST(
     const bloque = fnuciRecords.filter(r => r.statut === 'bloque')
     if (bloque.length > 0) {
       return NextResponse.json(
-        { error: `Codes bloqués : ${bloque.map(r => r.reference).join(', ')}` },
+        { error: `Codes bloqu\u00e9s : ${bloque.map(r => r.reference).join(', ')}` },
         { status: 400 }
       )
     }
 
-    // --- 5. Marquer chaque FNUCI comme attribué ---
+    // --- 5. Marquer chaque FNUCI comme attribu\u00e9 ---
     const now = new Date().toISOString()
     for (const fnuci of fnuciRecords) {
       const { error: updateError } = await supabase
@@ -168,7 +183,7 @@ export async function POST(
         .eq('id', fnuci.id)
 
       if (updateError) {
-        console.error(`Erreur mise à jour FNUCI ${fnuci.reference}:`, updateError)
+        console.error(`Erreur mise \u00e0 jour FNUCI ${fnuci.reference}:`, updateError)
         return NextResponse.json(
           { error: `Erreur lors de l'attribution du code ${fnuci.reference}` },
           { status: 500 }
@@ -204,7 +219,7 @@ export async function POST(
       }
     }
 
-    // --- 6b. Mettre à jour la livraison ---
+    // --- 6b. Mettre \u00e0 jour la livraison ---
     const { error: updateLivraisonError } = await supabase
       .from('livraisons')
       .update({
@@ -220,14 +235,14 @@ export async function POST(
       .eq('id', livraisonId)
 
     if (updateLivraisonError) {
-      console.error('Erreur mise à jour livraison:', updateLivraisonError)
+      console.error('Erreur mise \u00e0 jour livraison:', updateLivraisonError)
       return NextResponse.json(
-        { error: 'Erreur lors de la mise à jour de la livraison' },
+        { error: 'Erreur lors de la mise \u00e0 jour de la livraison' },
         { status: 500 }
       )
     }
 
-    // --- 7. Mettre à jour le client ---
+    // --- 7. Mettre \u00e0 jour le client ---
     const { error: updateClientError } = await supabase
       .from('clients')
       .update({
@@ -239,9 +254,9 @@ export async function POST(
       .eq('id', client.id)
 
     if (updateClientError) {
-      console.error('Erreur mise à jour client:', updateClientError)
+      console.error('Erreur mise \u00e0 jour client:', updateClientError)
       return NextResponse.json(
-        { error: 'Erreur lors de la mise à jour du client' },
+        { error: 'Erreur lors de la mise \u00e0 jour du client' },
         { status: 500 }
       )
     }
@@ -253,7 +268,7 @@ export async function POST(
       statut_avant: client.statut_commercial,
       statut_apres: 'livre',
       effectue_par: auth.id,
-      raison: `Livraison effectuée - ${normalizedCodes.length} vélo(s) - FNUCI: ${normalizedCodes.join(', ')}`,
+      raison: `Livraison effectu\u00e9e - ${normalizedCodes.length} v\u00e9lo(s) - FNUCI: ${normalizedCodes.join(', ')}`,
     })
 
     await supabase.from('workflow_transitions').insert({
@@ -262,7 +277,7 @@ export async function POST(
       statut_avant: livraison.statut,
       statut_apres: 'livree',
       effectue_par: auth.id,
-      raison: 'Livraison confirmée par le livreur',
+      raison: 'Livraison confirm\u00e9e par le livreur',
     })
 
     // --- 9. Log audit ---
@@ -279,10 +294,10 @@ export async function POST(
       },
     })
 
-    // --- Réponse succès ---
+    // --- R\u00e9ponse succ\u00e8s ---
     return NextResponse.json({
       success: true,
-      message: 'Livraison confirmée avec succès',
+      message: 'Livraison confirm\u00e9e avec succ\u00e8s',
       data: {
         livraison_id: livraisonId,
         client_id: client.id,
