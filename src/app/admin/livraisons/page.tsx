@@ -338,7 +338,7 @@ export default function AdminLivraisonsPage() {
           } catch { errorCount++ }
         }
         showBulkMessage(
-          `Formulaire retrait envoyé : ${successCount} succès${errorCount > 0 ? `, ${errorCount} erreur(s)` : ''}`,
+          `Formulaire retrait envoyé : ${successCount} succès${errorCount > 0 ? `, ${errorCount} erreur(s)` : ''}`,
           errorCount > 0,
         )
       } else if (action === 'send_mail_livraison') {
@@ -375,13 +375,17 @@ export default function AdminLivraisonsPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ livraisonIds: livIds }),
           })
-          const data = await res.json()
-          showBulkMessage(
-            data.errors === 0
-              ? `Mail planning envoyé à ${data.sent} client${data.sent > 1 ? 's' : ''}`
-              : `${data.sent} envoyé${data.sent > 1 ? 's' : ''}, ${data.errors} erreur${data.errors > 1 ? 's' : ''}`,
-            data.errors > 0,
-          )
+          if (!res.ok) {
+            showBulkMessage(`Erreur serveur (${res.status})`, true)
+          } else {
+            const data = await res.json()
+            showBulkMessage(
+              data.errors === 0
+                ? `Mail planning envoyé à ${data.sent} client${data.sent > 1 ? 's' : ''}`
+                : `${data.sent} envoyé${data.sent > 1 ? 's' : ''}, ${data.errors} erreur${data.errors > 1 ? 's' : ''}`,
+              data.errors > 0,
+            )
+          }
         } catch {
           showBulkMessage('Erreur lors de l\'envoi des mails planning', true)
         }
