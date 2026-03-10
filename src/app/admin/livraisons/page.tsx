@@ -739,8 +739,7 @@ export default function AdminLivraisonsPage() {
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-center">
                       <div className="text-sm">
-                        <span className="font-medium">{liv.client?.velo_valide ?? 0}</span>
-                        <span className="text-muted-foreground"> / {liv.client?.velo_devis ?? 0}</span>
+                        <span className="font-medium">{liv.client?.velo_valide || liv.client?.velo_devis || 0}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -789,17 +788,15 @@ export default function AdminLivraisonsPage() {
                           <Calendar className="h-4 w-4" />
                         </Button>
                       )}
-                      {['en_livraison', 'programme'].includes(liv.statut || '') && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.location.href = `/admin/livraisons/deliver?id=${liv.id}`}
-                          title="Module de livraison"
-                          className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 active:scale-90 transition-all"
-                        >
-                          <Truck className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.location.href = `/admin/livraisons/deliver?id=${liv.id}`}
+                        title="Module de livraison"
+                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 active:scale-90 transition-all"
+                      >
+                        <Truck className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
