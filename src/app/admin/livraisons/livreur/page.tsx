@@ -183,8 +183,8 @@ export default function LivreurDashboardPage() {
         .order('creneau_heure_debut', { ascending: true })
 
       // Filter by livreur assignment or depot
-      if (user.role === 'livreur') {
-        // Livreur sees their own assigned livraisons
+      if (user.role === 'livreur' || (user.role === 'agent_secteur' && (user as any).est_aussi_livreur)) {
+        // Livreur (or agent_secteur acting as livreur) sees their own assigned livraisons
         // OR livraisons from their depot that are unassigned
         query = query.or(
           `livreur_id.eq.${user.id}${
@@ -255,7 +255,7 @@ export default function LivreurDashboardPage() {
         .order('creneau_date', { ascending: true })
         .order('creneau_heure_debut', { ascending: true })
 
-      if (user.role === 'livreur') {
+      if (user.role === 'livreur' || (user.role === 'agent_secteur' && (user as any).est_aussi_livreur)) {
         query = query.or(
           `livreur_id.eq.${user.id}${
             user.depot_ids?.length

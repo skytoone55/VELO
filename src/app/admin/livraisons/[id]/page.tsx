@@ -130,7 +130,7 @@ export default function LivraisonDetailPage({ params }: { params: Promise<{ id: 
       const { data: livreursData } = await supabase
         .from('users_profile')
         .select('*')
-        .eq('role', 'livreur')
+        .or('role.eq.livreur,and(role.eq.agent_secteur,est_aussi_livreur.eq.true)')
         .eq('actif', true)
 
       setLivreurs(livreursData || [])
