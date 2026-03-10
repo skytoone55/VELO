@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendFormulaireLinkEmail } from '@/lib/email/gmail'
 import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,6 +10,9 @@ const supabase = createClient(
 )
 
 export async function POST(request: NextRequest) {
+  const auth = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+  if (isAuthError(auth)) return auth
+
   try {
     const { clientId } = await request.json()
 

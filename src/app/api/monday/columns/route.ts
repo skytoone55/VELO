@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { MONDAY_CONFIG } from '@/lib/monday/config'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
  * API pour créer une nouvelle colonne dans Monday
@@ -9,6 +10,9 @@ import { MONDAY_CONFIG } from '@/lib/monday/config'
  * En single-board, il utilise MONDAY_CONFIG.boardIds.clients par défaut
  */
 export async function POST(request: NextRequest) {
+  const auth = await requireRole(['super_admin', 'admin'])
+  if (isAuthError(auth)) return auth
+
   const apiKey = process.env.MONDAY_API_KEY
 
   if (!apiKey) {

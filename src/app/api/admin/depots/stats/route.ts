@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateHaversineDistance } from '@/lib/geo/utils'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
  * API de stats de couverture des dépôts
@@ -12,6 +13,9 @@ import { calculateHaversineDistance } from '@/lib/geo/utils'
  * - Par dépôt : clientsInZone, velosInZone, avgDistanceKm
  */
 export async function GET() {
+  const auth = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+  if (isAuthError(auth)) return auth
+
   try {
     const adminClient = createAdminClient()
 

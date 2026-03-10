@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateHaversineDistance } from '@/lib/geo/utils'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
  * API de simulation de placement de dépôt
@@ -15,6 +16,9 @@ import { calculateHaversineDistance } from '@/lib/geo/utils'
  * - clientsCurrentlyUnassigned : clients actuellement sans dépôt qui seraient couverts
  */
 export async function POST(request: NextRequest) {
+  const auth = await requireRole(['super_admin', 'admin'])
+  if (isAuthError(auth)) return auth
+
   try {
     const body = await request.json()
     const { latitude, longitude, rayonKm = 30, rayonPayantKm } = body

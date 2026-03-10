@@ -392,19 +392,6 @@ export default function AdminLivraisonsPage() {
         } catch {
           showBulkMessage('Erreur lors de l\'envoi des mails planning', true)
         }
-      } else if (action === 'change_status' && params?.statut) {
-        const res = await fetch('/api/admin/livraisons/bulk-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            livraisonIds: Array.from(selectedLivraisons),
-            statut: params.statut,
-          }),
-        })
-        if (!res.ok) {
-          const data = await res.json()
-          console.error('Erreur bulk status:', data.error)
-        }
       }
       if (action !== 'send_formulaire_retrait' && action !== 'send_mail_livraison') {
         setSelectedLivraisons(new Set())
@@ -663,7 +650,6 @@ export default function AdminLivraisonsPage() {
                   </TableHead>
                   <SortableHeader label="Société" column="created_at" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <TableHead className="hidden xl:table-cell">Réf. Retina</TableHead>
-                  <TableHead className="hidden xl:table-cell">Email</TableHead>
                   <TableHead className="hidden xl:table-cell">Tél.</TableHead>
                   <TableHead className="hidden lg:table-cell">Commercial</TableHead>
                   <TableHead className="hidden md:table-cell">Dép.</TableHead>
@@ -695,9 +681,6 @@ export default function AdminLivraisonsPage() {
                       <span className="text-xs font-mono text-muted-foreground">
                         {liv.client?.reference_retina || '-'}
                       </span>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell text-sm max-w-[160px]">
-                      <span className="truncate block" title={liv.client?.email_beneficiaire || liv.client?.email || ''}>{liv.client?.email_beneficiaire || liv.client?.email || '-'}</span>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
                       {liv.client?.telephone ? (
@@ -741,13 +724,10 @@ export default function AdminLivraisonsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      <div className="text-sm max-w-[200px] truncate">
-                        {liv.adresse_livraison_ligne1 || '-'}
-                        {liv.adresse_livraison_cp && (
-                          <div className="text-xs text-muted-foreground">
-                            {liv.adresse_livraison_cp} {liv.adresse_livraison_ville}
-                          </div>
-                        )}
+                      <div className="text-sm">
+                        {liv.adresse_livraison_cp || liv.client?.adresse_societe_cp
+                          ? `${liv.adresse_livraison_cp || liv.client?.adresse_societe_cp || ''} ${liv.adresse_livraison_ville || ''}`
+                          : '-'}
                       </div>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-center">
@@ -779,9 +759,9 @@ export default function AdminLivraisonsPage() {
                             liv.confirmation_statut === 'refusee' ? 'bg-red-100 text-red-800' :
                             'bg-yellow-100 text-yellow-800'
                           } variant="outline">
-                            {liv.confirmation_statut === 'confirmee' ? '✓ Confirmée' :
-                             liv.confirmation_statut === 'refusee' ? '✗ Refusée' :
-                             '⏳ En attente'}
+                            {liv.confirmation_statut === 'confirmee' ? '\u2713 Confirmée' :
+                             liv.confirmation_statut === 'refusee' ? '\u2717 Refusée' :
+                             '\u23F3 En attente'}
                           </Badge>
                         )}
                       </div>
@@ -904,16 +884,6 @@ export default function AdminLivraisonsPage() {
                   Mail planning
                 </Button>
               </div>
-              <Select onValueChange={(value) => handleBulkAction('change_status', { statut: value })} disabled={bulkActionLoading}>
-                <SelectTrigger className="w-48 h-9">
-                  <SelectValue placeholder="Changer statut" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statutOptions.filter(o => o.value !== 'all').map(o => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               {bulkMessage && (
                 <span className={`text-xs font-medium px-2 py-1 rounded ${bulkMessage.isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                   {bulkMessage.text}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createMondayColumn } from '@/lib/monday/api'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
  * API pour créer une colonne dans Monday
@@ -7,6 +8,9 @@ import { createMondayColumn } from '@/lib/monday/api'
  * Body: { title: string, type?: 'text' | 'date' | 'numbers' | 'status' | 'checkbox', description?: string }
  */
 export async function POST(request: NextRequest) {
+  const auth = await requireRole(['super_admin', 'admin'])
+  if (isAuthError(auth)) return auth
+
   try {
     const body = await request.json()
     const { title, type = 'text', description } = body

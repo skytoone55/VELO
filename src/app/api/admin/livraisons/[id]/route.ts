@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireRole, isAuthError } from '@/lib/auth/require-role'
+import { requireRole, isAuthError, type AuthenticatedUser } from '@/lib/auth/require-role'
 
 /**
  * GET /api/admin/livraisons/[id]
@@ -13,6 +13,7 @@ export async function GET(
   try {
     const auth = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
     if (isAuthError(auth)) return auth
+    const currentUser = auth as AuthenticatedUser
 
     const { id } = await params
     const supabase = createAdminClient()
@@ -35,6 +36,14 @@ export async function GET(
       return NextResponse.json({ error: 'Livraison introuvable' }, { status: 404 })
     }
 
+    // Role-based access check
+    if (currentUser.role === 'livreur' && livraison.livreur_id !== currentUser.id) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+    }
+    if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length && !currentUser.depot_ids.includes(livraison.depot_id)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+    }
+
     return NextResponse.json({ livraison })
   } catch (error: unknown) {
     console.error('Erreur GET /api/admin/livraisons/[id]:', error)
@@ -53,8 +62,23 @@ export async function PATCH(
   try {
     const auth = await requireRole(['super_admin', 'admin', 'agent_secteur'])
     if (isAuthError(auth)) return auth
+    const currentUser = auth as AuthenticatedUser
 
     const { id } = await params
+
+    // Role-based access check for agent_secteur
+    if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
+      const supabaseCheck = createAdminClient()
+      const { data: existing } = await supabaseCheck
+        .from('livraisons')
+        .select('depot_id')
+        .eq('id', id)
+        .single()
+      if (existing && !currentUser.depot_ids.includes(existing.depot_id)) {
+        return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+      }
+    }
+
     const body = await request.json()
 
     const allowedFields = [

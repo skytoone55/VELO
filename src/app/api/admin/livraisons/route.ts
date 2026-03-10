@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireRole, isAuthError } from '@/lib/auth/require-role'
+import { requireRole, isAuthError, type AuthenticatedUser } from '@/lib/auth/require-role'
 
 /**
  * GET /api/admin/livraisons
@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const auth = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
     if (isAuthError(auth)) return auth
+    const currentUser = auth as AuthenticatedUser
 
     const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('client_id')
@@ -31,6 +32,13 @@ export async function GET(request: NextRequest) {
 
     if (statut) {
       query = query.eq('statut', statut)
+    }
+
+    // Role-based data filtering
+    if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
+      query = query.in('depot_id', currentUser.depot_ids)
+    } else if (currentUser.role === 'livreur') {
+      query = query.eq('livreur_id', currentUser.id)
     }
 
     const { data, error } = await query

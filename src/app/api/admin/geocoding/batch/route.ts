@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildClientAddress, geocodeAddress } from '@/lib/geo/utils'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
  * API de géocodage batch des clients
@@ -16,9 +17,12 @@ const BATCH_SIZE = 500
 const BATCH_DELAY_MS = 200
 const MIN_SCORE_THRESHOLD = 0.4
 
-// ─── GET : Stats de géocodage ───────────────────────────────────────────
+// --- GET : Stats de géocodage ---
 
 export async function GET() {
+  const auth = await requireRole(['super_admin', 'admin'])
+  if (isAuthError(auth)) return auth
+
   try {
     const adminClient = createAdminClient()
 
@@ -73,9 +77,12 @@ export async function GET() {
   }
 }
 
-// ─── POST : Lancer le géocodage batch ───────────────────────────────────
+// --- POST : Lancer le géocodage batch ---
 
 export async function POST(request: NextRequest) {
+  const auth = await requireRole(['super_admin', 'admin'])
+  if (isAuthError(auth)) return auth
+
   try {
     const body = await request.json().catch(() => ({}))
     const { dryRun = false } = body
@@ -178,7 +185,7 @@ export async function POST(request: NextRequest) {
               failedCount++
             }
           } else {
-            // Échec CSV → collecter pour retry Pass 3 (centroïde CP)
+            // Échec CSV -> collecter pour retry Pass 3 (centroide CP)
             const original = batch.find((b) => b.id === item.id)
             if (original?.cp) {
               csvFailedItems.push({ id: item.id, cp: original.cp, ville: original.ville })
@@ -205,11 +212,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Pass 3 retry : items qui ont échoué au CSV → geocoding individuel centroïde
+    // Pass 3 retry : items qui ont échoué au CSV -> geocoding individuel centroide
     // Fusionner avec les clients CP-only
     const allCpFallback = [...csvFailedItems, ...clientsCpOnly]
 
-    // ─── Pass 3 : fallback centroïde CP (CP-only + échecs CSV) ───
+    // --- Pass 3 : fallback centroide CP (CP-only + échecs CSV) ---
     let cpOnlyGeocodedCount = 0
     let cpOnlyFailedCount = 0
 
@@ -264,7 +271,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ─── Fonction de géocodage batch via CSV ────────────────────────────────
+// --- Fonction de géocodage batch via CSV ---
 
 interface BatchItem {
   id: string

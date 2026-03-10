@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 // Create admin Supabase client
 const supabaseAdmin = createClient(
@@ -9,6 +10,9 @@ const supabaseAdmin = createClient(
 
 // GET: List alerts
 export async function GET(request: NextRequest) {
+  const auth = await requireRole(['super_admin', 'admin'])
+  if (isAuthError(auth)) return auth
+
   try {
     const { searchParams } = new URL(request.url)
     const statut = searchParams.get('statut') || 'pending'
@@ -69,6 +73,9 @@ export async function GET(request: NextRequest) {
 
 // POST: Create alert or send email
 export async function POST(request: NextRequest) {
+  const auth = await requireRole(['super_admin', 'admin'])
+  if (isAuthError(auth)) return auth
+
   try {
     const body = await request.json()
     const { action } = body

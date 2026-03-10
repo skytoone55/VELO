@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
  * API pour obtenir les statistiques globales des clients depuis Supabase
@@ -8,6 +9,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
  */
 
 export async function GET() {
+  const auth = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+  if (isAuthError(auth)) return auth
+
   try {
     const adminClient = createAdminClient()
 

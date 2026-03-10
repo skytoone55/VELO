@@ -39,6 +39,11 @@ export async function GET(request: Request) {
       if (dept) query = query.eq('departement', dept)
     }
 
+    // Role-based data filtering: agent_secteur only sees clients in their depots
+    if (profile.role === 'agent_secteur' && profile.depot_ids?.length) {
+      query = query.or(`depot_retrait_id.in.(${profile.depot_ids.join(',')}),depot_logistique_id.in.(${profile.depot_ids.join(',')})`)
+    }
+
     const { data, error } = await query
 
     if (error) {

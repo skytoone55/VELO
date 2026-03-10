@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
  * GET /api/clients/commercials
@@ -8,6 +9,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
  * PPE : n'utilise pas cette route (options statiques côté client)
  */
 export async function GET() {
+  const auth = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+  if (isAuthError(auth)) return auth
+
   try {
     const adminClient = createAdminClient()
 
