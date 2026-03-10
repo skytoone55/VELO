@@ -36,6 +36,7 @@ import {
   RotateCcw,
   Copy,
   Calendar,
+  CalendarCheck,
   Bike,
   Shield,
   Clock,
@@ -166,9 +167,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [docRequestLoading, setDocRequestLoading] = useState(false)
   const [selectedDocs, setSelectedDocs] = useState<string[]>([])
 
-  // Mail livraison / formulaire retrait
+  // Mail livraison / formulaire retrait / mail planning
   const [mailLivraisonLoading, setMailLivraisonLoading] = useState(false)
   const [formulaireRetraitLoading, setFormulaireRetraitLoading] = useState(false)
+  const [mailPlanningLoading, setMailPlanningLoading] = useState(false)
 
   // FNUCI (PPE only)
   const [fnuciRecords, setFnuciRecords] = useState<Array<{ id: string; numero: number; reference: string; statut: string; attribue_at: string | null }>>([])
@@ -440,6 +442,27 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     }
   }
 
+  const handleSendMailPlanning = async () => {
+    if (!client || !livraisons[0]) return
+    setMailPlanningLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/admin/livraisons/send-mail-planning', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ livraison_ids: [livraisons[0].id] }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur envoi')
+      setSuccess('Mail planning envoyé')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur inconnue'
+      setError(message)
+    } finally {
+      setMailPlanningLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -464,6 +487,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   // Récupérer infos de livraison
   const livraison = livraisons[0]
   const modeLivraison = livraison?.mode_livraison || (client.depot_retrait_id ? 'retrait' : 'domicile')
+  const LIVRAISON_STATUTS = ['a_livrer', 'en_livraison', 'retrait_planifie', 'livre', 'probleme_livraison', 'a_relivrer']
+  const backUrl = LIVRAISON_STATUTS.includes(client.statut_commercial || '') ? '/admin/livraisons' : '/admin/clients'
   const codePpeSaisi = client.code_enemat_saisi || livraison?.code_enemat_saisi
   const formulaireComplete = ['formulaire_valide', 'a_livrer', 'en_livraison', 'livre', 'probleme_livraison', 'a_relivrer', 'retractation', 'anomalie'].includes(client.statut_commercial || '')
 
@@ -477,7 +502,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => router.push('/admin/clients')}
+              onClick={() => router.push(backUrl)}
               className="text-white hover:bg-white/20 shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -546,6 +571,23 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                   <FileText className="h-4 w-4 mr-1.5" />
                 )}
                 Formulaire retrait
+              </Button>
+            )}
+
+            {livraisons[0]?.statut === 'en_livraison' && client.statut_commercial !== 'livre' && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleSendMailPlanning}
+                disabled={mailPlanningLoading}
+                className="text-white hover:bg-white/20 px-3"
+              >
+                {mailPlanningLoading ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <CalendarCheck className="h-4 w-4 mr-1.5" />
+                )}
+                Mail planning
               </Button>
             )}
           </div>
