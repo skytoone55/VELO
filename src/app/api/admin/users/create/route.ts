@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     if (isAuthError(authResult)) return authResult
 
     const body = await request.json()
-    const { email, nom, prenom, role, territoire, telephone, actif, depot_ids, departement, agent_ids, password, est_aussi_livreur } = body
+    const { email, nom, prenom, role, territoire, telephone, actif, depot_ids, departement, agent_ids, password } = body
 
     if (!email || !nom || !prenom || !role) {
       return NextResponse.json(
@@ -90,7 +90,6 @@ export async function POST(request: NextRequest) {
             actif: actif !== undefined ? actif : true,
             depot_ids: depot_ids || [],
             departement: departement || null,
-            est_aussi_livreur: role === 'agent_secteur' ? (est_aussi_livreur ?? false) : false,
           }
 
           const { error: profileError } = await adminClient
@@ -132,7 +131,6 @@ export async function POST(request: NextRequest) {
       actif: actif ?? true,
       depot_ids: [],
       departement: null,
-      est_aussi_livreur: role === 'agent_secteur' ? (est_aussi_livreur ?? false) : false,
     }
 
     // Logique spécifique par rôle

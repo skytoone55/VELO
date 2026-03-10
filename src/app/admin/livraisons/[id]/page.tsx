@@ -54,7 +54,7 @@ interface LivraisonDetail extends Livraison {
 
 const statutColors: Record<string, string> = {
   en_attente: 'bg-yellow-100 text-yellow-800',
-  en_livraison: 'bg-blue-100 text-blue-800',
+  programmee: 'bg-blue-100 text-blue-800',
   en_cours: 'bg-purple-100 text-purple-800',
   livree: 'bg-green-100 text-green-800',
   annulee: 'bg-red-100 text-red-800',
@@ -62,7 +62,7 @@ const statutColors: Record<string, string> = {
 
 const statutLabels: Record<string, string> = {
   en_attente: 'En attente',
-  en_livraison: 'En livraison',
+  programmee: 'Programmee',
   en_cours: 'En cours',
   livree: 'Livree',
   annulee: 'Annulee',
@@ -130,7 +130,7 @@ export default function LivraisonDetailPage({ params }: { params: Promise<{ id: 
       const { data: livreursData } = await supabase
         .from('users_profile')
         .select('*')
-        .or('role.eq.livreur,and(role.eq.agent_secteur,est_aussi_livreur.eq.true)')
+        .eq('role', 'livreur')
         .eq('actif', true)
 
       setLivreurs(livreursData || [])
@@ -153,7 +153,7 @@ export default function LivraisonDetailPage({ params }: { params: Promise<{ id: 
       const supabase = createClient()
 
       const updateData: Record<string, any> = {
-        statut: 'en_livraison',
+        statut: 'programmee',
         date_programmation: dateProgrammation,
         creneau_debut: creneauDebut || null,
         creneau_fin: creneauFin || null,
@@ -174,15 +174,15 @@ export default function LivraisonDetailPage({ params }: { params: Promise<{ id: 
         entity_type: 'livraison',
         entity_id: livraison.id,
         statut_avant: livraison.statut,
-        statut_apres: 'en_livraison',
+        statut_apres: 'programmee',
         effectue_par: user?.id,
         raison: `Programmation pour le ${dateProgrammation}`,
       })
 
-      setSuccess('Livraison planifiée avec succès')
+      setSuccess('Livraison programmee avec succes')
       setLivraison({
         ...livraison,
-        statut: 'en_livraison',
+        statut: 'programmee',
         date_programmation: dateProgrammation,
         creneau_debut: creneauDebut,
         creneau_fin: creneauFin,
@@ -403,7 +403,7 @@ export default function LivraisonDetailPage({ params }: { params: Promise<{ id: 
             </Dialog>
           )}
 
-          {livraison.statut === 'en_livraison' && (
+          {livraison.statut === 'programmee' && (
             <>
               <Button onClick={() => handleChangeStatut('en_cours')} disabled={actionLoading}>
                 <Truck className="mr-2 h-4 w-4" />
@@ -427,7 +427,7 @@ export default function LivraisonDetailPage({ params }: { params: Promise<{ id: 
             </Button>
           )}
 
-          {(livraison.statut === 'en_attente' || livraison.statut === 'en_livraison') && (
+          {(livraison.statut === 'en_attente' || livraison.statut === 'programmee') && (
             <Button
               variant="outline"
               onClick={() => handleChangeStatut('annulee')}
@@ -568,7 +568,7 @@ export default function LivraisonDetailPage({ params }: { params: Promise<{ id: 
                 )}
               </>
             ) : (
-              <p className="text-muted-foreground">Non planifiée</p>
+              <p className="text-muted-foreground">Non programmee</p>
             )}
             {livraison.date_livraison && (
               <div>

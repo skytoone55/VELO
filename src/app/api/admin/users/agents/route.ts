@@ -15,12 +15,10 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const departement = request.nextUrl.searchParams.get('departement')
 
-    const role = request.nextUrl.searchParams.get('role')
-
     let query = supabase
       .from('users_profile')
-      .select('id, nom, prenom, email, role, departement, depot_ids')
-      .in('role', role ? [role] : ['agent_secteur', 'livreur', 'admin', 'super_admin'])
+      .select('id, nom, prenom, email, departement, depot_ids')
+      .eq('role', 'agent_secteur')
       .eq('actif', true)
       .order('nom', { ascending: true })
 

@@ -1,14 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { generateValidationCode, hashValidationCode } from '@/lib/utils'
 import { sendCodeValidationEmail } from '@/lib/email/gmail'
 import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
 
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
-    if (isAuthError(authResult)) return authResult
+    // Vérifier l'authentification
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    // Vérifier les permissions
+    const { data: profile } = await supabase
+      .from('users_profile')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['super_admin', 'admin', 'agent_secteur'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    }
 
     const body = await request.json()
     const { clientId } = body

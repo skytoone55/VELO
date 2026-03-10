@@ -121,14 +121,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Filtre par dépôt (retrait ou logistique)
+    // Filtre par dépôt (retrait)
     if (depotFilter && depotFilter !== 'all') {
-      const depotIds = depotFilter.split(',').filter(Boolean)
-      const orClauses = depotIds.flatMap(id => [
-        `depot_retrait_id.eq.${id}`,
-        `depot_logistique_id.eq.${id}`,
-      ]).join(',')
-      query = query.or(orClauses)
+      query = query.eq('depot_retrait_id', depotFilter)
     }
 
     // Compter le total avant pagination
@@ -179,12 +174,7 @@ export async function GET(request: NextRequest) {
       }
     }
     if (depotFilter && depotFilter !== 'all') {
-      const depotIds = depotFilter.split(',').filter(Boolean)
-      const orClauses = depotIds.flatMap(id => [
-        `depot_retrait_id.eq.${id}`,
-        `depot_logistique_id.eq.${id}`,
-      ]).join(',')
-      velosQuery = velosQuery.or(orClauses)
+      velosQuery = velosQuery.eq('depot_retrait_id', depotFilter)
     }
 
     const { data: velosData } = await velosQuery

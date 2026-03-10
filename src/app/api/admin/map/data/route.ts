@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
  * API pour récupérer les données de la carte (dépôts et clients)
@@ -10,8 +10,24 @@ import { requireRole, isAuthError } from '@/lib/auth/require-role'
  */
 export async function GET(request: NextRequest) {
   try {
-    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
-    if (isAuthError(authResult)) return authResult
+    // Vérifier l'authentification
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    // Vérifier les permissions
+    const { data: profile } = await supabase
+      .from('users_profile')
+      .select('role, depot_ids, departement, territoire')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['super_admin', 'admin', 'agent_secteur'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    }
 
     const adminClient = createAdminClient()
 
@@ -22,8 +38,8 @@ export async function GET(request: NextRequest) {
       .eq('actif', true)
       .order('nom')
 
-    if (authResult.role === 'agent_secteur' && authResult.depot_ids?.length) {
-      depotsQuery = depotsQuery.in('id', authResult.depot_ids)
+    if (profile.role === 'agent_secteur' && profile.depot_ids?.length) {
+      depotsQuery = depotsQuery.in('id', profile.depot_ids)
     }
 
     const { data: depots, error: depotsError } = await depotsQuery
@@ -47,8 +63,8 @@ export async function GET(request: NextRequest) {
         .range(offset, offset + BATCH_SIZE - 1)
 
       // Agent secteur ne voit que les clients de son territoire/département
-      if (authResult.role === 'agent_secteur') {
-        const dept = authResult.departement || authResult.territoire
+      if (profile.role === 'agent_secteur') {
+        const dept = profile.departement || profile.territoire
         if (dept) clientQuery = clientQuery.eq('departement', dept)
       }
 

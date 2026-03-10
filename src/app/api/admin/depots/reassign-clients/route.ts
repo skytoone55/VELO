@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { classifyClientZone, DepotWithCoords } from '@/lib/geo/utils'
 
 /**
@@ -21,8 +21,24 @@ import { classifyClientZone, DepotWithCoords } from '@/lib/geo/utils'
  */
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await requireRole(['super_admin', 'admin'])
-    if (isAuthError(authResult)) return authResult
+    // Vérifier l'authentification
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    // Vérifier les permissions (admin uniquement)
+    const { data: profile } = await supabase
+      .from('users_profile')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    }
 
     const body = await request.json()
     const { agence, depotId, force = false } = body

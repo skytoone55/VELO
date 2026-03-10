@@ -123,7 +123,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Construire l'URL du formulaire
-    const baseUrl = tenant.url || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || 'http://localhost:3001'
     const formulaireUrl = `${baseUrl}/formulaire-livraison?token=${token}`
 
     // 4. Envoyer l'email

@@ -724,21 +724,24 @@ export type Database = {
           id: number
           code: string
           label: string
-          validation: string
+          valide: boolean
+          updated_at: string
           created_at: string
         }
         Insert: {
           id?: number
           code: string
           label: string
-          validation?: string
+          valide?: boolean
+          updated_at?: string
           created_at?: string
         }
         Update: {
           id?: number
           code?: string
           label?: string
-          validation?: string
+          valide?: boolean
+          updated_at?: string
           created_at?: string
         }
         Relationships: []

@@ -151,6 +151,7 @@ export function Step4Preference() {
                   <div className="flex items-center gap-2 mb-1">
                     <Store className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Retrait au point relais</span>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gratuit</span>
                   </div>
                   {depotRetrait && (
                     <div className="text-sm text-muted-foreground mt-1">
@@ -167,7 +168,7 @@ export function Step4Preference() {
                 <Info className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-800">
                   Votre adresse est située à proximité d'un de nos points de retrait.
-                  Vous pouvez y récupérer votre vélo rapidement.
+                  Le retrait est gratuit et vous permet de récupérer votre vélo rapidement.
                 </AlertDescription>
               </Alert>
             </>
@@ -183,6 +184,7 @@ export function Step4Preference() {
                   <div className="flex items-center gap-2 mb-1">
                     <Store className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Retrait au point relais</span>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gratuit</span>
                   </div>
                   {depotRetrait && (
                     <div className="text-sm text-muted-foreground mt-1">
@@ -216,7 +218,7 @@ export function Step4Preference() {
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  Vous avez le choix entre le retrait au point relais ou la livraison payante à domicile.
+                  Vous avez le choix entre le retrait gratuit au point relais ou la livraison payante à domicile.
                 </AlertDescription>
               </Alert>
             </>
@@ -229,8 +231,9 @@ export function Step4Preference() {
                 <RadioGroupItem value="livraison_gratuite" id="livraison_gratuite" className="mt-1" />
                 <Label htmlFor="livraison_gratuite" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2 mb-1">
-                    <Truck className="h-4 w-4 text-muted-foreground" />
+                    <Truck className="h-4 w-4 text-green-600" />
                     <span className="font-medium">Livraison à domicile</span>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gratuit</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Votre vélo cargo sera livré directement à l'adresse indiquée.
@@ -238,10 +241,10 @@ export function Step4Preference() {
                 </Label>
               </div>
 
-              <Alert className="bg-blue-50 border-blue-200">
-                <CheckCircle className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800">
-                  Votre adresse est éligible à la livraison.
+              <Alert className="bg-green-50 border-green-200">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  Bonne nouvelle ! Votre adresse est éligible à la livraison gratuite.
                 </AlertDescription>
               </Alert>
             </>

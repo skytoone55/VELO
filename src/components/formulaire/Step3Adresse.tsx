@@ -79,7 +79,7 @@ export function Step3Adresse() {
           clientId,
           useSocieteAddress: true,
           address: null,
-          complementAdresse: complementAdresse.trim(),
+          complementAdresse: complementAdresse.trim() || null,
         }),
       })
 
@@ -105,7 +105,7 @@ export function Step3Adresse() {
       // Mettre à jour le store avec l'adresse, le mode et les infos de zone
       updateData({
         adresseLivraison: facturationAddress!,
-        complementAdresse: complementAdresse.trim(),
+        complementAdresse: complementAdresse.trim() || undefined,
         modeLivraison: result.modeLivraison,
         zoneLivraison: result.zoneLivraison,
         depotType: result.depotType,
@@ -358,16 +358,15 @@ export function Step3Adresse() {
 
         {/* Complément d'adresse */}
         <div className="space-y-2">
-          <Label htmlFor="complement">Complément d'adresse <span className="text-destructive">*</span></Label>
+          <Label htmlFor="complement">Complément d'adresse (optionnel)</Label>
           <Input
             id="complement"
             placeholder="Bâtiment, étage, digicode, interphone..."
             value={complementAdresse}
             onChange={(e) => setComplementAdresse(e.target.value)}
-            required
           />
           <p className="text-xs text-muted-foreground">
-            Précisez les informations utiles pour le livreur (obligatoire)
+            Précisez les informations utiles pour le livreur
           </p>
         </div>
 
@@ -378,7 +377,7 @@ export function Step3Adresse() {
           </Button>
           <Button
             onClick={validateAddress}
-            disabled={validating || !facturationAddress?.ligne1 || !complementAdresse.trim()}
+            disabled={validating || !facturationAddress?.ligne1}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
             {validating ? (

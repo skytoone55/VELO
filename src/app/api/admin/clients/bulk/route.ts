@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { generateValidationCode, hashValidationCode } from '@/lib/utils'
 import { sendFormulaireLinkEmail } from '@/lib/email/gmail'
 import { syncClientToMonday } from '@/lib/monday/api'
@@ -25,8 +25,24 @@ interface BulkResponse {
 
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
-    if (isAuthError(authResult)) return authResult
+    // Vérifier l'authentification
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    // Vérifier les permissions
+    const { data: profile } = await supabase
+      .from('users_profile')
+      .select('role, territoire')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['super_admin', 'admin', 'agent_secteur'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    }
 
     const body = await request.json()
     const { action, clientIds, data } = body as {
@@ -52,8 +68,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier les permissions territoriales pour admin
-    if (authResult.role === 'admin') {
-      const unauthorizedClients = clients.filter(c => c.departement !== authResult.territoire)
+    if (profile.role === 'admin') {
+      const unauthorizedClients = clients.filter(c => c.departement !== profile.territoire)
       if (unauthorizedClients.length > 0) {
         return NextResponse.json({
           error: `Non autorisé pour ${unauthorizedClients.length} client(s) hors de votre territoire`

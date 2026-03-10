@@ -168,8 +168,8 @@ const ppeConfig: TenantConfig = {
     colors: {
       primary: '#7CB342',      // Vert PPE (couleur principale du logo)
       primaryLight: '#9CCC65',
-      secondary: '#4CAF50',    // Vert (fond emails, identique Ecovolt)
-      secondaryDark: '#2E7D32',
+      secondary: '#1a1a1a',    // Noir (couleur secondaire)
+      secondaryDark: '#000000',
     },
     emailEmoji: '🚲',
     appleIcon: '/icons/ppe-apple-icon.png',

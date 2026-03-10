@@ -143,7 +143,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    const { nom, prenom, role, territoire, telephone, actif, depot_ids, departement, agent_ids, password, est_aussi_livreur } = body
+    const { nom, prenom, role, territoire, telephone, actif, depot_ids, departement, agent_ids, password } = body
 
     // Empêcher le changement de rôle du super_admin
     if (target.is_super_admin && role && role !== 'super_admin') {
@@ -168,7 +168,6 @@ export async function PATCH(
       territoire: territoire || null,
       telephone: telephone || null,
       actif,
-      est_aussi_livreur: role === 'agent_secteur' ? (est_aussi_livreur ?? false) : false,
       updated_at: new Date().toISOString(),
     }
 

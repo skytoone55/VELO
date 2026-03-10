@@ -95,15 +95,11 @@ export type Territoire = keyof typeof TERRITOIRES
 // STATUTS LIVRAISON
 // =================================================================
 export const DELIVERY_STATUS = {
-  a_livrer: 'À livrer',
-  en_livraison: 'En livraison',
-  livre: 'Livré',
-  probleme_livraison: 'Problème livraison',
-  a_relivrer: 'À relivrer',
-  retrait_planifie: 'Retrait planifié',
-  retrait_effectue: 'Retrait effectué',
-  annule: 'Annulé',
-  refuse: 'Refusé',
+  en_attente: 'En attente',
+  programmee: 'Programmée',
+  en_cours: 'En cours',
+  livree: 'Livrée',
+  annulee: 'Annulée',
 } as const
 
 export type DeliveryStatus = keyof typeof DELIVERY_STATUS
@@ -196,23 +192,6 @@ export const ROLE_COLORS: Record<UserRole, string> = {
   agent_secteur: 'bg-blue-100 text-blue-800',
   livreur: 'bg-teal-100 text-teal-800',
   client: 'bg-gray-100 text-gray-800',
-}
-
-// =================================================================
-// STATUTS CONFIRMATION TOURNÉE
-// =================================================================
-export const CONFIRMATION_STATUTS = {
-  en_attente: 'En attente',
-  confirmee: 'Confirmée',
-  refusee: 'Refusée',
-} as const
-
-export type ConfirmationStatut = keyof typeof CONFIRMATION_STATUTS
-
-export const CONFIRMATION_COLORS: Record<ConfirmationStatut, string> = {
-  en_attente: 'bg-yellow-100 text-yellow-800',
-  confirmee: 'bg-green-100 text-green-800',
-  refusee: 'bg-red-100 text-red-800',
 }
 
 // =================================================================

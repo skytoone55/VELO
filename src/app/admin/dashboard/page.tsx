@@ -46,7 +46,7 @@ const menuCards: MenuCard[] = [
     description: 'Creneaux et planification',
     icon: Calendar,
     color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-    roles: ['super_admin', 'admin', 'agent_secteur', 'livreur'],
+    roles: ['super_admin', 'admin', 'agent_secteur'],
   },
   {
     href: '/admin/map',

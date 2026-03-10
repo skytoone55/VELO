@@ -25,12 +25,6 @@ interface ClientData {
   velo_devis: number
 }
 
-interface DepotCreneau {
-  heure_debut: string
-  heure_fin: string
-  capacite_velos: number
-}
-
 interface DepotData {
   id: string
   nom: string
@@ -41,7 +35,6 @@ interface DepotData {
   jours_ouverture: string[] | null
   capacite_velos_jour: number | null
   creneau_duree_minutes: number | null
-  creneaux: DepotCreneau[] | null
 }
 
 interface ValidateResponse {
@@ -83,14 +76,6 @@ const JOUR_INDEX: Record<string, number> = {
   jeudi: 4,
   vendredi: 5,
   samedi: 6,
-}
-
-function slotsFromDepotCreneaux(creneaux: { heure_debut: string; heure_fin: string }[]): TimeSlot[] {
-  return creneaux.map(c => ({
-    debut: c.heure_debut,
-    fin: c.heure_fin,
-    label: `${c.heure_debut} - ${c.heure_fin}`,
-  }))
 }
 
 function generateTimeSlots(durationMinutes: number): TimeSlot[] {
@@ -205,22 +190,11 @@ function FormulaireLivraisonContent() {
     validateToken()
   }, [validateToken])
 
-  // Available dates — always generate even when depot is null (domicile livraison)
-  const availableDates = getAvailableDates(depot?.jours_ouverture ?? null)
+  // Available dates & time slots
+  const availableDates = depot ? getAvailableDates(depot.jours_ouverture) : []
+  const timeSlots = depot?.creneau_duree_minutes ? generateTimeSlots(depot.creneau_duree_minutes) : generateTimeSlots(30)
 
-  // Time slots — only use configured depot creneaux or duration-based slots when depot exists
-  // When no depot (domicile), no slots are required
-  const timeSlots: TimeSlot[] = depot
-    ? depot.creneaux && depot.creneaux.length > 0
-      ? slotsFromDepotCreneaux(depot.creneaux)
-      : depot.creneau_duree_minutes
-        ? generateTimeSlots(depot.creneau_duree_minutes)
-        : generateTimeSlots(30)
-    : []
-
-  // hasCreneaux is true only when there are actual slots AND a depot exists
-  const hasCreneaux = timeSlots.length > 0
-  const canSubmit = selectedDate && (!hasCreneaux || selectedSlot) && confirmPersonne && confirmIdentite && !submitting
+  const canSubmit = selectedDate && (isRetrait || selectedSlot) && confirmPersonne && confirmIdentite && !submitting
 
   const handleSubmit = async () => {
     if (!canSubmit || !token || !selectedDate) return
@@ -491,14 +465,14 @@ function FormulaireLivraisonContent() {
           </div>
         </div>
 
-        {/* Time slot picker (shown for any depot that has configured creneaux) */}
-        {hasCreneaux && selectedDate && (
+        {/* Time slot picker (logistique only) */}
+        {isLogistique && selectedDate && (
           <div className="bg-white rounded-xl shadow-sm p-5">
             <h2 className="text-base font-semibold text-gray-900 mb-1">
               Choisissez un creneau horaire
             </h2>
             <p className="text-sm text-gray-500 mb-4">
-              Selectionnez le creneau qui vous convient.
+              Selectionnez le creneau de {depot?.creneau_duree_minutes || 30} minutes qui vous convient.
             </p>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1">
@@ -527,7 +501,7 @@ function FormulaireLivraisonContent() {
         )}
 
         {/* Confirmations */}
-        {selectedDate && (!hasCreneaux || selectedSlot) && (
+        {selectedDate && (isRetrait || selectedSlot) && (
           <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
             <h2 className="text-base font-semibold text-gray-900">Confirmations obligatoires</h2>
 

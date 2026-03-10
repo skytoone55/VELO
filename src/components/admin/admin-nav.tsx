@@ -20,6 +20,7 @@ import {
   Calendar,
   ArrowLeftRight,
   LogIn,
+  Tag,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getTenantConfig, TENANTS } from '@/lib/tenants'
@@ -67,7 +68,7 @@ const adminNavItems: NavItem[] = [
     href: '/admin/planning',
     label: 'Planning',
     icon: Calendar,
-    roles: ['super_admin', 'admin', 'agent_secteur', 'livreur'],
+    roles: ['super_admin', 'admin', 'agent_secteur'],
   },
   {
     href: '/admin/map',
@@ -105,12 +106,18 @@ const adminNavItems: NavItem[] = [
         icon: Calendar,
         roles: ['super_admin'],
       },
-      ...(process.env.NEXT_PUBLIC_TENANT_ID !== 'ecovolt' ? [{
+      {
         href: '/admin/settings/fnuci',
         label: 'FNUCI',
         icon: FileText,
-        roles: ['super_admin', 'admin'] as UserRole[],
-      }] : []),
+        roles: ['super_admin', 'admin'],
+      },
+      {
+        href: '/admin/settings/naf',
+        label: 'Codes NAF',
+        icon: Tag,
+        roles: ['super_admin', 'admin'],
+      },
     ],
   },
 ]
@@ -142,6 +149,7 @@ export function AdminNav({ user }: AdminNavProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(
     pathname.startsWith('/admin/settings') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/depots')
+    || pathname.startsWith('/admin/settings/fnuci') || pathname.startsWith('/admin/settings/naf')
   )
   const [desktopSettingsOpen, setDesktopSettingsOpen] = useState(false)
   const desktopSettingsRef = useRef<HTMLDivElement>(null)

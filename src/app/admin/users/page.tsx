@@ -114,7 +114,6 @@ interface UserForm {
   telephone: string
   actif: boolean
   depot_ids: string[]
-  est_aussi_livreur: boolean
 }
 
 const initialForm: UserForm = {
@@ -127,7 +126,6 @@ const initialForm: UserForm = {
   telephone: '',
   actif: true,
   depot_ids: [],
-  est_aussi_livreur: false,
 }
 
 interface DepotOption {
@@ -230,7 +228,6 @@ export default function AdminUsersPage() {
       telephone: userProfile.telephone || '',
       actif: userProfile.actif ?? true,
       depot_ids: (userProfile as any).depot_ids || [],
-      est_aussi_livreur: (userProfile as any).est_aussi_livreur ?? false,
     })
     setError(null)
     setDialogOpen(true)
@@ -277,7 +274,6 @@ export default function AdminUsersPage() {
           telephone: form.telephone || null,
           actif: form.actif,
           depot_ids: form.depot_ids,
-          est_aussi_livreur: form.role === 'agent_secteur' ? form.est_aussi_livreur : false,
         }
         if (form.password) patchBody.password = form.password
 
@@ -299,7 +295,6 @@ export default function AdminUsersPage() {
           telephone: form.telephone || null,
           actif: form.actif,
           depot_ids: form.depot_ids,
-          est_aussi_livreur: form.role === 'agent_secteur' ? form.est_aussi_livreur : false,
         } as any : u))
         toast.success('Utilisateur mis à jour')
       } else {
@@ -746,17 +741,6 @@ export default function AdminUsersPage() {
               />
               <Label htmlFor="actif" className="cursor-pointer">Compte actif</Label>
             </div>
-
-            {form.role === 'agent_secteur' && (
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="est_aussi_livreur"
-                  checked={form.est_aussi_livreur}
-                  onCheckedChange={(checked) => setForm({ ...form, est_aussi_livreur: checked as boolean })}
-                />
-                <Label htmlFor="est_aussi_livreur" className="cursor-pointer">Aussi livreur</Label>
-              </div>
-            )}
           </div>
 
           <DialogFooter>

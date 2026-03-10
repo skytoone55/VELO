@@ -56,17 +56,7 @@ export function Step6Confirmation() {
         body: JSON.stringify({ clientId, data }),
       })
 
-      const text = await response.text()
-      let result: any
-      try {
-        result = JSON.parse(text)
-      } catch {
-        throw new Error(
-          text.length > 100
-            ? 'Erreur serveur — veuillez réessayer dans quelques instants'
-            : text || `Erreur serveur (${response.status})`
-        )
-      }
+      const result = await response.json()
 
       if (!response.ok) {
         throw new Error(result.error || 'Erreur lors de la soumission')
@@ -216,6 +206,7 @@ export function Step6Confirmation() {
               <>
                 <div className="font-medium flex items-center gap-2">
                   Retrait en point relais
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gratuit</span>
                 </div>
                 {data.depotRetrait && (
                   <div className="text-muted-foreground mt-1">
@@ -229,25 +220,20 @@ export function Step6Confirmation() {
               <>
                 <div className="font-medium flex items-center gap-2">
                   Livraison à domicile
-                  {isLivraisonPayante && (
+                  {isLivraisonPayante ? (
                     <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1 border">
                       <Euro className="h-3 w-3" />
                       Payant
                     </span>
+                  ) : (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gratuit</span>
                   )}
                 </div>
                 {data.adresseLivraison && (
                   <div className="text-muted-foreground mt-1">
                     {data.adresseLivraison.ligne1}<br />
                     {data.adresseLivraison.ligne2 && <>{data.adresseLivraison.ligne2}<br /></>}
-                    {data.complementAdresse && <>{data.complementAdresse}<br /></>}
                     {data.adresseLivraison.codePostal} {data.adresseLivraison.ville}
-                  </div>
-                )}
-                {data.preferencesLivraison && (
-                  <div className="mt-2 pt-2 border-t border-muted-foreground/20">
-                    <span className="text-xs font-medium text-foreground">Préférences de livraison :</span>
-                    <div className="text-muted-foreground text-xs mt-0.5">{data.preferencesLivraison}</div>
                   </div>
                 )}
               </>

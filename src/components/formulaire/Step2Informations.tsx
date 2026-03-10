@@ -21,7 +21,7 @@ export function Step2Informations() {
       const supabase = createClient()
       const { data: client, error } = await supabase
         .from('clients')
-        .select('raison_sociale, siret, email, email_beneficiaire, telephone, contact_nom, contact_prenom')
+        .select('raison_sociale, siret, email, telephone, contact_nom, contact_prenom')
         .eq('id', clientId)
         .single()
 
@@ -29,7 +29,7 @@ export function Step2Informations() {
         updateData({
           raisonSociale: client.raison_sociale,
           siret: client.siret,
-          email: client.email_beneficiaire || client.email,
+          email: client.email,
           telephone: client.telephone || '',
           contactNom: client.contact_nom || '',
           contactPrenom: client.contact_prenom || '',

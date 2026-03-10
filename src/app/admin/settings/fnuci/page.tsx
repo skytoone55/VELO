@@ -13,6 +13,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Loader2,
   Search,
   Lock,
@@ -69,6 +79,7 @@ export default function FnuciManagementPage() {
   const [sortBy, setSortBy] = useState('numero')
   const [sortOrder, setSortOrder] = useState('asc')
   const [searchInput, setSearchInput] = useState('')
+  const [pendingAction, setPendingAction] = useState<{ id: string; currentStatut: string; targetStatut: string } | null>(null)
 
   // PPE guard
   const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
@@ -269,7 +280,7 @@ export default function FnuciManagementPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleStatusChange(r.id, 'disponible')}
+                          onClick={() => setPendingAction({ id: r.id, currentStatut: r.statut, targetStatut: 'disponible' })}
                           title="Debloquer"
                         >
                           <Unlock className="h-4 w-4 text-green-600" />
@@ -278,7 +289,7 @@ export default function FnuciManagementPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleStatusChange(r.id, 'disponible')}
+                          onClick={() => setPendingAction({ id: r.id, currentStatut: r.statut, targetStatut: 'disponible' })}
                           title="Liberer (remettre disponible)"
                         >
                           <Unlock className="h-4 w-4 text-orange-600" />
@@ -287,7 +298,7 @@ export default function FnuciManagementPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleStatusChange(r.id, 'bloque')}
+                          onClick={() => setPendingAction({ id: r.id, currentStatut: r.statut, targetStatut: 'bloque' })}
                           title="Bloquer"
                         >
                           <Lock className="h-4 w-4 text-red-600" />
@@ -328,6 +339,44 @@ export default function FnuciManagementPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Double validation */}
+      <AlertDialog open={!!pendingAction} onOpenChange={(open) => { if (!open) setPendingAction(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingAction?.targetStatut === 'bloque'
+                ? 'Bloquer ce code FNUCI ?'
+                : pendingAction?.currentStatut === 'attribue'
+                ? 'Liberer ce code FNUCI ?'
+                : 'Debloquer ce code FNUCI ?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingAction?.targetStatut === 'bloque'
+                ? 'Ce code ne sera plus disponible pour attribution.'
+                : pendingAction?.currentStatut === 'attribue'
+                ? 'Le code sera desassigne du client actuel et remis disponible.'
+                : 'Ce code redeviendra disponible pour attribution.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (pendingAction) {
+                  await handleStatusChange(pendingAction.id, pendingAction.targetStatut)
+                  setPendingAction(null)
+                }
+              }}
+              disabled={!!actionLoading}
+              className={pendingAction?.targetStatut === 'bloque' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
+            >
+              {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

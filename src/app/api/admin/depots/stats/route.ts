@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { calculateHaversineDistance } from '@/lib/geo/utils'
 
 /**
@@ -14,9 +13,6 @@ import { calculateHaversineDistance } from '@/lib/geo/utils'
  */
 export async function GET() {
   try {
-    const authResult = await requireRole(['super_admin', 'admin'])
-    if (isAuthError(authResult)) return authResult
-
     const adminClient = createAdminClient()
 
     // Récupérer tous les dépôts actifs

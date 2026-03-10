@@ -7,13 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Loader2, Phone, MapPin, Bike, Clock, ChevronDown, ChevronUp,
-  Truck, CheckCircle, AlertTriangle, Navigation, ClipboardCheck,
-  CalendarDays, List,
+  Truck, CheckCircle, AlertTriangle, Navigation,
 } from 'lucide-react'
 import { PROCESS_STATUTS, STATUT_COLORS } from '@/lib/constants'
 import type { ProcessStatut } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,19 +32,12 @@ interface LivraisonClient {
   client: {
     id: string
     raison_sociale: string
-    contact_nom: string | null
-    contact_prenom: string | null
     telephone: string | null
-    email_beneficiaire: string | null
     velo_devis: number
     velo_valide: number | null
     latitude: number | null
     longitude: number | null
     statut_commercial: string | null
-    adresse_societe_ligne1: string | null
-    adresse_societe_cp: string | null
-    adresse_societe_ville: string | null
-    code_enemat: string | null
   } | null
 }
 
@@ -137,22 +128,16 @@ const CARD_BORDER_COLORS: Record<string, string> = {
 // Component
 // ---------------------------------------------------------------------------
 
-type TabView = 'today' | 'planning'
-
 export default function LivreurDashboardPage() {
   const user = useAdminUser()
   const supabase = useMemo(() => createClient(), [])
 
-  const [activeTab, setActiveTab] = useState<TabView>('today')
   const [loading, setLoading] = useState(true)
   const [todayLivraisons, setTodayLivraisons] = useState<LivraisonClient[]>([])
   const [tomorrowLivraisons, setTomorrowLivraisons] = useState<LivraisonClient[]>([])
-  const [planningLivraisons, setPlanningLivraisons] = useState<LivraisonClient[]>([])
-  const [planningLoading, setPlanningLoading] = useState(false)
   const [tomorrowOpen, setTomorrowOpen] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [problemId, setProblemId] = useState<string | null>(null)
-  const deliveryRouter = useRouter()
   const [problemNote, setProblemNote] = useState('')
 
   // -----------------------------------------------------------------------
@@ -174,17 +159,16 @@ export default function LivreurDashboardPage() {
           depot_id, notes_internes, adresse_livraison_ligne1, adresse_livraison_cp,
           adresse_livraison_ville,
           client:clients!client_id (
-            id, raison_sociale, contact_nom, contact_prenom, telephone, email_beneficiaire,
-            velo_devis, velo_valide, latitude, longitude, statut_commercial,
-            adresse_societe_ligne1, adresse_societe_cp, adresse_societe_ville, code_enemat
+            id, raison_sociale, telephone, velo_devis, velo_valide,
+            latitude, longitude, statut_commercial
           )
         `)
         .in('creneau_date', [today, tomorrow])
         .order('creneau_heure_debut', { ascending: true })
 
       // Filter by livreur assignment or depot
-      if (user.role === 'livreur' || (user.role === 'agent_secteur' && (user as any).est_aussi_livreur)) {
-        // Livreur (or agent_secteur acting as livreur) sees their own assigned livraisons
+      if (user.role === 'livreur') {
+        // Livreur sees their own assigned livraisons
         // OR livraisons from their depot that are unassigned
         query = query.or(
           `livreur_id.eq.${user.id}${
@@ -227,62 +211,6 @@ export default function LivreurDashboardPage() {
   useEffect(() => {
     fetchLivraisons()
   }, [fetchLivraisons])
-
-  // -----------------------------------------------------------------------
-  // Fetch planning (toutes les livraisons à venir)
-  // -----------------------------------------------------------------------
-
-  const fetchPlanning = useCallback(async () => {
-    setPlanningLoading(true)
-    try {
-      const today = getToday()
-
-      let query = supabase
-        .from('livraisons')
-        .select(`
-          id, client_id, statut, creneau_date, creneau_heure_debut, creneau_heure_fin,
-          depot_id, notes_internes, adresse_livraison_ligne1, adresse_livraison_cp,
-          adresse_livraison_ville,
-          client:clients!client_id (
-            id, raison_sociale, contact_nom, contact_prenom, telephone, email_beneficiaire,
-            velo_devis, velo_valide, latitude, longitude, statut_commercial,
-            adresse_societe_ligne1, adresse_societe_cp, adresse_societe_ville, code_enemat
-          )
-        `)
-        .gte('creneau_date', today)
-        .not('statut', 'eq', 'livree')
-        .not('statut', 'eq', 'annulee')
-        .order('creneau_date', { ascending: true })
-        .order('creneau_heure_debut', { ascending: true })
-
-      if (user.role === 'livreur' || (user.role === 'agent_secteur' && (user as any).est_aussi_livreur)) {
-        query = query.or(
-          `livreur_id.eq.${user.id}${
-            user.depot_ids?.length
-              ? `,and(livreur_id.is.null,depot_id.in.(${user.depot_ids.join(',')}))`
-              : ''
-          }`
-        )
-      }
-
-      const { data, error } = await query
-
-      if (error) {
-        console.error('Erreur chargement planning:', error)
-        return
-      }
-
-      setPlanningLivraisons((data ?? []) as unknown as LivraisonClient[])
-    } finally {
-      setPlanningLoading(false)
-    }
-  }, [supabase, user])
-
-  useEffect(() => {
-    if (activeTab === 'planning') {
-      fetchPlanning()
-    }
-  }, [activeTab, fetchPlanning])
 
   // -----------------------------------------------------------------------
   // Actions
@@ -430,17 +358,16 @@ export default function LivreurDashboardPage() {
                 size="sm"
                 className="flex-1 min-w-[100px] h-11 bg-green-600 hover:bg-green-700 text-white"
                 disabled={isLoading}
-                onClick={() => {
-                  const tenantId = process.env.NEXT_PUBLIC_TENANT_ID
-                  if (tenantId === 'ecovolt') {
-                    window.open('https://ecovolt-retrait.vercel.app/', '_blank')
-                  } else {
-                    window.open(`/admin/livraisons/deliver?id=${livraison.id}`, '_blank')
-                  }
-                }}
+                onClick={() => updateStatus(livraison.id, 'livree')}
               >
-                <ClipboardCheck className="h-4 w-4 mr-1" />
-                Livrer
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    Livré
+                  </>
+                )}
               </Button>
 
               <Button
@@ -506,20 +433,6 @@ export default function LivreurDashboardPage() {
   // Main render
   // -----------------------------------------------------------------------
 
-  // -----------------------------------------------------------------------
-  // Group planning by date
-  // -----------------------------------------------------------------------
-
-  const planningByDate = useMemo(() => {
-    const groups: Record<string, LivraisonClient[]> = {}
-    for (const l of planningLivraisons) {
-      const date = l.creneau_date ?? 'non_planifie'
-      if (!groups[date]) groups[date] = []
-      groups[date].push(l)
-    }
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
-  }, [planningLivraisons])
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -530,67 +443,6 @@ export default function LivreurDashboardPage() {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-      {/* ---- Tab bar ---- */}
-      <div className="flex bg-gray-100 rounded-lg p-1">
-        <button
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'today'
-              ? 'bg-white shadow-sm text-gray-900'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('today')}
-        >
-          <Truck className="h-4 w-4" />
-          Aujourd&apos;hui
-        </button>
-        <button
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'planning'
-              ? 'bg-white shadow-sm text-gray-900'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('planning')}
-        >
-          <CalendarDays className="h-4 w-4" />
-          Planning
-        </button>
-      </div>
-
-      {/* ---- Planning view ---- */}
-      {activeTab === 'planning' && (
-        <>
-          {planningLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : planningLivraisons.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="p-6 text-center text-muted-foreground">
-                <CalendarDays className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                <p>Aucune livraison à venir</p>
-              </CardContent>
-            </Card>
-          ) : (
-            planningByDate.map(([date, livraisons]) => (
-              <section key={date}>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-base font-semibold capitalize">
-                    {date === 'non_planifie' ? 'Non planifié' : formatDate(date)}
-                  </h2>
-                  <Badge variant="secondary" className="text-sm">
-                    {livraisons.length}
-                  </Badge>
-                </div>
-                {livraisons.map(renderLivraisonCard)}
-              </section>
-            ))
-          )}
-        </>
-      )}
-
-      {/* ---- Today view ---- */}
-      {activeTab === 'today' && (
-        <>
       {/* ---- Today ---- */}
       <section>
         <div className="flex items-center justify-between mb-4">
@@ -681,9 +533,6 @@ export default function LivreurDashboardPage() {
           </div>
         )}
       </section>
-        </>
-      )}
-
     </div>
   )
 }
