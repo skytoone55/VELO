@@ -70,37 +70,40 @@ interface LivraisonRow {
 const statutOptions = [
   { value: 'all', label: 'Statut' },
   { value: 'a_livrer', label: 'À livrer' },
+  { value: 'programmee', label: 'Programmée' },
   { value: 'en_livraison', label: 'En livraison' },
-  { value: 'livre', label: 'Livré' },
+  { value: 'livree', label: 'Livré' },
   { value: 'probleme_livraison', label: 'Problème livraison' },
   { value: 'a_relivrer', label: 'À relivrer' },
   { value: 'retrait_planifie', label: 'Retrait planifié' },
   { value: 'retrait_effectue', label: 'Retrait effectué' },
-  { value: 'annule', label: 'Annulé' },
+  { value: 'annulee', label: 'Annulé' },
   { value: 'refuse', label: 'Refusé' },
 ]
 
 const statutColors: Record<string, string> = {
   a_livrer: 'bg-amber-100 text-amber-800',
+  programmee: 'bg-blue-100 text-blue-800',
   en_livraison: 'bg-orange-100 text-orange-800',
-  livre: 'bg-green-100 text-green-800',
+  livree: 'bg-green-100 text-green-800',
   probleme_livraison: 'bg-red-100 text-red-800',
   a_relivrer: 'bg-pink-100 text-pink-800',
   retrait_planifie: 'bg-indigo-100 text-indigo-800',
   retrait_effectue: 'bg-teal-100 text-teal-800',
-  annule: 'bg-gray-100 text-gray-500',
+  annulee: 'bg-gray-100 text-gray-500',
   refuse: 'bg-slate-100 text-slate-600',
 }
 
 const statutLabels: Record<string, string> = {
   a_livrer: 'À livrer',
+  programmee: 'Programmée',
   en_livraison: 'En livraison',
-  livre: 'Livré',
+  livree: 'Livré',
   probleme_livraison: 'Problème livraison',
   a_relivrer: 'À relivrer',
   retrait_planifie: 'Retrait planifié',
   retrait_effectue: 'Retrait effectué',
-  annule: 'Annulé',
+  annulee: 'Annulé',
   refuse: 'Refusé',
 }
 
@@ -757,8 +760,8 @@ export default function AdminLivraisonsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
-                        <Badge className={statutColors[liv.statut || 'en_attente']}>
-                          {statutLabels[liv.statut || 'en_attente'] || liv.statut}
+                        <Badge className={statutColors[liv.statut || 'a_livrer']}>
+                          {statutLabels[liv.statut || 'a_livrer'] || liv.statut}
                         </Badge>
                         {liv.confirmation_statut && (
                           <Badge className={
@@ -774,7 +777,7 @@ export default function AdminLivraisonsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right flex items-center gap-1 justify-end">
-                      {['en_attente', 'a_livrer'].includes(liv.statut || '') && (
+                      {liv.statut === 'a_livrer' && (
                         <Button
                           variant="ghost"
                           size="sm"

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validatePagination } from '@/lib/constants'
+import { requireRole, isAuthError, type AuthenticatedUser } from '@/lib/auth/require-role'
 
 /**
  * GET /api/livraisons
@@ -10,25 +10,10 @@ import { validatePagination } from '@/lib/constants'
  */
 export async function GET(request: NextRequest) {
   try {
-    // Auth — même pattern que /api/admin/clients (qui marche)
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('users_profile')
-      .select('role, territoire, departement, depot_ids')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role === 'client') {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
-    }
-
-    const currentUser = { id: user.id, role: profile.role, depot_ids: profile.depot_ids }
+    // Livraisons accessible by all admin roles
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
+    if (isAuthError(authResult)) return authResult
+    const currentUser = authResult as AuthenticatedUser
 
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')?.toLowerCase()
@@ -107,8 +92,7 @@ export async function GET(request: NextRequest) {
         client:clients!inner(
           id, raison_sociale, siret, email, email_beneficiaire, telephone,
           departement, adresse_societe_cp, commercial_assigne, monday_board_id,
-          statut_commercial, validation_naf, type_de_zone, velo_devis, agence,
-          depot_retrait_id, depot_logistique_id, reference_retina
+          statut_commercial, validation_naf, type_de_zone, velo_devis, agence
         ),
         depot:depots(id, nom)
       `, { count: 'exact' })
@@ -118,7 +102,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (statutFilter && statutFilter !== 'all') {
-      // Support multi-select: "en_livraison,livre" → .in()
       const statuts = statutFilter.split(',').filter(Boolean)
       if (statuts.length === 1) {
         query = query.eq('statut', statuts[0])
@@ -128,29 +111,17 @@ export async function GET(request: NextRequest) {
     }
 
     if (depotFilter && depotFilter !== 'all') {
-      // Chercher sur depot_id de la livraison OU depot_retrait_id/depot_logistique_id du client
-      const { data: depotClientIds } = await adminClient
-        .from('clients')
-        .select('id')
-        .or(`depot_retrait_id.eq.${depotFilter},depot_logistique_id.eq.${depotFilter}`)
-
-      const depotClients = (depotClientIds || []).map(c => c.id)
-
-      if (depotClients.length > 0) {
-        query = query.or(`depot_id.eq.${depotFilter},client_id.in.(${depotClients.join(',')})`)
-      } else {
-        query = query.eq('depot_id', depotFilter)
+      const depots = depotFilter.split(',').filter(Boolean)
+      if (depots.length === 1) {
+        query = query.eq('depot_id', depots[0])
+      } else if (depots.length > 1) {
+        query = query.in('depot_id', depots)
       }
     }
 
     // Role-based data filtering
     if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
-      // Agent also acting as livreur sees depot livraisons + those assigned to them
-      if ((currentUser as any).est_aussi_livreur) {
-        query = query.or(`depot_id.in.(${currentUser.depot_ids.join(',')}),livreur_id.eq.${currentUser.id}`)
-      } else {
-        query = query.in('depot_id', currentUser.depot_ids)
-      }
+      query = query.in('depot_id', currentUser.depot_ids)
     } else if (currentUser.role === 'livreur') {
       query = query.eq('livreur_id', currentUser.id)
     }
@@ -163,11 +134,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error, count } = await query
 
-    if (error) {
-      console.error('Erreur requete livraisons:', JSON.stringify(error))
-      throw error
-    }
-    console.log(`[API livraisons] ${data?.length || 0} resultats, count=${count}, role=${currentUser.role}`)
+    if (error) throw error
 
     const totalFiltered = count || 0
     const totalPages = Math.ceil(totalFiltered / pageSize)
@@ -183,10 +150,10 @@ export async function GET(request: NextRequest) {
         endIndex: Math.min(startIndex + pageSize, totalFiltered),
       },
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erreur API livraisons:', error)
     return NextResponse.json(
-      { error: error?.message || error?.details || JSON.stringify(error) || 'Erreur serveur' },
+      { error: error instanceof Error ? error.message : 'Erreur serveur' },
       { status: 500 }
     )
   }
