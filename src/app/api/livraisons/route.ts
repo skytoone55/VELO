@@ -145,7 +145,12 @@ export async function GET(request: NextRequest) {
 
     // Role-based data filtering
     if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
-      query = query.in('depot_id', currentUser.depot_ids)
+      // Agent also acting as livreur sees depot livraisons + those assigned to them
+      if ((currentUser as any).est_aussi_livreur) {
+        query = query.or(`depot_id.in.(${currentUser.depot_ids.join(',')}),livreur_id.eq.${currentUser.id}`)
+      } else {
+        query = query.in('depot_id', currentUser.depot_ids)
+      }
     } else if (currentUser.role === 'livreur') {
       query = query.eq('livreur_id', currentUser.id)
     }

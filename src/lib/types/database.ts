@@ -700,6 +700,7 @@ export type Database = {
           depot_id: string | null
           depot_ids: string[] | null
           email: string
+          est_aussi_livreur: boolean | null
           id: string
           is_super_admin: boolean
           nom: string | null
@@ -717,6 +718,7 @@ export type Database = {
           depot_id?: string | null
           depot_ids?: string[] | null
           email: string
+          est_aussi_livreur?: boolean | null
           id: string
           is_super_admin?: boolean
           nom?: string | null
@@ -734,6 +736,7 @@ export type Database = {
           depot_id?: string | null
           depot_ids?: string[] | null
           email?: string
+          est_aussi_livreur?: boolean | null
           id?: string
           is_super_admin?: boolean
           nom?: string | null
