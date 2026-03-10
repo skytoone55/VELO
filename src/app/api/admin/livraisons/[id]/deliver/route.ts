@@ -10,7 +10,6 @@ interface DeliveryChecklist {
 
 interface DeliverBody {
   fnuci_codes: string[]
-  nb_velos_livres?: number
   checklist: DeliveryChecklist
   signature_base64: string
   photo_identite_base64?: string
@@ -32,7 +31,7 @@ export async function POST(
 
     const { id: livraisonId } = await params
     const body: DeliverBody = await request.json()
-    const { fnuci_codes, nb_velos_livres, checklist, signature_base64, photo_identite_base64, attestation_pdf_base64, notes } = body
+    const { fnuci_codes, checklist, signature_base64, photo_identite_base64, attestation_pdf_base64, notes } = body
 
     // --- Validations de base ---
     if (!fnuci_codes || !Array.isArray(fnuci_codes) || fnuci_codes.length === 0) {
@@ -42,7 +41,8 @@ export async function POST(
       )
     }
 
-    if (!checklist || !checklist.fonctionnement || !checklist.cable_recharge || !checklist.photos_cee) {
+    if (!checklist || !checklist.fonctionnement || !checklist.cable_recharge ||
+        !checklist.photos_cee) {
       return NextResponse.json(
         { error: 'Tous les éléments de la checklist doivent être validés' },
         { status: 400 }
@@ -94,17 +94,10 @@ export async function POST(
     }
 
     // --- 2. Valider le nombre de vélos ---
-    const maxBikes = client.velo_valide || client.velo_devis || 1
-    const nbLivres = nb_velos_livres || fnuci_codes.length
-    if (fnuci_codes.length !== nbLivres) {
+    const expectedBikes = client.velo_valide || client.velo_devis || 1
+    if (fnuci_codes.length !== expectedBikes) {
       return NextResponse.json(
-        { error: `Nombre de codes FNUCI (${fnuci_codes.length}) ne correspond pas au nombre de vélos (${nbLivres})` },
-        { status: 400 }
-      )
-    }
-    if (nbLivres > maxBikes) {
-      return NextResponse.json(
-        { error: `Nombre de vélos (${nbLivres}) dépasse le maximum autorisé (${maxBikes})` },
+        { error: `Nombre de codes FNUCI incorrect. Attendu : ${expectedBikes}, reçu : ${fnuci_codes.length}` },
         { status: 400 }
       )
     }
@@ -161,54 +154,8 @@ export async function POST(
       )
     }
 
-    // --- 5. Mettre à jour la livraison ---
+    // --- 5. Marquer chaque FNUCI comme attribué ---
     const now = new Date().toISOString()
-    const { error: updateLivraisonError } = await supabase
-      .from('livraisons')
-      .update({
-        statut: 'livree',
-        date_livraison: now,
-        date_livraison_effective: now,
-        signature_client: signature_base64,
-        photos_livraison: {
-          ...(photo_identite_base64 ? { photo_identite: photo_identite_base64 } : {}),
-          ...(attestation_pdf_base64 ? { attestation_pdf: attestation_pdf_base64 } : {}),
-        },
-        notes_internes: notes || null,
-        updated_at: now,
-      })
-      .eq('id', livraisonId)
-
-    if (updateLivraisonError) {
-      console.error('Erreur mise à jour livraison:', updateLivraisonError)
-      return NextResponse.json(
-        { error: 'Erreur lors de la mise à jour de la livraison' },
-        { status: 500 }
-      )
-    }
-
-    // --- 6. Mettre à jour le client ---
-    // velo_valide = nombre réellement livré (remplace l'ancien devis validé)
-    const { error: updateClientError } = await supabase
-      .from('clients')
-      .update({
-        statut_commercial: 'livre',
-        date_statut: now,
-        fnuci_ids: normalizedCodes,
-        velo_valide: nbLivres,
-        updated_at: now,
-      })
-      .eq('id', client.id)
-
-    if (updateClientError) {
-      console.error('Erreur mise à jour client:', updateClientError)
-      return NextResponse.json(
-        { error: 'Erreur lors de la mise à jour du client' },
-        { status: 500 }
-      )
-    }
-
-    // --- 7. Marquer chaque FNUCI comme attribué (APRÈS updates livraison + client) ---
     for (const fnuci of fnuciRecords) {
       const { error: updateError } = await supabase
         .from('fnuci')
@@ -229,31 +176,97 @@ export async function POST(
       }
     }
 
+    // --- 6a. Stocker le PDF dans Supabase storage ---
+    let attestationPdfUrl: string | null = null
+    if (attestation_pdf_base64) {
+      try {
+        // Le base64 est au format data:application/pdf;base64,XXXX
+        const base64Data = attestation_pdf_base64.split(',')[1] || attestation_pdf_base64
+        const pdfBuffer = Buffer.from(base64Data, 'base64')
+        const fileName = `attestations/${client.id}/${livraisonId}.pdf`
+
+        const { error: uploadError } = await supabase
+          .storage
+          .from('documents')
+          .upload(fileName, pdfBuffer, {
+            contentType: 'application/pdf',
+            upsert: true,
+          })
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from('documents').getPublicUrl(fileName)
+          attestationPdfUrl = urlData.publicUrl
+        } else {
+          console.error('Erreur upload PDF:', uploadError)
+        }
+      } catch (pdfErr) {
+        console.error('Erreur traitement PDF:', pdfErr)
+      }
+    }
+
+    // --- 6b. Mettre à jour la livraison ---
+    const { error: updateLivraisonError } = await supabase
+      .from('livraisons')
+      .update({
+        statut: 'livree',
+        date_livraison: now,
+        date_livraison_effective: now,
+        signature_client: signature_base64,
+        photos_livraison: photo_identite_base64 ? { photo_identite: photo_identite_base64 } : undefined,
+        notes_internes: notes || null,
+        ...(attestationPdfUrl ? { attestation_pdf_url: attestationPdfUrl } : {}),
+        updated_at: now,
+      })
+      .eq('id', livraisonId)
+
+    if (updateLivraisonError) {
+      console.error('Erreur mise à jour livraison:', updateLivraisonError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la mise à jour de la livraison' },
+        { status: 500 }
+      )
+    }
+
+    // --- 7. Mettre à jour le client ---
+    const { error: updateClientError } = await supabase
+      .from('clients')
+      .update({
+        statut_commercial: 'livre',
+        date_statut: now,
+        fnuci_ids: normalizedCodes,
+        updated_at: now,
+      })
+      .eq('id', client.id)
+
+    if (updateClientError) {
+      console.error('Erreur mise à jour client:', updateClientError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la mise à jour du client' },
+        { status: 500 }
+      )
+    }
+
     // --- 8. Logger la transition workflow ---
-    const { error: wt1Error } = await supabase.from('workflow_transitions').insert({
+    await supabase.from('workflow_transitions').insert({
       entity_type: 'client',
       entity_id: client.id,
-      statut_avant: client.statut_commercial || null,
+      statut_avant: client.statut_commercial,
       statut_apres: 'livre',
-      user_id: auth.id,
       effectue_par: auth.id,
       raison: `Livraison effectuée - ${normalizedCodes.length} vélo(s) - FNUCI: ${normalizedCodes.join(', ')}`,
     })
-    if (wt1Error) console.error('Erreur workflow_transitions client:', wt1Error)
 
-    const { error: wt2Error } = await supabase.from('workflow_transitions').insert({
+    await supabase.from('workflow_transitions').insert({
       entity_type: 'livraison',
       entity_id: livraisonId,
-      statut_avant: livraison.statut || null,
+      statut_avant: livraison.statut,
       statut_apres: 'livree',
-      user_id: auth.id,
       effectue_par: auth.id,
       raison: 'Livraison confirmée par le livreur',
     })
-    if (wt2Error) console.error('Erreur workflow_transitions livraison:', wt2Error)
 
     // --- 9. Log audit ---
-    const { error: auditError } = await supabase.from('audit_log').insert({
+    await supabase.from('audit_log').insert({
       user_id: auth.id,
       action: 'livraison_confirmee',
       entity_type: 'livraison',
@@ -265,7 +278,6 @@ export async function POST(
         notes: notes || null,
       },
     })
-    if (auditError) console.error('Erreur audit_log:', auditError)
 
     // --- Réponse succès ---
     return NextResponse.json({

@@ -338,7 +338,7 @@ export default function AdminLivraisonsPage() {
           } catch { errorCount++ }
         }
         showBulkMessage(
-          `Formulaire retrait envoyé : ${successCount} succès${errorCount > 0 ? `, ${errorCount} erreur(s)` : ''}`,
+          `Formulaire retrait envoyé : ${successCount} succès${errorCount > 0 ? `, ${errorCount} erreur(s)` : ''}`,
           errorCount > 0,
         )
       } else if (action === 'send_mail_livraison') {

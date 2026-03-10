@@ -416,29 +416,29 @@ async function generateAttestation(data: {
   const modeLabel = data.modeLivraison === 'retrait' ? 'retrait' : 'livraison'
 
   // Header
-  doc.setFontSize(18)
+  doc.setFontSize(16)
   doc.setFont('helvetica', 'bold')
   doc.text('PPE Energie', pageW / 2, y, { align: 'center' })
-  y += 10
-  doc.setFontSize(14)
-  doc.text(`Attestation de ${modeLabel} vélo cargo`, pageW / 2, y, { align: 'center' })
   y += 8
-  doc.setFontSize(10)
+  doc.setFontSize(12)
+  doc.text(`Attestation de ${modeLabel} vélo cargo`, pageW / 2, y, { align: 'center' })
+  y += 6
+  doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   doc.text(`Date : ${data.date}`, pageW / 2, y, { align: 'center' })
-  y += 12
+  y += 8
 
   // Separator
   doc.setDrawColor(200)
   doc.line(20, y, pageW - 20, y)
-  y += 8
+  y += 5
 
   // Client info
-  doc.setFontSize(12)
+  doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
   doc.text('Informations bénéficiaire', 20, y)
-  y += 7
-  doc.setFontSize(10)
+  y += 5
+  doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   const infos = [
     `Raison sociale : ${data.clientName}`,
@@ -451,79 +451,66 @@ async function generateAttestation(data: {
 
   for (const info of infos) {
     doc.text(info, 20, y)
-    y += 6
+    y += 5
   }
-  y += 6
+  y += 4
 
   // FNUCI table
-  doc.setFontSize(12)
+  doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
   doc.text('Numéros FNUCI', 20, y)
-  y += 7
-  doc.setFontSize(10)
+  y += 5
+  doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   data.fnuciCodes.forEach((code, i) => {
     if (i % 2 === 0) {
       doc.setFillColor(245, 245, 245)
-      doc.rect(20, y - 4, pageW - 40, 7, 'F')
+      doc.rect(20, y - 3.5, pageW - 40, 6, 'F')
     }
     doc.text(`Vélo ${i + 1} : ${code}`, 25, y)
-    y += 7
+    y += 6
   })
-  y += 6
+  y += 4
 
   // Checklist
-  doc.setFontSize(12)
+  doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
   doc.text('Checklist de livraison', 20, y)
-  y += 7
-  doc.setFontSize(10)
+  y += 5
+  doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   data.checklistItems.forEach((item) => {
     doc.text(`✓ ${item}`, 25, y)
-    y += 6
+    y += 5
   })
-  y += 6
+  y += 4
 
-  // Photo identité
+  // Photo identité (compact)
   if (data.photoIdentite) {
-    if (y > 200) { doc.addPage(); y = 20 }
-    doc.setFontSize(12)
+    doc.setFontSize(10)
     doc.setFont('helvetica', 'bold')
     doc.text('Pièce d\'identité', 20, y)
-    y += 5
+    y += 4
     try {
-      doc.addImage(data.photoIdentite, 'JPEG', 20, y, 60, 40)
-      y += 45
+      doc.addImage(data.photoIdentite, 'JPEG', 20, y, 45, 30)
+      y += 33
     } catch {
-      doc.text('[Photo non disponible]', 25, y + 5)
-      y += 10
+      doc.text('[Photo non disponible]', 25, y + 4)
+      y += 8
     }
   }
 
-  // Signature
-  if (y > 220) { doc.addPage(); y = 20 }
-  doc.setFontSize(12)
+  // Tampon entreprise EN FOND + Signature PAR-DESSUS
+  doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
   doc.text('Signature du bénéficiaire', 20, y)
-  y += 5
-  try {
-    doc.addImage(data.signature, 'PNG', 20, y, 80, 30)
-    y += 35
-  } catch {
-    doc.text('[Signature non disponible]', 25, y + 5)
-    y += 10
-  }
-  doc.setFontSize(8)
-  doc.text(`Signé le ${data.date}`, 20, y)
-  y += 10
+  y += 4
 
-  // Tampon entreprise
+  // Tampon derrière la signature (dessiné en premier = fond)
+  const stampX = pageW / 2 + 5
+  const stampY = y - 2
   if (data.siret || data.clientName) {
-    if (y > 240) { doc.addPage(); y = 20 }
-    const stampX = pageW - 90
-    const stampY = y
-    const stampW = 70
+    const stampW = pageW / 2 - 25
     const stampLines: string[] = []
     if (data.clientName) stampLines.push(data.clientName)
     if (data.adresse) {
@@ -532,21 +519,32 @@ async function generateAttestation(data: {
       if (parts[1] || parts[2]) stampLines.push([parts[1], parts[2]].filter(Boolean).join(' '))
     }
     if (data.siret) stampLines.push(`SIRET: ${data.siret}`)
-    const stampH = 8 + stampLines.length * 5
+    const stampH = 6 + stampLines.length * 4.5
     doc.setDrawColor(180)
-    doc.setFillColor(245, 245, 245)
+    doc.setFillColor(248, 248, 248)
     doc.roundedRect(stampX, stampY, stampW, stampH, 2, 2, 'FD')
-    doc.setTextColor(80)
-    let ty = stampY + 6
+    doc.setTextColor(100)
+    let ty = stampY + 5
     stampLines.forEach((line, i) => {
-      doc.setFontSize(i === 0 ? 8 : 7)
+      doc.setFontSize(i === 0 ? 7.5 : 6.5)
       doc.setFont('helvetica', i === 0 ? 'bold' : 'normal')
       doc.text(line, stampX + stampW / 2, ty, { align: 'center' })
-      ty += 5
+      ty += 4.5
     })
     doc.setTextColor(0)
-    y += stampH + 5
   }
+
+  // Signature par-dessus le tampon (côté gauche)
+  try {
+    doc.addImage(data.signature, 'PNG', 20, y, 70, 25)
+    y += 28
+  } catch {
+    doc.text('[Signature non disponible]', 25, y + 4)
+    y += 8
+  }
+  doc.setFontSize(7)
+  doc.text(`Signé le ${data.date}`, 20, y)
+  y += 8
 
   // Footer
   doc.setDrawColor(200)
