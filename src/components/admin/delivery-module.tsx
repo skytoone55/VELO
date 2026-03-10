@@ -64,6 +64,7 @@ export interface LivraisonWithClient {
     adresse_societe_ville: string
     code_enemat?: string | null
     reference_retina?: string | null
+    siret?: string | null
   }
 }
 
@@ -517,6 +518,36 @@ async function generateAttestation(data: {
   doc.text(`Signé le ${data.date}`, 20, y)
   y += 10
 
+  // Tampon entreprise
+  if (data.siret || data.clientName) {
+    if (y > 240) { doc.addPage(); y = 20 }
+    const stampX = pageW - 90
+    const stampY = y
+    const stampW = 70
+    const stampLines: string[] = []
+    if (data.clientName) stampLines.push(data.clientName)
+    if (data.adresse) {
+      const parts = data.adresse.split(', ')
+      if (parts[0]) stampLines.push(parts[0])
+      if (parts[1] || parts[2]) stampLines.push([parts[1], parts[2]].filter(Boolean).join(' '))
+    }
+    if (data.siret) stampLines.push(`SIRET: ${data.siret}`)
+    const stampH = 8 + stampLines.length * 5
+    doc.setDrawColor(180)
+    doc.setFillColor(245, 245, 245)
+    doc.roundedRect(stampX, stampY, stampW, stampH, 2, 2, 'FD')
+    doc.setTextColor(80)
+    let ty = stampY + 6
+    stampLines.forEach((line, i) => {
+      doc.setFontSize(i === 0 ? 8 : 7)
+      doc.setFont('helvetica', i === 0 ? 'bold' : 'normal')
+      doc.text(line, stampX + stampW / 2, ty, { align: 'center' })
+      ty += 5
+    })
+    doc.setTextColor(0)
+    y += stampH + 5
+  }
+
   // Footer
   doc.setDrawColor(200)
   doc.line(20, y, pageW - 20, y)
@@ -718,7 +749,7 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
 
       const doc = await generateAttestation({
         clientName: client.raison_sociale,
-        siret: null,
+        siret: client.siret || null,
         beneficiaire,
         telephone: client.telephone,
         email: client.email_beneficiaire,

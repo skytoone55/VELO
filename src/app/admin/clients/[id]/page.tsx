@@ -43,6 +43,9 @@ import {
   CloudUpload,
   Info,
   FileText,
+  Pencil,
+  Check,
+  X,
 } from 'lucide-react'
 import { Client, Livraison, Depot } from '@/lib/types/database'
 import { PROCESS_STATUTS, STATUT_COLORS, STATUT_TRANSITIONS, type ProcessStatut } from '@/lib/constants'
@@ -171,6 +174,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [mailLivraisonLoading, setMailLivraisonLoading] = useState(false)
   const [formulaireRetraitLoading, setFormulaireRetraitLoading] = useState(false)
   const [mailPlanningLoading, setMailPlanningLoading] = useState(false)
+
+  // Inline edit — préférences & complément
+  const [editingPreferences, setEditingPreferences] = useState(false)
+  const [editPreferencesValue, setEditPreferencesValue] = useState('')
+  const [savingPreferences, setSavingPreferences] = useState(false)
+  const [editingComplement, setEditingComplement] = useState(false)
+  const [editComplementValue, setEditComplementValue] = useState('')
+  const [savingComplement, setSavingComplement] = useState(false)
 
   // FNUCI (PPE only)
   const [fnuciRecords, setFnuciRecords] = useState<Array<{ id: string; numero: number; reference: string; statut: string; attribue_at: string | null }>>([])
@@ -439,6 +450,46 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       setError(message)
     } finally {
       setFormulaireRetraitLoading(false)
+    }
+  }
+
+  const handleSavePreferences = async () => {
+    if (!client) return
+    setSavingPreferences(true)
+    try {
+      const res = await fetch(`/api/admin/clients/${client.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preferences_livraison: editPreferencesValue || null }),
+      })
+      if (!res.ok) throw new Error('Erreur sauvegarde')
+      setClient({ ...client, preferences_livraison: editPreferencesValue || null })
+      setEditingPreferences(false)
+      setSuccess('Préférences mises à jour')
+    } catch {
+      setError('Erreur lors de la sauvegarde des préférences')
+    } finally {
+      setSavingPreferences(false)
+    }
+  }
+
+  const handleSaveComplement = async () => {
+    if (!livraisons[0]) return
+    setSavingComplement(true)
+    try {
+      const res = await fetch(`/api/admin/livraisons/${livraisons[0].id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ complement_adresse: editComplementValue || null }),
+      })
+      if (!res.ok) throw new Error('Erreur sauvegarde')
+      setLivraisons(prev => prev.map((l, i) => i === 0 ? { ...l, complement_adresse: editComplementValue || null } : l))
+      setEditingComplement(false)
+      setSuccess('Complément d\'adresse mis à jour')
+    } catch {
+      setError('Erreur lors de la sauvegarde du complément')
+    } finally {
+      setSavingComplement(false)
     }
   }
 
@@ -910,27 +961,66 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </div>
             </div>
 
-            {/* Complément d'adresse */}
-            {livraison?.complement_adresse && (
-              <div className="mt-3">
-                <div className="p-3 bg-muted/30 rounded-lg border">
-                  <p className="text-xs text-muted-foreground mb-1">Complément d&apos;adresse</p>
-                  <p className="text-sm font-medium">{livraison.complement_adresse}</p>
+            {/* Complément d'adresse — éditable */}
+            <div className="mt-3">
+              <div className="p-3 bg-muted/30 rounded-lg border">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-muted-foreground">Complément d&apos;adresse</p>
+                  {!editingComplement && livraisons[0] && (
+                    <button onClick={() => { setEditComplementValue(livraisons[0]?.complement_adresse || ''); setEditingComplement(true) }} className="text-muted-foreground hover:text-foreground">
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
+                {editingComplement ? (
+                  <div className="flex gap-2">
+                    <textarea value={editComplementValue} onChange={e => setEditComplementValue(e.target.value)} className="flex-1 text-sm border rounded px-2 py-1 resize-none" rows={2} placeholder="Ex: Bâtiment B, 3ème étage..." />
+                    <div className="flex flex-col gap-1">
+                      <button onClick={handleSaveComplement} disabled={savingComplement} className="text-green-600 hover:text-green-700 disabled:opacity-50">
+                        {savingComplement ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                      </button>
+                      <button onClick={() => setEditingComplement(false)} className="text-red-500 hover:text-red-600">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm font-medium">{livraisons[0]?.complement_adresse || <span className="text-muted-foreground italic">Non renseigné</span>}</p>
+                )}
               </div>
-            )}
+            </div>
 
-            {/* Préférences de livraison (saisies par le client dans le formulaire) */}
+            {/* Préférences de livraison — éditable */}
             <div className="mt-3">
               <div className={`p-3 rounded-lg border ${client.preferences_livraison ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800' : 'bg-muted/30 border-dashed'}`}>
-                <p className={`text-xs mb-1 flex items-center gap-1 ${client.preferences_livraison ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>
-                  <Info className="h-3 w-3" />
-                  Préférences du client (formulaire)
-                </p>
-                {client.preferences_livraison
-                  ? <p className="text-sm font-medium">{client.preferences_livraison}</p>
-                  : <p className="text-sm text-muted-foreground italic">Non renseigné</p>
-                }
+                <div className="flex items-center justify-between mb-1">
+                  <p className={`text-xs flex items-center gap-1 ${client.preferences_livraison ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>
+                    <Info className="h-3 w-3" />
+                    Préférences du client
+                  </p>
+                  {!editingPreferences && (
+                    <button onClick={() => { setEditPreferencesValue(client.preferences_livraison || ''); setEditingPreferences(true) }} className="text-muted-foreground hover:text-foreground">
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {editingPreferences ? (
+                  <div className="flex gap-2">
+                    <textarea value={editPreferencesValue} onChange={e => setEditPreferencesValue(e.target.value)} className="flex-1 text-sm border rounded px-2 py-1 resize-none" rows={2} placeholder="Préférences de livraison..." />
+                    <div className="flex flex-col gap-1">
+                      <button onClick={handleSavePreferences} disabled={savingPreferences} className="text-green-600 hover:text-green-700 disabled:opacity-50">
+                        {savingPreferences ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                      </button>
+                      <button onClick={() => setEditingPreferences(false)} className="text-red-500 hover:text-red-600">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  client.preferences_livraison
+                    ? <p className="text-sm font-medium">{client.preferences_livraison}</p>
+                    : <p className="text-sm text-muted-foreground italic">Non renseigné</p>
+                )}
               </div>
             </div>
 
