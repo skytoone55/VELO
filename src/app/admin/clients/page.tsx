@@ -794,6 +794,8 @@ export default function AdminClientsPage() {
                   <SortableHeader label="Dép." column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="Velos" column="velo_devis" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="NAF" column="validation_naf" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
+                  <TableHead className="hidden xl:table-cell">Réf. Retina</TableHead>
+                  <TableHead className="hidden lg:table-cell">Dépôt</TableHead>
                   <SortableHeader label="Statut" column="statut_commercial" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <SortableHeader label="Zone" column="type_de_zone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
                   <TableHead className="text-right">Actions</TableHead>
@@ -802,7 +804,7 @@ export default function AdminClientsPage() {
               <TableBody className={loading ? 'opacity-50' : ''}>
                 {loading && (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-8">
+                    <TableCell colSpan={13} className="text-center py-8">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                     </TableCell>
                   </TableRow>
@@ -871,6 +873,21 @@ export default function AdminClientsPage() {
                         if (client.validation_naf === 'OUI') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OUI</Badge>
                         if (client.validation_naf === 'NON') return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">NON</Badge>
                         return <Badge variant="outline" className="text-muted-foreground">A vérifier</Badge>
+                      })()}
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      <span className="text-xs font-mono text-muted-foreground">
+                        {client.reference_retina || '-'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {(() => {
+                        const depot = depots.find((d: any) => d.id === client.depot_logistique_id)
+                        return depot ? (
+                          <Badge variant="outline" className="text-xs">{depot.nom}</Badge>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )
                       })()}
                     </TableCell>
                     <TableCell>
