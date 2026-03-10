@@ -324,7 +324,7 @@ function PlanningContent() {
         const { data } = await supabase
           .from('users_profile')
           .select('id, nom, prenom')
-          .eq('role', 'livreur')
+          .or('role.eq.livreur,and(role.eq.agent_secteur,est_aussi_livreur.eq.true)')
           .contains('depot_ids', [selectedDepotId])
           .order('nom')
         const livreurList = (data || []) as LivreurOption[]
