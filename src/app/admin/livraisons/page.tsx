@@ -687,17 +687,17 @@ export default function AdminLivraisonsPage() {
                         aria-label={`Sélectionner ${liv.client?.raison_sociale || ''}`}
                       />
                     </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{liv.client?.raison_sociale || 'N/A'}</div>
-                      <div className="text-xs text-muted-foreground">{liv.client?.siret}</div>
+                    <TableCell className="max-w-[180px]">
+                      <div className="font-medium truncate" title={liv.client?.raison_sociale || ''}>{liv.client?.raison_sociale || 'N/A'}</div>
+                      <div className="text-xs text-muted-foreground truncate">{liv.client?.siret}</div>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
                       <span className="text-xs font-mono text-muted-foreground">
                         {liv.client?.reference_retina || '-'}
                       </span>
                     </TableCell>
-                    <TableCell className="hidden xl:table-cell text-sm">
-                      {liv.client?.email_beneficiaire || liv.client?.email || '-'}
+                    <TableCell className="hidden xl:table-cell text-sm max-w-[160px]">
+                      <span className="truncate block" title={liv.client?.email_beneficiaire || liv.client?.email || ''}>{liv.client?.email_beneficiaire || liv.client?.email || '-'}</span>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
                       {liv.client?.telephone ? (
