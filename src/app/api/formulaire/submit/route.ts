@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       document_identite_type: data.documentIdentite?.type,
       document_identite_url: data.documentIdentite?.url,
       document_identite_nom_fichier: data.documentIdentite?.nomFichier,
-      statut: 'en_attente',
+      statut: 'a_livrer',
     })
 
     if (livraisonError) {
