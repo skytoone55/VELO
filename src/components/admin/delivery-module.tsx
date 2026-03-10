@@ -455,22 +455,26 @@ async function generateAttestation(data: {
   }
   y += 4
 
-  // FNUCI table
+  // FNUCI table — 3 colonnes
   doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
   doc.text('Numéros FNUCI', 20, y)
-  y += 5
+  y += 6
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
+  const cols = 3
+  const colW = (pageW - 40) / cols
   data.fnuciCodes.forEach((code, i) => {
-    if (i % 2 === 0) {
+    const row = Math.floor(i / cols)
+    const col = i % cols
+    const rowY = y + row * 6
+    if (row % 2 === 0 && col === 0) {
       doc.setFillColor(245, 245, 245)
-      doc.rect(20, y - 3.5, pageW - 40, 6, 'F')
+      doc.rect(20, rowY - 3.5, pageW - 40, 6, 'F')
     }
-    doc.text(`Vélo ${i + 1} : ${code}`, 25, y)
-    y += 6
+    doc.text(`${i + 1}. ${code}`, 22 + col * colW, rowY)
   })
-  y += 4
+  y += Math.ceil(data.fnuciCodes.length / cols) * 6 + 6
 
   // Checklist
   doc.setFontSize(10)
@@ -501,10 +505,11 @@ async function generateAttestation(data: {
   }
 
   // Tampon entreprise EN FOND + Signature PAR-DESSUS
-  doc.setFontSize(10)
+  y += 6
+  doc.setFontSize(11)
   doc.setFont('helvetica', 'bold')
   doc.text('Signature du bénéficiaire', 20, y)
-  y += 4
+  y += 8
 
   // Tampon derrière la signature (dessiné en premier = fond)
   const stampX = pageW / 2 + 5
@@ -519,37 +524,38 @@ async function generateAttestation(data: {
       if (parts[1] || parts[2]) stampLines.push([parts[1], parts[2]].filter(Boolean).join(' '))
     }
     if (data.siret) stampLines.push(`SIRET: ${data.siret}`)
-    const stampH = 6 + stampLines.length * 4.5
+    const stampH = 8 + stampLines.length * 5
     doc.setDrawColor(180)
     doc.setFillColor(248, 248, 248)
     doc.roundedRect(stampX, stampY, stampW, stampH, 2, 2, 'FD')
     doc.setTextColor(100)
-    let ty = stampY + 5
+    let ty = stampY + 6
     stampLines.forEach((line, i) => {
-      doc.setFontSize(i === 0 ? 7.5 : 6.5)
+      doc.setFontSize(i === 0 ? 8 : 7)
       doc.setFont('helvetica', i === 0 ? 'bold' : 'normal')
       doc.text(line, stampX + stampW / 2, ty, { align: 'center' })
-      ty += 4.5
+      ty += 5
     })
     doc.setTextColor(0)
   }
 
   // Signature par-dessus le tampon (côté gauche)
   try {
-    doc.addImage(data.signature, 'PNG', 20, y, 70, 25)
-    y += 28
+    doc.addImage(data.signature, 'PNG', 20, y, 80, 30)
+    y += 34
   } catch {
     doc.text('[Signature non disponible]', 25, y + 4)
-    y += 8
+    y += 10
   }
-  doc.setFontSize(7)
+  y += 4
+  doc.setFontSize(8)
   doc.text(`Signé le ${data.date}`, 20, y)
-  y += 8
+  y += 12
 
   // Footer
   doc.setDrawColor(200)
   doc.line(20, y, pageW - 20, y)
-  y += 5
+  y += 6
   doc.setFontSize(8)
   doc.setTextColor(128)
   doc.text(`PPE Energie — Attestation de ${modeLabel} vélo cargo`, pageW / 2, y, { align: 'center' })

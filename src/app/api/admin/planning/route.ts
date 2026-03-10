@@ -58,6 +58,7 @@ export async function GET(request: Request) {
         notes_admin,
         complement_adresse,
         heure_precise,
+        livreur_id,
         created_at
       `)
       .eq('depot_id', depotId)

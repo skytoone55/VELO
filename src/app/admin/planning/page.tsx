@@ -76,6 +76,7 @@ interface PlanningLivraison {
   notes_admin: string | null
   complement_adresse: string | null
   heure_precise: string | null
+  livreur_id: string | null
   created_at: string
   client: PlanningClient | null
 }
@@ -259,7 +260,7 @@ function PlanningContent() {
   // Filter livraisons by selected livreur (empty string = no livreur selected, show all read-only)
   const filteredLivraisons = useMemo(() => {
     if (!selectedLivreurId) return livraisons
-    return livraisons.filter(l => (l as any).livreur_id === selectedLivreurId || !(l as any).livreur_id)
+    return livraisons.filter(l => l.livreur_id === selectedLivreurId || !l.livreur_id)
   }, [livraisons, selectedLivreurId])
 
   // Search: filter filteredLivraisons by client name

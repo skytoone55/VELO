@@ -1097,13 +1097,43 @@ export async function sendBonLivraisonEmail(params: {
   const typeDoc = modeLivraison === 'retrait' ? 'retrait' : 'livraison'
 
   const html = `
-    ${getEmailHeader(tenant)}
-    <h2 style="color:#1e293b;margin:0 0 16px">Bon de ${typeDoc}</h2>
-    <p>Bonjour ${beneficiaire},</p>
-    <p>Veuillez trouver ci-joint votre attestation de ${typeDoc} pour <strong>${raisonSociale}</strong>.</p>
-    <p>Conservez ce document comme justificatif.</p>
-    ${getContactSection(tenant)}
-    ${getEmailFooter(tenant)}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${tenant.name} - Bon de ${typeDoc}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+    <tr>
+      <td>
+        ${getEmailHeader(tenant)}
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: white; padding: 40px; border-radius: 0 0 12px 12px;">
+          <tr>
+            <td>
+              <h2 style="margin: 0 0 20px 0; color: #18181b; font-size: 22px;">
+                Bon de ${typeDoc}
+              </h2>
+              <p style="margin: 0 0 16px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Bonjour ${beneficiaire},
+              </p>
+              <p style="margin: 0 0 16px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Veuillez trouver ci-joint votre attestation de ${typeDoc} pour <strong>${raisonSociale}</strong>.
+              </p>
+              <p style="margin: 0 0 24px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Conservez ce document comme justificatif.
+              </p>
+              ${getContactSection(tenant)}
+            </td>
+          </tr>
+        </table>
+        ${getEmailFooter(tenant)}
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
   `
 
   const result = await transporter.sendMail({
