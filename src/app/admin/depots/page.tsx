@@ -312,21 +312,6 @@ export default function AdminDepotsPage() {
 
         setDepots(depots.map(d => d.id === editingDepot.id ? { ...d, ...depotData } : d))
         setSuccess('Depot mis a jour avec succes')
-
-        // Lancer la réassignation des clients (force=true car le dépôt a changé)
-        try {
-          const reassignResponse = await fetch('/api/admin/depots/reassign-clients', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ force: true }),
-          })
-          const reassignData = await reassignResponse.json()
-          if (reassignData.reassigned > 0) {
-            setSuccess(`Depot mis a jour. ${reassignData.reassigned} client(s) réassigné(s), ${reassignData.horsZone || 0} hors zone.`)
-          }
-        } catch (reassignErr) {
-          console.error('Erreur réassignation:', reassignErr)
-        }
       } else {
         const { data: newDepot, error: insertError } = await supabase
           .from('depots')
@@ -338,24 +323,25 @@ export default function AdminDepotsPage() {
 
         setDepots([...depots, newDepot])
         setSuccess('Depot cree avec succes')
-
-        // Lancer la réassignation des clients (le nouveau dépôt peut absorber des clients)
-        try {
-          const reassignResponse = await fetch('/api/admin/depots/reassign-clients', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ force: true }),
-          })
-          const reassignData = await reassignResponse.json()
-          if (reassignData.reassigned > 0) {
-            setSuccess(`Depot cree. ${reassignData.reassigned} client(s) assigné(s), ${reassignData.horsZone || 0} hors zone.`)
-          }
-        } catch (reassignErr) {
-          console.error('Erreur réassignation:', reassignErr)
-        }
       }
 
+      // Fermer le dialog immédiatement
       setDialogOpen(false)
+      setEditingDepot(null)
+
+      // Réassignation en arrière-plan (ne bloque pas le dialog)
+      fetch('/api/admin/depots/reassign-clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force: true }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.reassigned > 0) {
+            setSuccess(`${data.reassigned} client(s) réassigné(s), ${data.horsZone || 0} hors zone.`)
+          }
+        })
+        .catch(err => console.error('Erreur réassignation:', err))
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la sauvegarde')
     } finally {
@@ -634,7 +620,7 @@ export default function AdminDepotsPage() {
       )}
 
       {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingDepot(null) }}>
         <DialogContent className="sm:max-w-[690px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
