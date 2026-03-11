@@ -165,7 +165,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   // Dialogs
   const [sendEmailOpen, setSendEmailOpen] = useState(false)
-  const [resetFormOpen, setResetFormOpen] = useState(false)
   const [docRequestOpen, setDocRequestOpen] = useState(false)
   const [docRequestLoading, setDocRequestLoading] = useState(false)
   const [selectedDocs, setSelectedDocs] = useState<string[]>([])
@@ -284,57 +283,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  const handleResetForm = async () => {
-    if (!client) return
-    console.log('handleResetForm called for client:', client.id)
-    setActionLoading(true)
-    setError(null)
-
-    try {
-      console.log('Calling reset-formulaire API...')
-      // Utiliser la nouvelle API de réinitialisation complète
-      const response = await fetch('/api/admin/clients/reset-formulaire', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId: client.id,
-          sendNewCode: true  // Envoyer un nouveau code par email
-        }),
-      })
-
-      console.log('API response status:', response.status)
-      const data = await response.json()
-      console.log('API response data:', data)
-      if (!response.ok) throw new Error(data.error || 'Erreur API')
-
-      // Logger la transition
-      const supabase = createClient()
-      await supabase.from('workflow_transitions').insert({
-        entity_type: 'client',
-        entity_id: client.id,
-        statut_avant: client.statut_commercial,
-        statut_apres: 'formulaire_envoye',
-        effectue_par: user?.id,
-        raison: 'Réinitialisation complète du formulaire par admin',
-      })
-
-      // Afficher le message approprié selon les erreurs d'email
-      if (data.emailErrors && data.emailErrors.length > 0) {
-        setError(`Client réinitialisé, mais erreur d'envoi email: ${data.emailErrors.join(', ')}`)
-      } else {
-        setSuccess('Client réinitialisé ! Un nouveau code et formulaire ont été envoyés par email.')
-      }
-      setResetFormOpen(false)
-
-      // Recharger la page pour obtenir les données fraîches
-      window.location.reload()
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erreur inconnue'
-      setError(message)
-    } finally {
-      setActionLoading(false)
-    }
-  }
 
   // Sync vers Monday
   const handleSyncToMonday = async () => {
@@ -662,8 +610,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
           {/* Droite — actions secondaires + badges statut */}
           <div className="flex flex-wrap items-center gap-2 justify-end">
-            {/* Envoyer formulaire — visible seulement si controle_valide + NAF OUI */}
-            {client.statut_commercial === 'controle_valide' && ['OUI', 'ok', 'oui'].includes(client.validation_naf || '') && (
+            {/* Envoyer formulaire — visible si controle_valide ou formulaire_envoye + NAF OUI */}
+            {['controle_valide', 'formulaire_envoye'].includes(client.statut_commercial || '') && ['OUI', 'ok', 'oui'].includes(client.validation_naf || '') && (
               <Dialog open={sendEmailOpen} onOpenChange={setSendEmailOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white border-0">
@@ -708,41 +656,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 <Copy className="mr-2 h-4 w-4" />
                 Copier lien
               </Button>
-            )}
-
-            {/* Réinitialiser — visible quand le process formulaire est en cours ET NAF validé */}
-            {['formulaire_envoye', 'formulaire_valide', 'code_envoye'].includes(client.statut_commercial || '') && ['OUI', 'ok', 'oui'].includes(client.validation_naf || '') && (
-              <Dialog open={resetFormOpen} onOpenChange={setResetFormOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-orange-300 hover:bg-orange-500/20">
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Réinitialiser
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Réinitialiser le formulaire</DialogTitle>
-                    <DialogDescription asChild>
-                      <div>
-                        <p>Cette action va :</p>
-                        <ul className="list-disc list-inside mt-2 space-y-1">
-                          <li>Générer un nouveau code de validation</li>
-                          <li>Renvoyer le code + formulaire par email</li>
-                          <li>Réinitialiser toutes les étapes du formulaire</li>
-                          <li>Effacer le choix de livraison/dépôt et l&apos;adresse</li>
-                        </ul>
-                      </div>
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setResetFormOpen(false)}>Annuler</Button>
-                    <Button variant="destructive" onClick={handleResetForm} disabled={actionLoading}>
-                      {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Réinitialiser
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
             )}
 
             {/* Séparateur avant badges statut */}
