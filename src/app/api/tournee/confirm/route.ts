@@ -60,6 +60,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 })
     }
 
+    // Si refus, mettre le client en a_relivrer
+    if (action === 'refuser' && livraison.client_id) {
+      await supabase
+        .from('clients')
+        .update({
+          statut_commercial: 'a_relivrer',
+          date_statut: now,
+          updated_at: now,
+        })
+        .eq('id', livraison.client_id)
+    }
+
     // Log workflow transition
     await supabase.from('workflow_transitions').insert({
       entity_type: 'livraison',

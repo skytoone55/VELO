@@ -10,7 +10,7 @@ import { sendTourneeConfirmationEmail } from '@/lib/email/gmail'
  */
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireRole(['super_admin', 'admin'])
+    const auth = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
     if (isAuthError(auth)) return auth
 
     const supabase = createAdminClient()
@@ -183,6 +183,19 @@ export async function POST(request: NextRequest) {
           emailResults.push({ clientId: client.id, success: false, error: 'Pas d\'email' })
         }
       }
+    }
+
+    // Sync statut commercial des clients associés
+    const tourneeClientIds = [...new Set(livraisons.map(l => l.client_id).filter(Boolean) as string[])]
+    if (tourneeClientIds.length > 0) {
+      await supabase
+        .from('clients')
+        .update({
+          statut_commercial: 'en_livraison',
+          date_statut: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .in('id', tourneeClientIds)
     }
 
     // Workflow transition pour chaque client

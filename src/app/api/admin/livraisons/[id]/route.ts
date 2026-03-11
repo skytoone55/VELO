@@ -108,6 +108,30 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Sync statut client si le statut livraison a changé
+    if (updateData.statut) {
+      const LIVRAISON_TO_CLIENT_STATUT: Record<string, string> = {
+        'en_cours': 'en_livraison',
+        'en_livraison': 'en_livraison',
+        'livree': 'livre',
+        'livre': 'livre',
+        'echouee': 'probleme_livraison',
+        'probleme': 'probleme_livraison',
+        'annulee': 'a_relivrer',
+      }
+      const clientStatut = LIVRAISON_TO_CLIENT_STATUT[updateData.statut as string]
+      if (clientStatut && data?.client_id) {
+        await supabase
+          .from('clients')
+          .update({
+            statut_commercial: clientStatut,
+            date_statut: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', data.client_id)
+      }
+    }
+
     return NextResponse.json({ livraison: data })
   } catch (error: unknown) {
     console.error('Erreur PATCH /api/admin/livraisons/[id]:', error)
