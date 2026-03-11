@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
             actif: actif !== undefined ? actif : true,
             depot_ids: depot_ids || [],
             departement: departement || null,
+            est_aussi_livreur: role === 'agent_secteur' ? true : false,
           }
 
           const { error: profileError } = await adminClient
@@ -137,6 +138,7 @@ export async function POST(request: NextRequest) {
     if (role === 'agent_secteur') {
       profileData.departement = departement || null
       profileData.depot_ids = depot_ids || []
+      profileData.est_aussi_livreur = true
     } else if (role === 'livreur' && agent_ids?.length) {
       // Déduire département et dépôts des agents secteur assignés
       const { data: agents } = await adminClient
