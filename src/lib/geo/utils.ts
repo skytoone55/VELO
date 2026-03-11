@@ -353,10 +353,24 @@ export function classifyClientZone(
       }
     }
 
-    // Hors zone mais on garde l'info du dépôt le plus proche
+    // Hors zone — assigner quand meme le depot le plus proche
+    // Retrait prioritaire sur logistique
+    const nearestRetraitHZ = nearestRetrait
+    if (nearestRetraitHZ && (!nearestLogistique || nearestRetraitHZ.distanceKm <= nearestLogistique.distanceKm)) {
+      return {
+        depotRetraitId: nearestRetraitHZ.depot.id,
+        depotLogistiqueId: null,
+        modeLivraison: 'retrait',
+        zoneLivraison: 'hors_zone',
+        depotInfo: nearestRetraitHZ.depot,
+        distanceKm: nearestRetraitHZ.distanceKm,
+        horsZone: true,
+      }
+    }
+
     return {
       depotRetraitId: null,
-      depotLogistiqueId: null,
+      depotLogistiqueId: nearestLogistique.depot.id,
       modeLivraison: 'domicile',
       zoneLivraison: 'hors_zone',
       depotInfo: nearestLogistique.depot,
@@ -365,7 +379,21 @@ export function classifyClientZone(
     }
   }
 
-  // 3. Aucun dépôt trouvé
+  // 3. Aucun depot — chercher dans tous les depots confondus
+  const nearestAny = findNearestDepot(lat, lng, depots)
+  if (nearestAny) {
+    const isRetrait = nearestAny.depot.type === 'retrait'
+    return {
+      depotRetraitId: isRetrait ? nearestAny.depot.id : null,
+      depotLogistiqueId: isRetrait ? null : nearestAny.depot.id,
+      modeLivraison: isRetrait ? 'retrait' : 'domicile',
+      zoneLivraison: 'hors_zone',
+      depotInfo: nearestAny.depot,
+      distanceKm: nearestAny.distanceKm,
+      horsZone: true,
+    }
+  }
+
   return {
     depotRetraitId: null,
     depotLogistiqueId: null,
