@@ -484,7 +484,7 @@ async function generateAttestation(data: {
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   data.checklistItems.forEach((item) => {
-    doc.text(`✓ ${item}`, 25, y)
+    doc.text(`> ${item}`, 25, y)
     y += 5
   })
   y += 4
@@ -1209,9 +1209,9 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
               <p><strong>Client :</strong> {livraison.client.raison_sociale}</p>
               <p><strong>Vélos livrés :</strong> {nbVelos}</p>
               <p><strong>Codes FNUCI :</strong> {fnuciList.map((f) => f.code).join(', ')}</p>
-              <p><strong>Checklist :</strong> {Object.values(checklist).every(Boolean) ? '✓ Complète' : '✗ Incomplète'}</p>
-              <p><strong>Photo ID :</strong> {photoIdentite ? '✓' : '✗'}</p>
-              <p><strong>Signature :</strong> {signature ? '✓' : '✗'}</p>
+              <p><strong>Checklist :</strong> {Object.values(checklist).every(Boolean) ? 'OK Complète' : 'X Incomplète'}</p>
+              <p><strong>Photo ID :</strong> {photoIdentite ? 'OK' : 'X'}</p>
+              <p><strong>Signature :</strong> {signature ? 'OK' : 'X'}</p>
             </CardContent>
           </Card>
           {error && (
