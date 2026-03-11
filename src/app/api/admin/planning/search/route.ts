@@ -21,24 +21,26 @@ export async function GET(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    let q = adminClient
+    const q = adminClient
       .from('clients')
-      .select('id, raison_sociale, velo_devis, velo_valide, telephone, email, statut_commercial, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville')
+      .select('id, raison_sociale, velo_devis, velo_valide, telephone, email, statut_commercial, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville, depot_logistique_id, depot_retrait_id')
       .eq('statut_commercial', 'a_livrer')
       .or(`raison_sociale.ilike.%${query}%,telephone.ilike.%${query}%,email.ilike.%${query}%`)
 
-    if (depotId) {
-      q = q.or(`depot_logistique_id.eq.${depotId},depot_retrait_id.eq.${depotId}`)
-    }
-
-    const { data, error } = await q.limit(10)
+    const { data, error } = await q.limit(50)
 
     if (error) {
       console.error('Erreur search planning:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ clients: data || [] })
+    // Filtrer par depot côté JS (évite les problèmes de double .or() PostgREST)
+    let results = data || []
+    if (depotId) {
+      results = results.filter(c => c.depot_logistique_id === depotId || c.depot_retrait_id === depotId)
+    }
+
+    return NextResponse.json({ clients: results.slice(0, 10) })
   } catch (error) {
     console.error('Erreur API planning search:', error)
     return NextResponse.json(
