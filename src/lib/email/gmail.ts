@@ -188,11 +188,15 @@ export async function sendCodeValidationEmail(
               <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
                 <tr>
                   <td align="center">
-                    <div style="display: inline-block; background: linear-gradient(135deg, ${tenant.branding.colors.secondary} 0%, ${tenant.branding.colors.secondaryDark} 100%); padding: 24px 48px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                      <span style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: bold; color: white; letter-spacing: 8px;">
-                        ${code}
-                      </span>
-                    </div>
+                    <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                      <tr>
+                        <td align="center" style="background-color: ${tenant.branding.colors.secondaryDark}; padding: 24px 48px; border-radius: 12px;">
+                          <span style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: bold; color: #ffffff; letter-spacing: 8px;">
+                            ${code}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
