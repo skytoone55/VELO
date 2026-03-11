@@ -118,12 +118,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Role-based data filtering
-    // Agent voit uniquement les clients de son secteur (depot logistique)
-    // Le depot_retrait est un point de collecte client, pas un secteur agent
+    // Agent voit les clients lies a ses depots (retrait ou logistique)
     if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
       const depotList = currentUser.depot_ids.join(',')
       query = query.or(
-        `depot_logistique_id.in.(${depotList})`,
+        `depot_retrait_id.in.(${depotList}),depot_logistique_id.in.(${depotList})`,
         { referencedTable: 'client' }
       )
     } else if (currentUser.role === 'livreur') {
@@ -160,4 +159,3 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-}
