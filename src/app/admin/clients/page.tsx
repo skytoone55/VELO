@@ -235,13 +235,13 @@ export default function AdminClientsPage() {
 
   // Load depots for zone calculation
   useEffect(() => {
-    const supabase = createClient()
-    supabase
-      .from('depots')
-      .select('id, nom, latitude, longitude, rayon_couverture_km, type, agence')
-      .then(({ data }) => {
-        if (data) setDepots(data as DepotWithCoords[])
+    fetch('/api/depots')
+      .then(r => r.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : data.depots || []
+        if (list.length) setDepots(list as DepotWithCoords[])
       })
+      .catch(() => {})
   }, [])
 
   // Debounce pour la recherche (éviter trop de requêtes)
