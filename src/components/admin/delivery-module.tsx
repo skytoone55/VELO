@@ -50,6 +50,8 @@ export interface LivraisonWithClient {
   client_id: string
   mode_livraison: string
   statut: string | null
+  date_livraison?: string | null
+  creneau_date?: string | null
   client: {
     id: string
     raison_sociale: string
@@ -795,8 +797,10 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
       const client = livraison.client
       const beneficiaire = [client.contact_prenom, client.contact_nom].filter(Boolean).join(' ') || client.raison_sociale
       const adresse = [client.adresse_societe_ligne1, client.adresse_societe_cp, client.adresse_societe_ville].filter(Boolean).join(', ')
-      const now = new Date()
-      const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      const deliveryDate = livraison.date_livraison ? new Date(livraison.date_livraison)
+        : livraison.creneau_date ? new Date(livraison.creneau_date + 'T00:00:00')
+        : new Date()
+      const dateStr = deliveryDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
       const doc = await generateAttestation({
         clientName: client.raison_sociale,
@@ -854,7 +858,8 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
     const a = document.createElement('a')
     a.href = url
     const dlMode = livraison.mode_livraison === 'retrait' ? 'retrait' : 'livraison'
-    a.download = `attestation-${dlMode}-${livraison.client.raison_sociale.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
+    const refRetina = livraison.client.reference_retina || livraison.client.raison_sociale.replace(/[^a-zA-Z0-9]/g, '_')
+    a.download = `${refRetina}-BL.pdf`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -1209,9 +1214,9 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
               <p><strong>Client :</strong> {livraison.client.raison_sociale}</p>
               <p><strong>Vélos livrés :</strong> {nbVelos}</p>
               <p><strong>Codes FNUCI :</strong> {fnuciList.map((f) => f.code).join(', ')}</p>
-              <p><strong>Checklist :</strong> {Object.values(checklist).every(Boolean) ? 'OK Complète' : 'X Incomplète'}</p>
-              <p><strong>Photo ID :</strong> {photoIdentite ? 'OK' : 'X'}</p>
-              <p><strong>Signature :</strong> {signature ? 'OK' : 'X'}</p>
+              <p><strong>Checklist :</strong> {Object.values(checklist).every(Boolean) ? '✓ Complète' : '✗ Incomplète'}</p>
+              <p><strong>Photo ID :</strong> {photoIdentite ? '✓' : '✗'}</p>
+              <p><strong>Signature :</strong> {signature ? '✓' : '✗'}</p>
             </CardContent>
           </Card>
           {error && (

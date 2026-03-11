@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   Loader2, Search, Truck, MapPin, Calendar, Phone, RefreshCw,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
-  Eye, X, Send, Mail, CheckCircle, ChevronDown, CalendarCheck,
+  Eye, X, Send, Mail, CheckCircle, ChevronDown, CalendarCheck, Copy,
 } from 'lucide-react'
 import {
   Popover,
@@ -649,15 +649,15 @@ export default function AdminLivraisonsPage() {
                     />
                   </TableHead>
                   <SortableHeader label="Société" column="created_at" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
-                  <TableHead className="hidden xl:table-cell">Réf. Retina</TableHead>
-                  <TableHead className="hidden xl:table-cell">Tél.</TableHead>
-                  <TableHead className="hidden lg:table-cell">Commercial</TableHead>
-                  <TableHead className="hidden md:table-cell">Dép.</TableHead>
-                  <TableHead className="hidden md:table-cell">Zone</TableHead>
-                  <TableHead className="hidden md:table-cell">Dépôt</TableHead>
+                  <SortableHeader label="Réf. Retina" column="reference_retina" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
+                  <SortableHeader label="Tél." column="telephone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
+                  <SortableHeader label="Commercial" column="commercial" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
+                  <SortableHeader label="Dép." column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
+                  <SortableHeader label="Zone" column="zone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
+                  <SortableHeader label="Dépôt" column="depot" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="Mode" column="mode_livraison" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
-                  <TableHead className="hidden lg:table-cell">Adresse</TableHead>
-                  <TableHead className="hidden lg:table-cell w-14 text-center">Vélos</TableHead>
+                  <SortableHeader label="Adresse" column="adresse" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
+                  <SortableHeader label="Vélos" column="velos" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell w-14 text-center" />
                   <SortableHeader label="Date prévue" column="creneau_date" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <SortableHeader label="Statut" column="statut" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <TableHead className="text-right">Actions</TableHead>
@@ -678,9 +678,20 @@ export default function AdminLivraisonsPage() {
                       <div className="text-xs text-muted-foreground truncate">{liv.client?.siret}</div>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
-                      <span className="text-xs font-mono text-muted-foreground">
-                        {liv.client?.reference_retina || '-'}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-mono text-muted-foreground">
+                          {liv.client?.reference_retina || '-'}
+                        </span>
+                        {liv.client?.reference_retina && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(liv.client!.reference_retina!) }}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                            title="Copier"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
                       {liv.client?.telephone ? (
@@ -759,9 +770,9 @@ export default function AdminLivraisonsPage() {
                             liv.confirmation_statut === 'refusee' ? 'bg-red-100 text-red-800' :
                             'bg-yellow-100 text-yellow-800'
                           } variant="outline">
-                            {liv.confirmation_statut === 'confirmee' ? '\u2713 Confirmée' :
-                             liv.confirmation_statut === 'refusee' ? '\u2717 Refusée' :
-                             '\u23F3 En attente'}
+                            {liv.confirmation_statut === 'confirmee' ? '✓ Confirmée' :
+                             liv.confirmation_statut === 'refusee' ? '✗ Refusée' :
+                             '⏳ En attente'}
                           </Badge>
                         )}
                       </div>

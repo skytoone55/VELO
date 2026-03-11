@@ -235,13 +235,13 @@ export default function AdminClientsPage() {
 
   // Load depots for zone calculation
   useEffect(() => {
-    fetch('/api/depots')
-      .then(r => r.json())
-      .then(data => {
-        const list = Array.isArray(data) ? data : data.depots || []
-        if (list.length) setDepots(list as DepotWithCoords[])
+    const supabase = createClient()
+    supabase
+      .from('depots')
+      .select('id, nom, latitude, longitude, rayon_couverture_km, type, agence')
+      .then(({ data }) => {
+        if (data) setDepots(data as DepotWithCoords[])
       })
-      .catch(() => {})
   }, [])
 
   // Debounce pour la recherche (éviter trop de requêtes)
@@ -794,8 +794,8 @@ export default function AdminClientsPage() {
                   <SortableHeader label="Dép." column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="Velos" column="velo_devis" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="NAF" column="validation_naf" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
-                  <TableHead className="hidden xl:table-cell">Réf. Retina</TableHead>
-                  <TableHead className="hidden lg:table-cell">Dépôt</TableHead>
+                  <SortableHeader label="Ref. Retina" column="reference_retina" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
+                  <SortableHeader label="Dépôt" column="depot_logistique_id" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
                   <SortableHeader label="Statut" column="statut_commercial" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <SortableHeader label="Zone" column="type_de_zone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
                   <TableHead className="text-right">Actions</TableHead>
@@ -882,7 +882,7 @@ export default function AdminClientsPage() {
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       {(() => {
-                        const depot = depots.find((d: any) => d.id === (client.depot_logistique_id || client.depot_retrait_id))
+                        const depot = depots.find((d: any) => d.id === client.depot_logistique_id)
                         return depot ? (
                           <Badge variant="outline" className="text-xs">{depot.nom}</Badge>
                         ) : (

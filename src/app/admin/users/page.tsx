@@ -53,6 +53,7 @@ import {
 import {
   Loader2, Search, Filter, Users, UserPlus, Check, X, AlertCircle,
   MoreHorizontal, Pencil, Trash2, KeyRound, LogIn, Copy, Building2,
+  ArrowUp, ArrowDown, ArrowUpDown,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { UsersProfile, UserRole } from '@/lib/types/database'
@@ -133,6 +134,20 @@ interface DepotOption {
   nom: string
 }
 
+function SortableHeader({ label, column, currentSort, currentOrder, onSort }: {
+  label: string; column: string; currentSort: string; currentOrder: 'asc' | 'desc'; onSort: (col: string) => void
+}) {
+  const isActive = currentSort === column
+  return (
+    <TableHead className="cursor-pointer select-none hover:bg-muted/50" onClick={() => onSort(column)}>
+      <div className="flex items-center gap-1">
+        {label}
+        {isActive ? (currentOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+      </div>
+    </TableHead>
+  )
+}
+
 export default function AdminUsersPage() {
   const user = useAdminUser()
   const [users, setUsers] = useState<UsersProfile[]>([])
@@ -140,6 +155,8 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
+  const [sortBy, setSortBy] = useState<string>('')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -207,6 +224,23 @@ export default function AdminUsersPage() {
     const matchesRole = roleFilter === 'all' || u.role === roleFilter
 
     return matchesSearch && matchesRole
+  })
+
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(column)
+      setSortOrder('asc')
+    }
+  }
+
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    if (!sortBy) return 0
+    const aVal = (a as any)[sortBy] ?? ''
+    const bVal = (b as any)[sortBy] ?? ''
+    const cmp = String(aVal).localeCompare(String(bVal), 'fr', { numeric: true })
+    return sortOrder === 'asc' ? cmp : -cmp
   })
 
   const openCreateDialog = () => {
@@ -486,17 +520,18 @@ export default function AdminUsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Utilisateur</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Territoire</TableHead>
+                  <SortableHeader label="Utilisateur" column="nom" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Email" column="email" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Téléphone" column="telephone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Rôle" column="role" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Territoire" column="territoire" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <TableHead>Dépôts</TableHead>
-                  <TableHead>Actif</TableHead>
+                  <SortableHeader label="Actif" column="actif" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((u) => (
+                {sortedUsers.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell>
                       <div className="font-medium">
@@ -506,6 +541,7 @@ export default function AdminUsersPage() {
                     <TableCell className="text-sm text-muted-foreground">
                       {u.email}
                     </TableCell>
+                    <TableCell className="text-sm">{u.telephone || '-'}</TableCell>
                     <TableCell>
                       <Badge className={roleColors[u.role]}>
                         {getRoleLabel(u.role as UserRole)}
