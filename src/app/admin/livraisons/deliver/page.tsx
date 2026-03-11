@@ -107,8 +107,8 @@ function DeliverContent() {
     <div className="max-w-lg mx-auto py-4 px-4">
       <DeliveryModule
         livraison={livraison}
-        onComplete={() => router.push('/admin/livraisons/livreur')}
-        onClose={() => router.back()}
+        onComplete={() => router.push('/admin/livraisons')}
+        onClose={() => router.push('/admin/livraisons')}
         fullPage
       />
     </div>

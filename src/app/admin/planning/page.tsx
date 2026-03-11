@@ -466,16 +466,10 @@ function PlanningContent() {
 
     setPlacementLoading(true)
     try {
-      const supabase = createClient()
-      let q = supabase
-        .from('clients')
-        .select('id, raison_sociale, velo_devis, velo_valide, telephone, email, statut_commercial, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville')
-        .eq('statut_commercial', 'a_livrer')
-        .or(`raison_sociale.ilike.%${query}%,telephone.ilike.%${query}%,email.ilike.%${query}%`)
-      if (selectedDepotId) {
-        q = q.or(`depot_logistique_id.eq.${selectedDepotId},depot_retrait_id.eq.${selectedDepotId}`)
-      }
-      const { data } = await q.limit(10)
+      const params = new URLSearchParams({ q: query })
+      if (selectedDepotId) params.set('depot', selectedDepotId)
+      const res = await fetch(`/api/admin/planning/search?${params}`)
+      const { clients: data } = await res.json()
       setPlacementResults((data || []) as PlanningClient[])
     } catch (err) {
       console.error('Erreur recherche:', err)
@@ -955,33 +949,39 @@ function PlanningContent() {
                 </div>
 
                 {/* Center: Depot + Livreur selectors */}
-                <div className="flex items-center gap-2 flex-wrap justify-center">
-                  <Select value={selectedDepotId} onValueChange={setSelectedDepotId}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Sélectionner un dépôt" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {depots.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>
-                          {d.nom} ({d.type})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {livreurs.length > 0 && (
-                    <Select value={selectedLivreurId} onValueChange={setSelectedLivreurId}>
-                      <SelectTrigger className="w-44">
-                        <SelectValue placeholder="Choisir un livreur" />
+                <div className="flex items-start gap-10 flex-wrap justify-center">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground font-medium">Dépôt</span>
+                    <Select value={selectedDepotId} onValueChange={setSelectedDepotId}>
+                      <SelectTrigger className="w-56">
+                        <SelectValue placeholder="Sélectionner un dépôt" />
                       </SelectTrigger>
                       <SelectContent>
-                        {livreurs.map((l) => (
-                          <SelectItem key={l.id} value={l.id}>
-                            {l.prenom} {l.nom}
+                        {depots.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.nom} ({d.type})
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {livreurs.length > 0 && (
+                    <div className="flex flex-col items-center gap-1.5">
+                      <span className="text-xs text-muted-foreground font-medium">Livreur</span>
+                      <Select value={selectedLivreurId} onValueChange={setSelectedLivreurId}>
+                        <SelectTrigger className="w-56">
+                          <SelectValue placeholder="Choisir un livreur" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {livreurs.map((l) => (
+                            <SelectItem key={l.id} value={l.id}>
+                              {l.prenom} {l.nom}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   )}
 
                   {livreurs.length > 0 && !selectedLivreurId && (

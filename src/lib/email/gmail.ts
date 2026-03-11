@@ -13,7 +13,10 @@ async function createTransporter() {
         user: process.env.SMTP_USER || process.env.GMAIL_USER,
         pass: process.env.SMTP_PASSWORD,
       },
-    })
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    } as nodemailer.TransportOptions)
   }
 
   // Mode 2 : Gmail OAuth2 (ECO-VOLT)
@@ -27,7 +30,13 @@ async function createTransporter() {
     refresh_token: process.env.GMAIL_REFRESH_TOKEN
   })
 
-  const accessToken = await oauth2Client.getAccessToken()
+  // Timeout sur getAccessToken pour éviter un hang infini
+  const accessToken = await Promise.race([
+    oauth2Client.getAccessToken(),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('OAuth2 getAccessToken timeout (10s)')), 10000)
+    ),
+  ])
 
   return nodemailer.createTransport({
     service: 'gmail',
@@ -39,7 +48,9 @@ async function createTransporter() {
       refreshToken: process.env.GMAIL_REFRESH_TOKEN,
       accessToken: accessToken.token || undefined,
     },
-  })
+    connectionTimeout: 10000,
+    socketTimeout: 15000,
+  } as nodemailer.TransportOptions)
 }
 
 interface EmailOptions {

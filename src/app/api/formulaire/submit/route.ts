@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       .update({
         statut_formulaire: 'formulaire_complete',
         statut_commercial: 'a_livrer',
+        preferences_livraison: data.preferencesLivraison || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', clientId)
@@ -135,6 +136,8 @@ export async function POST(request: NextRequest) {
         modeLivraison: modeLivraison as 'domicile' | 'retrait',
         adresseLivraison: modeLivraison === 'domicile' ? data.adresseLivraison : undefined,
         depotRetrait: depotRetraitInfo || undefined,
+        complementAdresse: data.complementAdresse || undefined,
+        preferencesLivraison: data.preferencesLivraison || undefined,
         userCreated: false,
       })
       console.log(`Email récapitulatif envoyé à ${emailDestinataire}`)

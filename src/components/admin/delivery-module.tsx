@@ -1284,7 +1284,6 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
             className="w-full"
             onClick={() => {
               onComplete()
-              onClose()
             }}
           >
             Fermer
