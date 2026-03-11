@@ -8,6 +8,7 @@
 | Date | Modifications |
 |------|---------------|
 | 2026-03-11 | Auth guards ajoutes sur 13 routes API, filtrage role-based sur 5 routes, fix RLS monday_field_mapping/monday_boards, database.ts synced (3 tables + 14 colonnes), FNUCI/NAF sort + pagination, livraisons page UI cleanup |
+| 2026-03-11 (v2) | Refonte filtrage agent_secteur par depot_ids (5 routes), sync statut client/livraison (C1+C2+C3), tournees accessibles agent/livreur (lecture), bulk statut formulaire_envoye, envoi formulaire livraison → en_livraison, filtre depot dual (retrait+logistique), RLS livraisons depot_ids, NAF affiche fiche client |
 
 ---
 
@@ -51,7 +52,7 @@ Meme codebase, 2 deployments Vercel avec des env vars differentes. Le tenant act
 ### Differences cles
 
 | Critere | PPE Energie | Ecovolt |
-|---------|-------------|----------|
+|---------|-------------|---------|
 | Supabase | zfpzhhdovxllchlsihcr | irpnllwlxivlylclfjwd |
 | MCP alias | supabase-ppe | supabase-mz |
 | Compte Monday | crm-oreka | alexandredelannays-team |
@@ -267,6 +268,10 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 - `idx_livraisons_tournee_id` ON (tournee_id)
 - `idx_livraisons_confirmation_statut` ON (confirmation_statut)
 
+**RLS :** Enabled. Policies agent_secteur (ajoutees 2026-03-11) :
+- Condition : `depot_retrait_id = ANY(depot_ids) OR depot_logistique_id = ANY(depot_ids)` en plus de `departement = territoire`
+- Applique sur PPE (zfpzhhdovxllchlsihcr) et Ecovolt (irpnllwlxivlylclfjwd)
+
 ---
 
 #### 3.2.4 `users_profile` (16 colonnes)
@@ -311,6 +316,7 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 
 **RLS :** Enabled.
 - `tournees_admin` : ALL TO authenticated USING role IN ('super_admin', 'admin')
+- `tournees_read_agent_livreur` : SELECT TO authenticated USING role IN ('agent_secteur', 'livreur')
 
 **Index :** `idx_tournees_date` ON (date)
 
@@ -528,7 +534,7 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 ### 3.3 Relations (Foreign Keys)
 
 | FK Name | Table source | Colonne | Table cible | Colonne cible | ON DELETE |
-|---------|-------------|---------|-------------|---------------|----------|
+|---------|-------------|---------|-------------|---------------|-----------|
 | `audit_log_user_id_fkey` | audit_log | user_id | users_profile | id | (default) |
 | (implicite) | clients | depot_retrait_id | depots | id | SET NULL |
 | (implicite) | clients | depot_logistique_id | depots | id | SET NULL |
@@ -554,7 +560,7 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 Un bucket `documents` (public) cree par la migration `20260310_attestation_pdf_url.sql`.
 Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
-### 3.5 Migrations (20 fichiers, ordre chronologique)
+### 3.5 Migrations (21 fichiers, ordre chronologique)
 
 | # | Fichier | Description |
 |---|---------|-------------|
@@ -578,6 +584,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 | 18 | `20260310_heure_precise.sql` | heure_precise TEXT sur livraisons |
 | 19 | `20260310_attestation_pdf_url.sql` | attestation_pdf_url + bucket storage documents |
 | 20 | `20260311_naf_codes_complete.sql` | Restructure naf_codes, insere 377 codes NAF |
+| 21 | `20260311_fix_agent_rls_depot_ids.sql` | RLS livraisons : ajout condition `depot_retrait_id = ANY(depot_ids) OR depot_logistique_id = ANY(depot_ids)` pour agent_secteur (PPE + Ecovolt) |
 
 ---
 
@@ -589,8 +596,8 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 1 | `GET /api/admin/clients` | GET | Auth manuelle (role != client) | Liste clients avec filtre territoire |
-| 2 | `GET /api/admin/clients/[id]` | GET | Auth manuelle (role != client) | Fiche client + livraisons + depots + distance |
+| 1 | `GET /api/admin/clients` | GET | Auth manuelle (role != client) | Liste clients avec filtre depot_ids (agent_secteur) |
+| 2 | `GET /api/admin/clients/[id]` | GET | Auth manuelle (role != client) | Fiche client + livraisons + depots + distance + code NAF |
 | 3 | `PUT /api/admin/clients/[id]` | PUT | super_admin, admin, agent_secteur | Modifier client (30+ champs) + sync Monday |
 | 4 | `DELETE /api/admin/clients/[id]` | DELETE | super_admin uniquement | Suppression cascade (10 tables) |
 | 5 | `POST /api/admin/clients/[id]/sync-monday` | POST | super_admin, admin | Sync forcee vers Monday |
@@ -604,8 +611,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 **GET /api/admin/clients** :
 - Tables : clients, users_profile
-- Filtres : Territoire (admin -> departement, agent_secteur -> territoire)
-- Filtrage role : agent_secteur ne voit que les clients de ses depot_ids
+- Filtrage role : agent_secteur filtre par `depot_ids` (via `depot_retrait_id` / `depot_logistique_id` des clients). Admin avec `territoire='FR'` = acces total (guard `!== 'FR'`)
 - Pagination : NON
 - Tri : created_at DESC
 
@@ -613,6 +619,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 - Retour : { client, livraisons[], depotRetrait, depotLogistique, distanceKm }
 - Tables : clients, users_profile, livraisons, depots, distances_cache
 - 4 requetes separees
+- Filtrage agent_secteur : verifie que le client appartient a un depot du `depot_ids` de l'agent (via `depot_retrait_id` ou `depot_logistique_id`)
 
 **PUT /api/admin/clients/[id]** :
 - Params : 30+ champs modifiables (raison_sociale, siret, email, telephone, adresse, code_ape, velo_devis, statut_commercial, validation_naf, notes_internes, preferences_livraison, etc.)
@@ -622,7 +629,8 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 - Cascade manuelle sur 10 tables : clients, livraisons, distances_cache, clients_hors_zone, email_alerts, formulaires_log, workflow_transitions, user_societes, sync_monday_log, audit_log
 
 **POST /api/admin/clients/bulk** :
-- Actions : send_form (garde NAF OUI, geocode, assign depot, email, sync Monday) / change_status (10 statuts valides)
+- Actions : send_form (garde NAF OUI, geocode, assign depot, email, sync Monday, met `statut_commercial: 'formulaire_envoye'`) / change_status (10 statuts valides)
+- Filtrage agent_secteur : filtre par `depot_ids` (via `depot_retrait_id` / `depot_logistique_id`)
 
 **POST /api/admin/clients/resend-code** :
 - Side effects : Regenere code, reset tentatives ENEMAT, email, sync Monday (statut=code_envoye)
@@ -637,7 +645,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 **POST /api/admin/clients/send-formulaire-livraison** :
 - Gardes : statut=a_livrer, livraison existe, creneau pas encore choisi
-- Side effects : Token 64 hex, stocke dans livraisons.token_livraison, email
+- Side effects : Token 64 hex, stocke dans livraisons.token_livraison, email, met `statut_commercial: 'en_livraison'`
 
 ---
 
@@ -681,12 +689,12 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 21 | `GET /api/admin/livraisons` | GET | requireRole (tous admin) | Liste livraisons (limit 200). agent_secteur filtre par depot_id, livreur filtre par livreur_id |
-| 22 | `GET/PATCH /api/admin/livraisons/[id]` | GET, PATCH | requireRole | Detail / modifier livraison. 403 si livreur/agent tente d'acceder a une livraison d'un autre |
+| 21 | `GET /api/admin/livraisons` | GET | requireRole (tous admin) | Liste livraisons (limit 200). agent_secteur filtre par depot_ids (via join client depot_retrait_id/depot_logistique_id), livreur filtre par livreur_id |
+| 22 | `GET/PATCH /api/admin/livraisons/[id]` | GET, PATCH | requireRole | Detail / modifier livraison. 403 si livreur/agent tente d'acceder a une livraison d'un autre. PATCH sync `clients.statut_commercial` via LIVRAISON_TO_CLIENT_STATUT |
 | 23 | `PATCH /api/admin/livraisons/[id]/status` | PATCH | requireRole (tous admin) | Changement statut avec machine a etats. Verification acces livreur/agent |
 | 24 | `POST /api/admin/livraisons/[id]/deliver` | POST | requireRole | Livraison complete (FNUCI, signature, photos, PDF). Verification assignation livreur |
 | 25 | `POST /api/admin/livraisons/[id]/send-bon` | POST | requireRole | Envoyer bon de livraison par email |
-| 26 | `POST /api/admin/livraisons/send-mail-livraison` | POST | requireRole | Email notification livraison |
+| 26 | `POST /api/admin/livraisons/send-mail-livraison` | POST | requireRole | Email notification livraison + met `statut_commercial: 'en_livraison'` |
 | 27 | `POST /api/admin/livraisons/send-mail-planning` | POST | requireRole | Batch email planning |
 | 28 | `POST /api/admin/livraisons/send-confirmation-creneau` | POST | requireRole | Email confirmation creneau |
 
@@ -696,10 +704,20 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 - en_cours -> {livree, probleme, annulee}
 - probleme -> {en_cours, annulee}
 
-**Cascade statut client :**
+**Cascade statut client (LIVRAISON_TO_CLIENT_STATUT) :**
+- en_attente -> a_livrer
+- programmee -> en_livraison
 - en_cours -> en_livraison
 - livree -> livre
 - probleme -> probleme_livraison
+- annulee -> a_relivrer
+
+**Sync declencheurs supplementaires :**
+- `POST /api/admin/tournees` : creation tournee → clients associes passent en `statut_commercial: 'en_livraison'`
+- `POST /api/tournee/confirm` (refus) : client passe en `statut_commercial: 'a_relivrer'`
+- `POST /api/admin/clients/send-formulaire-livraison` : client passe en `statut_commercial: 'en_livraison'`
+- `POST /api/admin/livraisons/send-mail-livraison` : client passe en `statut_commercial: 'en_livraison'`
+- `POST /api/admin/clients/bulk` (send_form) : clients passent en `statut_commercial: 'formulaire_envoye'`
 
 ---
 
@@ -716,7 +734,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 31 | `GET/POST /api/admin/tournees` | GET, POST | super_admin, admin | CRUD tournees + assignation livraisons |
+| 31 | `GET/POST /api/admin/tournees` | GET, POST | GET: super_admin, admin, agent_secteur, livreur (lecture seule). POST: super_admin, admin | CRUD tournees + assignation livraisons. POST sync `statut_commercial: 'en_livraison'` sur clients associes |
 
 ---
 
@@ -742,7 +760,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 36 | `GET /api/admin/map/data` | GET | Auth manuelle | Depots + clients pour carte Google Maps |
+| 36 | `GET /api/admin/map/data` | GET | Auth manuelle | Depots + clients pour carte Google Maps. Filtrage agent_secteur par `depot_ids` (via `depot_retrait_id` / `depot_logistique_id`) |
 
 ---
 
@@ -760,7 +778,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 38 | `GET /api/clients` | GET | requireRole | Liste clients paginee (7 filtres, 12 tris) |
+| 38 | `GET /api/clients` | GET | requireRole | Liste clients paginee (7 filtres, 12 tris). Filtre depot verifie `depot_retrait_id` ET `depot_logistique_id` |
 | 39 | `GET /api/clients/stats` | GET | super_admin, admin, agent_secteur | Stats globales clients |
 | 40 | `GET /api/clients/commercials` | GET | super_admin, admin, agent_secteur | Liste emails commerciaux |
 | 41 | `GET /api/clients/statuses` | GET | **AUCUN** | Liste statuts distincts |
@@ -827,7 +845,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 56 | `GET /api/livraisons` | GET | requireRole (tous admin) | Liste livraisons paginee (6 filtres) |
+| 56 | `GET /api/livraisons` | GET | requireRole (tous admin) | Liste livraisons paginee (6 filtres). agent_secteur filtre par `depot_ids` via inner join `{ referencedTable: 'client' }` (evite limite URL avec trop d'IDs) |
 | 57 | `GET /api/livraisons/confirm-creneau` | GET | Public (token) | Confirmer creneau livraison |
 | 58 | `GET /api/livraisons/cancel-creneau` | GET | Public (token) | Annuler creneau (client -> anomalie) |
 | 59 | `GET /api/livraisons/info-creneau` | GET | Public (token) | Infos creneau livraison |
@@ -846,7 +864,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 61 | `GET/POST /api/tournee/confirm` | GET, POST | Public (token) | Confirmer/refuser tournee |
+| 61 | `GET/POST /api/tournee/confirm` | GET, POST | Public (token) | Confirmer/refuser tournee. Refus → `statut_commercial: 'a_relivrer'` |
 
 ---
 
@@ -901,7 +919,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 | API | GET /api/clients, GET /api/clients/commercials, GET /api/clients/departements, GET /api/clients/stats, POST /api/admin/clients/send-formulaire, PUT /api/admin/clients/{id}, DELETE /api/admin/clients/{id}, POST /api/admin/clients/bulk |
 | Colonnes | Checkbox, Societe (raison_sociale + siret), Ref. Retina, Email, Tel, Commercial, Dep., Zone, Depot, Velos valides, NAF, Statut, Actions |
 | Filtres | Search (debounce 600ms), Statut, NAF (valide/bloque/en_attente), Departement, Zone, Commercial, Depot, Page size (20/50/100/250/500) |
-| Actions | Envoyer formulaire, Voir fiche, Generer lien, Modifier (dialog), Supprimer (confirm), Bulk (formulaire, statut) |
+| Actions | Envoyer formulaire, Voir fiche, Generer lien, Modifier (dialog), Supprimer (confirm), Bulk (formulaire uniquement — bouton "Changer statut" en masse supprime, tous les statuts changent via process) |
 | Tri | updated_at (defaut desc), raison_sociale, siret, departement, velo_valide, statut_commercial, validation_naf |
 | Pagination | OUI cote serveur (20/50/100/250/500) |
 | Roles | super_admin, admin, agent_secteur |
@@ -914,7 +932,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 | Critere | Detail |
 |---------|--------|
 | API | GET /api/admin/clients/{id}, POST send-formulaire, POST reset-formulaire, POST send-formulaire-livraison, POST send-relance, POST request-documents, PATCH /api/admin/clients/{id}, Supabase direct: fnuci (PPE only), users_profile |
-| Sections | Identite, Contact, Adresse, Statut commercial, Statut process, Validation NAF, Zone, Depot, Velos, FNUCI (PPE only), Preferences livraison (inline edit), Complement adresse (inline edit), Historique livraisons, Mini-carte |
+| Sections | Identite (+ code NAF sous SIRET), Contact, Adresse, Statut commercial, Statut process, Validation NAF, Zone, Depot, Velos, FNUCI (PPE only), Preferences livraison (inline edit), Complement adresse (inline edit), Historique livraisons, Mini-carte |
 | Actions | Envoyer formulaire, Reinitialiser formulaire, Mail livraison, Formulaire retrait, Relance, Demander documents, Edit preferences/complement (inline) |
 | Roles | super_admin, admin, agent_secteur |
 
@@ -1147,7 +1165,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 | **TOTAL** | **34 pages** |
 
 | Feature | Pages avec |
-|---------|----------|
+|---------|-----------|
 | Pagination cote serveur | 4 (clients, livraisons, fnuci, naf) |
 | Colonnes triables | 4 (clients, livraisons, fnuci, naf) |
 | Selection multiple + bulk | 2 (clients, livraisons — 3 actions bulk sur livraisons : formulaire retrait, mail livraison, mail planning) |
@@ -1195,7 +1213,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 **PPE Energie (7 boards, compte crm-oreka) :**
 
 | Board | ID |
-|-------|----||
+|-------|----|
 | ATHOME | 2144986053 |
 | ALEX | 5002798369 |
 | DIZIEN | 2146667697 |
@@ -1207,7 +1225,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 **Ecovolt (1 board, compte alexandredelannays-team) :**
 
 | Board | ID |
-|-------|----||
+|-------|----|
 | Velos Cargos General | 9990833105 |
 
 #### Mappings de valeurs (champs avec value mapping special)
@@ -1329,6 +1347,25 @@ Le mapping hardcode dans `config.ts` sert de backup/seed. En production, c'est l
 
 #### Table auth
 `users_profile` (pas `auth.users`). Le profil est charge apres chaque auth Supabase. Le champ `depot_ids` (array) controle l'acces par depot.
+
+#### Filtrage agent_secteur par depot_ids (refonte 2026-03-11)
+
+**Principe :** Les routes admin filtrent les agents par `depot_ids` (via `depot_retrait_id` et `depot_logistique_id` des clients) au lieu de `territoire`/`departement`. Un admin avec `territoire='FR'` a acces total (guard `!== 'FR'`).
+
+**Routes concernees :**
+- `GET /api/admin/clients` — filtre clients par depot_ids
+- `GET /api/admin/clients/[id]` — verifie acces depot avant retour
+- `GET /api/admin/map/data` — filtre clients carte par depot_ids
+- `GET /api/livraisons` — inner join via `{ referencedTable: 'client' }` (evite limite URL)
+- `POST /api/admin/clients/bulk` — filtre clients bulk par depot_ids
+
+**Logique commune :**
+```
+Si role = agent_secteur ET territoire !== 'FR' :
+  → filtrer WHERE depot_retrait_id IN (depot_ids) OR depot_logistique_id IN (depot_ids)
+Sinon :
+  → acces total
+```
 
 ---
 
