@@ -1081,16 +1081,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       const url = livraison?.document_identite_url || (livraison as any)?.photos_livraison?.photo_identite
                       const prefix = client.reference_retina || client.raison_sociale || 'document'
                       const filename = livraison?.document_identite_nom_fichier || `${prefix}-PI.pdf`
-                      try {
-                        const res = await fetch(url)
-                        const blob = await res.blob()
-                        const blobUrl = URL.createObjectURL(blob)
-                        const a = document.createElement('a')
-                        a.href = blobUrl
-                        a.download = filename
-                        a.click()
-                        URL.revokeObjectURL(blobUrl)
-                      } catch { window.open(url, '_blank') }
+                      const downloadUrl = url.includes('?') ? `${url}&download=${encodeURIComponent(filename)}` : `${url}?download=${encodeURIComponent(filename)}`
+                      window.open(downloadUrl, '_blank')
                     }}>
                       <Download className="h-4 w-4" />
                     </Button>
@@ -1128,16 +1120,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       const url = (livraison as any)?.attestation_pdf_url || (livraison as any)?.photos_livraison?.attestation_pdf
                       const prefix = client.reference_retina || client.raison_sociale || 'document'
                       const filename = `${prefix}-BL.pdf`
-                      try {
-                        const res = await fetch(url)
-                        const blob = await res.blob()
-                        const blobUrl = URL.createObjectURL(blob)
-                        const a = document.createElement('a')
-                        a.href = blobUrl
-                        a.download = filename
-                        a.click()
-                        URL.revokeObjectURL(blobUrl)
-                      } catch { window.open(url, '_blank') }
+                      const downloadUrl = url.includes('?') ? `${url}&download=${encodeURIComponent(filename)}` : `${url}?download=${encodeURIComponent(filename)}`
+                      window.open(downloadUrl, '_blank')
                     }}>
                       <Download className="h-4 w-4" />
                     </Button>
@@ -1165,16 +1149,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       const url = (client as any).attestation_urssaf_url
                       const prefix = client.reference_retina || client.raison_sociale || 'document'
                       const filename = `${prefix}-URSSAF.pdf`
-                      try {
-                        const res = await fetch(url)
-                        const blob = await res.blob()
-                        const blobUrl = URL.createObjectURL(blob)
-                        const a = document.createElement('a')
-                        a.href = blobUrl
-                        a.download = filename
-                        a.click()
-                        URL.revokeObjectURL(blobUrl)
-                      } catch { window.open(url, '_blank') }
+                      const downloadUrl = url.includes('?') ? `${url}&download=${encodeURIComponent(filename)}` : `${url}?download=${encodeURIComponent(filename)}`
+                      window.open(downloadUrl, '_blank')
                     }}>
                       <Download className="h-4 w-4" />
                     </Button>
@@ -1202,16 +1178,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       const url = (client as any).attestation_dsn_url
                       const prefix = client.reference_retina || client.raison_sociale || 'document'
                       const filename = `${prefix}-DSN.pdf`
-                      try {
-                        const res = await fetch(url)
-                        const blob = await res.blob()
-                        const blobUrl = URL.createObjectURL(blob)
-                        const a = document.createElement('a')
-                        a.href = blobUrl
-                        a.download = filename
-                        a.click()
-                        URL.revokeObjectURL(blobUrl)
-                      } catch { window.open(url, '_blank') }
+                      const downloadUrl = url.includes('?') ? `${url}&download=${encodeURIComponent(filename)}` : `${url}?download=${encodeURIComponent(filename)}`
+                      window.open(downloadUrl, '_blank')
                     }}>
                       <Download className="h-4 w-4" />
                     </Button>
@@ -1239,16 +1207,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       const url = (client as any).declaration_benevoles_url
                       const prefix = client.reference_retina || client.raison_sociale || 'document'
                       const filename = `${prefix}-BENEVOLES.pdf`
-                      try {
-                        const res = await fetch(url)
-                        const blob = await res.blob()
-                        const blobUrl = URL.createObjectURL(blob)
-                        const a = document.createElement('a')
-                        a.href = blobUrl
-                        a.download = filename
-                        a.click()
-                        URL.revokeObjectURL(blobUrl)
-                      } catch { window.open(url, '_blank') }
+                      const downloadUrl = url.includes('?') ? `${url}&download=${encodeURIComponent(filename)}` : `${url}?download=${encodeURIComponent(filename)}`
+                      window.open(downloadUrl, '_blank')
                     }}>
                       <Download className="h-4 w-4" />
                     </Button>
