@@ -573,42 +573,20 @@ function PlanningContent() {
     if (!confirm('Retirer ce client du planning ?')) return
     setRemovingLivraisonId(livraisonId)
     try {
-      const supabase = createClient()
-
-      // Récupérer le client_id avant de déprogrammer
-      const { data: livData } = await supabase
-        .from('livraisons')
-        .select('client_id')
-        .eq('id', livraisonId)
-        .single()
-
-      await supabase
-        .from('livraisons')
-        .update({
-          creneau_date: null,
-          creneau_heure_debut: null,
-          creneau_heure_fin: null,
-          statut: 'a_livrer',
-          livreur_id: null,
-        })
-        .eq('id', livraisonId)
-
-      // Réverter le statut client → a_livrer
-      if (livData?.client_id) {
-        await supabase
-          .from('clients')
-          .update({
-            statut_commercial: 'a_livrer',
-            date_statut: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', livData.client_id)
+      const res = await fetch('/api/admin/planning/unschedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ livraisonId }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Erreur lors de la suppression')
       }
 
       loadPlanningData()
     } catch (err) {
       console.error('Erreur suppression créneau:', err)
-      alert('Erreur lors de la suppression')
+      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression')
     } finally {
       setRemovingLivraisonId(null)
     }
