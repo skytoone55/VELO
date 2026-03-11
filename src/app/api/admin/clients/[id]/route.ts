@@ -44,8 +44,8 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 404 })
     }
 
-    // Vérifier le territoire pour admin
-    if (profile.role === 'admin' && profile.territoire !== client.departement) {
+    // Vérifier le territoire pour admin regional (FR = accès total)
+    if (profile.role === 'admin' && profile.territoire && profile.territoire !== 'FR' && profile.territoire !== client.departement) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
@@ -149,8 +149,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Client non trouvé' }, { status: 404 })
     }
 
-    // Vérifier le territoire pour admin
-    if (profile.role === 'admin' && profile.territoire !== existingClient.departement) {
+    // Vérifier le territoire pour admin regional (FR = accès total)
+    if (profile.role === 'admin' && profile.territoire && profile.territoire !== 'FR' && profile.territoire !== existingClient.departement) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 

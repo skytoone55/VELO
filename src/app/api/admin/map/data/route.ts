@@ -62,10 +62,9 @@ export async function GET(request: NextRequest) {
         .select(clientFields)
         .range(offset, offset + BATCH_SIZE - 1)
 
-      // Agent secteur ne voit que les clients de son territoire/département
-      if (profile.role === 'agent_secteur') {
-        const dept = profile.departement || profile.territoire
-        if (dept) clientQuery = clientQuery.eq('departement', dept)
+      // Agent secteur ne voit que les clients de ses dépôts
+      if (profile.role === 'agent_secteur' && profile.depot_ids?.length) {
+        clientQuery = clientQuery.or(`depot_retrait_id.in.(${profile.depot_ids.join(',')}),depot_logistique_id.in.(${profile.depot_ids.join(',')})`)
       }
 
       const { data: batch, error: clientsError } = await clientQuery

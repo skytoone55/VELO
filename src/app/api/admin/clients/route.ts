@@ -31,16 +31,10 @@ export async function GET(request: Request) {
       .select('*')
       .order('created_at', { ascending: false })
 
-    // Filtrer par territoire/département
-    if (profile.role === 'admin' && profile.territoire) {
+    // Filtrer par territoire (admin regional) ou depots (agent_secteur)
+    if (profile.role === 'admin' && profile.territoire && profile.territoire !== 'FR') {
       query = query.eq('departement', profile.territoire)
-    } else if (profile.role === 'agent_secteur') {
-      const dept = profile.departement || profile.territoire
-      if (dept) query = query.eq('departement', dept)
-    }
-
-    // Role-based data filtering: agent_secteur only sees clients in their depots
-    if (profile.role === 'agent_secteur' && profile.depot_ids?.length) {
+    } else if (profile.role === 'agent_secteur' && profile.depot_ids?.length) {
       query = query.or(`depot_retrait_id.in.(${profile.depot_ids.join(',')}),depot_logistique_id.in.(${profile.depot_ids.join(',')})`)
     }
 

@@ -67,8 +67,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erreur récupération clients' }, { status: 500 })
     }
 
-    // Vérifier les permissions territoriales pour admin
-    if (profile.role === 'admin') {
+    // Vérifier les permissions territoriales pour admin regional (FR = accès total)
+    if (profile.role === 'admin' && profile.territoire && profile.territoire !== 'FR') {
       const unauthorizedClients = clients.filter(c => c.departement !== profile.territoire)
       if (unauthorizedClients.length > 0) {
         return NextResponse.json({
@@ -168,11 +168,12 @@ async function handleBulkSendForm(
       const token = `${client.id}-${Date.now()}-${Math.random().toString(36).substring(7)}`
       const formulaireUrl = `${baseUrl}/formulaire?token=${token}`
 
-      // Mettre à jour le client (token formulaire + code validation)
+      // Mettre à jour le client (token formulaire + code validation + statut)
       const { error: updateError } = await adminClient
         .from('clients')
         .update({
           token_formulaire: token,
+          statut_commercial: 'formulaire_envoye',
           statut_formulaire: 'formulaire_envoye',
           date_envoi_formulaire: new Date().toISOString(),
           code_validation_hash: newCodeHash,
@@ -181,6 +182,7 @@ async function handleBulkSendForm(
           code_enemat_bloque: false,
           code_enemat_valide: false,
           code_enemat_saisi: null,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', client.id)
 

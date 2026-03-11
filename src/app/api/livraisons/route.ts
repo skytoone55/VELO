@@ -113,16 +113,34 @@ export async function GET(request: NextRequest) {
 
     if (depotFilter && depotFilter !== 'all') {
       const depots = depotFilter.split(',').filter(Boolean)
-      if (depots.length === 1) {
-        query = query.eq('depot_id', depots[0])
-      } else if (depots.length > 1) {
-        query = query.in('depot_id', depots)
+      // Chercher les clients lies a ces depots (depot_retrait ou depot_logistique)
+      const { data: depotClients } = await adminClient
+        .from('clients')
+        .select('id')
+        .or(`depot_retrait_id.in.(${depots.join(',')}),depot_logistique_id.in.(${depots.join(',')})`)
+      const depotClientIds = depotClients?.map(c => c.id) || []
+      // Filtrer : livraison.depot_id OU client lie au depot
+      const orParts: string[] = []
+      orParts.push(depots.length === 1 ? `depot_id.eq.${depots[0]}` : `depot_id.in.(${depots.join(',')})`)
+      if (depotClientIds.length > 0) {
+        orParts.push(`client_id.in.(${depotClientIds.join(',')})`)
       }
+      query = query.or(orParts.join(','))
     }
 
     // Role-based data filtering
     if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
-      query = query.in('depot_id', currentUser.depot_ids)
+      // Chercher les clients lies aux depots de l'agent
+      const { data: agentClients } = await adminClient
+        .from('clients')
+        .select('id')
+        .or(`depot_retrait_id.in.(${currentUser.depot_ids.join(',')}),depot_logistique_id.in.(${currentUser.depot_ids.join(',')})`)
+      const agentClientIds = agentClients?.map(c => c.id) || []
+      const orParts = [`depot_id.in.(${currentUser.depot_ids.join(',')})`]
+      if (agentClientIds.length > 0) {
+        orParts.push(`client_id.in.(${agentClientIds.join(',')})`)
+      }
+      query = query.or(orParts.join(','))
     } else if (currentUser.role === 'livreur') {
       query = query.eq('livreur_id', currentUser.id)
     }
