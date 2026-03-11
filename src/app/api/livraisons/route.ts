@@ -119,13 +119,15 @@ export async function GET(request: NextRequest) {
         .select('id')
         .or(`depot_retrait_id.in.(${depots.join(',')}),depot_logistique_id.in.(${depots.join(',')})`)
       const depotClientIds = depotClients?.map(c => c.id) || []
-      // Filtrer : livraison.depot_id OU client lie au depot
-      const orParts: string[] = []
-      orParts.push(depots.length === 1 ? `depot_id.eq.${depots[0]}` : `depot_id.in.(${depots.join(',')})`)
       if (depotClientIds.length > 0) {
-        orParts.push(`client_id.in.(${depotClientIds.join(',')})`)
+        query = query.in('client_id', depotClientIds)
+      } else {
+        // Aucun client dans ces depots = 0 livraisons
+        return NextResponse.json({
+          livraisons: [],
+          pagination: { page, pageSize, totalPages: 0, totalFiltered: 0, startIndex: 0, endIndex: 0 },
+        })
       }
-      query = query.or(orParts.join(','))
     }
 
     // Role-based data filtering
@@ -136,11 +138,14 @@ export async function GET(request: NextRequest) {
         .select('id')
         .or(`depot_retrait_id.in.(${currentUser.depot_ids.join(',')}),depot_logistique_id.in.(${currentUser.depot_ids.join(',')})`)
       const agentClientIds = agentClients?.map(c => c.id) || []
-      const orParts = [`depot_id.in.(${currentUser.depot_ids.join(',')})`]
       if (agentClientIds.length > 0) {
-        orParts.push(`client_id.in.(${agentClientIds.join(',')})`)
+        query = query.in('client_id', agentClientIds)
+      } else {
+        return NextResponse.json({
+          livraisons: [],
+          pagination: { page, pageSize, totalPages: 0, totalFiltered: 0, startIndex: 0, endIndex: 0 },
+        })
       }
-      query = query.or(orParts.join(','))
     } else if (currentUser.role === 'livreur') {
       query = query.eq('livreur_id', currentUser.id)
     }
