@@ -45,5 +45,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Erreur envoi email' }, { status: 500 })
   }
 
+  // Mettre a jour le statut commercial du client → en_livraison
+  await adminClient
+    .from('clients')
+    .update({
+      statut_commercial: 'en_livraison',
+      date_statut: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', clientId)
+
   return NextResponse.json({ success: true })
 }

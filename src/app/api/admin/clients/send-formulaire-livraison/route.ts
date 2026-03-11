@@ -122,6 +122,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erreur lors de la mise a jour' }, { status: 500 })
     }
 
+    // 2b. Mettre a jour le statut commercial du client → en_livraison
+    await adminClient
+      .from('clients')
+      .update({
+        statut_commercial: 'en_livraison',
+        date_statut: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', clientId)
+
     // 3. Construire l'URL du formulaire
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL
       || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)

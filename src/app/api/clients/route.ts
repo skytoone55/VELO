@@ -121,9 +121,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Filtre par dépôt (retrait)
+    // Filtre par dépôt (retrait OU logistique)
     if (depotFilter && depotFilter !== 'all') {
-      query = query.eq('depot_retrait_id', depotFilter)
+      query = query.or(`depot_retrait_id.eq.${depotFilter},depot_logistique_id.eq.${depotFilter}`)
     }
 
     // Compter le total avant pagination
@@ -174,7 +174,7 @@ export async function GET(request: NextRequest) {
       }
     }
     if (depotFilter && depotFilter !== 'all') {
-      velosQuery = velosQuery.eq('depot_retrait_id', depotFilter)
+      velosQuery = velosQuery.or(`depot_retrait_id.eq.${depotFilter},depot_logistique_id.eq.${depotFilter}`)
     }
 
     const { data: velosData } = await velosQuery
