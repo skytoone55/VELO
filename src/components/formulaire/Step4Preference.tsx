@@ -32,12 +32,12 @@ export function Step4Preference() {
   // Logique des options selon le type de dépôt et la zone:
   //
   // DEPOT DE RETRAIT:
-  // - Zone gratuite (0-30km): Retrait gratuit uniquement
-  // - Zone payante (30-50km): Retrait gratuit OU livraison payante (choix)
+  // - Zone gratuite (0-30km): Retrait uniquement
+  // - Zone payante (30-50km): Retrait OU livraison payante (choix)
   // - Hors zone (>50km): Alerte, sera recontacté
   //
   // DEPOT LOGISTIQUE:
-  // - Zone gratuite (0-30km): Livraison gratuite
+  // - Zone gratuite (0-30km): Livraison à domicile
   // - Zone payante (30-50km): Livraison payante
   // - Hors zone (>50km): Alerte, sera recontacté
 
@@ -47,9 +47,9 @@ export function Step4Preference() {
 
   // Pour dépôt retrait en zone gratuite, seul le retrait est possible
   const isRetraitSeul = isDepotRetrait && isZoneGratuite
-  // Pour dépôt retrait en zone payante, choix entre retrait gratuit ou livraison payante
+  // Pour dépôt retrait en zone payante, choix entre retrait ou livraison payante
   const isRetraitOuLivraisonPayante = isDepotRetrait && isZonePayante
-  // Pour dépôt logistique en zone gratuite, livraison gratuite
+  // Pour dépôt logistique en zone gratuite, livraison à domicile
   const isLivraisonGratuite = !isDepotRetrait && isZoneGratuite
   // Pour dépôt logistique en zone payante, livraison payante uniquement
   const isLivraisonPayanteSeule = !isDepotRetrait && isZonePayante
@@ -151,7 +151,6 @@ export function Step4Preference() {
                   <div className="flex items-center gap-2 mb-1">
                     <Store className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Retrait au point relais</span>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gratuit</span>
                   </div>
                   {depotRetrait && (
                     <div className="text-sm text-muted-foreground mt-1">
@@ -168,23 +167,22 @@ export function Step4Preference() {
                 <Info className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-800">
                   Votre adresse est située à proximité d'un de nos points de retrait.
-                  Le retrait est gratuit et vous permet de récupérer votre vélo rapidement.
+                  Vous pouvez récupérer votre vélo rapidement sur place.
                 </AlertDescription>
               </Alert>
             </>
           )}
 
-          {/* CAS 2: Dépôt retrait - Zone payante (choix retrait gratuit OU livraison payante) */}
+          {/* CAS 2: Dépôt retrait - Zone payante (choix retrait OU livraison payante) */}
           {isRetraitOuLivraisonPayante && (
             <>
-              {/* Option 1: Retrait gratuit */}
+              {/* Option 1: Retrait */}
               <div className={`flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${preference === 'retrait' ? 'border-foreground bg-muted' : ''}`}>
                 <RadioGroupItem value="retrait" id="retrait" className="mt-1" />
                 <Label htmlFor="retrait" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2 mb-1">
                     <Store className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Retrait au point relais</span>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gratuit</span>
                   </div>
                   {depotRetrait && (
                     <div className="text-sm text-muted-foreground mt-1">
@@ -218,13 +216,13 @@ export function Step4Preference() {
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  Vous avez le choix entre le retrait gratuit au point relais ou la livraison payante à domicile.
+                  Vous avez le choix entre le retrait au point relais ou la livraison à domicile.
                 </AlertDescription>
               </Alert>
             </>
           )}
 
-          {/* CAS 3: Dépôt logistique - Zone gratuite (livraison gratuite) */}
+          {/* CAS 3: Dépôt logistique - Zone gratuite (livraison à domicile) */}
           {isLivraisonGratuite && (
             <>
               <div className={`flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${preference === 'livraison_gratuite' ? 'border-foreground bg-muted' : ''}`}>
@@ -233,7 +231,6 @@ export function Step4Preference() {
                   <div className="flex items-center gap-2 mb-1">
                     <Truck className="h-4 w-4 text-green-600" />
                     <span className="font-medium">Livraison à domicile</span>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gratuit</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Votre vélo cargo sera livré directement à l'adresse indiquée.
@@ -244,7 +241,7 @@ export function Step4Preference() {
               <Alert className="bg-green-50 border-green-200">
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-800">
-                  Bonne nouvelle ! Votre adresse est éligible à la livraison gratuite.
+                  Bonne nouvelle ! Votre adresse est éligible à la livraison à domicile.
                 </AlertDescription>
               </Alert>
             </>

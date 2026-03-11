@@ -267,7 +267,7 @@ export function Step3Adresse() {
           <Alert className="bg-green-50 border-green-200">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              Votre adresse est éligible à la livraison gratuite à domicile.
+              Votre adresse est éligible à la livraison à domicile.
             </AlertDescription>
           </Alert>
 
