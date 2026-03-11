@@ -1021,19 +1021,6 @@ export default function AdminClientsPage() {
                 <Send className="h-4 w-4 mr-2" />
                 Envoyer formulaires
               </Button>
-              <Select
-                onValueChange={(value) => handleBulkAction('change_status', { statut: value })}
-                disabled={bulkActionLoading}
-              >
-                <SelectTrigger className="w-52 h-9">
-                  <SelectValue placeholder="Changer statut" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PROCESS_STATUTS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Button
                 size="sm"
                 variant="ghost"
