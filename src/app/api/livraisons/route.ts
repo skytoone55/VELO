@@ -113,39 +113,21 @@ export async function GET(request: NextRequest) {
 
     if (depotFilter && depotFilter !== 'all') {
       const depots = depotFilter.split(',').filter(Boolean)
-      // Chercher les clients lies a ces depots (depot_retrait ou depot_logistique)
-      const { data: depotClients } = await adminClient
-        .from('clients')
-        .select('id')
-        .or(`depot_retrait_id.in.(${depots.join(',')}),depot_logistique_id.in.(${depots.join(',')})`)
-      const depotClientIds = depotClients?.map(c => c.id) || []
-      if (depotClientIds.length > 0) {
-        query = query.in('client_id', depotClientIds)
-      } else {
-        // Aucun client dans ces depots = 0 livraisons
-        return NextResponse.json({
-          livraisons: [],
-          pagination: { page, pageSize, totalPages: 0, totalFiltered: 0, startIndex: 0, endIndex: 0 },
-        })
-      }
+      // Filtrer via le inner join client : depot_retrait ou depot_logistique
+      const depotList = depots.join(',')
+      query = query.or(
+        `depot_retrait_id.in.(${depotList}),depot_logistique_id.in.(${depotList})`,
+        { referencedTable: 'client' }
+      )
     }
 
-    // Role-based data filtering
+    // Role-based data filtering — filtrer via le inner join client (pas de pre-fetch IDs)
     if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
-      // Chercher les clients lies aux depots de l'agent
-      const { data: agentClients } = await adminClient
-        .from('clients')
-        .select('id')
-        .or(`depot_retrait_id.in.(${currentUser.depot_ids.join(',')}),depot_logistique_id.in.(${currentUser.depot_ids.join(',')})`)
-      const agentClientIds = agentClients?.map(c => c.id) || []
-      if (agentClientIds.length > 0) {
-        query = query.in('client_id', agentClientIds)
-      } else {
-        return NextResponse.json({
-          livraisons: [],
-          pagination: { page, pageSize, totalPages: 0, totalFiltered: 0, startIndex: 0, endIndex: 0 },
-        })
-      }
+      const depotList = currentUser.depot_ids.join(',')
+      query = query.or(
+        `depot_retrait_id.in.(${depotList}),depot_logistique_id.in.(${depotList})`,
+        { referencedTable: 'client' }
+      )
     } else if (currentUser.role === 'livreur') {
       query = query.eq('livreur_id', currentUser.id)
     }
