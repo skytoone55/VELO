@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -14,357 +14,660 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
-  Bell,
-  AlertCircle,
-  CheckCircle,
   Loader2,
-  MapPinOff,
-  UserX,
+  Search,
+  ClipboardCheck,
+  CheckCircle,
+  Copy,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
   Clock,
-  Send,
-  X,
-  Eye,
+  ExternalLink,
+  Lock,
+  Unlock,
 } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
-import { fr } from 'date-fns/locale'
 import Link from 'next/link'
+import { CQ_CHECKS, CQ_CHECK_KEYS, type CqCheckKey } from '@/lib/constants'
+import { useAdminUser } from '@/components/admin/admin-user-provider'
+import { toast } from 'sonner'
+import { usePinnedFilters, PinFiltersButton } from '@/components/admin/pin-filters'
 
-interface AlertDetails {
-  adresse?: string
-  code_postal?: string
-  ville?: string
-  tentatives?: number
-  raison?: string
-  [key: string]: unknown
-}
-
-interface EmailAlert {
+interface ControleItem {
   id: string
-  created_at: string
-  type: string
-  message: string
-  details: AlertDetails | null
   statut: string
-  sent_at: string | null
-  client_id: string | null
+  date_livraison: string | null
+  date_livraison_effective: string | null
+  livreur_id: string | null
+  depot_id: string | null
+  cq_piece_identite: boolean
+  cq_photo_enemat: boolean
+  cq_signature_installateur: boolean
+  cq_signature_client: boolean
+  cq_fnuci: boolean
+  cq_velo: boolean
+  cq_valide: boolean
+  cq_en_cours: boolean
+  cq_commentaire: string | null
+  cq_pris_par: string | null
+  cq_pris_at: string | null
+  cq_pris_par_nom: string | null
   client: {
     id: string
     raison_sociale: string
-    email: string
-    telephone: string
-    departement: string
+    contact_nom: string | null
+    contact_prenom: string | null
+    telephone: string | null
+    reference_retina: string | null
+    commercial_assigne: string | null
   } | null
+  depot: { id: string; nom: string } | null
+  livreur: { nom: string; prenom: string } | null
 }
 
-interface AlertStats {
+interface AgentOption {
+  id: string
+  nom: string
+  prenom: string
+}
+
+interface Stats {
+  non_traites: number
+  en_cours: number
   total: number
-  pending: number
-  sent: number
-  byType: Record<string, number>
 }
 
-const ALERT_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  client_hors_zone: {
-    label: 'Client hors zone',
-    icon: <MapPinOff className="h-4 w-4" />,
-    color: 'bg-orange-100 text-orange-800',
-  },
-  enemat_bloque: {
-    label: 'ENEMAT bloqué',
-    icon: <UserX className="h-4 w-4" />,
-    color: 'bg-red-100 text-red-800',
-  },
-  formulaire_expire: {
-    label: 'Formulaire expiré',
-    icon: <Clock className="h-4 w-4" />,
-    color: 'bg-yellow-100 text-yellow-800',
-  },
-  livraison_echec: {
-    label: 'Échec livraison',
-    icon: <AlertCircle className="h-4 w-4" />,
-    color: 'bg-red-100 text-red-800',
-  },
-}
-
-export default function AdminAlertesPage() {
+export default function ControlePage() {
+  const user = useAdminUser()
+  const [items, setItems] = useState<ControleItem[]>([])
+  const [agents, setAgents] = useState<AgentOption[]>([])
+  const [stats, setStats] = useState<Stats>({ non_traites: 0, en_cours: 0, total: 0 })
   const [loading, setLoading] = useState(true)
-  const [alerts, setAlerts] = useState<EmailAlert[]>([])
-  const [stats, setStats] = useState<AlertStats | null>(null)
-  const [activeTab, setActiveTab] = useState('pending')
-  const [processing, setProcessing] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [filter, setFilter] = useState('all')
+  const [agentFilter, setAgentFilter] = useState('all')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(50)
+  const [total, setTotal] = useState(0)
+  const [validating, setValidating] = useState<string | null>(null)
+  const [locking, setLocking] = useState<string | null>(null)
+  const [copiedRef, setCopiedRef] = useState<string | null>(null)
+  const [editingComment, setEditingComment] = useState<string | null>(null)
+  const [commentDraft, setCommentDraft] = useState('')
+  const [savingComment, setSavingComment] = useState(false)
+
+  // Filtres figés par utilisateur
+  const { loadPinned, saveFilters, hasPinned } = usePinnedFilters(user?.id, 'controle')
+  const [isPinned, setIsPinned] = useState(false)
+  const pinnedLoaded = useRef(false)
 
   useEffect(() => {
-    loadAlerts(activeTab)
-  }, [activeTab])
+    if (pinnedLoaded.current) return
+    pinnedLoaded.current = true
+    const pinned = loadPinned()
+    if (pinned) {
+      setIsPinned(true)
+      if (pinned.filter) setFilter(pinned.filter)
+      if (pinned.agentFilter) setAgentFilter(pinned.agentFilter)
+      if (pinned.pageSize) setPageSize(pinned.pageSize)
+    }
+  }, [loadPinned])
 
-  const loadAlerts = async (statut: string) => {
+  const handlePinFilters = () => {
+    saveFilters({
+      filter,
+      agentFilter,
+      pageSize,
+    })
+    setIsPinned(true)
+    toast.success('Filtres figés comme vue par défaut')
+  }
+
+  const fetchData = useCallback(async () => {
     setLoading(true)
-    setError(null)
-
     try {
-      const res = await fetch(`/api/alerts?statut=${statut}`)
+      const params = new URLSearchParams({
+        filter,
+        search,
+        agent: agentFilter,
+        page: String(page),
+        pageSize: String(pageSize),
+      })
+      const res = await fetch(`/api/admin/controle?${params}`)
+      if (!res.ok) throw new Error('Erreur chargement')
       const data = await res.json()
-
-      if (!res.ok) throw new Error(data.error)
-
-      setAlerts(data.alerts)
-      setStats(data.stats)
+      setItems(data.items || [])
+      setAgents(data.agents || [])
+      setStats(data.stats || { non_traites: 0, en_cours: 0, total: 0 })
+      setTotal(data.pagination?.total || 0)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inconnue')
+      console.error('Erreur fetch controle:', err)
     } finally {
       setLoading(false)
     }
-  }
+  }, [filter, agentFilter, search, page, pageSize])
 
-  const handleSend = async (alertId: string) => {
-    setProcessing(alertId)
+  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => { setPage(1) }, [filter, agentFilter, search])
+
+  // --- Lock / Unlock ---
+  const handleLock = async (livraisonId: string, action: 'lock' | 'unlock') => {
+    setLocking(livraisonId)
     try {
-      const res = await fetch('/api/alerts', {
+      const res = await fetch(`/api/admin/controle/${livraisonId}/lock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'send', alertId }),
+        body: JSON.stringify({ action }),
       })
-
-      if (!res.ok) throw new Error('Erreur envoi')
-
-      // Reload alerts
-      await loadAlerts(activeTab)
-    } catch (err) {
-      setError('Erreur lors de l\'envoi')
+      if (!res.ok) {
+        const data = await res.json()
+        toast.error(data.error || 'Erreur verrouillage')
+        return
+      }
+      // Refresh data to get updated lock state + agents list
+      await fetchData()
+      toast.success(action === 'lock' ? 'Dossier pris' : 'Dossier libéré')
+    } catch {
+      toast.error('Erreur réseau')
     } finally {
-      setProcessing(null)
+      setLocking(null)
     }
   }
 
-  const handleDismiss = async (alertId: string) => {
-    setProcessing(alertId)
+  // --- Check individual ---
+  const handleCheck = async (livraisonId: string, field: CqCheckKey, value: boolean) => {
+    setItems(prev => prev.map(item =>
+      item.id === livraisonId ? { ...item, [field]: value } : item
+    ))
     try {
-      const res = await fetch('/api/alerts', {
-        method: 'POST',
+      const res = await fetch(`/api/admin/controle/${livraisonId}/check`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'dismiss', alertId }),
+        body: JSON.stringify({ field, value }),
       })
+      if (!res.ok) {
+        const err = await res.json()
+        toast.error(err.error || 'Erreur')
+        setItems(prev => prev.map(item =>
+          item.id === livraisonId ? { ...item, [field]: !value } : item
+        ))
+      } else {
+        const data = await res.json()
+        setItems(prev => prev.map(item =>
+          item.id === livraisonId ? { ...item, cq_en_cours: data.cq_en_cours } : item
+        ))
+      }
+    } catch {
+      setItems(prev => prev.map(item =>
+        item.id === livraisonId ? { ...item, [field]: !value } : item
+      ))
+    }
+  }
 
-      if (!res.ok) throw new Error('Erreur dismiss')
+  // --- Check all ---
+  const handleCheckAll = async (livraisonId: string, checkAll: boolean) => {
+    setItems(prev => prev.map(item =>
+      item.id === livraisonId
+        ? { ...item, ...Object.fromEntries(CQ_CHECK_KEYS.map(k => [k, checkAll])) }
+        : item
+    ))
+    try {
+      const results = await Promise.all(
+        CQ_CHECK_KEYS.map(key =>
+          fetch(`/api/admin/controle/${livraisonId}/check`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ field: key, value: checkAll }),
+          })
+        )
+      )
+      if (results.some(r => !r.ok)) {
+        toast.error('Erreur lors du cochage')
+        fetchData()
+      } else {
+        setItems(prev => prev.map(item =>
+          item.id === livraisonId
+            ? { ...item, cq_en_cours: checkAll }
+            : item
+        ))
+      }
+    } catch {
+      fetchData()
+    }
+  }
 
-      // Reload alerts
-      await loadAlerts(activeTab)
-    } catch (err) {
-      setError('Erreur lors de l\'archivage')
+  // --- Validate ---
+  const handleValidate = async (livraisonId: string) => {
+    setValidating(livraisonId)
+    try {
+      const res = await fetch(`/api/admin/controle/${livraisonId}/validate`, {
+        method: 'POST',
+      })
+      if (res.ok) {
+        toast.success('Contrôle validé')
+        setTimeout(() => {
+          setItems(prev => prev.filter(item => item.id !== livraisonId))
+          setStats(prev => ({
+            ...prev,
+            en_cours: Math.max(0, prev.en_cours - 1),
+          }))
+        }, 300)
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Erreur validation')
+      }
+    } catch {
+      toast.error('Erreur réseau')
     } finally {
-      setProcessing(null)
+      setValidating(null)
     }
   }
 
-  const getAlertConfig = (type: string) => {
-    return ALERT_TYPE_CONFIG[type] || {
-      label: type,
-      icon: <Bell className="h-4 w-4" />,
-      color: 'bg-gray-100 text-gray-800',
+  const copyRef = (ref: string) => {
+    navigator.clipboard.writeText(ref)
+    setCopiedRef(ref)
+    setTimeout(() => setCopiedRef(null), 2000)
+  }
+
+  const handleSaveComment = async (livraisonId: string) => {
+    setSavingComment(true)
+    try {
+      const res = await fetch(`/api/admin/controle/${livraisonId}/check`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentaire: commentDraft }),
+      })
+      if (res.ok) {
+        setItems(prev => prev.map(item =>
+          item.id === livraisonId ? { ...item, cq_commentaire: commentDraft || null } : item
+        ))
+        setEditingComment(null)
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setSavingComment(false)
     }
   }
+
+  const getCheckedCount = (item: ControleItem) =>
+    CQ_CHECK_KEYS.filter(key => item[key]).length
+
+  // Can this user interact with this item's checks?
+  const canEdit = (item: ControleItem) => {
+    if (!item.cq_pris_par) return true // Pas verrouillé = tout le monde peut (mais devrait prendre d'abord)
+    if (item.cq_pris_par === user?.id) return true
+    if (user?.role === 'super_admin') return true
+    return false
+  }
+
+  const totalPages = Math.ceil(total / pageSize)
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Alertes</h1>
-        <p className="text-muted-foreground">
-          Gérez les alertes et notifications système
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <ClipboardCheck className="h-6 w-6" />
+          Contrôle qualité
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Vérification post-livraison : 6 points de contrôle par dossier
         </p>
       </div>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Stats cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">En attente</p>
-                <p className="text-2xl font-bold">{stats?.pending || 0}</p>
-              </div>
-              <Bell className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Hors zone</p>
-                <p className="text-2xl font-bold">{stats?.byType?.client_hors_zone || 0}</p>
-              </div>
-              <MapPinOff className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">ENEMAT bloqués</p>
-                <p className="text-2xl font-bold">{stats?.byType?.enemat_bloque || 0}</p>
-              </div>
-              <UserX className="h-8 w-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Envoyées</p>
-                <p className="text-2xl font-bold">{stats?.sent || 0}</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats */}
+      <div className="flex gap-3">
+        <div className="flex items-center gap-2 border border-red-200 bg-red-50/50 rounded-lg px-4 py-2">
+          <AlertCircle className="h-5 w-5 text-red-500" />
+          <span className="text-sm text-muted-foreground">Non traités</span>
+          <span className="text-lg font-bold text-red-700">{stats.non_traites}</span>
+        </div>
+        <div className="flex items-center gap-2 border border-orange-200 bg-orange-50/50 rounded-lg px-4 py-2">
+          <Clock className="h-5 w-5 text-orange-500" />
+          <span className="text-sm text-muted-foreground">En cours</span>
+          <span className="text-lg font-bold text-orange-700">{stats.en_cours}</span>
+        </div>
       </div>
 
-      {/* Alerts table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Liste des alertes</CardTitle>
-          <CardDescription>
-            Alertes nécessitant une action
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="pending">
-                En attente
-                {stats?.pending ? (
-                  <Badge variant="secondary" className="ml-2">
-                    {stats.pending}
-                  </Badge>
-                ) : null}
-              </TabsTrigger>
-              <TabsTrigger value="sent">Envoyées</TabsTrigger>
-              <TabsTrigger value="dismissed">Archivées</TabsTrigger>
-            </TabsList>
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Select value={filter} onValueChange={setFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous ({stats.non_traites + stats.en_cours})</SelectItem>
+            <SelectItem value="non_traites">Non traités ({stats.non_traites})</SelectItem>
+            <SelectItem value="en_cours">En cours ({stats.en_cours})</SelectItem>
+          </SelectContent>
+        </Select>
 
-            <TabsContent value={activeTab} className="mt-4">
-              {loading ? (
-                <div className="py-12" />
-              ) : alerts.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Aucune alerte dans cette catégorie</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Message</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {alerts.map((alert) => {
-                      const config = getAlertConfig(alert.type)
-                      return (
-                        <TableRow key={alert.id}>
-                          <TableCell className="text-muted-foreground">
-                            {formatDistanceToNow(new Date(alert.created_at), {
-                              addSuffix: true,
-                              locale: fr,
-                            })}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={config.color}>
-                              <span className="flex items-center gap-1">
-                                {config.icon}
-                                {config.label}
-                              </span>
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {alert.client ? (
-                              <div>
-                                <Link
-                                  href={`/admin/clients/${alert.client.id}`}
-                                  className="font-medium hover:underline"
-                                >
-                                  {alert.client.raison_sociale}
-                                </Link>
-                                <div className="text-sm text-muted-foreground">
-                                  {alert.client.departement}
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {alert.message}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {alert.client && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  asChild
-                                >
-                                  <Link href={`/admin/clients/${alert.client.id}`}>
-                                    <Eye className="h-4 w-4" />
-                                  </Link>
-                                </Button>
-                              )}
-                              {activeTab === 'pending' && (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleSend(alert.id)}
-                                    disabled={processing === alert.id}
-                                  >
-                                    {processing === alert.id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Send className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDismiss(alert.id)}
-                                    disabled={processing === alert.id}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              )}
+        {/* Filtre agent */}
+        <Select value={agentFilter} onValueChange={setAgentFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Agent" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les agents</SelectItem>
+            <SelectItem value="me">Mes dossiers</SelectItem>
+            {agents.map(a => (
+              <SelectItem key={a.id} value={a.id}>
+                {a.prenom} {a.nom}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="relative flex-1 min-w-[200px] max-w-[400px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher société, réf. Retina, téléphone..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        <Select value={String(pageSize)} onValueChange={v => setPageSize(Number(v))}>
+          <SelectTrigger className="w-[100px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10</SelectItem>
+            <SelectItem value="20">20</SelectItem>
+            <SelectItem value="50">50</SelectItem>
+            <SelectItem value="100">100</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <a
+          href="https://retina.enemat.fr/#/treetable131"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
+        >
+          <ExternalLink className="h-4 w-4" />
+          ENEMAT Retina
+        </a>
+
+        <PinFiltersButton onPin={handlePinFilters} isPinned={isPinned} />
+      </div>
+
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+              <CheckCircle className="h-12 w-12 mb-3 text-green-400" />
+              <p className="text-lg font-medium">Aucun contrôle en attente</p>
+              <p className="text-sm">Toutes les livraisons ont été vérifiées</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-center min-w-[70px]">Pris par</TableHead>
+                    <TableHead className="min-w-[180px]">Société</TableHead>
+                    <TableHead>Nom / Prénom</TableHead>
+                    <TableHead>Téléphone</TableHead>
+                    <TableHead>Réf. Retina</TableHead>
+                    <TableHead>Date livraison</TableHead>
+                    <TableHead>Commercial</TableHead>
+                    <TableHead>Dépôt</TableHead>
+                    <TableHead>Livreur</TableHead>
+                    <TableHead className="text-center min-w-[50px]" title="Tout cocher / décocher">
+                      <span className="text-xs leading-tight block font-semibold">Tout</span>
+                    </TableHead>
+                    {CQ_CHECK_KEYS.map(key => (
+                      <TableHead key={key} className="text-center min-w-[50px]" title={CQ_CHECKS[key].description}>
+                        <span className="text-xs leading-tight block">{CQ_CHECKS[key].shortLine1}</span>
+                        <span className="text-xs leading-tight block">{CQ_CHECKS[key].shortLine2}</span>
+                      </TableHead>
+                    ))}
+                    <TableHead className="min-w-[200px]">Commentaire</TableHead>
+                    <TableHead className="text-center">Valider</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map(item => {
+                    const checked = getCheckedCount(item)
+                    const allChecked = checked === 6
+                    const isValidating = validating === item.id
+                    const isLocking = locking === item.id
+                    const lockedByMe = item.cq_pris_par === user?.id
+                    const lockedByOther = item.cq_pris_par && !lockedByMe && user?.role !== 'super_admin'
+                    const editable = canEdit(item)
+
+                    return (
+                      <TableRow
+                        key={item.id}
+                        className={`transition-all duration-300 ${isValidating ? 'opacity-0 translate-x-4' : ''} ${lockedByOther ? 'opacity-60' : ''} ${lockedByMe ? 'bg-blue-50/40' : ''}`}
+                      >
+                        {/* Lock button */}
+                        <TableCell className="text-center">
+                          {isLocking ? (
+                            <Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" />
+                          ) : item.cq_pris_par ? (
+                            <div className="flex flex-col items-center gap-0.5">
+                              <button
+                                onClick={() => {
+                                  if (lockedByMe || user?.role === 'super_admin') {
+                                    handleLock(item.id, 'unlock')
+                                  }
+                                }}
+                                disabled={!!lockedByOther}
+                                className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-colors ${
+                                  lockedByMe
+                                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer'
+                                    : lockedByOther
+                                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer'
+                                }`}
+                                title={lockedByMe ? 'Cliquer pour libérer' : item.cq_pris_par_nom || ''}
+                              >
+                                <Lock className="h-3 w-3" />
+                                <span className="max-w-[60px] truncate">{item.cq_pris_par_nom?.split(' ')[0] || '...'}</span>
+                              </button>
                             </div>
+                          ) : (
+                            <button
+                              onClick={() => handleLock(item.id, 'lock')}
+                              className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500 hover:bg-emerald-100 hover:text-emerald-700 transition-colors mx-auto"
+                              title="Prendre ce dossier"
+                            >
+                              <Unlock className="h-3 w-3" />
+                              Prendre
+                            </button>
+                          )}
+                        </TableCell>
+
+                        <TableCell className="font-medium">
+                          {item.client ? (
+                            <Link
+                              href={`/admin/clients/${item.client.id}`}
+                              className="text-blue-600 hover:underline"
+                            >
+                              {item.client.raison_sociale}
+                            </Link>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {item.client?.contact_prenom || item.client?.contact_nom
+                            ? `${item.client.contact_prenom || ''} ${item.client.contact_nom || ''}`.trim()
+                            : '—'}
+                        </TableCell>
+                        <TableCell>{item.client?.telephone || '—'}</TableCell>
+                        <TableCell>
+                          {item.client?.reference_retina ? (
+                            <button
+                              onClick={() => copyRef(item.client!.reference_retina!)}
+                              className="flex items-center gap-1 text-sm font-mono hover:text-blue-600 transition-colors"
+                              title="Copier"
+                            >
+                              {item.client.reference_retina}
+                              {copiedRef === item.client.reference_retina ? (
+                                <CheckCircle className="h-3 w-3 text-green-500" />
+                              ) : (
+                                <Copy className="h-3 w-3 text-muted-foreground" />
+                              )}
+                            </button>
+                          ) : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {item.date_livraison_effective
+                            ? new Date(item.date_livraison_effective).toLocaleDateString('fr-FR')
+                            : item.date_livraison
+                              ? new Date(item.date_livraison).toLocaleDateString('fr-FR')
+                              : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {item.client?.commercial_assigne || '—'}
+                        </TableCell>
+                        <TableCell>{item.depot?.nom || '—'}</TableCell>
+                        <TableCell>
+                          {item.livreur
+                            ? `${item.livreur.prenom} ${item.livreur.nom}`
+                            : '—'}
+                        </TableCell>
+
+                        {/* Tout cocher */}
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={allChecked}
+                            onCheckedChange={(val) => handleCheckAll(item.id, val === true)}
+                            disabled={!editable}
+                            aria-label="Tout cocher"
+                            className="border-2"
+                          />
+                        </TableCell>
+
+                        {/* 6 checkboxes */}
+                        {CQ_CHECK_KEYS.map(key => (
+                          <TableCell key={key} className="text-center">
+                            <Checkbox
+                              checked={item[key] as boolean}
+                              onCheckedChange={(val) => handleCheck(item.id, key, val === true)}
+                              disabled={!editable}
+                              aria-label={CQ_CHECKS[key].label}
+                            />
                           </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </TabsContent>
-          </Tabs>
+                        ))}
+
+                        {/* Commentaire */}
+                        <TableCell>
+                          {editingComment === item.id ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                value={commentDraft}
+                                onChange={e => setCommentDraft(e.target.value)}
+                                placeholder="Commentaire..."
+                                className="h-7 text-xs"
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') handleSaveComment(item.id)
+                                  if (e.key === 'Escape') setEditingComment(null)
+                                }}
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={() => handleSaveComment(item.id)}
+                                disabled={savingComment}
+                              >
+                                {savingComment ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 text-green-600" />}
+                              </Button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                if (!editable) return
+                                setEditingComment(item.id)
+                                setCommentDraft(item.cq_commentaire || '')
+                              }}
+                              className={`text-xs text-left w-full min-h-[28px] px-1 py-0.5 rounded transition-colors ${editable ? 'hover:bg-muted cursor-pointer' : 'cursor-not-allowed'}`}
+                              title={editable ? 'Cliquer pour modifier' : 'Dossier pris par un autre agent'}
+                            >
+                              {item.cq_commentaire ? (
+                                <span className="text-orange-600">{item.cq_commentaire}</span>
+                              ) : (
+                                <span className="text-muted-foreground italic">+ commentaire</span>
+                              )}
+                            </button>
+                          )}
+                        </TableCell>
+
+                        {/* Validate */}
+                        <TableCell className="text-center">
+                          <Button
+                            size="sm"
+                            disabled={!allChecked || isValidating || !editable}
+                            onClick={() => handleValidate(item.id)}
+                            className={allChecked && editable
+                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                              : 'bg-gray-200 text-gray-400 cursor-not-allowed'}
+                          >
+                            {isValidating ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                {checked}/6
+                              </>
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {total} résultat{total > 1 ? 's' : ''} — page {page}/{totalPages}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage(p => p - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage(p => p + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

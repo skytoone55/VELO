@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAdminUser } from '@/components/admin/admin-user-provider'
+import { usePinnedFilters, PinFiltersButton } from '@/components/admin/pin-filters'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -31,7 +32,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Trash2, MoreHorizontal, Navigation, Eye, Phone, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Trash2, MoreHorizontal, Navigation, Eye, Phone, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import {
@@ -137,10 +139,11 @@ export default function AdminClientsPage() {
   const [statutFilter, setStatutFilter] = useState('all')
   const [statutOptions, setStatutOptions] = useState(defaultStatutOptions)
   const [nafFilter, setNafFilter] = useState('all')
-  const [departementFilter, setDepartementFilter] = useState('all')
+  const [departementFilter, setDepartementFilter] = useState<string[]>([])
   const [zoneFilter, setZoneFilter] = useState('all')
   const [commercialFilter, setCommercialFilter] = useState('all')
   const [depotFilter, setDepotFilter] = useState('all')
+  const [controleFilter, setControleFilter] = useState('all')
   const [sortBy, setSortBy] = useState('updated_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
@@ -179,10 +182,52 @@ export default function AdminClientsPage() {
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
   const [deletingClient, setDeletingClient] = useState(false)
 
+  // Bypass livraison dialog (double confirmation)
+  const [bypassClient, setBypassClient] = useState<Client | null>(null)
+  const [bypassStep, setBypassStep] = useState(0) // 0=closed, 1=first confirm, 2=second confirm
+  const [bypassLoading, setBypassLoading] = useState(false)
+
   // Sélection multiple
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
 
+
+  // Filtres figés par utilisateur
+  const { loadPinned, saveFilters, hasPinned } = usePinnedFilters(user?.id, 'clients')
+  const [isPinned, setIsPinned] = useState(false)
+  const pinnedLoaded = useRef(false)
+
+  useEffect(() => {
+    if (pinnedLoaded.current) return
+    pinnedLoaded.current = true
+    const pinned = loadPinned()
+    if (pinned) {
+      setIsPinned(true)
+      if (pinned.statut) setStatutFilter(pinned.statut)
+      if (pinned.departement) setDepartementFilter(Array.isArray(pinned.departement) ? pinned.departement : [pinned.departement])
+      if (pinned.naf) setNafFilter(pinned.naf)
+      if (pinned.zone) setZoneFilter(pinned.zone)
+      if (pinned.commercial) setCommercialFilter(pinned.commercial)
+      if (pinned.depot) setDepotFilter(pinned.depot)
+      if (pinned.controle) setControleFilter(pinned.controle)
+      if (pinned.pageSize) setPageSize(pinned.pageSize)
+    }
+  }, [loadPinned])
+
+  const handlePinFilters = () => {
+    saveFilters({
+      statut: statutFilter,
+      departement: departementFilter,
+      naf: nafFilter,
+      zone: zoneFilter,
+      commercial: commercialFilter,
+      depot: depotFilter,
+      controle: controleFilter,
+      pageSize,
+    })
+    setIsPinned(true)
+    toast.success('Filtres figés comme vue par défaut')
+  }
 
   // Charger les statuts : utiliser PROCESS_STATUTS comme source de vérité
   useEffect(() => {
@@ -265,11 +310,12 @@ export default function AdminClientsPage() {
       if (forceRefresh) params.set('refresh', 'true')
       if (debouncedSearch) params.set('search', debouncedSearch)
       if (statutFilter !== 'all') params.set('statut', statutFilter)
-      if (departementFilter !== 'all') params.set('departement', departementFilter)
+      if (departementFilter.length > 0) params.set('departement', departementFilter.join(','))
       if (nafFilter !== 'all') params.set('naf', nafFilter)
       if (zoneFilter !== 'all') params.set('zone', zoneFilter)
       if (commercialFilter !== 'all') params.set('commercial', commercialFilter)
       if (depotFilter !== 'all') params.set('depot', depotFilter)
+      if (controleFilter !== 'all') params.set('controle', controleFilter)
       if (sortBy !== 'updated_at' || sortOrder !== 'desc') {
         params.set('sortBy', sortBy)
         params.set('sortOrder', sortOrder)
@@ -305,42 +351,52 @@ export default function AdminClientsPage() {
   }
 
   // Reset page quand les filtres ou la recherche changent
-  const [prevSearch, setPrevSearch] = useState(debouncedSearch)
-  const [prevStatut, setPrevStatut] = useState(statutFilter)
-  const [prevDept, setPrevDept] = useState(departementFilter)
-  const [prevPageSize, setPrevPageSize] = useState(pageSize)
-  const [prevNaf, setPrevNaf] = useState(nafFilter)
-  const [prevZone, setPrevZone] = useState(zoneFilter)
-  const [prevCommercial, setPrevCommercial] = useState(commercialFilter)
-  const [prevDepot, setPrevDepot] = useState(depotFilter)
-  const [prevSortBy, setPrevSortBy] = useState(sortBy)
-  const [prevSortOrder, setPrevSortOrder] = useState(sortOrder)
+  const prevFilters = useRef({
+    search: debouncedSearch,
+    statut: statutFilter,
+    dept: departementFilter.join(','),
+    pageSize,
+    naf: nafFilter,
+    zone: zoneFilter,
+    commercial: commercialFilter,
+    depot: depotFilter,
+    controle: controleFilter,
+    sortBy,
+    sortOrder,
+  })
 
   useEffect(() => {
-    // Detect filter change (not page)
-    if (debouncedSearch !== prevSearch || statutFilter !== prevStatut ||
-        departementFilter !== prevDept || pageSize !== prevPageSize ||
-        nafFilter !== prevNaf || zoneFilter !== prevZone ||
-        commercialFilter !== prevCommercial || depotFilter !== prevDepot ||
-        sortBy !== prevSortBy || sortOrder !== prevSortOrder) {
-      setCurrentPage(1) // Reset to page 1
-      setPrevSearch(debouncedSearch)
-      setPrevStatut(statutFilter)
-      setPrevDept(departementFilter)
-      setPrevPageSize(pageSize)
-      setPrevNaf(nafFilter)
-      setPrevZone(zoneFilter)
-      setPrevCommercial(commercialFilter)
-      setPrevDepot(depotFilter)
-      setPrevSortBy(sortBy)
-      setPrevSortOrder(sortOrder)
+    const prev = prevFilters.current
+    const cur = {
+      search: debouncedSearch,
+      statut: statutFilter,
+      dept: departementFilter.join(','),
+      pageSize,
+      naf: nafFilter,
+      zone: zoneFilter,
+      commercial: commercialFilter,
+      depot: depotFilter,
+      controle: controleFilter,
+      sortBy,
+      sortOrder,
     }
-  }, [debouncedSearch, statutFilter, departementFilter, pageSize, nafFilter, zoneFilter, commercialFilter, depotFilter, sortBy, sortOrder])
+    if (
+      prev.search !== cur.search || prev.statut !== cur.statut ||
+      prev.dept !== cur.dept || prev.pageSize !== cur.pageSize ||
+      prev.naf !== cur.naf || prev.zone !== cur.zone ||
+      prev.commercial !== cur.commercial || prev.depot !== cur.depot ||
+      prev.controle !== cur.controle ||
+      prev.sortBy !== cur.sortBy || prev.sortOrder !== cur.sortOrder
+    ) {
+      setCurrentPage(1)
+      prevFilters.current = cur
+    }
+  }, [debouncedSearch, statutFilter, departementFilter, pageSize, nafFilter, zoneFilter, commercialFilter, depotFilter, controleFilter, sortBy, sortOrder])
 
   // Charger les clients quand les paramètres changent
   useEffect(() => {
     fetchClients(false, currentPage, pageSize)
-  }, [currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter, commercialFilter, depotFilter, sortBy, sortOrder])
+  }, [currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter, commercialFilter, depotFilter, controleFilter, sortBy, sortOrder])
 
   const handleSendForm = async (client: Client) => {
     setSendingEmail(true)
@@ -444,6 +500,33 @@ export default function AdminClientsPage() {
     }
   }
 
+  // === Bypass livraison ===
+  const handleBypass = async () => {
+    const client = bypassClient
+    if (!client) return
+    setBypassLoading(true)
+    try {
+      const res = await fetch('/api/admin/clients/bypass-livraison', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Erreur bypass')
+      }
+      toast.success(`${client.raison_sociale} passé en livraison directe`)
+      setBypassStep(0)
+      setBypassClient(null)
+      setBypassLoading(false)
+      // Refresh complet de la page pour être sûr
+      window.location.reload()
+    } catch (error: any) {
+      toast.error(error.message)
+      setBypassLoading(false)
+    }
+  }
+
   // === Sélection multiple ===
   const handleToggleSelect = (clientId: string) => {
     const newSelected = new Set(selectedClients)
@@ -507,8 +590,7 @@ export default function AdminClientsPage() {
     }
   }
 
-  // Les clients sont déjà filtrés et paginés côté serveur
-  // On utilise directement la liste reçue
+  // Les clients sont déjà filtrés et paginés côté serveur (y compris controle)
   const paginatedClients = clients
 
   // Valeurs de pagination (depuis l'API ou valeurs par défaut)
@@ -683,16 +765,38 @@ export default function AdminClientsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={departementFilter} onValueChange={setDepartementFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Dép." />
-          </SelectTrigger>
-          <SelectContent>
-            {(dynamicDeptOptions || [{ value: 'all', label: 'Départements' }]).map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Département {departementFilter.length > 0 && `(${departementFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {(dynamicDeptOptions || []).filter(o => o.value !== 'all').map(o => (
+                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={departementFilter.includes(o.value)}
+                    onChange={(e) => {
+                      setDepartementFilter(prev =>
+                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {departementFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setDepartementFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
         <Select value={nafFilter} onValueChange={setNafFilter}>
           <SelectTrigger className="h-8 w-auto min-w-[60px] text-xs px-2 shrink-0">
             <SelectValue placeholder="NAF" />
@@ -736,6 +840,17 @@ export default function AdminClientsPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={controleFilter} onValueChange={setControleFilter}>
+          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
+            <SelectValue placeholder="Contrôle" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Contrôle</SelectItem>
+            <SelectItem value="ok">CQ Validé</SelectItem>
+            <SelectItem value="en_cours">CQ En cours</SelectItem>
+            <SelectItem value="attente">CQ En attente</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
           <SelectTrigger className="h-8 w-[52px] text-xs px-2 shrink-0">
             <SelectValue />
@@ -748,6 +863,8 @@ export default function AdminClientsPage() {
             ))}
           </SelectContent>
         </Select>
+
+        <PinFiltersButton onPin={handlePinFilters} isPinned={isPinned} />
       </div>
 
       {/* Table */}
@@ -758,7 +875,7 @@ export default function AdminClientsPage() {
               <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h3 className="font-medium mb-1">Aucun client</h3>
               <p className="text-muted-foreground text-sm">
-                {searchQuery || statutFilter !== 'all' || departementFilter !== 'all'
+                {searchQuery || statutFilter !== 'all' || departementFilter.length > 0
                   ? 'Aucun client ne correspond à vos critères'
                   : 'Aucun client dans la base de données'}
               </p>
@@ -891,14 +1008,22 @@ export default function AdminClientsPage() {
                       })()}
                     </TableCell>
                     <TableCell>
-                      {(() => {
-                        const display = getStatutDisplay(client.statut_commercial)
-                        return (
-                          <Badge className={display.color}>
-                            {display.label}
-                          </Badge>
-                        )
-                      })()}
+                      <div className="flex items-center gap-1.5">
+                        {client.livraisons?.some((l: any) => l.cq_valide) && (
+                          <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" title="Contrôle qualité validé" />
+                        )}
+                        {!client.livraisons?.some((l: any) => l.cq_valide) && client.livraisons?.some((l: any) => l.cq_en_cours) && (
+                          <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 animate-pulse" title="Contrôle en cours — à finaliser" />
+                        )}
+                        {(() => {
+                          const display = getStatutDisplay(client.statut_commercial)
+                          return (
+                            <Badge className={display.color}>
+                              {display.label}
+                            </Badge>
+                          )
+                        })()}
+                      </div>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       {(() => {
@@ -919,6 +1044,18 @@ export default function AdminClientsPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
+                        {/* Bypass formulaire — tous les profils */}
+                        {!['en_livraison', 'livre', 'a_livrer'].includes(client.statut_commercial || '') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setBypassClient(client); setBypassStep(1) }}
+                            title="Passage direct en livraison (bypass formulaire)"
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                          >
+                            <Navigation className="h-4 w-4" />
+                          </Button>
+                        )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm">
@@ -935,6 +1072,15 @@ export default function AdminClientsPage() {
                                 <Send className="h-4 w-4 mr-2" />
                                 Envoyer formulaire
                               </DropdownMenuItem>
+                            )}
+                            {!['en_livraison', 'livre', 'a_livrer'].includes(client.statut_commercial || '') && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => { setBypassClient(client); setBypassStep(1) }}>
+                                  <Navigation className="h-4 w-4 mr-2" />
+                                  Passage direct en livraison
+                                </DropdownMenuItem>
+                              </>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1344,6 +1490,49 @@ export default function AdminClientsPage() {
                 </>
               )}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bypass Livraison — Double confirmation */}
+      <AlertDialog open={bypassStep === 1} onOpenChange={(open) => { if (!open) { setBypassStep(0); setBypassClient(null) } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Passage direct en livraison</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous allez bypasser le formulaire pour <strong>{bypassClient?.raison_sociale}</strong> et le passer directement au statut &quot;À livrer&quot;. Cette action est tracée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <Button onClick={() => setBypassStep(2)}>
+              Continuer
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bypassStep === 2} onOpenChange={(open) => { if (!open && !bypassLoading) { setBypassStep(0); setBypassClient(null) } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmation finale</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr ? Le client <strong>{bypassClient?.raison_sociale}</strong> (statut actuel : {bypassClient?.statut_commercial}) sera passé à &quot;À livrer&quot; sans formulaire.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bypassLoading}>Annuler</AlertDialogCancel>
+            <Button
+              onClick={handleBypass}
+              disabled={bypassLoading}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {bypassLoading ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Bypass en cours...</>
+              ) : (
+                'Confirmer le bypass'
+              )}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

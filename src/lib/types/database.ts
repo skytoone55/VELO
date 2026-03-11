@@ -125,6 +125,9 @@ export type Database = {
           documents_demandes: Record<string, unknown> | null
           token_documents: string | null
           piece_identite_url: string | null
+          bypass_formulaire: boolean
+          bypass_formulaire_par: string | null
+          bypass_formulaire_at: string | null
         }
         Insert: {
           adresse_livraison_cp?: string | null
@@ -200,6 +203,9 @@ export type Database = {
           documents_demandes?: Record<string, unknown> | null
           token_documents?: string | null
           piece_identite_url?: string | null
+          bypass_formulaire?: boolean
+          bypass_formulaire_par?: string | null
+          bypass_formulaire_at?: string | null
         }
         Update: {
           adresse_livraison_cp?: string | null
@@ -275,6 +281,9 @@ export type Database = {
           documents_demandes?: Record<string, unknown> | null
           token_documents?: string | null
           piece_identite_url?: string | null
+          bypass_formulaire?: boolean
+          bypass_formulaire_par?: string | null
+          bypass_formulaire_at?: string | null
         }
         Relationships: []
       }
@@ -514,6 +523,19 @@ export type Database = {
           confirmation_date: string | null
           pdf_livraison_url: string | null
           attestation_pdf_url: string | null
+          cq_piece_identite: boolean
+          cq_photo_enemat: boolean
+          cq_signature_installateur: boolean
+          cq_signature_client: boolean
+          cq_fnuci: boolean
+          cq_velo: boolean
+          cq_valide: boolean
+          cq_valide_par: string | null
+          cq_valide_at: string | null
+          cq_en_cours: boolean
+          cq_commentaire: string | null
+          cq_pris_par: string | null
+          cq_pris_at: string | null
         }
         Insert: {
           adresse_livraison_cp?: string | null
@@ -558,6 +580,19 @@ export type Database = {
           confirmation_date?: string | null
           pdf_livraison_url?: string | null
           attestation_pdf_url?: string | null
+          cq_piece_identite?: boolean
+          cq_photo_enemat?: boolean
+          cq_signature_installateur?: boolean
+          cq_signature_client?: boolean
+          cq_fnuci?: boolean
+          cq_velo?: boolean
+          cq_valide?: boolean
+          cq_valide_par?: string | null
+          cq_valide_at?: string | null
+          cq_en_cours?: boolean
+          cq_commentaire?: string | null
+          cq_pris_par?: string | null
+          cq_pris_at?: string | null
         }
         Update: {
           adresse_livraison_cp?: string | null
@@ -602,6 +637,19 @@ export type Database = {
           confirmation_date?: string | null
           pdf_livraison_url?: string | null
           attestation_pdf_url?: string | null
+          cq_piece_identite?: boolean
+          cq_photo_enemat?: boolean
+          cq_signature_installateur?: boolean
+          cq_signature_client?: boolean
+          cq_fnuci?: boolean
+          cq_velo?: boolean
+          cq_valide?: boolean
+          cq_valide_par?: string | null
+          cq_valide_at?: string | null
+          cq_en_cours?: boolean
+          cq_commentaire?: string | null
+          cq_pris_par?: string | null
+          cq_pris_at?: string | null
         }
         Relationships: []
       }

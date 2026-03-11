@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
     const zoneFilter = searchParams.get('zone')
     const commercialFilter = searchParams.get('commercial')
     const depotFilter = searchParams.get('depot')
+    const controleFilter = searchParams.get('controle')
 
     // Tri serveur
     const sortByParam = searchParams.get('sortBy') || 'updated_at'
@@ -86,11 +87,27 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Filtre par departement (ou derive du code postal pour PPE)
+    // Filtre par departement (ou derive du code postal pour PPE/Ecovolt)
     if (departementFilter && departementFilter !== 'all') {
-      query = query.or(
-        `departement.eq.${departementFilter},adresse_societe_cp.like.${departementFilter}%`
-      )
+      const depts = departementFilter.split(',').filter(Boolean)
+      const normalDepts = depts.filter(d => d !== 'hors_dom')
+      const hasHorsDom = depts.includes('hors_dom')
+
+      if (hasHorsDom && normalDepts.length === 0) {
+        query = query.not('adresse_societe_cp', 'like', '97%')
+      } else if (hasHorsDom && normalDepts.length > 0) {
+        query = query.or(
+          [...normalDepts.flatMap(d => [`departement.eq.${d}`, `adresse_societe_cp.like.${d}%`]), 'adresse_societe_cp.not.like.97%'].join(',')
+        )
+      } else if (normalDepts.length === 1) {
+        query = query.or(
+          `departement.eq.${normalDepts[0]},adresse_societe_cp.like.${normalDepts[0]}%`
+        )
+      } else if (normalDepts.length > 1) {
+        query = query.or(
+          normalDepts.flatMap(d => [`departement.eq.${d}`, `adresse_societe_cp.like.${d}%`]).join(',')
+        )
+      }
     }
 
     // Filtre par validation NAF
@@ -126,6 +143,35 @@ export async function GET(request: NextRequest) {
       query = query.or(`depot_retrait_id.eq.${depotFilter},depot_logistique_id.eq.${depotFilter}`)
     }
 
+    // Filtre par contrôle qualité (via livraisons)
+    // ok = client a une livraison cq_valide | en_cours = cq_en_cours | attente = livree mais pas commencé
+    if (controleFilter && controleFilter !== 'all') {
+      // Requête unique pour récupérer les 3 catégories
+      const { data: allCqLivraisons } = await adminClient
+        .from('livraisons')
+        .select('client_id, cq_valide, cq_en_cours, statut')
+
+      const livraisons = allCqLivraisons || []
+      const okIds = [...new Set(livraisons.filter(l => l.cq_valide === true).map(l => l.client_id).filter(Boolean))]
+      const enCoursIds = [...new Set(livraisons.filter(l => l.cq_en_cours === true && !l.cq_valide).map(l => l.client_id).filter(Boolean))]
+      const attenteIds = [...new Set(livraisons.filter(l => l.statut === 'livree' && !l.cq_valide && !l.cq_en_cours).map(l => l.client_id).filter(Boolean))]
+
+      let targetIds: string[] = []
+      if (controleFilter === 'ok') targetIds = okIds
+      else if (controleFilter === 'en_cours') targetIds = enCoursIds
+      else if (controleFilter === 'attente') targetIds = attenteIds
+
+      if (targetIds.length > 0) {
+        query = query.in('id', targetIds)
+      } else {
+        return NextResponse.json({
+          clients: [],
+          pagination: { page, pageSize, totalPages: 0, totalFiltered: 0, totalClients: 0, startIndex: 0, endIndex: 0, velosValidesFiltered: 0 },
+          source: 'supabase',
+        })
+      }
+    }
+
     // Compter le total avant pagination
     const { count: totalFiltered } = await query
 
@@ -153,9 +199,25 @@ export async function GET(request: NextRequest) {
       }
     }
     if (departementFilter && departementFilter !== 'all') {
-      velosQuery = velosQuery.or(
-        `departement.eq.${departementFilter},adresse_societe_cp.like.${departementFilter}%`
-      )
+      const depts = departementFilter.split(',').filter(Boolean)
+      const normalDepts = depts.filter(d => d !== 'hors_dom')
+      const hasHorsDom = depts.includes('hors_dom')
+
+      if (hasHorsDom && normalDepts.length === 0) {
+        velosQuery = velosQuery.not('adresse_societe_cp', 'like', '97%')
+      } else if (hasHorsDom && normalDepts.length > 0) {
+        velosQuery = velosQuery.or(
+          [...normalDepts.flatMap(d => [`departement.eq.${d}`, `adresse_societe_cp.like.${d}%`]), 'adresse_societe_cp.not.like.97%'].join(',')
+        )
+      } else if (normalDepts.length === 1) {
+        velosQuery = velosQuery.or(
+          `departement.eq.${normalDepts[0]},adresse_societe_cp.like.${normalDepts[0]}%`
+        )
+      } else if (normalDepts.length > 1) {
+        velosQuery = velosQuery.or(
+          normalDepts.flatMap(d => [`departement.eq.${d}`, `adresse_societe_cp.like.${d}%`]).join(',')
+        )
+      }
     }
     if (nafFilter && nafFilter !== 'all') {
       if (nafFilter === 'valide') velosQuery = velosQuery.eq('validation_naf', 'OUI')
@@ -175,6 +237,20 @@ export async function GET(request: NextRequest) {
     }
     if (depotFilter && depotFilter !== 'all') {
       velosQuery = velosQuery.or(`depot_retrait_id.eq.${depotFilter},depot_logistique_id.eq.${depotFilter}`)
+    }
+    if (controleFilter && controleFilter !== 'all') {
+      // Réutilise la même logique que le filtre principal (ok/en_cours/attente)
+      const { data: cqLiv2 } = await adminClient
+        .from('livraisons')
+        .select('client_id, cq_valide, cq_en_cours, statut')
+      const liv2 = cqLiv2 || []
+      let veloTargetIds: string[] = []
+      if (controleFilter === 'ok') veloTargetIds = [...new Set(liv2.filter(l => l.cq_valide === true).map(l => l.client_id).filter(Boolean))]
+      else if (controleFilter === 'en_cours') veloTargetIds = [...new Set(liv2.filter(l => l.cq_en_cours === true && !l.cq_valide).map(l => l.client_id).filter(Boolean))]
+      else if (controleFilter === 'attente') veloTargetIds = [...new Set(liv2.filter(l => l.statut === 'livree' && !l.cq_valide && !l.cq_en_cours).map(l => l.client_id).filter(Boolean))]
+      if (veloTargetIds.length > 0) {
+        velosQuery = velosQuery.in('id', veloTargetIds)
+      }
     }
 
     const { data: velosData } = await velosQuery

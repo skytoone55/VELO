@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const commercialFilter = searchParams.get('commercial')
     const departementFilter = searchParams.get('departement')
     const zoneFilter = searchParams.get('zone')
+    const controleFilter = searchParams.get('controle')
 
     const sortByParam = searchParams.get('sortBy') || 'created_at'
     const sortOrderParam = searchParams.get('sortOrder') || 'desc'
@@ -43,7 +44,13 @@ export async function GET(request: NextRequest) {
     // Etape 1 : si filtres sur champs client, recuperer les IDs matching
     let clientIds: string[] | null = null
 
-    if (search || commercialFilter && commercialFilter !== 'all' || departementFilter && departementFilter !== 'all' || zoneFilter && zoneFilter !== 'all') {
+    const hasCommercial = commercialFilter && commercialFilter !== 'all'
+    const hasDepartement = departementFilter && departementFilter !== 'all'
+    const hasZone = zoneFilter && zoneFilter !== 'all'
+    const hasControle = controleFilter && controleFilter !== 'all'
+
+    // Note: hasControle n'est PAS inclus ici car c'est un filtre sur livraisons (étape 2), pas sur clients
+    if (search || hasCommercial || hasDepartement || hasZone) {
       let clientQuery = adminClient
         .from('clients')
         .select('id')
@@ -51,25 +58,59 @@ export async function GET(request: NextRequest) {
 
       if (search) {
         clientQuery = clientQuery.or(
-          `raison_sociale.ilike.%${search}%,siret.ilike.%${search}%,email_beneficiaire.ilike.%${search}%,telephone.ilike.%${search}%`
+          `raison_sociale.ilike.%${search}%,siret.ilike.%${search}%,email_beneficiaire.ilike.%${search}%,telephone.ilike.%${search}%,reference_retina.ilike.%${search}%`
         )
       }
 
-      if (departementFilter && departementFilter !== 'all') {
-        // PPE: departement vaut souvent 'FR' (pays Monday), filtrer par CP
-        clientQuery = clientQuery.ilike('adresse_societe_cp', `${departementFilter}%`)
-      }
+      if (hasDepartement) {
+        const depts = departementFilter!.split(',').filter(Boolean)
+        // Gérer le cas spécial 'hors_dom' pour Ecovolt
+        const normalDepts = depts.filter(d => d !== 'hors_dom')
+        const hasHorsDom = depts.includes('hors_dom')
 
-      if (commercialFilter && commercialFilter !== 'all') {
-        if (tenantId === 'ppe') {
-          clientQuery = clientQuery.eq('monday_board_id', commercialFilter)
-        } else {
-          clientQuery = clientQuery.eq('email', commercialFilter)
+        if (hasHorsDom && normalDepts.length === 0) {
+          // Seulement hors_dom
+          clientQuery = clientQuery.not('adresse_societe_cp', 'like', '97%')
+        } else if (hasHorsDom && normalDepts.length > 0) {
+          // hors_dom + départements normaux
+          clientQuery = clientQuery.or(
+            [...normalDepts.map(d => `adresse_societe_cp.ilike.${d}%`), 'adresse_societe_cp.not.like.97%'].join(',')
+          )
+        } else if (normalDepts.length === 1) {
+          clientQuery = clientQuery.or(
+            `departement.eq.${normalDepts[0]},adresse_societe_cp.ilike.${normalDepts[0]}%`
+          )
+        } else if (normalDepts.length > 1) {
+          clientQuery = clientQuery.or(
+            normalDepts.flatMap(d => [`departement.eq.${d}`, `adresse_societe_cp.ilike.${d}%`]).join(',')
+          )
         }
       }
 
-      if (zoneFilter && zoneFilter !== 'all') {
-        clientQuery = clientQuery.eq('type_de_zone', zoneFilter)
+      if (hasCommercial) {
+        const commercials = commercialFilter!.split(',').filter(Boolean)
+        if (tenantId === 'ppe') {
+          if (commercials.length === 1) {
+            clientQuery = clientQuery.eq('monday_board_id', commercials[0])
+          } else {
+            clientQuery = clientQuery.in('monday_board_id', commercials)
+          }
+        } else {
+          if (commercials.length === 1) {
+            clientQuery = clientQuery.eq('commercial_assigne', commercials[0])
+          } else {
+            clientQuery = clientQuery.in('commercial_assigne', commercials)
+          }
+        }
+      }
+
+      if (hasZone) {
+        const zones = zoneFilter!.split(',').filter(Boolean)
+        if (zones.length === 1) {
+          clientQuery = clientQuery.eq('type_de_zone', zones[0])
+        } else {
+          clientQuery = clientQuery.in('type_de_zone', zones)
+        }
       }
 
       const { data: matchingClients } = await clientQuery
@@ -89,7 +130,7 @@ export async function GET(request: NextRequest) {
       .from('livraisons')
       .select(`
         *,
-        client:clients!inner(
+        client:clients!livraisons_client_id_fkey!inner(
           id, raison_sociale, siret, email, email_beneficiaire, telephone,
           departement, adresse_societe_cp, commercial_assigne, monday_board_id,
           statut_commercial, validation_naf, type_de_zone, velo_devis, velo_valide, agence,
@@ -97,10 +138,6 @@ export async function GET(request: NextRequest) {
         ),
         depot:depots(id, nom)
       `, { count: 'exact' })
-
-    if (clientIds) {
-      query = query.in('client_id', clientIds)
-    }
 
     if (statutFilter && statutFilter !== 'all') {
       const statuts = statutFilter.split(',').filter(Boolean)
@@ -111,23 +148,44 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (depotFilter && depotFilter !== 'all') {
-      const depots = depotFilter.split(',').filter(Boolean)
-      // Filtrer via le inner join client : depot_retrait ou depot_logistique
-      const depotList = depots.join(',')
-      query = query.or(
-        `depot_retrait_id.in.(${depotList}),depot_logistique_id.in.(${depotList})`,
-        { referencedTable: 'client' }
-      )
+    // Apply search filter (client IDs from step 1)
+    if (clientIds) {
+      query = query.in('client_id', clientIds)
     }
 
-    // Role-based data filtering — filtrer via le inner join client (pas de pre-fetch IDs)
+    // Depot filter via livraisons.depot_id
+    if (depotFilter && depotFilter !== 'all') {
+      const depots = depotFilter.split(',').filter(Boolean)
+      if (depots.length === 1) {
+        query = query.eq('depot_id', depots[0])
+      } else if (depots.length > 1) {
+        query = query.in('depot_id', depots)
+      }
+    }
+
+    // Controle qualite filter
+    // ok = cq_valide true | en_cours = cq_en_cours true (partiellement checké) | attente = livree + pas commencé
+    if (hasControle) {
+      const vals = controleFilter!.split(',').filter(Boolean)
+      const conditions: string[] = []
+      if (vals.includes('ok')) {
+        conditions.push('cq_valide.eq.true')
+      }
+      if (vals.includes('en_cours')) {
+        conditions.push('cq_en_cours.eq.true')
+      }
+      if (vals.includes('attente')) {
+        // En attente = livrée mais pas encore commencé le contrôle
+        conditions.push('and(statut.eq.livree,cq_valide.eq.false,cq_en_cours.eq.false)')
+      }
+      if (conditions.length > 0) {
+        query = query.or(conditions.join(','))
+      }
+    }
+
+    // Role-based filtering
     if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
-      const depotList = currentUser.depot_ids.join(',')
-      query = query.or(
-        `depot_retrait_id.in.(${depotList}),depot_logistique_id.in.(${depotList})`,
-        { referencedTable: 'client' }
-      )
+      query = query.in('depot_id', currentUser.depot_ids)
     } else if (currentUser.role === 'livreur') {
       query = query.eq('livreur_id', currentUser.id)
     }
@@ -140,7 +198,10 @@ export async function GET(request: NextRequest) {
 
     const { data, error, count } = await query
 
-    if (error) throw error
+    if (error) {
+      console.error('Erreur query livraisons:', error.message, error.details, error.hint)
+      throw error
+    }
 
     const totalFiltered = count || 0
     const totalPages = Math.ceil(totalFiltered / pageSize)

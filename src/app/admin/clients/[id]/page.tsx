@@ -503,7 +503,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   // Récupérer infos de livraison
   const livraison = livraisons[0]
   const modeLivraison = livraison?.mode_livraison || (client.depot_retrait_id ? 'retrait' : 'domicile')
-  const LIVRAISON_STATUTS = ['a_livrer', 'en_livraison', 'retrait_planifie', 'livre', 'probleme_livraison', 'a_relivrer']
+  const LIVRAISON_STATUTS = ['formulaire_valide', 'a_livrer', 'en_livraison', 'retrait_planifie', 'livre', 'controle_valide', 'probleme_livraison', 'a_relivrer']
   const backUrl = LIVRAISON_STATUTS.includes(client.statut_commercial || '') ? '/admin/livraisons' : '/admin/clients'
   const codePpeSaisi = client.code_enemat_saisi || livraison?.code_enemat_saisi
   const formulaireComplete = ['formulaire_valide', 'a_livrer', 'en_livraison', 'livre', 'probleme_livraison', 'a_relivrer', 'retractation', 'anomalie'].includes(client.statut_commercial || '')
@@ -661,6 +661,13 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             {/* Séparateur avant badges statut */}
             <div className="h-6 w-px bg-white/20 mx-1" />
 
+            {/* Controle qualite badge */}
+            {livraisons.some((l: any) => l.cq_valide) && (
+              <Badge className="bg-emerald-500/20 text-emerald-200 text-sm px-3 py-1">
+                ✓ Contrôle validé
+              </Badge>
+            )}
+
             {/* Statut commercial */}
             <Badge className={`${statutCommercialColors[client.statut_commercial || 'inconnu']} text-sm px-3 py-1`}>
               {statutCommercialLabels[client.statut_commercial || 'inconnu']}
@@ -742,27 +749,41 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
           <div className="text-center">
-            <div className="flex items-center justify-center gap-1 text-slate-300 text-xs uppercase tracking-wide mb-1">
-              <Calendar className="h-3.5 w-3.5" />
-              Programmé
-            </div>
-            <div className="text-sm font-semibold">
-              {livraisons[0]?.creneau_date ? (
-                <>
-                  {(() => {
-                    const [y, m, d] = livraisons[0].creneau_date!.split('-').map(Number)
-                    return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
-                  })()}
-                  {livraisons[0].creneau_heure_debut && (
-                    <span className="text-xs text-slate-400 ml-1">
-                      {livraisons[0].creneau_heure_debut.slice(0, 5)}
-                    </span>
+            {client.statut_commercial === 'livre' && livraisons[0]?.date_livraison_effective ? (
+              <>
+                <div className="flex items-center justify-center gap-1 text-emerald-400 text-xs uppercase tracking-wide mb-1">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  Livré le
+                </div>
+                <div className="text-sm font-semibold">
+                  {new Date(livraisons[0].date_livraison_effective).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-center gap-1 text-slate-300 text-xs uppercase tracking-wide mb-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Programmé
+                </div>
+                <div className="text-sm font-semibold">
+                  {livraisons[0]?.creneau_date ? (
+                    <>
+                      {(() => {
+                        const [y, m, d] = livraisons[0].creneau_date!.split('-').map(Number)
+                        return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+                      })()}
+                      {livraisons[0].creneau_heure_debut && (
+                        <span className="text-xs text-slate-400 ml-1">
+                          {livraisons[0].creneau_heure_debut.slice(0, 5)}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-slate-400">—</span>
                   )}
-                </>
-              ) : (
-                <span className="text-slate-400">—</span>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -1078,11 +1099,24 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" title="Télécharger" onClick={async () => {
-                      const url = livraison?.document_identite_url || (livraison as any)?.photos_livraison?.photo_identite
                       const prefix = client.reference_retina || client.raison_sociale || 'document'
-                      const filename = livraison?.document_identite_nom_fichier || `${prefix}-PI.pdf`
-                      const downloadUrl = url.includes('?') ? `${url}&download=${encodeURIComponent(filename)}` : `${url}?download=${encodeURIComponent(filename)}`
-                      window.open(downloadUrl, '_blank')
+                      if (livraison?.document_identite_url) {
+                        const url = livraison.document_identite_url
+                        const filename = livraison?.document_identite_nom_fichier || `${prefix}-PI.pdf`
+                        const downloadUrl = url.includes('?') ? `${url}&download=${encodeURIComponent(filename)}` : `${url}?download=${encodeURIComponent(filename)}`
+                        window.open(downloadUrl, '_blank')
+                      } else {
+                        // Base64 → download programmatique
+                        const b64 = (livraison as any)?.photos_livraison?.photo_identite
+                        if (b64) {
+                          const a = document.createElement('a')
+                          a.href = b64
+                          a.download = `${prefix}-PI.jpg`
+                          document.body.appendChild(a)
+                          a.click()
+                          document.body.removeChild(a)
+                        }
+                      }
                     }}>
                       <Download className="h-4 w-4" />
                     </Button>
@@ -1278,6 +1312,27 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                   <span className="font-medium">{new Date(client.date_validation_code).toLocaleDateString('fr-FR')}</span>
                 </div>
               )}
+              {livraisons[0]?.date_livraison_effective && (
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Livré le</span>
+                  <span className="font-medium">{new Date(livraisons[0].date_livraison_effective).toLocaleDateString('fr-FR')}</span>
+                  {(livraisons[0] as any).livreur_nom && (
+                    <span className="text-muted-foreground">par <span className="font-medium text-foreground">{(livraisons[0] as any).livreur_nom}</span></span>
+                  )}
+                </div>
+              )}
+              {livraisons.some((l: any) => l.cq_valide_at) && (() => {
+                const livCq = livraisons.find((l: any) => l.cq_valide_at) as any
+                return (
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-600 font-medium">Contrôle validé</span>
+                    <span className="font-medium">{new Date(livCq.cq_valide_at).toLocaleDateString('fr-FR')}</span>
+                    {livCq.controleur_nom && (
+                      <span className="text-muted-foreground">par <span className="font-medium text-foreground">{livCq.controleur_nom}</span></span>
+                    )}
+                  </div>
+                )
+              })()}
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Modifié le</span>
                 <span className="font-medium">{new Date(client.updated_at).toLocaleDateString('fr-FR')}</span>

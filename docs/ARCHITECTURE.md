@@ -1,12 +1,13 @@
 # ARCHITECTURE VELO — Source de Verite
 
-> Derniere mise a jour : 2026-03-11
+> Derniere mise a jour : 2026-03-12
 > Ce fichier DOIT etre mis a jour a chaque modification du systeme.
 > Genere a partir des audits : AUDIT-API-ROUTES-COMPLET.md, AUDIT-PAGES-VELO.md, audit DB schema, audit integrations.
 
 ### Changelog
 | Date | Modifications |
 |------|---------------|
+| 2026-03-12 | AUDIT COMPLET + FIXES : Auth guards sur 4 routes publiques (clients/statuses, clients/departements, depots, monday/webhooks). Fix 5 filtres API livraisons (commercial/departement/zone multi-select + controle). Fix filtre controle API clients (server-side). Fix fiche livraison: removed livree bypass, livreur dropdown includes agent_secteur, legacy column names fixed. Module Controle Qualite complet (checklist 6 points, lock/reservation, validation, ENEMAT link). Filtres figes (pin filters) sur 3 pages. Pastille rouge controle en cours. Retour arriere intelligent fiche client. ARCHITECTURE.md rewrite complet. |
 | 2026-03-11 | Auth guards ajoutes sur 13 routes API, filtrage role-based sur 5 routes, fix RLS monday_field_mapping/monday_boards, database.ts synced (3 tables + 14 colonnes), FNUCI/NAF sort + pagination, livraisons page UI cleanup |
 | 2026-03-11 (v2) | Refonte filtrage agent_secteur par depot_ids (5 routes), sync statut client/livraison (C1+C2+C3), tournees accessibles agent/livreur (lecture), bulk statut formulaire_envoye, envoi formulaire livraison → en_livraison, filtre depot dual (retrait+logistique), RLS livraisons depot_ids, NAF affiche fiche client |
 | 2026-03-11 (v3) | est_aussi_livreur default true + tous agents MAJ, colonne depot fallback depot_retrait_id, send-formulaire retabli 2 emails separes (5s delay) |
@@ -17,7 +18,7 @@
 ## 1. Vue d'ensemble
 
 ### Description
-CRM et gestion commerciale pour velos-cargos electriques. Multi-tenant : deux entites (PPE Energie et Ecovolt) partagent le meme codebase avec des configurations differentes. Gestion complete du parcours client : import Monday.com, validation NAF, formulaire client, geocodage, assignation depot, planification livraison, tournee livreur, FNUCI, bon de livraison PDF.
+CRM et gestion commerciale pour velos-cargos electriques. Multi-tenant : deux entites (PPE Energie et Ecovolt) partagent le meme codebase avec des configurations differentes. Gestion complete du parcours client : import Monday.com, validation NAF, formulaire client, geocodage, assignation depot, planification livraison, tournee livreur, FNUCI, bon de livraison PDF, controle qualite post-livraison.
 
 ### Stack technique
 
@@ -54,7 +55,7 @@ Meme codebase, 2 deployments Vercel avec des env vars differentes. Le tenant act
 ### Differences cles
 
 | Critere | PPE Energie | Ecovolt |
-|---------|-------------|--------|
+|---------|-------------|---------|
 | Supabase | zfpzhhdovxllchlsihcr | irpnllwlxivlylclfjwd |
 | MCP alias | supabase-ppe | supabase-mz |
 | Compte Monday | crm-oreka | alexandredelannays-team |
@@ -95,7 +96,7 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 
 ### 3.2 Tables
 
-#### 3.2.1 `clients` (table principale — 68 colonnes)
+#### 3.2.1 `clients` (74 colonnes)
 
 | Colonne | Type | Nullable | Default | Notes |
 |---------|------|----------|---------|-------|
@@ -167,9 +168,12 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 | `attestation_urssaf_url` | TEXT | OUI | null | Document upload |
 | `attestation_dsn_url` | TEXT | OUI | null | Document upload |
 | `declaration_benevoles_url` | TEXT | OUI | null | Document upload |
-| `documents_demandes` | JSONB | OUI | '{}' | { "urssaf": { "status": "pending"|"received" } } |
+| `documents_demandes` | JSONB | OUI | '{}' | { "urssaf": { "status": "pending"\|"received" } } |
 | `token_documents` | TEXT | OUI | null | Token formulaire demande de pieces |
 | `piece_identite_url` | TEXT | OUI | null | - |
+| `bypass_formulaire` | BOOLEAN | NON | false | Bypass formulaire pour passage direct en livraison |
+| `bypass_formulaire_par` | UUID | OUI | null | FK -> users_profile(id) — qui a active le bypass |
+| `bypass_formulaire_at` | TIMESTAMPTZ | OUI | null | Date du bypass |
 | `created_at` | TIMESTAMPTZ | NON | NOW() | - |
 | `updated_at` | TIMESTAMPTZ | NON | NOW() | - |
 
@@ -189,7 +193,7 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 
 ---
 
-#### 3.2.2 `depots` (19 colonnes)
+#### 3.2.2 `depots` (21 colonnes)
 
 | Colonne | Type | Nullable | Default | Notes |
 |---------|------|----------|---------|-------|
@@ -218,7 +222,7 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 
 ---
 
-#### 3.2.3 `livraisons` (37 colonnes)
+#### 3.2.3 `livraisons` (52 colonnes)
 
 | Colonne | Type | Nullable | Default | Notes |
 |---------|------|----------|---------|-------|
@@ -262,6 +266,19 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 | `confirmation_date` | TIMESTAMPTZ | OUI | null | - |
 | `pdf_livraison_url` | TEXT | OUI | null | PDF genere |
 | `attestation_pdf_url` | TEXT | OUI | null | Bon de livraison PDF |
+| `cq_piece_identite` | BOOLEAN | NON | false | Check CQ : piece identite |
+| `cq_photo_enemat` | BOOLEAN | NON | false | Check CQ : photo plaque ENEMAT |
+| `cq_signature_installateur` | BOOLEAN | NON | false | Check CQ : signature installateur |
+| `cq_signature_client` | BOOLEAN | NON | false | Check CQ : signature client |
+| `cq_fnuci` | BOOLEAN | NON | false | Check CQ : FNUCI enregistre |
+| `cq_velo` | BOOLEAN | NON | false | Check CQ : etat velo conforme |
+| `cq_valide` | BOOLEAN | NON | false | true si 6/6 checks valides |
+| `cq_valide_par` | UUID | OUI | null | FK -> users_profile(id) |
+| `cq_valide_at` | TIMESTAMPTZ | OUI | null | Date validation CQ |
+| `cq_en_cours` | BOOLEAN | NON | false | true si 1-5 checks (calcule a l'ecriture) |
+| `cq_commentaire` | TEXT | OUI | null | Commentaire CQ |
+| `cq_pris_par` | UUID | OUI | null | FK -> users_profile(id) — lock system |
+| `cq_pris_at` | TIMESTAMPTZ | OUI | null | Date prise en charge CQ |
 | `created_at` | TIMESTAMPTZ | NON | NOW() | - |
 | `updated_at` | TIMESTAMPTZ | NON | NOW() | - |
 
@@ -269,6 +286,8 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 - `livraisons_token_idx` UNIQUE ON (token_livraison) WHERE NOT NULL
 - `idx_livraisons_tournee_id` ON (tournee_id)
 - `idx_livraisons_confirmation_statut` ON (confirmation_statut)
+- `idx_livraisons_cq_valide` ON (cq_valide) WHERE statut = 'livree'
+- `idx_livraisons_cq_en_cours` ON (cq_en_cours) WHERE statut = 'livree'
 
 **RLS :** Enabled. Policies agent_secteur (ajoutees 2026-03-11) :
 - Condition : `depot_retrait_id = ANY(depot_ids) OR depot_logistique_id = ANY(depot_ids)` en plus de `departement = territoire`
@@ -551,6 +570,9 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 - `livraisons.client_id` -> `clients.id`
 - `livraisons.depot_id` -> `depots.id`
 - `livraisons.livreur_id` -> `users_profile.id`
+- `livraisons.cq_valide_par` -> `users_profile.id`
+- `livraisons.cq_pris_par` -> `users_profile.id`
+- `clients.bypass_formulaire_par` -> `users_profile.id`
 - `clients_hors_zone.client_id` -> `clients.id`
 - `distances_cache.client_id` -> `clients.id`
 - `distances_cache.depot_id` -> `depots.id`
@@ -565,7 +587,7 @@ Un bucket `documents` (public) cree par la migration `20260310_attestation_pdf_u
 
 Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
-### 3.5 Migrations (21 fichiers, ordre chronologique)
+### 3.5 Migrations (23 fichiers, ordre chronologique)
 
 | # | Fichier | Description |
 |---|---------|-------------|
@@ -590,27 +612,113 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 | 19 | `20260310_attestation_pdf_url.sql` | attestation_pdf_url + bucket storage documents |
 | 20 | `20260311_naf_codes_complete.sql` | Restructure naf_codes, insere 377 codes NAF |
 | 21 | `20260311_fix_agent_rls_depot_ids.sql` | RLS livraisons : ajout condition `depot_retrait_id = ANY(depot_ids) OR depot_logistique_id = ANY(depot_ids)` pour agent_secteur (PPE + Ecovolt) |
+| 22 | `20260312_controle_qualite.sql` | 10 colonnes CQ sur livraisons (6 checks + valide/valide_par/valide_at/en_cours) + cq_commentaire + 3 colonnes bypass sur clients |
+| 23 | `20260312_controle_qualite_lock.sql` | Colonnes lock sur livraisons (cq_pris_par, cq_pris_at) |
 
 ---
 
-## 4. API Routes (72 routes)
+## 4. API Routes (80 routes)
 
-### 4.1 Admin
-
-#### 4.1.1 Admin / Clients (10 routes)
+### 4.1 Auth
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 1 | `GET /api/admin/clients` | GET | Auth manuelle (role != client) | Liste clients avec filtre depot_ids (agent_secteur) |
-| 2 | `GET /api/admin/clients/[id]` | GET | Auth manuelle (role != client) | Fiche client + livraisons + depots + distance + code NAF |
-| 3 | `PUT /api/admin/clients/[id]` | PUT | super_admin, admin, agent_secteur | Modifier client (30+ champs) + sync Monday |
-| 4 | `DELETE /api/admin/clients/[id]` | DELETE | super_admin uniquement | Suppression cascade (10 tables) |
-| 5 | `POST /api/admin/clients/[id]/sync-monday` | POST | super_admin, admin | Sync forcee vers Monday |
-| 6 | `POST /api/admin/clients/bulk` | POST | super_admin, admin, agent_secteur | Actions bulk (send_form, change_status). Garde statut : rejette clients pas en controle_valide/formulaire_envoye. Token via crypto.randomUUID(). Envoie 2 emails separes (code + formulaire) avec 5s delay |
-| 7 | `POST /api/admin/clients/resend-code` | POST | super_admin, admin, agent_secteur | Renvoyer code validation ENEMAT |
-| 8 | `POST /api/admin/clients/reset-formulaire` | POST | super_admin, admin, agent_secteur | Reinitialiser formulaire + livraisons |
-| 9 | `POST /api/admin/clients/send-formulaire` | POST | requireRole | Envoyer formulaire (garde NAF + statut) |
-| 10 | `POST /api/admin/clients/send-formulaire-livraison` | POST | requireRole | Envoyer formulaire livraison |
+| 1 | `POST /api/auth/login` | POST | Public | Login Supabase + redirect selon role |
+
+---
+
+### 4.2 Formulaire (public, token-based)
+
+| # | Route | Methodes | Roles | Description |
+|---|-------|----------|-------|-------------|
+| 2 | `POST /api/formulaire/validate-token` | POST | Public (token) | Valider token formulaire |
+| 3 | `POST /api/formulaire/validate-enemat` | POST | Public (token) | Valider code ENEMAT (3 tentatives max) |
+| 4 | `POST /api/formulaire/client-address` | POST | Public (token) | Charger adresse client + depots |
+| 5 | `POST /api/formulaire/save-address` | POST | Public (token) | Sauvegarder adresse + geocoder + classifier zone |
+| 6 | `POST /api/formulaire/resend-code` | POST | Public (token) | Renvoyer code ENEMAT (cooldown 2 min) |
+| 7 | `POST /api/formulaire/submit` | POST | Public (token) | Soumettre formulaire (statut -> formulaire_valide) |
+| 8 | `GET /api/formulaire-livraison/validate-token` | GET | Public (token) | Valider token livraison |
+| 9 | `POST /api/formulaire-livraison/submit` | POST | Public (token) | Soumettre choix creneau |
+
+---
+
+### 4.3 Documents
+
+| # | Route | Methodes | Roles | Description |
+|---|-------|----------|-------|-------------|
+| 10 | `POST /api/documents/validate-token` | POST | Public (token) | Valider token documents |
+| 11 | `POST /api/documents/upload` | POST | Public (token) | Upload document (FormData, max 10Mo) |
+
+---
+
+### 4.4 Address
+
+| # | Route | Methodes | Roles | Description |
+|---|-------|----------|-------|-------------|
+| 12 | `GET /api/address/search` | GET | Public | Autocomplete adresse (proxy api-adresse.data.gouv.fr) |
+
+---
+
+### 4.5 Relance
+
+| # | Route | Methodes | Roles | Description |
+|---|-------|----------|-------|-------------|
+| 13 | `POST/PUT /api/relance` | POST, PUT | Public (token) | Valider token + soumettre disponibilites |
+
+---
+
+### 4.6 Livraisons (public)
+
+| # | Route | Methodes | Roles | Description |
+|---|-------|----------|-------|-------------|
+| 14 | `GET /api/livraisons/confirm-creneau` | GET | Public (token) | Confirmer creneau livraison |
+| 15 | `GET /api/livraisons/cancel-creneau` | GET | Public (token) | Annuler creneau (client -> anomalie) |
+| 16 | `GET /api/livraisons/info-creneau` | GET | Public (token) | Infos creneau livraison |
+
+---
+
+### 4.7 Tournee (public)
+
+| # | Route | Methodes | Roles | Description |
+|---|-------|----------|-------|-------------|
+| 17 | `GET/POST /api/tournee/confirm` | GET, POST | Public (token) | Confirmer/refuser tournee. Refus -> `statut_commercial: 'a_relivrer'` |
+
+---
+
+### 4.8 Clients (authenticated)
+
+| # | Route | Methodes | Roles | Description |
+|---|-------|----------|-------|-------------|
+| 18 | `GET /api/clients` | GET | SA/A/AG | Liste clients paginee (7 filtres, 12 tris). Filtre depot verifie `depot_retrait_id` ET `depot_logistique_id` |
+| 19 | `GET /api/clients/stats` | GET | SA/A/AG | Stats globales clients |
+| 20 | `GET /api/clients/commercials` | GET | SA/A/AG | Liste emails commerciaux |
+| 21 | `GET /api/clients/statuses` | GET | SA/A/AG | Liste statuts distincts (auth ajoutee 2026-03-12) |
+| 22 | `GET /api/clients/departements` | GET | SA/A/AG | Liste departements avec labels (auth ajoutee 2026-03-12) |
+| 23 | `POST /api/clients/send-form` | POST | SA/A/AG | Legacy : envoyer formulaire |
+| 24 | `GET /api/depots` | GET | SA/A/AG/L | Liste depots actifs. Filtre role-based (auth ajoutee 2026-03-12). Retourne champs geo (latitude, longitude, rayon_couverture_km, agence) |
+| 25 | `GET /api/livraisons` | GET | SA/A/AG/L | Liste livraisons paginee (filtres: statut, depot, commercial, departement, zone multi-select + controle). agent_secteur filtre par `depot_ids` via `depot_retrait_id` OR `depot_logistique_id`. Inner join client |
+| 26 | `GET/POST /api/alerts` | GET, POST | SA/A | CRUD alertes email |
+
+---
+
+### 4.9 Admin - Clients
+
+| # | Route | Methodes | Roles | Description |
+|---|-------|----------|-------|-------------|
+| 27 | `GET /api/admin/clients` | GET | Auth manuelle (role != client) | Liste clients avec filtre depot_ids (agent_secteur) |
+| 28 | `POST /api/admin/clients` | POST | SA/A | Creer client |
+| 29 | `GET /api/admin/clients/[id]` | GET | SA/A/AG | Fiche client + livraisons + depots + distance + code NAF |
+| 30 | `PUT /api/admin/clients/[id]` | PUT | SA/A/AG | Modifier client (30+ champs) + sync Monday |
+| 31 | `DELETE /api/admin/clients/[id]` | DELETE | SA uniquement | Suppression cascade (10 tables) |
+| 32 | `POST /api/admin/clients/[id]/sync-monday` | POST | SA/A | Sync forcee vers Monday |
+| 33 | `POST /api/admin/clients/bulk` | POST | Auth manuelle | Actions bulk (send_form, change_status). Garde statut : rejette clients pas en controle_valide/formulaire_envoye. Token via crypto.randomUUID(). 2 emails separes (code + formulaire) avec 5s delay |
+| 34 | `POST /api/admin/clients/resend-code` | POST | Auth manuelle | Renvoyer code validation ENEMAT |
+| 35 | `POST /api/admin/clients/reset-formulaire` | POST | Auth manuelle | Reinitialiser formulaire + livraisons |
+| 36 | `POST /api/admin/clients/send-formulaire` | POST | SA/A/AG | Envoyer formulaire (garde NAF + statut) |
+| 37 | `POST /api/admin/clients/send-formulaire-livraison` | POST | SA/A/AG | Envoyer formulaire livraison |
+| 38 | `POST /api/admin/clients/send-relance` | POST | SA/A/AG | Email de relance |
+| 39 | `POST /api/admin/clients/request-documents` | POST | SA/A/AG | Demande pieces (urssaf/dsn/benevoles) |
+| 40 | `POST /api/admin/clients/bypass-livraison` | POST | SA/A/AG/L | Bypass formulaire -> statut a_livrer + cree livraison si absente + audit |
 
 **Details supplementaires :**
 
@@ -653,13 +761,6 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 - Gardes : statut=a_livrer, livraison existe, creneau pas encore choisi
 - Side effects : Token 64 hex, stocke dans livraisons.token_livraison, email, met `statut_commercial: 'en_livraison'`
 
----
-
-| # | Route | Methodes | Roles | Description |
-|---|-------|----------|-------|-------------|
-| 11 | `POST /api/admin/clients/send-relance` | POST | requireRole | Email de relance |
-| 12 | `POST /api/admin/clients/request-documents` | POST | requireRole | Demande pieces (urssaf/dsn/benevoles) |
-
 **POST /api/admin/clients/send-relance** :
 - Side effects : Email avec lien /relance?token=xxx
 
@@ -669,40 +770,20 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 4.1.2 Admin / Depots (4 routes)
+### 4.10 Admin - Livraisons
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 13 | `GET /api/admin/depots` | GET | requireRole (tous admin) | Liste depots actifs |
-| 14 | `POST /api/admin/depots/reassign-clients` | POST | super_admin, admin | Reassignation auto clients -> depots |
-| 15 | `POST /api/admin/depots/simulate` | POST | super_admin, admin | Simuler impact nouveau depot |
-| 16 | `GET /api/admin/depots/stats` | GET | super_admin, admin, agent_secteur | Stats couverture depots |
-
----
-
-#### 4.1.3 Admin / Users (4 routes)
-
-| # | Route | Methodes | Roles | Description |
-|---|-------|----------|-------|-------------|
-| 17 | `DELETE/PATCH/PUT /api/admin/users/[id]` | DELETE, PATCH, PUT | requireRole + hierarchie | CRUD utilisateur + reset password |
-| 18 | `POST /api/admin/users/[id]/impersonate` | POST | super_admin uniquement | Magic link impersonation |
-| 19 | `POST /api/admin/users/create` | POST | requireRole + creatableRoles | Creer utilisateur + invitation email |
-| 20 | `GET /api/admin/users/agents` | GET | requireRole | Liste agents secteur |
-
----
-
-#### 4.1.4 Admin / Livraisons (8 routes)
-
-| # | Route | Methodes | Roles | Description |
-|---|-------|----------|-------|-------------|
-| 21 | `GET /api/admin/livraisons` | GET | requireRole (tous admin) | Liste livraisons (limit 200). agent_secteur filtre par depot_ids (via join client depot_retrait_id/depot_logistique_id), livreur filtre par livreur_id |
-| 22 | `GET/PATCH /api/admin/livraisons/[id]` | GET, PATCH | requireRole | Detail / modifier livraison. 403 si livreur/agent tente d'acceder a une livraison d'un autre. PATCH sync `clients.statut_commercial` via LIVRAISON_TO_CLIENT_STATUT |
-| 23 | `PATCH /api/admin/livraisons/[id]/status` | PATCH | requireRole (tous admin) | Changement statut avec machine a etats. Verification acces livreur/agent |
-| 24 | `POST /api/admin/livraisons/[id]/deliver` | POST | requireRole | Livraison complete (FNUCI, signature, photos, PDF). Verification assignation livreur |
-| 25 | `POST /api/admin/livraisons/[id]/send-bon` | POST | requireRole | Envoyer bon de livraison par email |
-| 26 | `POST /api/admin/livraisons/send-mail-livraison` | POST | requireRole | Email notification livraison + met `statut_commercial: 'en_livraison'` |
-| 27 | `POST /api/admin/livraisons/send-mail-planning` | POST | requireRole | Batch email planning |
-| 28 | `POST /api/admin/livraisons/send-confirmation-creneau` | POST | requireRole | Email confirmation creneau |
+| 41 | `GET /api/admin/livraisons` | GET | SA/A/AG/L | Liste livraisons (limit 200). agent_secteur filtre par depot_ids (via join client depot_retrait_id/depot_logistique_id), livreur filtre par livreur_id |
+| 42 | `POST /api/admin/livraisons` | POST | SA/A/AG | Creer livraison |
+| 43 | `GET /api/admin/livraisons/[id]` | GET | SA/A/AG | Detail livraison |
+| 44 | `PATCH /api/admin/livraisons/[id]` | PATCH | SA/A/AG | Modifier livraison. PATCH sync `clients.statut_commercial` via LIVRAISON_TO_CLIENT_STATUT |
+| 45 | `PATCH /api/admin/livraisons/[id]/status` | PATCH | SA/A/AG/L | Changement statut avec machine a etats. Verification acces livreur/agent |
+| 46 | `POST /api/admin/livraisons/[id]/deliver` | POST | SA/A/AG/L | Livraison complete (FNUCI, signature, photos, PDF). Verification assignation livreur |
+| 47 | `POST /api/admin/livraisons/[id]/send-bon` | POST | SA/A/AG/L | Envoyer bon de livraison par email |
+| 48 | `POST /api/admin/livraisons/send-confirmation-creneau` | POST | SA/A/AG/L | Email confirmation creneau |
+| 49 | `POST /api/admin/livraisons/send-mail-planning` | POST | SA/A/AG/L | Batch email planning |
+| 50 | `POST /api/admin/livraisons/send-mail-livraison` | POST | SA/A/AG/L | Email notification livraison + met `statut_commercial: 'en_livraison'` |
 
 **Transitions statut livraison :**
 - en_attente -> {programmee, en_cours, annulee}
@@ -719,7 +800,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 - annulee -> a_relivrer
 
 **Sync declencheurs supplementaires :**
-- `POST /api/admin/tournees` : creation tournee → clients associes passent en `statut_commercial: 'en_livraison'`
+- `POST /api/admin/tournees` : creation tournee -> clients associes passent en `statut_commercial: 'en_livraison'`
 - `POST /api/tournee/confirm` (refus) : client passe en `statut_commercial: 'a_relivrer'`
 - `POST /api/admin/clients/send-formulaire-livraison` : client passe en `statut_commercial: 'en_livraison'`
 - `POST /api/admin/livraisons/send-mail-livraison` : client passe en `statut_commercial: 'en_livraison'`
@@ -727,187 +808,163 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 4.1.5 Admin / Planning (2 routes)
+### 4.11 Admin - Controle Qualite (NEW 2026-03-12)
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 29 | `GET /api/admin/planning` | GET | requireRole | Planning depot par semaine |
-| 30 | `POST /api/admin/planning/anomalies` | POST | super_admin, admin | Detection anomalies (>10 jours ouvres sans creneau) |
+| 51 | `GET /api/admin/controle` | GET | SA/A | Liste livraisons livrees non validees CQ (filtres, pagination, stats) |
+| 52 | `POST /api/admin/controle/[livraisonId]/lock` | POST | SA/A | Prendre/relacher un dossier CQ (lock system) |
+| 53 | `PATCH /api/admin/controle/[livraisonId]/check` | PATCH | SA/A | Cocher/decocher 1 des 6 points CQ (idempotent, recalcule cq_en_cours) |
+| 54 | `POST /api/admin/controle/[livraisonId]/validate` | POST | SA/A | Valider CQ (6/6 requis), set cq_valide + workflow_transition |
 
 ---
 
-#### 4.1.6 Admin / Tournees (1 route)
+### 4.12 Admin - Depots
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 31 | `GET/POST /api/admin/tournees` | GET, POST | GET: super_admin, admin, agent_secteur, livreur (lecture seule). POST: super_admin, admin | CRUD tournees + assignation livraisons. POST sync `statut_commercial: 'en_livraison'` sur clients associes |
+| 55 | `GET /api/admin/depots` | GET | SA/A | Liste depots actifs |
+| 56 | `POST /api/admin/depots/reassign-clients` | POST | SA/A | Reassignation auto clients -> depots |
+| 57 | `POST /api/admin/depots/simulate` | POST | SA/A | Simuler impact nouveau depot |
+| 58 | `GET /api/admin/depots/stats` | GET | SA/A/AG | Stats couverture depots |
 
 ---
 
-#### 4.1.7 Admin / FNUCI (2 routes)
+### 4.13 Admin - Users
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 32 | `GET/PATCH /api/admin/fnuci` | GET, PATCH | requireRole | Liste FNUCI (sortBy, sortOrder, pagination, client join) + toggle statut |
-| 33 | `POST /api/admin/fnuci/validate` | POST | requireRole | Valider reference FNUCI |
+| 59 | `DELETE/PATCH/PUT /api/admin/users/[id]` | DELETE, PATCH, PUT | requireRole + hierarchie | CRUD utilisateur + reset password |
+| 60 | `POST /api/admin/users/[id]/impersonate` | POST | SA uniquement | Magic link impersonation |
+| 61 | `POST /api/admin/users/create` | POST | requireRole + creatableRoles | Creer utilisateur + invitation email |
+| 62 | `GET /api/admin/users/agents` | GET | SA/A/AG | Liste agents secteur |
 
 ---
 
-#### 4.1.8 Admin / NAF (2 routes)
+### 4.14 Admin - Planning
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 34 | `GET /api/admin/naf` | GET | requireRole | Liste codes NAF avec pagination + sortBy/sortOrder |
-| 35 | `PATCH /api/admin/naf/[code]` | PATCH | super_admin, admin | Toggle validite NAF + bulk update clients |
+| 63 | `GET /api/admin/planning` | GET | SA/A/AG | Planning depot par semaine |
+| 64 | `POST /api/admin/planning/anomalies` | POST | SA/A | Detection anomalies (>10 jours ouvres sans creneau) |
 
 ---
 
-#### 4.1.9 Admin / Map (1 route)
+### 4.15 Admin - Tournees
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 36 | `GET /api/admin/map/data` | GET | Auth manuelle | Depots + clients pour carte Google Maps. Filtrage agent_secteur par `depot_ids` (via `depot_retrait_id` / `depot_logistique_id`) |
+| 65 | `GET/POST /api/admin/tournees` | GET, POST | GET: SA/A/AG/L (lecture seule). POST: SA/A | CRUD tournees + assignation livraisons. POST sync `statut_commercial: 'en_livraison'` sur clients associes |
 
 ---
 
-#### 4.1.10 Admin / Geocoding (1 route)
+### 4.16 Admin - FNUCI
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 37 | `GET/POST /api/admin/geocoding/batch` | GET, POST | super_admin, admin | Stats + geocodage batch (api-adresse.data.gouv.fr) |
+| 66 | `GET/PATCH /api/admin/fnuci` | GET, PATCH | SA/A/AG | Liste FNUCI (sortBy, sortOrder, pagination, client join) + toggle statut |
+| 67 | `POST /api/admin/fnuci/validate` | POST | SA/A/AG | Valider reference FNUCI |
 
 ---
 
-### 4.2 Public / Auth
-
-#### 4.2.1 Clients (6 routes)
+### 4.17 Admin - NAF
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 38 | `GET /api/clients` | GET | requireRole | Liste clients paginee (7 filtres, 12 tris). Filtre depot verifie `depot_retrait_id` ET `depot_logistique_id` |
-| 39 | `GET /api/clients/stats` | GET | super_admin, admin, agent_secteur | Stats globales clients |
-| 40 | `GET /api/clients/commercials` | GET | super_admin, admin, agent_secteur | Liste emails commerciaux |
-| 41 | `GET /api/clients/statuses` | GET | **AUCUN** | Liste statuts distincts |
-| 42 | `GET /api/clients/departements` | GET | **AUCUN** | Liste departements avec labels |
-| 43 | `POST /api/clients/send-form` | POST | super_admin, admin, agent_secteur | Legacy : envoyer formulaire |
+| 68 | `GET /api/admin/naf` | GET | SA/A/AG | Liste codes NAF avec pagination + sortBy/sortOrder |
+| 69 | `PATCH /api/admin/naf/[code]` | PATCH | SA/A | Toggle validite NAF + bulk update clients |
 
 ---
 
-#### 4.2.2 Depots (1 route)
+### 4.18 Admin - Map
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 44 | `GET /api/depots` | GET | Optionnel (role-based si auth) | Liste depots actifs. Filtre role-based : agent_secteur voit ses depot_ids, livreur voit depot_ids de ses agents, admin voit tout. Retourne champs geo (latitude, longitude, rayon_couverture_km, agence) |
+| 70 | `GET /api/admin/map/data` | GET | Auth manuelle | Depots + clients pour carte Google Maps. Filtrage agent_secteur par `depot_ids` |
 
 ---
 
-#### 4.2.3 Alerts (1 route)
+### 4.19 Admin - Geocoding
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 45 | `GET/POST /api/alerts` | GET, POST | super_admin, admin | CRUD alertes email |
+| 71 | `GET/POST /api/admin/geocoding/batch` | GET, POST | SA/A | Stats + geocodage batch (api-adresse.data.gouv.fr) |
 
 ---
 
-#### 4.2.4 Auth (1 route)
+### 4.20 Monday Integration
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 46 | `POST /api/auth/login` | POST | Public | Login Supabase + redirect selon role |
+| 72 | `POST /api/monday/columns` | POST | SA/A | Creer colonne Monday |
+| 73 | `POST /api/monday/create-column` | POST | SA/A | Creer colonne Monday (doublon #72) |
+| 74 | `GET/POST/DELETE /api/monday/mapping` | GET, POST, DELETE | SA/A | CRUD mappings champs |
+| 75 | `GET/POST /api/monday/mapping/init` | GET, POST | SA/A | Initialiser mappings depuis config |
+| 76 | `GET /api/monday/schema` | GET | SA/A | Schema board Monday (cache 5 min) |
+| 77 | `GET/POST/DELETE /api/monday/webhooks` | GET, POST, DELETE | SA | CRUD webhooks Monday (auth ajoutee 2026-03-12) |
+
+**Routes Monday desactivees (410 Gone) :**
+- `GET /api/monday/clients`
+- `GET/PUT /api/monday/clients/[id]`
+- `GET /api/monday/clients/stats`
+- `GET /api/monday/statuts`
+- `GET/POST /api/monday/sync-ids`
 
 ---
 
-#### 4.2.5 Address (1 route)
+### 4.21 Sync / Webhooks
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 47 | `GET /api/address/search` | GET | Public | Autocomplete adresse (api-adresse.data.gouv.fr) |
-
----
-
-#### 4.2.6 Formulaire (6 routes, token-based)
-
-| # | Route | Methodes | Roles | Description |
-|---|-------|----------|-------|-------------|
-| 48 | `POST /api/formulaire/validate-token` | POST | Public (token) | Valider token formulaire |
-| 49 | `POST /api/formulaire/validate-enemat` | POST | Public (token) | Valider code ENEMAT (3 tentatives max) |
-| 50 | `POST /api/formulaire/submit` | POST | Public (token) | Soumettre formulaire (statut -> formulaire_valide) |
-| 51 | `POST /api/formulaire/save-address` | POST | Public (token) | Sauvegarder adresse + geocoder + classifier zone |
-| 52 | `POST /api/formulaire/resend-code` | POST | Public (token) | Renvoyer code ENEMAT (cooldown 2 min) |
-| 53 | `POST /api/formulaire/client-address` | POST | Public (token) | Charger adresse client + depots |
-
----
-
-#### 4.2.7 Formulaire-Livraison (2 routes, token-based)
-
-| # | Route | Methodes | Roles | Description |
-|---|-------|----------|-------|-------------|
-| 54 | `GET /api/formulaire-livraison/validate-token` | GET | Public (token) | Valider token livraison |
-| 55 | `POST /api/formulaire-livraison/submit` | POST | Public (token) | Soumettre choix creneau |
-
----
-
-#### 4.2.8 Livraisons (4 routes)
-
-| # | Route | Methodes | Roles | Description |
-|---|-------|----------|-------|-------------|
-| 56 | `GET /api/livraisons` | GET | requireRole (tous admin) | Liste livraisons paginee (6 filtres). agent_secteur filtre par `depot_ids` via `depot_retrait_id` OR `depot_logistique_id` (fix precedence bug). Inner join client |
-| 57 | `GET /api/livraisons/confirm-creneau` | GET | Public (token) | Confirmer creneau livraison |
-| 58 | `GET /api/livraisons/cancel-creneau` | GET | Public (token) | Annuler creneau (client -> anomalie) |
-| 59 | `GET /api/livraisons/info-creneau` | GET | Public (token) | Infos creneau livraison |
-
----
-
-#### 4.2.9 Relance (1 route)
-
-| # | Route | Methodes | Roles | Description |
-|---|-------|----------|-------|-------------|
-| 60 | `POST/PUT /api/relance` | POST, PUT | Public (token) | Valider token + soumettre disponibilites |
-
----
-
-#### 4.2.10 Tournee (1 route)
-
-| # | Route | Methodes | Roles | Description |
-|---|-------|----------|-------|-------------|
-| 61 | `GET/POST /api/tournee/confirm` | GET, POST | Public (token) | Confirmer/refuser tournee. Refus → `statut_commercial: 'a_relivrer'` |
-
----
-
-#### 4.2.11 Documents (2 routes)
-
-| # | Route | Methodes | Roles | Description |
-|---|-------|----------|-------|-------------|
-| 62 | `POST /api/documents/validate-token` | POST | Public (token) | Valider token documents |
-| 63 | `POST /api/documents/upload` | POST | Public (token) | Upload document (FormData, max 10Mo) |
-
----
-
-### 4.3 Monday (maintenance)
-
-| # | Route | Methodes | Roles | Description |
-|---|-------|----------|-------|-------------|
-| 64 | `GET /api/monday/clients` | GET | - | **DESACTIVE (410)** |
-| 65 | `GET/PUT /api/monday/clients/[id]` | GET, PUT | - | **DESACTIVE (410)** |
-| 66 | `GET /api/monday/clients/stats` | GET | - | **DESACTIVE (410)** |
-| 67 | `GET /api/monday/statuts` | GET | - | **DESACTIVE (410)** |
-| 68 | `GET/POST /api/monday/sync-ids` | GET, POST | - | **DESACTIVE (410)** |
-| 69 | `POST /api/monday/columns` | POST | super_admin, admin | Creer colonne Monday |
-| 70 | `GET /api/monday/schema` | GET | super_admin, admin | Schema board Monday (cache 5 min) |
-| 71 | `POST /api/monday/create-column` | POST | super_admin, admin | Creer colonne Monday (doublon #69) |
-| 72 | `GET/POST/DELETE /api/monday/mapping` | GET, POST, DELETE | super_admin, admin | CRUD mappings champs |
-| 73 | `GET/POST /api/monday/mapping/init` | GET, POST | super_admin, admin | Initialiser mappings depuis config |
-| 74 | `GET/POST/DELETE /api/monday/webhooks` | GET, POST, DELETE | **AUCUN** | CRUD webhooks Monday |
-| 75 | `GET/POST /api/webhooks/monday` | GET, POST | Public | Challenge handler seulement (desactive) |
-| 76 | `GET/POST /api/sync/monday` | GET, POST | **AUCUN** (GET) / **410** (POST) | Stats Supabase / desactive |
+| 78 | `GET /api/sync/monday` | GET | Public (read-only) | Stats Supabase |
+| 79 | `POST /api/sync/monday` | POST | - | **DESACTIVE (410)** |
+| 80 | `POST /api/webhooks/monday` | POST | Public | Challenge handler only (desactive) |
 
 ---
 
 ## 5. Pages (34 pages)
 
-### 5.1 Pages Admin (17 pages)
+### 5.1 Pages Publiques (8 pages)
 
-#### 5.1.1 `/admin/dashboard`
+| # | URL | Description | Acces |
+|---|-----|-------------|-------|
+| 1 | `/` | Redirect immediat vers `/auth/login` | Public |
+| 2 | `/formulaire?token=TOKEN` | Wizard 6 etapes (ENEMAT, infos, adresse, preference, FNUCI, confirmation) | Token URL |
+| 3 | `/formulaire-livraison?token=TOKEN` | Choix date + creneau retrait | Token URL |
+| 4 | `/documents?token=TOKEN` | Upload documents (urssaf/dsn/benevoles, max 10Mo) | Token URL |
+| 5 | `/relance?token=TOKEN` | Disponibilites + contact | Token URL |
+| 6 | `/livraisons/confirm-creneau?token=TOKEN` | Confirmer creneau | Token URL |
+| 7 | `/livraisons/cancel-creneau/confirme` | Page statique confirmation annulation | Public |
+| 8 | `/tournee/confirmation?token=TOKEN` | Confirmer/refuser livraison | Token URL |
+
+---
+
+### 5.2 Pages Auth (7 pages)
+
+| # | URL | Description | Roles |
+|---|-----|-------------|-------|
+| 9 | `/auth/login` | Login email + password, redirect selon role | Public |
+| 10 | `/auth/register` | Redirect immediat vers /auth/login (self-registration desactivee) | Public |
+| 11 | `/auth/forgot-password` | Envoi lien reset | Public |
+| 12 | `/auth/reset-password` | Nouveau mot de passe (min 8 car) | Public (session Supabase) |
+| 13 | `/auth/complete-profile` | Saisie prenom/nom/tel, insert users_profile | Connecte sans profil |
+| 14 | `/auth/select-societe` | Selection societe (clients multi-societes) | client |
+| 15 | `/auth/impersonate` | Auto sign out + OTP verify + redirect | Via super_admin |
+
+---
+
+### 5.3 Pages Client (2 pages)
+
+| # | URL | Description | Roles |
+|---|-----|-------------|-------|
+| 16 | `/client/dashboard` | 3 stat cards + 2 boutons actions rapides | client |
+| 17 | `/client/livraisons` | Cards livraisons par societe (lecture seule) | client |
+
+---
+
+### 5.4 Pages Admin (17 pages)
+
+#### 5.4.1 `/admin/dashboard`
 
 | Critere | Detail |
 |---------|--------|
@@ -918,14 +975,14 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 5.1.2 `/admin/clients`
+#### 5.4.2 `/admin/clients`
 
 | Critere | Detail |
 |---------|--------|
 | API | GET /api/clients, GET /api/clients/commercials, GET /api/clients/departements, GET /api/clients/stats, POST /api/admin/clients/send-formulaire, PUT /api/admin/clients/{id}, DELETE /api/admin/clients/{id}, POST /api/admin/clients/bulk |
-| Colonnes | Checkbox, Societe (raison_sociale + siret), Ref. Retina, Email, Tel, Commercial, Dep., Zone, Depot, Velos valides, NAF, Statut, Actions |
-| Filtres | Search (debounce 600ms), Statut, NAF (valide/bloque/en_attente), Departement, Zone, Commercial, Depot (via /api/depots role-filtered), Page size (20/50/100/250/500) |
-| Actions | Envoyer formulaire, Voir fiche, Generer lien, Modifier (dialog), Supprimer (confirm), Bulk (formulaire uniquement — bouton "Changer statut" en masse supprime, tous les statuts changent via process) |
+| Colonnes | Checkbox, Societe (raison_sociale + siret), Ref. Retina, Email, Tel, Commercial, Dep., Zone, Depot, Velos valides, NAF, Statut, Controle CQ (pastille), Actions |
+| Filtres | Search (debounce 600ms), Statut, NAF (valide/bloque/en_attente), Departement, Zone, Commercial, Depot (via /api/depots role-filtered), Controle (non_traite/en_cours/valide), Page size (20/50/100/250/500) + **filtres figes** |
+| Actions | Envoyer formulaire, Voir fiche, Generer lien, Modifier (dialog), Supprimer (confirm), Bulk (formulaire uniquement) |
 | Tri | updated_at (defaut desc), raison_sociale, siret, reference_retina, departement, velo_valide, statut_commercial, validation_naf, depot |
 | Pagination | OUI cote serveur (20/50/100/250/500) |
 | Roles | super_admin, admin, agent_secteur |
@@ -933,24 +990,25 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 5.1.3 `/admin/clients/[id]`
+#### 5.4.3 `/admin/clients/[id]`
 
 | Critere | Detail |
 |---------|--------|
 | API | GET /api/admin/clients/{id}, POST send-formulaire, POST reset-formulaire, POST send-formulaire-livraison, POST send-relance, POST request-documents, PATCH /api/admin/clients/{id}, Supabase direct: fnuci (PPE only), users_profile |
-| Sections | Identite (+ code NAF sous SIRET), Contact, Adresse, Statut commercial, Statut process, Validation NAF, Zone, Depot, Velos, FNUCI (PPE only), Preferences livraison (inline edit), Complement adresse (inline edit), Documents (5 types : PI, BL, URSSAF, DSN, BENEVOLES — voir + telecharger), Historique livraisons, Mini-carte |
-| Actions | Envoyer formulaire, Reinitialiser formulaire, Mail livraison, Formulaire retrait, Relance, Demander documents, Edit preferences/complement (inline), Telecharger documents (via Supabase ?download=) |
+| Sections | Identite (+ code NAF sous SIRET), Contact, Adresse, Statut commercial, Statut process, Validation NAF, Zone, Depot, Velos, FNUCI (PPE only), Preferences livraison (inline edit), Complement adresse (inline edit), Documents (5 types : PI, BL, URSSAF, DSN, BENEVOLES — voir + telecharger), Historique livraisons (avec badge CQ), Mini-carte |
+| Actions | Envoyer formulaire, Reinitialiser formulaire, Mail livraison, Formulaire retrait, Relance, Demander documents, Edit preferences/complement (inline), Telecharger documents (via Supabase ?download=), Bypass formulaire (SA/A) |
+| Navigation | Bouton retour intelligent : revient a la page d'origine (clients, livraisons, ou controle) avec les filtres preserves |
 | Roles | super_admin, admin, agent_secteur |
 
 ---
 
-#### 5.1.4 `/admin/livraisons`
+#### 5.4.4 `/admin/livraisons`
 
 | Critere | Detail |
 |---------|--------|
 | API | GET /api/livraisons, GET /api/depots, GET /api/clients/commercials, GET /api/clients/departements, POST send-formulaire-livraison, POST send-mail-livraison, POST send-mail-planning |
-| Colonnes | Checkbox, Societe + siret, Ref. Retina (copier icone), Email, Tel, Commercial, Dep., Zone, Depot, Mode, CP + Ville (simplifie), Velos, Date (date_livraison si livre, creneau_date sinon), Statut + confirmation, Actions |
-| Filtres | Search (debounce 300ms), Statut (multi-select), Depot (multi-select), Commercial (multi-select), Departement (multi-select), Zone (multi-select), PageSize (20/50/100/200) |
+| Colonnes | Checkbox, Societe + siret, Ref. Retina (copier icone), Email, Tel, Commercial, Dep., Zone, Depot, Mode, CP + Ville (simplifie), Velos, Date (date_livraison si livre, creneau_date sinon), Statut + confirmation, Controle CQ (pastille rouge si en cours), Actions |
+| Filtres | Search (debounce 300ms), Statut (multi-select), Depot (multi-select), Commercial (multi-select), Departement (multi-select), Zone (multi-select), Controle, PageSize (20/50/100/200) + **filtres figes** |
 | Actions | Programmer, Module livraison, Voir fiche. Bulk : formulaire retrait, mail livraison, mail planning |
 | Tri | created_at (defaut desc), reference_retina, telephone, commercial_assigne, departement, zone_status, depot, adresse, velo_valide, mode_livraison, creneau_date, statut |
 | Pagination | OUI cote serveur (20/50/100/200) |
@@ -958,17 +1016,17 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 5.1.5 `/admin/livraisons/[id]`
+#### 5.4.5 `/admin/livraisons/[id]`
 
 | Critere | Detail |
 |---------|--------|
 | API | Supabase direct : livraisons (avec client + depot join), users_profile |
-| Actions | Programmer (dialog date/creneau/livreur/notes), Marquer livree, Annuler |
+| Actions | Programmer (dialog date/creneau/livreur/notes — dropdown livreur inclut agent_secteur avec est_aussi_livreur), Marquer livree (pas de bypass livree), Annuler |
 | Roles | super_admin, admin, agent_secteur, livreur |
 
 ---
 
-#### 5.1.6 `/admin/livraisons/deliver`
+#### 5.4.6 `/admin/livraisons/deliver`
 
 | Critere | Detail |
 |---------|--------|
@@ -980,7 +1038,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 5.1.7 `/admin/livraisons/livreur`
+#### 5.4.7 `/admin/livraisons/livreur`
 
 | Critere | Detail |
 |---------|--------|
@@ -993,7 +1051,20 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 5.1.8 `/admin/depots`
+#### 5.4.8 `/admin/alertes` (Controle Qualite post-livraison)
+
+| Critere | Detail |
+|---------|--------|
+| API | GET /api/admin/controle, POST .../lock, PATCH .../check, POST .../validate |
+| Colonnes | Societe (lien), Nom/Prenom, Tel, Ref Retina (copier), Date livraison, Commercial, Depot, Livreur, Velos, 6 checkboxes CQ, Bouton Valider |
+| Filtres | Tous / Non traites / En cours + Agent (tous/mes dossiers/par agent) + Search + Lien ENEMAT Retina + PageSize (default 50) + **filtres figes** |
+| Stats | 2 cards : Non traites (rouge) + En cours (orange) |
+| Actions | Cocher/decocher check (PATCH immediat, optimistic UI), Prendre/relacher dossier (lock), Valider 6/6 (POST, row disparait), Copier ref Retina |
+| Roles | super_admin, admin |
+
+---
+
+#### 5.4.9 `/admin/depots`
 
 | Critere | Detail |
 |---------|--------|
@@ -1005,7 +1076,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 5.1.9 `/admin/map`
+#### 5.4.10 `/admin/map`
 
 | Critere | Detail |
 |---------|--------|
@@ -1018,7 +1089,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 5.1.10 `/admin/planning`
+#### 5.4.11 `/admin/planning`
 
 | Critere | Detail |
 |---------|--------|
@@ -1030,28 +1101,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 5.1.11 `/admin/alertes`
-
-| Critere | Detail |
-|---------|--------|
-| API | GET /api/alerts, POST /api/alerts |
-| Colonnes | Date, Type (badge), Client (lien), Message, Actions |
-| Filtres | Tabs : En attente / Envoyees / Archivees |
-| Actions | Envoyer alerte, Archiver, Voir fiche client |
-| Roles | super_admin, admin |
-
----
-
-#### 5.1.12 `/admin/sync`
-
-| Critere | Detail |
-|---------|--------|
-| Type | Page informative statique (lien vers /admin/settings/monday) |
-| Roles | super_admin |
-
----
-
-#### 5.1.13 `/admin/users`
+#### 5.4.12 `/admin/users`
 
 | Critere | Detail |
 |---------|--------|
@@ -1064,7 +1114,16 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 5.1.14 `/admin/settings`
+#### 5.4.13 `/admin/sync`
+
+| Critere | Detail |
+|---------|--------|
+| Type | Page informative statique (lien vers /admin/settings/monday) |
+| Roles | super_admin |
+
+---
+
+#### 5.4.14 `/admin/settings`
 
 | Critere | Detail |
 |---------|--------|
@@ -1074,7 +1133,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 5.1.15 `/admin/settings/monday`
+#### 5.4.15 `/admin/settings/monday`
 
 | Critere | Detail |
 |---------|--------|
@@ -1085,20 +1144,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-#### 5.1.16 `/admin/settings/fnuci` (PPE only)
-
-| Critere | Detail |
-|---------|--------|
-| API | GET /api/admin/fnuci (sortBy, sortOrder, pagination, client join), PATCH /api/admin/fnuci/{id} |
-| Colonnes | Numero, Reference, Detenteur, Client (lien, tri client-side), Ref. Retina (tri client-side), Statut (badge), Date attribution, Actions |
-| Filtres | Search, Statut |
-| Tri | ArrowUpDown sur toutes les colonnes. Server-side : numero, reference, detenteur, statut, attribue_at. Client-side : Client, Ref. Retina (colonnes join) |
-| Pagination | OUI cote serveur (page size 50) |
-| Roles | super_admin (PPE only -- guard tenant_id != ecovolt) |
-
----
-
-#### 5.1.17 `/admin/settings/naf`
+#### 5.4.16 `/admin/settings/naf`
 
 | Critere | Detail |
 |---------|--------|
@@ -1111,48 +1157,16 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-### 5.2 Pages Auth (7 pages)
+#### 5.4.17 `/admin/settings/fnuci` (PPE only)
 
-| # | URL | Description | Roles |
-|---|-----|-------------|-------|
-| 25 | `/auth/login` | Login email + password, redirect selon role | Public |
-| 26 | `/auth/register` | Redirect immediat vers /auth/login (self-registration desactivee) | Public |
-| 27 | `/auth/forgot-password` | Envoi lien reset | Public |
-| 28 | `/auth/reset-password` | Nouveau mot de passe (min 8 car) | Public (session Supabase) |
-| 29 | `/auth/impersonate` | Auto sign out + OTP verify + redirect | Via super_admin |
-| 30 | `/auth/select-societe` | Selection societe (clients multi-societes) | client |
-| 31 | `/auth/complete-profile` | Saisie prenom/nom/tel, insert users_profile | Connecte sans profil |
-
----
-
-### 5.3 Pages Client (2 pages)
-
-| # | URL | Description | Roles |
-|---|-----|-------------|-------|
-| 32 | `/client/dashboard` | 3 stat cards + 2 boutons actions rapides | client |
-| 33 | `/client/livraisons` | Cards livraisons par societe (lecture seule) | client |
-
----
-
-### 5.4 Formulaires Publics (7 pages)
-
-| # | URL | Description | Acces |
-|---|-----|-------------|-------|
-| 18 | `/formulaire?token=TOKEN` | Wizard 6 etapes (ENEMAT, infos, adresse, preference, FNUCI, confirmation) | Token URL |
-| 19 | `/formulaire-livraison?token=TOKEN` | Choix date + creneau retrait | Token URL |
-| 20 | `/relance?token=TOKEN` | Disponibilites + contact | Token URL |
-| 21 | `/tournee/confirmation?token=TOKEN` | Confirmer/refuser livraison | Token URL |
-| 22 | `/livraisons/confirm-creneau?token=TOKEN` | Confirmer creneau | Token URL |
-| 23 | `/livraisons/cancel-creneau/confirme` | Page statique confirmation annulation | Public |
-| 24 | `/documents?token=TOKEN` | Upload documents (urssaf/dsn/benevoles, max 10Mo) | Token URL |
-
----
-
-### 5.5 Page racine
-
-| # | URL | Description |
-|---|-----|-------------|
-| 34 | `/` | Redirect immediat vers `/auth/login` |
+| Critere | Detail |
+|---------|--------|
+| API | GET /api/admin/fnuci (sortBy, sortOrder, pagination, client join), PATCH /api/admin/fnuci/{id} |
+| Colonnes | Numero, Reference, Detenteur, Client (lien, tri client-side), Ref. Retina (tri client-side), Statut (badge), Date attribution, Actions |
+| Filtres | Search, Statut |
+| Tri | ArrowUpDown sur toutes les colonnes. Server-side : numero, reference, detenteur, statut, attribue_at. Client-side : Client, Ref. Retina (colonnes join) |
+| Pagination | OUI cote serveur (page size 50) |
+| Roles | super_admin (PPE only -- guard tenant_id != ecovolt) |
 
 ---
 
@@ -1160,23 +1174,23 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 | Categorie | Nombre |
 |-----------|--------|
+| Pages publiques (formulaires + redirect) | 8 (/, formulaire, formulaire-livraison, documents, relance, confirm-creneau, cancel-creneau, tournee) |
+| Pages auth | 7 (login, register, forgot-password, reset-password, complete-profile, select-societe, impersonate) |
+| Pages client | 2 (dashboard, livraisons) |
 | Pages admin (avec tableau) | 7 (clients, livraisons, depots, alertes, users, fnuci, naf) |
 | Pages admin (detail/fiche) | 3 (clients/[id], livraisons/[id], livraisons/deliver) |
 | Pages admin (planning/carte) | 2 (planning, map) |
 | Pages admin (settings/info) | 4 (settings, settings/monday, sync, dashboard) |
 | Pages admin (livreur) | 1 (livraisons/livreur) |
-| Pages publiques (formulaires) | 7 (formulaire, formulaire-livraison, relance, tournee, confirm-creneau, cancel-creneau, documents) |
-| Pages auth | 7 (login, register, forgot-password, reset-password, impersonate, select-societe, complete-profile) |
-| Pages client | 2 (dashboard, livraisons) |
-| Page racine (redirect) | 1 |
 | **TOTAL** | **34 pages** |
 
 | Feature | Pages avec |
-|---------|----------|
-| Pagination cote serveur | 4 (clients, livraisons, fnuci, naf) |
+|---------|-----------|
+| Pagination cote serveur | 5 (clients, livraisons, alertes/controle, fnuci, naf) |
 | Colonnes triables | 4 (clients, livraisons, fnuci, naf) |
 | Selection multiple + bulk | 2 (clients, livraisons — 3 actions bulk sur livraisons : formulaire retrait, mail livraison, mail planning) |
-| Multi-select filtres (Popover) | 1 (livraisons) |
+| Filtres figes (pin filters) | 3 (clients, livraisons, controle) |
+| Multi-select filtres (Popover) | 2 (livraisons, controle) |
 | Google Maps | 1 (map) |
 | Upload fichiers | 1 (documents) |
 | Inline edit | 1 (clients/[id]) |
@@ -1185,151 +1199,123 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ---
 
-## 6. Integrations
+## 6. Process Client
 
-### 6.1 Monday.com
+### 6.1 Parcours client complet
 
-#### Architecture
+```
+Import Monday.com (manuel ou sync)
+    |
+    v
+Client cree dans Supabase (statut: controle_valide)
+    |
+    v
+Validation NAF (automatique via naf_codes)
+    |  NAF = OUI
+    v
+Envoi formulaire (email code ENEMAT + lien formulaire)
+    |  statut: formulaire_envoye
+    v
+Client remplit formulaire (6 etapes)
+    |  1. Code ENEMAT (3 tentatives max)
+    |  2. Informations societe (pre-remplies)
+    |  3. Adresse livraison (autocomplete + geocodage)
+    |  4. Mode reception (retrait/livraison gratuite/payante)
+    |  5. FNUCI (PPE only)
+    |  6. Confirmation CGV
+    |  statut: formulaire_valide
+    v
+Livraison creee (statut: en_attente, mode: domicile/point_relais)
+    |  statut client: a_livrer
+    |  (ou bypass_formulaire possible par SA/A -> statut direct a_livrer)
+    v
+Planification (admin assigne depot + creneau)
+    |  statut livraison: programmee
+    |  statut client: en_livraison
+    v
+Confirmation client (email token -> confirmer/refuser)
+    |
+    v
+Tournee (regroupement livraisons par livreur/depot/date)
+    |  statut livraison: en_cours
+    v
+Livraison effective (livreur)
+    |  FNUCI scan, signature, photos, attestation PDF
+    |  statut livraison: livree
+    |  statut client: livre
+    v
+Bon de livraison envoye par email
+    |
+    v
+Controle Qualite (admin/super_admin)
+    |  6 points : piece identite, photo ENEMAT, signature installateur,
+    |             signature client, N FNUCI, NB velo
+    |  cq_en_cours = true (1-5 checks)
+    |  cq_valide = true (6/6 checks) → visible fiche client (pastille verte)
+    v
+Dossier complet
+```
 
-| Module | Fichier | Lignes | Description |
-|--------|---------|--------|-------------|
-| API | `src/lib/monday/api.ts` | 546 | CRUD items Monday, sync bidirectionnelle |
-| Config | `src/lib/monday/config.ts` | 389 | Configuration, mappings hardcodes (backup) |
-| Dynamic mapping | `src/lib/monday/dynamic-mapping.ts` | 348 | Mappings depuis Supabase (prioritaire) |
+### 6.2 Sync Monday <-> Supabase
 
-#### Fonctions principales
+```
+DIRECTION Supabase -> Monday (active) :
+  PUT /api/admin/clients/{id}
+    -> getChangedFields(old, new)
+    -> syncClientToMonday(client, changedFields)
+    -> loadMappings() (table monday_field_mapping, cache 1 min)
+    -> convertValueToMonday() pour chaque champ
+    -> updateMondayItem() (GraphQL mutation)
+    -> log sync_monday_log
 
-| Fonction | Description |
-|----------|-------------|
-| `getMondayItems(boardId?)` | Lecture paginee de tous les items (500/page) |
-| `getAllBoardsItems()` | Lecture multi-board (200ms delai entre boards) |
-| `getMondayItemById(itemId)` | Lecture item par ID |
-| `updateMondayItem(itemId, columnValues, boardId?)` | Mutation change_multiple_column_values |
-| `syncClientToMonday(client, fieldsToSync?)` | Sync Supabase -> Monday avec mapping dynamique |
-| `getChangedFields(oldClient, newClient)` | Compare 2 versions via mapping dynamique |
-| `loadMappings(forceRefresh?, boardId?)` | Charge mappings depuis monday_field_mapping (cache 1 min) |
-| `convertValueToMonday(field, value, boardId?)` | Conversion valeur Supabase -> Monday |
-| `convertValueToSupabase(field, value, boardId?)` | Conversion valeur Monday -> Supabase |
-| `initializeMappingsFromConfig(boardId?)` | Seed table depuis config hardcodee |
+DIRECTION Monday -> Supabase (desactivee) :
+  POST /api/webhooks/monday (challenge handler seulement)
+  Routes /api/monday/clients, /api/monday/sync-ids : 410 Gone
+```
 
-#### Endpoint API
-`https://api.monday.com/v2` (GraphQL)
+### 6.3 Flux email
 
-#### Boards
-
-**PPE Energie (7 boards, compte crm-oreka) :**
-
-| Board | ID |
-|-------|----|{}
-| ATHOME | 2144986053 |
-| ALEX | 5002798369 |
-| DIZIEN | 2146667697 |
-| EKL | 2140187165 |
-| JM | 2137662048 |
-| SALIH | 5013455904 |
-| STELLARS | 5001072451 |
-
-**Ecovolt (1 board, compte alexandredelannays-team) :**
-
-| Board | ID |
-|-------|----|{}
-| Velos Cargos General | 9990833105 |
-
-#### Mappings de valeurs (champs avec value mapping special)
-
-Champs avec conversion de valeurs entre Supabase et Monday :
-- `statut_commercial` (19 statuts)
-- `departement` (Reunion/Martinique/etc. <-> codes INSEE)
-- `validation_naf` (PPE: identite, Ecovolt: Fait/Bloque/En cours <-> OUI/NON/A VERIFIER)
-- `statut_retina` (3 valeurs)
-- `statut_mail` (3 valeurs)
-- `statut_anomalie` (8 valeurs)
-- `statut_doublon` (3 valeurs)
-- `type_livraison` (2 valeurs)
-- `type_de_zone` (2 valeurs)
-
-#### Double source de mapping
-
-Le mapping hardcode dans `config.ts` sert de backup/seed. En production, c'est le mapping dynamique dans la table `monday_field_mapping` qui prime. Le hardcode est utilise par `initializeMappingsFromConfig()` pour initialiser la table.
-
----
-
-### 6.2 Email (dual mode SMTP/Gmail OAuth2)
-
-**Fichier :** `src/lib/email/gmail.ts` (~1140 lignes)
-
-**Choix automatique du transport :**
-- Si `SMTP_HOST` existe -> SMTP (Microsoft 365, PPE)
-- Sinon -> Gmail OAuth2 (Ecovolt)
-
-| Fonction | Description |
-|----------|-------------|
-| `sendEmail({to, subject, html, from})` | Envoi generique tenant-aware |
-| `sendCodeValidationEmail(...)` | Code ENEMAT (4 chiffres). Fond solide (background-color) au lieu de linear-gradient pour compatibilite Outlook |
-| `sendFormulaireLinkEmail(...)` | Lien formulaire avec token |
-| `sendFormulaireRecapEmail(...)` | Recapitulatif apres validation |
-| `sendUserInvitationEmail(...)` | Invitation admin (identifiants) |
-| `sendFormulaireLivraisonEmail(...)` | Formulaire livraison (code ENEMAT) |
-| `sendMailLivraisonEmail(...)` | Notification mise en livraison |
-| `sendMailPlanningEmail(...)` | Notification planning (creneau) |
-| `sendConfirmationCreneauEmail(...)` | Confirmation creneau |
-| `sendTourneeConfirmationEmail(...)` | Confirmation tournee |
-| `sendBonLivraisonEmail(...)` | Bon de livraison PDF |
-
-**Env vars SMTP :** `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`
-**Env vars Gmail :** `GMAIL_USER`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`
-
----
-
-### 6.3 Geocodage (api-adresse.data.gouv.fr)
-
-**Fichier :** `src/lib/geo/utils.ts` (392 lignes)
-
-**API :** `https://api-adresse.data.gouv.fr/search/` (gouvernementale, gratuit, sans cle)
-
-**Strategie de geocodage en 3 passes :**
-1. Adresse complete (score >= 0.4)
-2. Fallback CP + ville (score plafonne a 0.5)
-3. Fallback CP seul via `type=municipality` (score plafonne a 0.3)
-
-**Fonctions :**
-
-| Fonction | Description |
-|----------|-------------|
-| `calculateHaversineDistance(lat1, lon1, lat2, lon2)` | Distance en km entre 2 points GPS |
-| `geocodeAddress(adresse, codePostal, ville, minScore?)` | Geocodage 3 passes |
-| `buildClientAddress(client)` | Meilleure adresse (livraison > societe > CP) |
-| `findNearestDepot(lat, lng, depots)` | Depot le plus proche (Haversine) |
-| `classifyClientZone(lat, lng, depots)` | Zone gratuite / payante / hors_zone. Hors zone assigne quand meme le depot le plus proche (priorite retrait). Plus de depot null |
-| `getSimpleZoneStatus(client, depots)` | dans_la_zone / hors_zone |
+```
+Admin action (envoyer formulaire, relance, planning, etc.)
+    |
+    v
+Choix transport automatique :
+    PPE -> SMTP (Microsoft 365, SMTP_HOST)
+    Ecovolt -> Gmail OAuth2 (googleapis)
+    |
+    v
+Template HTML tenant-aware (nom, couleur, contact)
+    |
+    v
+Envoi via nodemailer
+    |
+    v
+Emails types :
+  - Code validation ENEMAT
+  - Lien formulaire
+  - Recap formulaire
+  - Notification livraison
+  - Confirmation creneau
+  - Planning
+  - Bon de livraison PDF
+  - Invitation utilisateur
+  - Relance
+  - Demande documents
+```
 
 ---
 
-### 6.4 Google Maps (affichage carte)
+### 6.5 Roles et permissions
 
-**Fichier :** `src/lib/google-maps.ts` (10 lignes)
+| Role | Niveau | Acces |
+|------|--------|-------|
+| `super_admin` | 100 | Tout |
+| `admin` | 80 | Tout sauf impersonate, delete user |
+| `agent_secteur` | 60 | Clients/livraisons filtres par depot_ids, pas de controle qualite |
+| `livreur` | 20 | Ses livraisons seulement, page livreur, confirmer livraison |
+| `client` | 10 | Dashboard client + ses livraisons |
 
-**Librairie :** `@react-google-maps/api`
-
-**Env var :** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-
-**Usage :** Affichage carte uniquement (page `/admin/map`). Le geocodage utilise api-adresse.data.gouv.fr, PAS Google Maps.
-
----
-
-### 6.5 Auth (5 roles, permissions, hierarchie)
-
-**Fichiers :** `src/lib/auth/` (types.ts, context.tsx, helpers.ts, server.ts, require-role.ts)
-
-#### Roles et hierarchie
-
-| Role | Niveau | Permissions |
-|------|--------|-------------|
-| `super_admin` | 100 | 8 permissions (tout) |
-| `admin` | 80 | 5 permissions |
-| `agent_secteur` | 60 | 4 permissions |
-| `livreur` | 20 | 4 permissions |
-| `client` | 10 | 4 permissions |
+**Controle Qualite** : super_admin + admin SEULEMENT.
 
 #### Routes par defaut apres login
 
@@ -1369,9 +1355,9 @@ Le mapping hardcode dans `config.ts` sert de backup/seed. En production, c'est l
 **Logique commune :**
 ```
 Si role = agent_secteur ET territoire !== 'FR' :
-  → filtrer WHERE depot_retrait_id IN (depot_ids) OR depot_logistique_id IN (depot_ids)
+  -> filtrer WHERE depot_retrait_id IN (depot_ids) OR depot_logistique_id IN (depot_ids)
 Sinon :
-  → acces total
+  -> acces total
 ```
 
 ---
@@ -1402,148 +1388,242 @@ Sinon :
 
 ---
 
-## 8. Flux de donnees
+## 8. Integrations
 
-### 8.1 Parcours client complet
+### 8.1 Monday.com
 
-```
-Import Monday.com (manuel ou sync)
-    |
-    v
-Client cree dans Supabase (statut: controle_valide)
-    |
-    v
-Validation NAF (automatique via naf_codes)
-    |  NAF = OUI
-    v
-Envoi formulaire (email code ENEMAT + lien formulaire)
-    |  statut: formulaire_envoye
-    v
-Client remplit formulaire (6 etapes)
-    |  1. Code ENEMAT (3 tentatives max)
-    |  2. Informations societe (pre-remplies)
-    |  3. Adresse livraison (autocomplete + geocodage)
-    |  4. Mode reception (retrait/livraison gratuite/payante)
-    |  5. FNUCI (PPE only)
-    |  6. Confirmation CGV
-    |  statut: formulaire_valide
-    v
-Livraison creee (statut: en_attente, mode: domicile/point_relais)
-    |  statut client: a_livrer
-    v
-Planification (admin assigne depot + creneau)
-    |  statut livraison: programmee
-    |  statut client: en_livraison
-    v
-Confirmation client (email token -> confirmer/refuser)
-    |
-    v
-Tournee (regroupement livraisons par livreur/depot/date)
-    |  statut livraison: en_cours
-    v
-Livraison effective (livreur)
-    |  FNUCI scan, signature, photos, attestation PDF
-    |  statut livraison: livree
-    |  statut client: livre
-    v
-Bon de livraison envoye par email
-```
+#### Architecture
 
-### 8.2 Sync Monday <-> Supabase
+| Module | Fichier | Lignes | Description |
+|--------|---------|--------|-------------|
+| API | `src/lib/monday/api.ts` | 546 | CRUD items Monday, sync bidirectionnelle |
+| Config | `src/lib/monday/config.ts` | 389 | Configuration, mappings hardcodes (backup) |
+| Dynamic mapping | `src/lib/monday/dynamic-mapping.ts` | 348 | Mappings depuis Supabase (prioritaire) |
 
-```
-DIRECTION Supabase -> Monday (active) :
-  PUT /api/admin/clients/{id}
-    -> getChangedFields(old, new)
-    -> syncClientToMonday(client, changedFields)
-    -> loadMappings() (table monday_field_mapping, cache 1 min)
-    -> convertValueToMonday() pour chaque champ
-    -> updateMondayItem() (GraphQL mutation)
-    -> log sync_monday_log
+#### Fonctions principales
 
-DIRECTION Monday -> Supabase (desactivee) :
-  POST /api/webhooks/monday (challenge handler seulement)
-  Routes /api/monday/clients, /api/monday/sync-ids : 410 Gone
-```
+| Fonction | Description |
+|----------|-------------|
+| `getMondayItems(boardId?)` | Lecture paginee de tous les items (500/page) |
+| `getAllBoardsItems()` | Lecture multi-board (200ms delai entre boards) |
+| `getMondayItemById(itemId)` | Lecture item par ID |
+| `updateMondayItem(itemId, columnValues, boardId?)` | Mutation change_multiple_column_values |
+| `syncClientToMonday(client, fieldsToSync?)` | Sync Supabase -> Monday avec mapping dynamique |
+| `getChangedFields(oldClient, newClient)` | Compare 2 versions via mapping dynamique |
+| `loadMappings(forceRefresh?, boardId?)` | Charge mappings depuis monday_field_mapping (cache 1 min) |
+| `convertValueToMonday(field, value, boardId?)` | Conversion valeur Supabase -> Monday |
+| `convertValueToSupabase(field, value, boardId?)` | Conversion valeur Monday -> Supabase |
+| `initializeMappingsFromConfig(boardId?)` | Seed table depuis config hardcodee |
 
-### 8.3 Flux email
+#### Endpoint API
+`https://api.monday.com/v2` (GraphQL)
 
-```
-Admin action (envoyer formulaire, relance, planning, etc.)
-    |
-    v
-Choix transport automatique :
-    PPE -> SMTP (Microsoft 365, SMTP_HOST)
-    Ecovolt -> Gmail OAuth2 (googleapis)
-    |
-    v
-Template HTML tenant-aware (nom, couleur, contact)
-    |
-    v
-Envoi via nodemailer
-    |
-    v
-Emails types :
-  - Code validation ENEMAT
-  - Lien formulaire
-  - Recap formulaire
-  - Notification livraison
-  - Confirmation creneau
-  - Planning
-  - Bon de livraison PDF
-  - Invitation utilisateur
-  - Relance
-  - Demande documents
-```
+#### Boards
+
+**PPE Energie (7 boards, compte crm-oreka) :**
+
+| Board | ID |
+|-------|----|
+| ATHOME | 2144986053 |
+| ALEX | 5002798369 |
+| DIZIEN | 2146667697 |
+| EKL | 2140187165 |
+| JM | 2137662048 |
+| SALIH | 5013455904 |
+| STELLARS | 5001072451 |
+
+**Ecovolt (1 board, compte alexandredelannays-team) :**
+
+| Board | ID |
+|-------|----|
+| Velos Cargos General | 9990833105 |
+
+#### Mappings de valeurs (champs avec value mapping special)
+
+Champs avec conversion de valeurs entre Supabase et Monday :
+- `statut_commercial` (19 statuts)
+- `departement` (Reunion/Martinique/etc. <-> codes INSEE)
+- `validation_naf` (PPE: identite, Ecovolt: Fait/Bloque/En cours <-> OUI/NON/A VERIFIER)
+- `statut_retina` (3 valeurs)
+- `statut_mail` (3 valeurs)
+- `statut_anomalie` (8 valeurs)
+- `statut_doublon` (3 valeurs)
+- `type_livraison` (2 valeurs)
+- `type_de_zone` (2 valeurs)
+
+#### Double source de mapping
+
+Le mapping hardcode dans `config.ts` sert de backup/seed. En production, c'est le mapping dynamique dans la table `monday_field_mapping` qui prime. Le hardcode est utilise par `initializeMappingsFromConfig()` pour initialiser la table.
 
 ---
 
-## 9. Anomalies identifiees
+### 8.2 Email (dual mode SMTP/Gmail OAuth2)
 
-### 9.1 Critique (securite) — routes sans auth
+**Fichier :** `src/lib/email/gmail.ts` (~1140 lignes)
 
-**13 routes corrigees (2026-03-11) :** depots/simulate, depots/stats, geocoding/batch, clients/stats, clients/commercials, clients/send-form, alerts, monday/columns, monday/schema, monday/create-column, monday/mapping, monday/mapping/init, admin/clients/[id]/sync-monday — toutes protegees par requireRole.
+**Choix automatique du transport :**
+- Si `SMTP_HOST` existe -> SMTP (Microsoft 365, PPE)
+- Sinon -> Gmail OAuth2 (Ecovolt)
 
-**4 routes encore sans auth :**
+| Fonction | Description |
+|----------|-------------|
+| `sendEmail({to, subject, html, from})` | Envoi generique tenant-aware |
+| `sendCodeValidationEmail(...)` | Code ENEMAT (4 chiffres). Fond solide (background-color) au lieu de linear-gradient pour compatibilite Outlook |
+| `sendFormulaireLinkEmail(...)` | Lien formulaire avec token |
+| `sendFormulaireRecapEmail(...)` | Recapitulatif apres validation |
+| `sendUserInvitationEmail(...)` | Invitation admin (identifiants) |
+| `sendFormulaireLivraisonEmail(...)` | Formulaire livraison (code ENEMAT) |
+| `sendMailLivraisonEmail(...)` | Notification mise en livraison |
+| `sendMailPlanningEmail(...)` | Notification planning (creneau) |
+| `sendConfirmationCreneauEmail(...)` | Confirmation creneau |
+| `sendTourneeConfirmationEmail(...)` | Confirmation tournee |
+| `sendBonLivraisonEmail(...)` | Bon de livraison PDF |
 
-| # | Route | Risque |
-|---|-------|--------|
-| 1 | `GET /api/clients/statuses` | Expose statuts (peu sensible) |
-| 2 | `GET /api/clients/departements` | Expose departements (peu sensible) |
-| 3 | `GET /api/depots` | Filtre role-based ajoute (v4) — auth optionnelle, donnees peu sensibles |
-| 4 | `GET/POST/DELETE /api/monday/webhooks` | Gere webhooks Monday |
-| 5 | `GET /api/sync/monday` | Expose stats |
+**Env vars SMTP :** `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`
+**Env vars Gmail :** `GMAIL_USER`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`
 
-### 9.2 A corriger
+---
 
-#### ~~Types TS desynchronises (database.ts)~~ — RESOLU (2026-03-11)
+### 8.3 Geocodage (api-adresse.data.gouv.fr)
 
-database.ts synchronise : 3 tables ajoutees (tournees, livreur_agents, monday_boards), 14 colonnes ajoutees, type aliases NafCode/Tournee/LivreurAgent/MondayBoard crees.
+**Fichier :** `src/lib/geo/utils.ts` (392 lignes)
 
-#### ~~RLS roles obsoletes~~ — RESOLU (2026-03-11)
+**API :** `https://api-adresse.data.gouv.fr/search/` (gouvernementale, gratuit, sans cle)
 
-Policies sur `monday_field_mapping` et `monday_boards` corrigees : `admin_general`/`admin_regional` remplaces par `super_admin`/`admin`. Applique sur les 2 instances (PPE + Ecovolt).
+**Strategie de geocodage en 3 passes :**
+1. Adresse complete (score >= 0.4)
+2. Fallback CP + ville (score plafonne a 0.5)
+3. Fallback CP seul via `type=municipality` (score plafonne a 0.3)
 
-#### Doublons colonnes clients
+**Fonctions :**
 
+| Fonction | Description |
+|----------|-------------|
+| `calculateHaversineDistance(lat1, lon1, lat2, lon2)` | Distance en km entre 2 points GPS |
+| `geocodeAddress(adresse, codePostal, ville, minScore?)` | Geocodage 3 passes |
+| `buildClientAddress(client)` | Meilleure adresse (livraison > societe > CP) |
+| `findNearestDepot(lat, lng, depots)` | Depot le plus proche (Haversine) |
+| `classifyClientZone(lat, lng, depots)` | Zone gratuite / payante / hors_zone. Hors zone assigne quand meme le depot le plus proche (priorite retrait). Plus de depot null |
+| `getSimpleZoneStatus(client, depots)` | dans_la_zone / hors_zone |
+
+---
+
+### 8.4 Google Maps (affichage carte)
+
+**Fichier :** `src/lib/google-maps.ts` (10 lignes)
+
+**Librairie :** `@react-google-maps/api`
+
+**Env var :** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+
+**Usage :** Affichage carte uniquement (page `/admin/map`). Le geocodage utilise api-adresse.data.gouv.fr, PAS Google Maps.
+
+---
+
+## 9. Module Controle Qualite (CQ)
+
+### Principe
+Apres chaque livraison (statut `livree`), un controle qualite doit etre effectue par un admin ou super_admin. Le dossier reste en attente tant que les 6 points ne sont pas valides.
+
+### 6 points de controle
+
+| Check | Colonne DB | Description |
+|-------|-----------|-------------|
+| Piece d'identite | `cq_piece_identite` | Document identite present et valide |
+| Photo ENEMAT | `cq_photo_enemat` | Photo de la plaque ENEMAT lisible |
+| Signature installateur | `cq_signature_installateur` | Signature de l'installateur presente |
+| Signature client | `cq_signature_client` | Signature du client presente |
+| FNUCI | `cq_fnuci` | Numero FNUCI enregistre |
+| Velo | `cq_velo` | Etat du velo conforme |
+
+### Systeme de verrouillage (lock)
+- Un admin prend un dossier via `POST /api/admin/controle/[id]/lock`
+- Les colonnes `cq_pris_par` et `cq_pris_at` sont renseignees
+- Tant qu'un dossier est pris, les autres admins ne peuvent pas modifier les checks
+- L'admin peut relacher le dossier (re-POST avec action release)
+
+### Validation
+- Les 6 checks doivent etre `true` pour pouvoir valider
+- La validation (`POST /api/admin/controle/[id]/validate`) :
+  - Set `cq_valide = true`, `cq_valide_par`, `cq_valide_at`
+  - Cree une `workflow_transition` (audit trail)
+  - Le dossier disparait de la liste controle
+- La pastille verte apparait dans la fiche client et les listes
+
+### Etats CQ
+- `cq_en_cours = false, cq_valide = false` : Non traite (pastille rouge dans listes)
+- `cq_en_cours = true, cq_valide = false` : En cours (1-5 checks, pastille orange)
+- `cq_valide = true` : Valide (pastille verte)
+
+### Interface
+- Page `/admin/alertes` dediee
+- Filtre agent : voir tous / mes dossiers / par agent specifique
+- Lien ENEMAT Retina dans la barre de filtres pour acces rapide au dossier Retina
+- Pagination par defaut : 50 items par page
+
+---
+
+## 10. Filtres Figes (Pin Filters)
+
+### Principe
+Permet a chaque utilisateur de "figer" ses filtres sur une page donnee. Les filtres figes sont restaures automatiquement a chaque visite de la page.
+
+### Implementation
+
+| Element | Fichier | Description |
+|---------|---------|-------------|
+| Composant | `src/components/admin/pin-filters.tsx` | Bouton "Figer" reutilisable |
+| Hook | `usePinnedFilters(userId, pageKey)` | Gestion localStorage per user per page |
+
+### Comportement
+1. L'utilisateur configure ses filtres (statut, depot, commercial, etc.)
+2. Clic sur le bouton "Figer" — une confirmation avec timeout 3s apparait
+3. Double validation : clic initial + confirmation dans les 3 secondes
+4. Les filtres sont sauvegardes dans `localStorage` avec la cle `pinned-filters-{userId}-{pageKey}`
+5. A la prochaine visite, les filtres figes sont appliques automatiquement
+6. Un bouton "Defiger" permet de supprimer les filtres sauvegardes
+
+### Pages actives
+- `/admin/clients` (pageKey: `clients`)
+- `/admin/livraisons` (pageKey: `livraisons`)
+- `/admin/alertes` (pageKey: `controle`)
+
+---
+
+## 11. Anomalies identifiees / Dette technique
+
+### 11.1 Routes admin avec auth manuelle
+6 routes admin utilisent encore une auth manuelle (lecture users_profile + check role) au lieu de `requireRole` :
+- `GET /api/admin/clients`
+- `POST /api/admin/clients/bulk`
+- `POST /api/admin/clients/resend-code`
+- `POST /api/admin/clients/reset-formulaire`
+- `GET /api/admin/map/data`
+- `GET /api/sync/monday`
+
+### 11.2 ModeLivraison type mismatch
+Le type `ModeLivraison` declare 2 valeurs (`'domicile' | 'point_relais'`) mais le code utilise 4 modes dans la pratique (retrait, livraison_gratuite, livraison_payante, etc. dans les formulaires).
+
+### 11.3 StatutFormulaire vs FORM_STATUS
+Le type TS `StatutFormulaire` et la constante `FORM_STATUS` n'utilisent pas les memes valeurs exactes.
+
+### 11.4 monday_field_mapping absent de database.ts
+La table `monday_field_mapping` n'a pas de type Row correspondant dans `types/database.ts`.
+
+### 11.5 Dual contact name columns
 La table `clients` a les deux jeux :
 - `contact_nom` / `contact_prenom` (convention actuelle)
 - `nom_contact` / `prenom_contact` (legacy)
 
 Les deux coexistent. Le code utilise `contact_nom`/`contact_prenom`.
 
-#### FK manquantes sur livraisons
+### 11.6 Dead depot_id column on users_profile
+La colonne `depot_id` (single UUID) sur `users_profile` est legacy — remplacee par `depot_ids` (UUID array). La colonne existe encore en base mais n'est plus utilisee dans le code.
 
+### 11.7 FK manquantes sur livraisons
 Les colonnes `livraisons.client_id`, `livraisons.depot_id`, `livraisons.livreur_id` n'ont pas de FK declaree dans les migrations (probablement definies dans le schema initial non versionne).
 
-### 9.3 Cosmetique
-
-#### Roles obsoletes dans velo-details.md
-
-Le fichier `memory/velo-details.md` liste 6 roles (admin_general, admin_regional, commercial, gestionnaire, support, livreur) qui sont **tous obsoletes**. Les roles actuels sont : `super_admin`, `admin`, `agent_secteur`, `livreur`, `client`.
-
-#### Route doublon Monday
-
+### 11.8 Route doublon Monday
 `POST /api/monday/columns` et `POST /api/monday/create-column` font la meme chose.
 
 ---

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { getTenantId } from '@/lib/tenants'
+import { useAdminUser } from '@/components/admin/admin-user-provider'
+import { usePinnedFilters, PinFiltersButton } from '@/components/admin/pin-filters'
 import {
   getCommercialName, getDepartementLabel,
   getStaticDepartementOptions, getStaticCommercialOptions,
@@ -127,6 +129,7 @@ function SortableHeader({ label, column, currentSort, currentOrder, onSort, clas
 
 export default function AdminLivraisonsPage() {
   const tenantId = getTenantId()
+  const adminUser = useAdminUser()
   const [livraisons, setLivraisons] = useState<LivraisonRow[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -135,6 +138,7 @@ export default function AdminLivraisonsPage() {
   const [commercialFilter, setCommercialFilter] = useState<string[]>([])
   const [departementFilter, setDepartementFilter] = useState<string[]>([])
   const [zoneFilter, setZoneFilter] = useState<string[]>([])
+  const [controleFilter, setControleFilter] = useState<string[]>([])
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
@@ -151,6 +155,40 @@ export default function AdminLivraisonsPage() {
     if (bulkMessageTimerRef.current) clearTimeout(bulkMessageTimerRef.current)
     setBulkMessage({ text, isError })
     bulkMessageTimerRef.current = setTimeout(() => setBulkMessage(null), 5000)
+  }
+
+  // Filtres figés par utilisateur
+  const { loadPinned, saveFilters, hasPinned } = usePinnedFilters(adminUser?.id, 'livraisons')
+  const [isPinned, setIsPinned] = useState(false)
+  const pinnedLoaded = useRef(false)
+
+  useEffect(() => {
+    if (pinnedLoaded.current) return
+    pinnedLoaded.current = true
+    const pinned = loadPinned()
+    if (pinned) {
+      setIsPinned(true)
+      if (pinned.statut) setStatutFilter(pinned.statut)
+      if (pinned.depot) setDepotFilter(pinned.depot)
+      if (pinned.commercial) setCommercialFilter(pinned.commercial)
+      if (pinned.departement) setDepartementFilter(Array.isArray(pinned.departement) ? pinned.departement : [pinned.departement])
+      if (pinned.zone) setZoneFilter(pinned.zone)
+      if (pinned.controle) setControleFilter(pinned.controle)
+      if (pinned.pageSize) setPageSize(pinned.pageSize)
+    }
+  }, [loadPinned])
+
+  const handlePinFilters = () => {
+    saveFilters({
+      statut: statutFilter,
+      depot: depotFilter,
+      commercial: commercialFilter,
+      departement: departementFilter,
+      zone: zoneFilter,
+      controle: controleFilter,
+      pageSize,
+    })
+    setIsPinned(true)
   }
 
   const [depotOptions, setDepotOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Dépôt' }])
@@ -205,6 +243,7 @@ export default function AdminLivraisonsPage() {
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
       if (departementFilter.length > 0) params.set('departement', departementFilter.join(','))
       if (zoneFilter.length > 0) params.set('zone', zoneFilter.join(','))
+      if (controleFilter.length > 0) params.set('controle', controleFilter.join(','))
       if (sortBy !== 'created_at' || sortOrder !== 'desc') {
         params.set('sortBy', sortBy)
         params.set('sortOrder', sortOrder)
@@ -224,7 +263,7 @@ export default function AdminLivraisonsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter, departementFilter, zoneFilter, sortBy, sortOrder])
+  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter, departementFilter, zoneFilter, controleFilter, sortBy, sortOrder])
 
   // Debounce search
   const searchTimerRef = useRef<NodeJS.Timeout>(null)
@@ -246,6 +285,7 @@ export default function AdminLivraisonsPage() {
     commercialFilter: commercialFilter.join(','),
     departementFilter: departementFilter.join(','),
     zoneFilter: zoneFilter.join(','),
+    controleFilter: controleFilter.join(','),
     sortBy,
     sortOrder,
   })
@@ -257,18 +297,20 @@ export default function AdminLivraisonsPage() {
       commercialFilter: commercialFilter.join(','),
       departementFilter: departementFilter.join(','),
       zoneFilter: zoneFilter.join(','),
+      controleFilter: controleFilter.join(','),
       sortBy,
       sortOrder,
     }
     if (
       prev.statutFilter !== cur.statutFilter || prev.depotFilter !== cur.depotFilter ||
       prev.commercialFilter !== cur.commercialFilter || prev.departementFilter !== cur.departementFilter ||
-      prev.zoneFilter !== cur.zoneFilter || prev.sortBy !== cur.sortBy || prev.sortOrder !== cur.sortOrder
+      prev.zoneFilter !== cur.zoneFilter || prev.controleFilter !== cur.controleFilter ||
+      prev.sortBy !== cur.sortBy || prev.sortOrder !== cur.sortOrder
     ) {
       setPage(1)
       prevFilters.current = cur
     }
-  }, [statutFilter, depotFilter, commercialFilter, departementFilter, zoneFilter, sortBy, sortOrder])
+  }, [statutFilter, depotFilter, commercialFilter, departementFilter, zoneFilter, controleFilter, sortBy, sortOrder])
 
   useEffect(() => {
     fetchLivraisons()
@@ -290,13 +332,14 @@ export default function AdminLivraisonsPage() {
     setCommercialFilter([])
     setDepartementFilter([])
     setZoneFilter([])
+    setControleFilter([])
     setSortBy('created_at')
     setSortOrder('desc')
     setPage(1)
   }
 
   const hasActiveFilters = searchQuery || statutFilter.length > 0 || depotFilter.length > 0 ||
-    commercialFilter.length > 0 || departementFilter.length > 0 || zoneFilter.length > 0
+    commercialFilter.length > 0 || departementFilter.length > 0 || zoneFilter.length > 0 || controleFilter.length > 0
 
   const handleToggleSelect = (livraisonId: string) => {
     const newSelected = new Set(selectedLivraisons)
@@ -547,7 +590,7 @@ export default function AdminLivraisonsPage() {
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
-              Dép. {departementFilter.length > 0 && `(${departementFilter.length})`}
+              Département {departementFilter.length > 0 && `(${departementFilter.length})`}
               <ChevronDown className="ml-1 h-3 w-3" />
             </Button>
           </PopoverTrigger>
@@ -607,6 +650,37 @@ export default function AdminLivraisonsPage() {
             )}
           </PopoverContent>
         </Popover>
+        {/* Controle filter */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant={controleFilter.length > 0 ? 'default' : 'outline'} size="sm" className="h-8 text-xs px-2 shrink-0">
+              CQ {controleFilter.length > 0 && `(${controleFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-40 p-2" align="start">
+            {[{ value: 'ok', label: 'CQ Validé' }, { value: 'en_cours', label: 'CQ En cours' }, { value: 'attente', label: 'En attente' }].map(o => (
+              <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                <input
+                  type="checkbox"
+                  checked={controleFilter.includes(o.value)}
+                  onChange={(e) => {
+                    setControleFilter(prev =>
+                      e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                    )
+                  }}
+                  className="rounded border-gray-300"
+                />
+                {o.label}
+              </label>
+            ))}
+            {controleFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setControleFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
         {/* PageSize selector */}
         <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
           <SelectTrigger className="h-8 w-[52px] text-xs px-2 shrink-0">
@@ -621,6 +695,7 @@ export default function AdminLivraisonsPage() {
             Réinitialiser
           </Button>
         )}
+        <PinFiltersButton onPin={handlePinFilters} isPinned={isPinned} />
       </div>
 
       {/* Table */}
@@ -770,9 +845,17 @@ export default function AdminLivraisonsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
-                        <Badge className={statutColors[liv.statut || 'a_livrer']}>
-                          {statutLabels[liv.statut || 'a_livrer'] || liv.statut}
-                        </Badge>
+                        <div className="flex items-center gap-1.5">
+                          {(liv as any).cq_valide && (
+                            <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" title="Contrôle qualité validé" />
+                          )}
+                          {!(liv as any).cq_valide && (liv as any).cq_en_cours && (
+                            <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 animate-pulse" title="Contrôle en cours — à finaliser" />
+                          )}
+                          <Badge className={statutColors[liv.statut || 'a_livrer']}>
+                            {statutLabels[liv.statut || 'a_livrer'] || liv.statut}
+                          </Badge>
+                        </div>
                         {liv.confirmation_statut && (
                           <Badge className={
                             liv.confirmation_statut === 'confirmee' ? 'bg-emerald-100 text-emerald-800' :

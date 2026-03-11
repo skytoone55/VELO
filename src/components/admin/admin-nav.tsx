@@ -14,13 +14,13 @@ import {
   Menu,
   X,
   FileText,
-  Bell,
   Map,
   ChevronDown,
   Calendar,
   ArrowLeftRight,
   LogIn,
   Tag,
+  ClipboardCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getTenantConfig, TENANTS } from '@/lib/tenants'
@@ -78,9 +78,9 @@ const adminNavItems: NavItem[] = [
   },
   {
     href: '/admin/alertes',
-    label: 'Alertes',
-    icon: Bell,
-    roles: ['super_admin', 'admin', 'agent_secteur'],
+    label: 'Contrôle',
+    icon: ClipboardCheck,
+    roles: ['super_admin', 'admin'],
   },
   {
     href: '/admin/settings',

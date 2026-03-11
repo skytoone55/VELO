@@ -1,0 +1,178 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { requireRole, isAuthError } from '@/lib/auth/require-role'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { validatePagination } from '@/lib/constants'
+
+export async function GET(request: NextRequest) {
+  const auth = await requireRole(['super_admin', 'admin'])
+  if (isAuthError(auth)) return auth
+
+  const adminClient = createAdminClient()
+  const { searchParams } = new URL(request.url)
+
+  const filter = searchParams.get('filter') || 'all' // all | non_traites | en_cours
+  const search = searchParams.get('search') || ''
+  const agentFilter = searchParams.get('agent') || 'all' // all | me | <user_id>
+  const { page, pageSize } = validatePagination(
+    searchParams.get('page') || '1',
+    searchParams.get('pageSize') || '50'
+  )
+
+  // Base query: livraisons livrees non validees CQ
+  let query = adminClient
+    .from('livraisons')
+    .select(`
+      id, statut, date_livraison, date_livraison_effective,
+      livreur_id, depot_id,
+      cq_piece_identite, cq_photo_enemat, cq_signature_installateur,
+      cq_signature_client, cq_fnuci, cq_velo,
+      cq_valide, cq_valide_par, cq_valide_at, cq_en_cours, cq_commentaire,
+      cq_pris_par, cq_pris_at,
+      client:clients!livraisons_client_id_fkey(id, raison_sociale, contact_nom, contact_prenom, telephone, reference_retina, commercial_assigne, depot_logistique_id, depot_retrait_id),
+      depot:depots!livraisons_depot_id_fkey(id, nom)
+    `, { count: 'exact' })
+    .eq('statut', 'livree')
+    .eq('cq_valide', false)
+
+  // Filtre par type
+  if (filter === 'non_traites') {
+    query = query.eq('cq_en_cours', false)
+  } else if (filter === 'en_cours') {
+    query = query.eq('cq_en_cours', true)
+  }
+
+  // Filtre par agent (verrouillage)
+  if (agentFilter === 'me') {
+    query = query.eq('cq_pris_par', auth.id)
+  } else if (agentFilter !== 'all') {
+    query = query.eq('cq_pris_par', agentFilter)
+  }
+
+  // Role-based filtering (garde-fou si les rôles changent)
+  if (auth.role === 'agent_secteur' && auth.depot_ids?.length) {
+    query = query.in('depot_id', auth.depot_ids)
+  }
+
+  // Search — pre-fetch client IDs matching search
+  if (search) {
+    const { data: matchingClients } = await adminClient
+      .from('clients')
+      .select('id')
+      .or(`raison_sociale.ilike.%${search}%,reference_retina.ilike.%${search}%,telephone.ilike.%${search}%`)
+    const matchingIds = matchingClients?.map(c => c.id) || []
+    if (matchingIds.length === 0) {
+      return NextResponse.json({
+        items: [],
+        agents: [],
+        stats: { non_traites: 0, en_cours: 0, total: 0 },
+        pagination: { page, pageSize, total: 0 },
+      })
+    }
+    query = query.in('client_id', matchingIds)
+  }
+
+  // Pagination + order
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+  query = query.order('date_livraison_effective', { ascending: false, nullsFirst: false })
+    .range(from, to)
+
+  const { data: items, error, count } = await query
+
+  if (error) {
+    console.error('Erreur controle qualite GET:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // Resolve livreur: use livreur_id, or fallback to workflow_transitions.effectue_par
+  const itemsWithLivreurId = (items || []).filter(i => i.livreur_id)
+  const itemsWithoutLivreurId = (items || []).filter(i => !i.livreur_id)
+
+  let transitionMap: Record<string, string> = {}
+  if (itemsWithoutLivreurId.length > 0) {
+    const { data: transitions } = await adminClient
+      .from('workflow_transitions')
+      .select('entity_id, effectue_par')
+      .eq('entity_type', 'livraison')
+      .eq('statut_apres', 'livree')
+      .in('entity_id', itemsWithoutLivreurId.map(i => i.id))
+    if (transitions) {
+      transitionMap = Object.fromEntries(transitions.map(t => [t.entity_id, t.effectue_par]))
+    }
+  }
+
+  // Collect ALL user IDs to resolve (livreurs + agents who locked)
+  const allUserIds = new Set<string>()
+  for (const item of itemsWithLivreurId) allUserIds.add(item.livreur_id)
+  for (const userId of Object.values(transitionMap)) allUserIds.add(userId)
+  for (const item of (items || [])) {
+    if (item.cq_pris_par) allUserIds.add(item.cq_pris_par)
+  }
+
+  let userMap: Record<string, { nom: string; prenom: string }> = {}
+  if (allUserIds.size > 0) {
+    const { data: users } = await adminClient
+      .from('users_profile')
+      .select('id, nom, prenom')
+      .in('id', [...allUserIds])
+    if (users) {
+      userMap = Object.fromEntries(users.map(u => [u.id, { nom: u.nom, prenom: u.prenom }]))
+    }
+  }
+
+  // Enrich items
+  const enrichedItems = (items || []).map(item => {
+    const livreurUserId = item.livreur_id || transitionMap[item.id]
+    return {
+      ...item,
+      livreur: livreurUserId && userMap[livreurUserId] ? userMap[livreurUserId] : null,
+      cq_pris_par_nom: item.cq_pris_par && userMap[item.cq_pris_par]
+        ? `${userMap[item.cq_pris_par].prenom} ${userMap[item.cq_pris_par].nom}`
+        : null,
+    }
+  })
+
+  // Liste des agents qui ont pris au moins 1 dossier (pour le filtre)
+  const { data: agentsRaw } = await adminClient
+    .from('livraisons')
+    .select('cq_pris_par')
+    .eq('statut', 'livree')
+    .eq('cq_valide', false)
+    .not('cq_pris_par', 'is', null)
+
+  const uniqueAgentIds = [...new Set((agentsRaw || []).map(a => a.cq_pris_par).filter(Boolean))]
+  let agents: { id: string; nom: string; prenom: string }[] = []
+  if (uniqueAgentIds.length > 0) {
+    const { data: agentProfiles } = await adminClient
+      .from('users_profile')
+      .select('id, nom, prenom')
+      .in('id', uniqueAgentIds)
+    agents = agentProfiles || []
+  }
+
+  // Stats
+  const { count: totalNonTraites } = await adminClient
+    .from('livraisons')
+    .select('id', { count: 'exact', head: true })
+    .eq('statut', 'livree')
+    .eq('cq_valide', false)
+    .eq('cq_en_cours', false)
+
+  const { count: totalEnCours } = await adminClient
+    .from('livraisons')
+    .select('id', { count: 'exact', head: true })
+    .eq('statut', 'livree')
+    .eq('cq_valide', false)
+    .eq('cq_en_cours', true)
+
+  return NextResponse.json({
+    items: enrichedItems,
+    agents,
+    stats: {
+      non_traites: totalNonTraites || 0,
+      en_cours: totalEnCours || 0,
+      total: count || 0,
+    },
+    pagination: { page, pageSize, total: count || 0 },
+  })
+}

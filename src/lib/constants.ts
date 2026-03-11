@@ -195,6 +195,21 @@ export const ROLE_COLORS: Record<UserRole, string> = {
 }
 
 // =================================================================
+// CONTROLE QUALITE POST-LIVRAISON
+// =================================================================
+export const CQ_CHECKS = {
+  cq_piece_identite: { label: "Pièce d'identité", shortLine1: 'Pièce', shortLine2: "d'identité", description: "Pièce d'identité du bénéficiaire vérifiée" },
+  cq_photo_enemat: { label: 'Photo ENEMAT', shortLine1: 'Photo', shortLine2: 'ENEMAT', description: 'Photo de la plaque ENEMAT présente' },
+  cq_signature_installateur: { label: 'Signature installateur', shortLine1: 'Signature', shortLine2: 'installateur', description: "Signature de l'installateur présente" },
+  cq_signature_client: { label: 'Signature client', shortLine1: 'Signature', shortLine2: 'client', description: 'Signature du client/bénéficiaire présente' },
+  cq_fnuci: { label: 'N° FNUCI', shortLine1: 'N°', shortLine2: 'FNUCI', description: 'Enregistrement FNUCI effectué' },
+  cq_velo: { label: 'NB vélo', shortLine1: 'NB', shortLine2: 'vélo', description: 'État du vélo vérifié conforme' },
+} as const
+
+export type CqCheckKey = keyof typeof CQ_CHECKS
+export const CQ_CHECK_KEYS = Object.keys(CQ_CHECKS) as CqCheckKey[]
+
+// =================================================================
 // VALIDATION HELPERS
 // =================================================================
 
