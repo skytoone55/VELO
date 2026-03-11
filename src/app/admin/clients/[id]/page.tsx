@@ -880,6 +880,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <div className="space-y-0">
               <InfoRow label="Raison sociale" value={client.raison_sociale} />
               <InfoRow label="SIRET" value={client.siret} mono />
+              <InfoRow label="Code NAF" value={client.code_ape} mono />
               {client.format_juridique && (
                 <InfoRow label="Forme juridique" value={client.format_juridique} />
               )}
