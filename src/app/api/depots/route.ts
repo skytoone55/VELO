@@ -54,7 +54,7 @@ export async function GET() {
 
     let query = adminClient
       .from('depots')
-      .select('id, nom, type, actif')
+      .select('id, nom, type, actif, latitude, longitude, rayon_couverture_km, agence')
       .eq('actif', true)
       .order('nom')
 
