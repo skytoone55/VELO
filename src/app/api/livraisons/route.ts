@@ -10,7 +10,6 @@ import { requireRole, isAuthError, type AuthenticatedUser } from '@/lib/auth/req
  */
 export async function GET(request: NextRequest) {
   try {
-    // Livraisons accessible by all admin roles
     const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
     if (isAuthError(authResult)) return authResult
     const currentUser = authResult as AuthenticatedUser
@@ -43,7 +42,7 @@ export async function GET(request: NextRequest) {
     // Etape 1 : si filtres sur champs client, recuperer les IDs matching
     let clientIds: string[] | null = null
 
-    if (search || commercialFilter && commercialFilter !== 'all' || departementFilter && departementFilter !== 'all' || zoneFilter && zoneFilter !== 'all') {
+    if (search || (commercialFilter && commercialFilter !== 'all') || (departementFilter && departementFilter !== 'all') || (zoneFilter && zoneFilter !== 'all')) {
       let clientQuery = adminClient
         .from('clients')
         .select('id')
@@ -56,7 +55,6 @@ export async function GET(request: NextRequest) {
       }
 
       if (departementFilter && departementFilter !== 'all') {
-        // PPE: departement vaut souvent 'FR' (pays Monday), filtrer par CP
         clientQuery = clientQuery.ilike('adresse_societe_cp', `${departementFilter}%`)
       }
 
@@ -75,7 +73,6 @@ export async function GET(request: NextRequest) {
       const { data: matchingClients } = await clientQuery
       clientIds = matchingClients?.map(c => c.id) || []
 
-      // Aucun client ne correspond = aucune livraison
       if (clientIds.length === 0) {
         return NextResponse.json({
           livraisons: [],
@@ -113,7 +110,6 @@ export async function GET(request: NextRequest) {
 
     if (depotFilter && depotFilter !== 'all') {
       const depots = depotFilter.split(',').filter(Boolean)
-      // Filtrer via le inner join client : depot_retrait ou depot_logistique
       const depotList = depots.join(',')
       query = query.or(
         `depot_retrait_id.in.(${depotList}),depot_logistique_id.in.(${depotList})`,
@@ -121,18 +117,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Role-based data filtering — filtrer via le inner join client (pas de pre-fetch IDs)
+    // Role-based data filtering
+    // Agent voit uniquement les clients de son secteur (depot logistique)
+    // Le depot_retrait est un point de collecte client, pas un secteur agent
     if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
       const depotList = currentUser.depot_ids.join(',')
       query = query.or(
-        `depot_retrait_id.in.(${depotList}),depot_logistique_id.in.(${depotList})`,
+        `depot_logistique_id.in.(${depotList})`,
         { referencedTable: 'client' }
       )
     } else if (currentUser.role === 'livreur') {
       query = query.eq('livreur_id', currentUser.id)
     }
 
-    // Pagination + tri
     const startIndex = (page - 1) * pageSize
     query = query
       .order(safeSortBy, { ascending })

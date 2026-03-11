@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateValidationCode, hashValidationCode } from '@/lib/utils'
-import { sendFormulaireLinkEmail } from '@/lib/email/gmail'
+import { sendCodeValidationEmail, sendFormulaireLinkEmail } from '@/lib/email/gmail'
 import { syncClientToMonday } from '@/lib/monday/api'
 import { isMondayConfigured } from '@/lib/monday/config'
 import { geocodeAddress, buildClientAddress, classifyClientZone, DepotWithCoords } from '@/lib/geo/utils'
@@ -25,7 +25,6 @@ interface BulkResponse {
 
 export async function POST(request: NextRequest) {
   try {
-    // Vérifier l'authentification
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -33,7 +32,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    // Vérifier les permissions
     const { data: profile } = await supabase
       .from('users_profile')
       .select('role, territoire')
@@ -57,7 +55,6 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    // Récupérer tous les clients concernés
     const { data: clients, error: fetchError } = await adminClient
       .from('clients')
       .select('*')
@@ -67,7 +64,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erreur récupération clients' }, { status: 500 })
     }
 
-    // Vérifier les permissions territoriales pour admin regional (FR = accès total)
     if (profile.role === 'admin' && profile.territoire && profile.territoire !== 'FR') {
       const unauthorizedClients = clients.filter(c => c.departement !== profile.territoire)
       if (unauthorizedClients.length > 0) {
@@ -104,13 +100,11 @@ async function geocodeAndAssignDepot(
   client: any,
   adminClient: ReturnType<typeof createAdminClient>
 ): Promise<void> {
-  // Skip si déjà géocodé avec dépôt assigné
   if (client.latitude && client.longitude && (client.depot_retrait_id || client.depot_logistique_id)) return
 
   const address = buildClientAddress(client)
   if (!address) return
 
-  // Géocoder si pas de coordonnées
   let lat = client.latitude ? parseFloat(client.latitude) : null
   let lng = client.longitude ? parseFloat(client.longitude) : null
 
@@ -121,7 +115,6 @@ async function geocodeAndAssignDepot(
     lng = geo.lng
   }
 
-  // Récupérer les dépôts pour classification
   const { data: depots } = await adminClient
     .from('depots')
     .select('id, nom, latitude, longitude, rayon_couverture_km, rayon_livraison_payant_km, prix_livraison_payante, type, agence')
@@ -159,16 +152,20 @@ async function handleBulkSendForm(
         continue
       }
 
-      // Géocoder + assigner dépôt si pas encore fait
+      // === GARDE STATUT ===
+      const statutNormalized = (client.statut_commercial || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      if (!['controle_valide', 'formulaire_envoye'].includes(statutNormalized)) {
+        results.push({ clientId: client.id, success: false, error: `Statut non éligible (${client.statut_commercial})` })
+        continue
+      }
+
       try { await geocodeAndAssignDepot(client, adminClient) } catch (e) { console.error('Geocoding error:', e) }
 
-      // Générer un token unique + code validation
       const newCode = generateValidationCode()
       const newCodeHash = hashValidationCode(newCode)
-      const token = `${client.id}-${Date.now()}-${Math.random().toString(36).substring(7)}`
+      const token = crypto.randomUUID()
       const formulaireUrl = `${baseUrl}/formulaire?token=${token}`
 
-      // Mettre à jour le client (token formulaire + code validation + statut)
       const { error: updateError } = await adminClient
         .from('clients')
         .update({
@@ -191,7 +188,6 @@ async function handleBulkSendForm(
         continue
       }
 
-      // Envoyer l'email au bénéficiaire (prioritaire) ou commercial (fallback)
       const clientName = client.contact_prenom
         ? `${client.contact_prenom} ${client.contact_nom || ''}`
         : client.raison_sociale || 'Client'
@@ -202,9 +198,23 @@ async function handleBulkSendForm(
         continue
       }
 
-      await sendFormulaireLinkEmail(recipientEmail, clientName, formulaireUrl, newCode)
+      // Envoi 2 emails séparés (comme send-formulaire individuel)
+      const emailErrors: string[] = []
+      try {
+        await sendCodeValidationEmail(recipientEmail, clientName, newCode)
+      } catch (e: any) {
+        emailErrors.push(`Code email: ${e.message}`)
+      }
 
-      // Synchroniser vers Monday si configuré
+      // Délai 5s entre les 2 emails (anti rate-limit Office365)
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      try {
+        await sendFormulaireLinkEmail(recipientEmail, clientName, formulaireUrl)
+      } catch (e: any) {
+        emailErrors.push(`Formulaire email: ${e.message}`)
+      }
+
       if (client.monday_item_id && isMondayConfigured()) {
         try {
           await syncClientToMonday(
@@ -216,9 +226,8 @@ async function handleBulkSendForm(
         }
       }
 
-      results.push({ clientId: client.id, success: true })
+      results.push({ clientId: client.id, success: true, ...(emailErrors.length ? { error: emailErrors.join(' | ') } : {}) })
     } catch (error: any) {
-      // Remettre le statut en attente si l'email échoue
       await adminClient
         .from('clients')
         .update({ statut_formulaire: 'en_attente' })
@@ -242,7 +251,6 @@ async function handleBulkChangeStatus(
   newStatut: string
 ): Promise<BulkResponse> {
   const results: BulkResult[] = []
-  // 10 statuts process valides
   const validStatuts = [
     'controle_valide',
     'formulaire_envoye',
@@ -268,7 +276,6 @@ async function handleBulkChangeStatus(
 
   for (const client of clients) {
     try {
-      // Mettre à jour le statut_commercial (pas statut_formulaire)
       const { error: updateError } = await adminClient
         .from('clients')
         .update({
@@ -283,7 +290,6 @@ async function handleBulkChangeStatus(
         continue
       }
 
-      // Synchroniser vers Monday si configuré
       if (client.monday_item_id && isMondayConfigured()) {
         try {
           await syncClientToMonday(
