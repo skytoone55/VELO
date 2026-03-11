@@ -59,11 +59,11 @@ export async function POST(request: NextRequest) {
     const normalizedStatut = (client.statut_commercial || '')
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Retirer les accents
       .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
-    const isControleValide = normalizedStatut === 'controle_valide' || normalizedStatut === 'control_valide'
+    const isEligible = normalizedStatut === 'controle_valide' || normalizedStatut === 'control_valide' || normalizedStatut === 'formulaire_envoye'
 
-    if (!isControleValide) {
+    if (!isEligible) {
       return NextResponse.json({
-        error: `Client non éligible : statut commercial doit être "Contrôle validé" (actuellement : ${client.statut_commercial || 'aucun'})`,
+        error: `Client non éligible : statut commercial doit être "Contrôle validé" ou "Formulaire envoyé" (actuellement : ${client.statut_commercial || 'aucun'})`,
         guard: 'statut',
       }, { status: 422 })
     }
