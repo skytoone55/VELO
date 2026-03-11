@@ -9,6 +9,8 @@
 |------|---------------|
 | 2026-03-11 | Auth guards ajoutes sur 13 routes API, filtrage role-based sur 5 routes, fix RLS monday_field_mapping/monday_boards, database.ts synced (3 tables + 14 colonnes), FNUCI/NAF sort + pagination, livraisons page UI cleanup |
 | 2026-03-11 (v2) | Refonte filtrage agent_secteur par depot_ids (5 routes), sync statut client/livraison (C1+C2+C3), tournees accessibles agent/livreur (lecture), bulk statut formulaire_envoye, envoi formulaire livraison → en_livraison, filtre depot dual (retrait+logistique), RLS livraisons depot_ids, NAF affiche fiche client |
+| 2026-03-11 (v3) | est_aussi_livreur default true + tous agents MAJ, colonne depot fallback depot_retrait_id, send-formulaire retabli 2 emails separes (5s delay) |
+| 2026-03-11 (v4) | fix(bulk): 2 emails separes + garde statut + crypto.randomUUID. fix(depots): filtre role-based agent/livreur/admin + champs geo. fix(livraisons): filtre depot_retrait OR depot_logistique pour agents. fix(pdf): nom fichier {ref_retina}-BL.pdf + date livraison + checkmark > pour jsPDF. fix(email): fond solide au lieu de gradient pour Outlook. fix(geo): hors zone assigne depot le plus proche (retrait prioritaire). feat(users): colonne telephone + tri toutes colonnes. feat(livraisons): copier ref retina + tri 8 colonnes + date livraison/prevue. feat(clients): tri ref retina et depot + download docs. data: 197 clients PPE hors zone assignes, 5 PDFs renommes, SMT reset |
 
 ---
 
@@ -52,7 +54,7 @@ Meme codebase, 2 deployments Vercel avec des env vars differentes. Le tenant act
 ### Differences cles
 
 | Critere | PPE Energie | Ecovolt |
-|---------|-------------|---------|
+|---------|-------------|--------|
 | Supabase | zfpzhhdovxllchlsihcr | irpnllwlxivlylclfjwd |
 | MCP alias | supabase-ppe | supabase-mz |
 | Compte Monday | crm-oreka | alexandredelannays-team |
@@ -291,7 +293,7 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 | `depot_id` | UUID | OUI | null | Legacy single depot |
 | `depot_ids` | UUID[] | OUI | '{}' | Multi-depot array |
 | `preferences` | JSONB | OUI | null | - |
-| `est_aussi_livreur` | BOOLEAN | OUI | false | Agent secteur qui livre aussi |
+| `est_aussi_livreur` | BOOLEAN | OUI | true | Automatiquement true pour tous les agent_secteur (pas de toggle UI) |
 | `created_at` | TIMESTAMPTZ | OUI | NOW() | - |
 | `updated_at` | TIMESTAMPTZ | OUI | NOW() | - |
 
@@ -558,6 +560,9 @@ Les 2 instances ont le MEME schema. 3 modes de connexion :
 ### 3.4 Storage
 
 Un bucket `documents` (public) cree par la migration `20260310_attestation_pdf_url.sql`.
+- Bons de livraison PDF : nommes `{ref_retina}-BL.pdf` (convention v4, anciennement `{livraison_id}.pdf`)
+- 5 PDFs existants renommes au nouveau format (2026-03-11)
+
 Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 ### 3.5 Migrations (21 fichiers, ordre chronologique)
@@ -601,7 +606,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 | 3 | `PUT /api/admin/clients/[id]` | PUT | super_admin, admin, agent_secteur | Modifier client (30+ champs) + sync Monday |
 | 4 | `DELETE /api/admin/clients/[id]` | DELETE | super_admin uniquement | Suppression cascade (10 tables) |
 | 5 | `POST /api/admin/clients/[id]/sync-monday` | POST | super_admin, admin | Sync forcee vers Monday |
-| 6 | `POST /api/admin/clients/bulk` | POST | super_admin, admin, agent_secteur | Actions bulk (send_form, change_status) |
+| 6 | `POST /api/admin/clients/bulk` | POST | super_admin, admin, agent_secteur | Actions bulk (send_form, change_status). Garde statut : rejette clients pas en controle_valide/formulaire_envoye. Token via crypto.randomUUID(). Envoie 2 emails separes (code + formulaire) avec 5s delay |
 | 7 | `POST /api/admin/clients/resend-code` | POST | super_admin, admin, agent_secteur | Renvoyer code validation ENEMAT |
 | 8 | `POST /api/admin/clients/reset-formulaire` | POST | super_admin, admin, agent_secteur | Reinitialiser formulaire + livraisons |
 | 9 | `POST /api/admin/clients/send-formulaire` | POST | requireRole | Envoyer formulaire (garde NAF + statut) |
@@ -629,7 +634,8 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 - Cascade manuelle sur 10 tables : clients, livraisons, distances_cache, clients_hors_zone, email_alerts, formulaires_log, workflow_transitions, user_societes, sync_monday_log, audit_log
 
 **POST /api/admin/clients/bulk** :
-- Actions : send_form (garde NAF OUI, geocode, assign depot, email, sync Monday, met `statut_commercial: 'formulaire_envoye'`) / change_status (10 statuts valides)
+- Actions : send_form (garde NAF OUI + statut controle_valide ou formulaire_envoye, geocode, assign depot, 2 emails separes code+formulaire avec 5s delay, sync Monday, met `statut_commercial: 'formulaire_envoye'`) / change_status (10 statuts valides)
+- Token : crypto.randomUUID() (pas crypto.randomBytes)
 - Filtrage agent_secteur : filtre par `depot_ids` (via `depot_retrait_id` / `depot_logistique_id`)
 
 **POST /api/admin/clients/resend-code** :
@@ -641,7 +647,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 **POST /api/admin/clients/send-formulaire** :
 - Gardes : NAF OUI + statut_commercial = controle_valide
-- Side effects : Genere code+token, email code + formulaire (2s delay), sync Monday
+- Side effects : Genere code+token, 2 emails separes (1: code ENEMAT, 2: lien formulaire avec 5s delay), sync Monday
 
 **POST /api/admin/clients/send-formulaire-livraison** :
 - Gardes : statut=a_livrer, livraison existe, creneau pas encore choisi
@@ -791,7 +797,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 44 | `GET /api/depots` | GET | **AUCUN** | Liste depots actifs (donnees peu sensibles) |
+| 44 | `GET /api/depots` | GET | Optionnel (role-based si auth) | Liste depots actifs. Filtre role-based : agent_secteur voit ses depot_ids, livreur voit depot_ids de ses agents, admin voit tout. Retourne champs geo (latitude, longitude, rayon_couverture_km, agence) |
 
 ---
 
@@ -845,7 +851,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 
 | # | Route | Methodes | Roles | Description |
 |---|-------|----------|-------|-------------|
-| 56 | `GET /api/livraisons` | GET | requireRole (tous admin) | Liste livraisons paginee (6 filtres). agent_secteur filtre par `depot_ids` via inner join `{ referencedTable: 'client' }` (evite limite URL avec trop d'IDs) |
+| 56 | `GET /api/livraisons` | GET | requireRole (tous admin) | Liste livraisons paginee (6 filtres). agent_secteur filtre par `depot_ids` via `depot_retrait_id` OR `depot_logistique_id` (fix precedence bug). Inner join client |
 | 57 | `GET /api/livraisons/confirm-creneau` | GET | Public (token) | Confirmer creneau livraison |
 | 58 | `GET /api/livraisons/cancel-creneau` | GET | Public (token) | Annuler creneau (client -> anomalie) |
 | 59 | `GET /api/livraisons/info-creneau` | GET | Public (token) | Infos creneau livraison |
@@ -918,9 +924,9 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 |---------|--------|
 | API | GET /api/clients, GET /api/clients/commercials, GET /api/clients/departements, GET /api/clients/stats, POST /api/admin/clients/send-formulaire, PUT /api/admin/clients/{id}, DELETE /api/admin/clients/{id}, POST /api/admin/clients/bulk |
 | Colonnes | Checkbox, Societe (raison_sociale + siret), Ref. Retina, Email, Tel, Commercial, Dep., Zone, Depot, Velos valides, NAF, Statut, Actions |
-| Filtres | Search (debounce 600ms), Statut, NAF (valide/bloque/en_attente), Departement, Zone, Commercial, Depot, Page size (20/50/100/250/500) |
+| Filtres | Search (debounce 600ms), Statut, NAF (valide/bloque/en_attente), Departement, Zone, Commercial, Depot (via /api/depots role-filtered), Page size (20/50/100/250/500) |
 | Actions | Envoyer formulaire, Voir fiche, Generer lien, Modifier (dialog), Supprimer (confirm), Bulk (formulaire uniquement — bouton "Changer statut" en masse supprime, tous les statuts changent via process) |
-| Tri | updated_at (defaut desc), raison_sociale, siret, departement, velo_valide, statut_commercial, validation_naf |
+| Tri | updated_at (defaut desc), raison_sociale, siret, reference_retina, departement, velo_valide, statut_commercial, validation_naf, depot |
 | Pagination | OUI cote serveur (20/50/100/250/500) |
 | Roles | super_admin, admin, agent_secteur |
 | Responsive | Colonnes masquees progressivement < lg et < md |
@@ -932,8 +938,8 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 | Critere | Detail |
 |---------|--------|
 | API | GET /api/admin/clients/{id}, POST send-formulaire, POST reset-formulaire, POST send-formulaire-livraison, POST send-relance, POST request-documents, PATCH /api/admin/clients/{id}, Supabase direct: fnuci (PPE only), users_profile |
-| Sections | Identite (+ code NAF sous SIRET), Contact, Adresse, Statut commercial, Statut process, Validation NAF, Zone, Depot, Velos, FNUCI (PPE only), Preferences livraison (inline edit), Complement adresse (inline edit), Historique livraisons, Mini-carte |
-| Actions | Envoyer formulaire, Reinitialiser formulaire, Mail livraison, Formulaire retrait, Relance, Demander documents, Edit preferences/complement (inline) |
+| Sections | Identite (+ code NAF sous SIRET), Contact, Adresse, Statut commercial, Statut process, Validation NAF, Zone, Depot, Velos, FNUCI (PPE only), Preferences livraison (inline edit), Complement adresse (inline edit), Documents (5 types : PI, BL, URSSAF, DSN, BENEVOLES — voir + telecharger), Historique livraisons, Mini-carte |
+| Actions | Envoyer formulaire, Reinitialiser formulaire, Mail livraison, Formulaire retrait, Relance, Demander documents, Edit preferences/complement (inline), Telecharger documents (via Supabase ?download=) |
 | Roles | super_admin, admin, agent_secteur |
 
 ---
@@ -943,10 +949,10 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 | Critere | Detail |
 |---------|--------|
 | API | GET /api/livraisons, GET /api/depots, GET /api/clients/commercials, GET /api/clients/departements, POST send-formulaire-livraison, POST send-mail-livraison, POST send-mail-planning |
-| Colonnes | Checkbox, Societe + siret, Ref. Retina, Email, Tel, Commercial, Dep., Zone, Depot, Mode, CP + Ville (simplifie), Velos, Date prevue, Statut + confirmation, Actions |
+| Colonnes | Checkbox, Societe + siret, Ref. Retina (copier icone), Email, Tel, Commercial, Dep., Zone, Depot, Mode, CP + Ville (simplifie), Velos, Date (date_livraison si livre, creneau_date sinon), Statut + confirmation, Actions |
 | Filtres | Search (debounce 300ms), Statut (multi-select), Depot (multi-select), Commercial (multi-select), Departement (multi-select), Zone (multi-select), PageSize (20/50/100/200) |
 | Actions | Programmer, Module livraison, Voir fiche. Bulk : formulaire retrait, mail livraison, mail planning |
-| Tri | created_at (defaut desc), mode_livraison, creneau_date, statut |
+| Tri | created_at (defaut desc), reference_retina, telephone, commercial_assigne, departement, zone_status, depot, adresse, velo_valide, mode_livraison, creneau_date, statut |
 | Pagination | OUI cote serveur (20/50/100/200) |
 | Roles | super_admin, admin, agent_secteur, livreur |
 
@@ -968,7 +974,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 |---------|--------|
 | URL | `/admin/livraisons/deliver?id=LIVRAISON_ID` |
 | API | GET /api/admin/livraisons/{id} |
-| Type | Module livraison step-by-step plein ecran (identite, FNUCI scan, signature, photos, recap) |
+| Type | Module livraison step-by-step plein ecran (identite, FNUCI scan, signature, photos, recap). PDF: nom fichier `{ref_retina}-BL.pdf`, date = date_livraison > creneau_date > now(), checklist `>` au lieu de checkmark (jsPDF compat) |
 | Roles | Tous les roles admin |
 | Responsive | Plein ecran, mobile-first |
 
@@ -1050,8 +1056,9 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 | Critere | Detail |
 |---------|--------|
 | API | Supabase direct: users_profile, depots. PATCH/POST/DELETE /api/admin/users/*, PUT reset password, POST impersonate |
-| Colonnes | Utilisateur, Email, Role (badge), Territoire, Depots, Actif, Actions |
+| Colonnes | Utilisateur, Email, Telephone, Role (badge), Territoire, Depots, Actif, Actions |
 | Filtres | Search (nom/email), Role |
+| Tri | Utilisateur, Email, Telephone, Role, Territoire, Actif (toutes colonnes triables) |
 | Actions | Nouvel utilisateur, Modifier, Reset mdp, Impersonate (super_admin only), Supprimer |
 | Roles | super_admin (CRUD + impersonate), admin (filtre territoire), agent_secteur (livreur+agent de son dept) |
 
@@ -1165,7 +1172,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 | **TOTAL** | **34 pages** |
 
 | Feature | Pages avec |
-|---------|-----------|
+|---------|----------|
 | Pagination cote serveur | 4 (clients, livraisons, fnuci, naf) |
 | Colonnes triables | 4 (clients, livraisons, fnuci, naf) |
 | Selection multiple + bulk | 2 (clients, livraisons — 3 actions bulk sur livraisons : formulaire retrait, mail livraison, mail planning) |
@@ -1213,7 +1220,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 **PPE Energie (7 boards, compte crm-oreka) :**
 
 | Board | ID |
-|-------|----|
+|-------|----|{}
 | ATHOME | 2144986053 |
 | ALEX | 5002798369 |
 | DIZIEN | 2146667697 |
@@ -1225,7 +1232,7 @@ Un bucket `client-documents` utilise par la route `/api/documents/upload`.
 **Ecovolt (1 board, compte alexandredelannays-team) :**
 
 | Board | ID |
-|-------|----|
+|-------|----|{}
 | Velos Cargos General | 9990833105 |
 
 #### Mappings de valeurs (champs avec value mapping special)
@@ -1258,7 +1265,7 @@ Le mapping hardcode dans `config.ts` sert de backup/seed. En production, c'est l
 | Fonction | Description |
 |----------|-------------|
 | `sendEmail({to, subject, html, from})` | Envoi generique tenant-aware |
-| `sendCodeValidationEmail(...)` | Code ENEMAT (4 chiffres) |
+| `sendCodeValidationEmail(...)` | Code ENEMAT (4 chiffres). Fond solide (background-color) au lieu de linear-gradient pour compatibilite Outlook |
 | `sendFormulaireLinkEmail(...)` | Lien formulaire avec token |
 | `sendFormulaireRecapEmail(...)` | Recapitulatif apres validation |
 | `sendUserInvitationEmail(...)` | Invitation admin (identifiants) |
@@ -1293,7 +1300,7 @@ Le mapping hardcode dans `config.ts` sert de backup/seed. En production, c'est l
 | `geocodeAddress(adresse, codePostal, ville, minScore?)` | Geocodage 3 passes |
 | `buildClientAddress(client)` | Meilleure adresse (livraison > societe > CP) |
 | `findNearestDepot(lat, lng, depots)` | Depot le plus proche (Haversine) |
-| `classifyClientZone(lat, lng, depots)` | Zone gratuite / payante / hors_zone |
+| `classifyClientZone(lat, lng, depots)` | Zone gratuite / payante / hors_zone. Hors zone assigne quand meme le depot le plus proche (priorite retrait). Plus de depot null |
 | `getSimpleZoneStatus(client, depots)` | dans_la_zone / hors_zone |
 
 ---
@@ -1503,7 +1510,7 @@ Emails types :
 |---|-------|--------|
 | 1 | `GET /api/clients/statuses` | Expose statuts (peu sensible) |
 | 2 | `GET /api/clients/departements` | Expose departements (peu sensible) |
-| 3 | `GET /api/depots` | Donnees peu sensibles (acceptable) |
+| 3 | `GET /api/depots` | Filtre role-based ajoute (v4) — auth optionnelle, donnees peu sensibles |
 | 4 | `GET/POST/DELETE /api/monday/webhooks` | Gere webhooks Monday |
 | 5 | `GET /api/sync/monday` | Expose stats |
 
