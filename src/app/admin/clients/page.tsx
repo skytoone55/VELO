@@ -882,7 +882,7 @@ export default function AdminClientsPage() {
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       {(() => {
-                        const depot = depots.find((d: any) => d.id === client.depot_logistique_id)
+                        const depot = depots.find((d: any) => d.id === (client.depot_logistique_id || client.depot_retrait_id))
                         return depot ? (
                           <Badge variant="outline" className="text-xs">{depot.nom}</Badge>
                         ) : (
