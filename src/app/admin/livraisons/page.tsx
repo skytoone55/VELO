@@ -747,17 +747,26 @@ export default function AdminLivraisonsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {liv.creneau_date ? (
-                        <div className="flex items-center gap-1 text-sm">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          {new Date(liv.creneau_date + 'T00:00:00').toLocaleDateString('fr-FR')}
-                          {liv.creneau_heure_debut && (
-                            <span className="text-muted-foreground text-xs ml-1">
-                              {liv.creneau_heure_debut}
-                            </span>
-                          )}
-                        </div>
-                      ) : <span className="text-sm text-muted-foreground">-</span>}
+                      {(() => {
+                        const dateLivraison = (liv as any).date_livraison
+                        const creneauDate = (liv as any).creneau_date
+                        const isLivre = liv.statut === 'livree'
+                        const dateToShow = (isLivre && dateLivraison) ? dateLivraison : (creneauDate || dateLivraison)
+                        if (!dateToShow) return <span className="text-sm text-muted-foreground">-</span>
+                        try {
+                          return (
+                            <div className="flex items-center gap-1 text-sm">
+                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              {new Date(dateToShow + (dateToShow.length === 10 ? 'T00:00:00' : '')).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                              {!isLivre && liv.creneau_heure_debut && (
+                                <span className="text-muted-foreground text-xs ml-1">
+                                  {liv.creneau_heure_debut}
+                                </span>
+                              )}
+                            </div>
+                          )
+                        } catch { return <span className="text-sm text-muted-foreground">{dateToShow}</span> }
+                      })()}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
