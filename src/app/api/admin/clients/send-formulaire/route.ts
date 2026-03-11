@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { generateValidationCode, hashValidationCode } from '@/lib/utils'
-import { sendFormulaireLinkEmail } from '@/lib/email/gmail'
+import { sendCodeValidationEmail, sendFormulaireLinkEmail } from '@/lib/email/gmail'
 import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
 
 /**
@@ -12,7 +12,7 @@ import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
  *
  * Gardes (bloquantes) :
  * - validation_naf doit être 'OUI'
- * - statut_commercial doit être 'controle_valide'
+ * - statut_commercial doit être 'controle_valide' ou 'formulaire_envoye'
  *
  * Actions :
  * 1. Génère un code de validation + hash
@@ -107,17 +107,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 })
     }
 
-    // 4. Envoyer UN SEUL email avec code + lien formulaire
+    // 4. Envoyer l'email du code
+    const emailErrors: string[] = []
+    try {
+      await sendCodeValidationEmail(recipientEmail, clientName, newCode)
+      console.log('Email code envoyé à', recipientEmail)
+    } catch (err: any) {
+      console.error('Erreur envoi email code:', err.message || err)
+      emailErrors.push(`Code: ${err.message || 'Erreur inconnue'}`)
+    }
+
+    // Délai 5 secondes pour éviter le rate limit Office365
+    await new Promise(resolve => setTimeout(resolve, 5000))
+
+    // 5. Envoyer l'email du formulaire
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL
       || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
       || 'http://localhost:3001'
     const formulaireUrl = `${baseUrl}/formulaire?token=${token}`
 
-    const emailErrors: string[] = []
     try {
-      await sendFormulaireLinkEmail(recipientEmail, clientName, formulaireUrl, newCode)
+      await sendFormulaireLinkEmail(recipientEmail, clientName, formulaireUrl)
+      console.log('Email formulaire envoyé à', recipientEmail)
     } catch (err: any) {
-      emailErrors.push(`Email: ${err.message || 'Erreur inconnue'}`)
+      console.error('Erreur envoi email formulaire:', err.message || err)
+      emailErrors.push(`Formulaire: ${err.message || 'Erreur inconnue'}`)
     }
 
     // 6. Sync vers Monday
