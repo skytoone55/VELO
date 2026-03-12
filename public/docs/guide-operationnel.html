@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide Operationnel — Velo CRM</title>
+<style>
+  :root {
+    --primary: #7CB342;
+    --primary-dark: #558B2F;
+    --bg: #F8FAFC;
+    --card: #FFFFFF;
+    --text: #1E293B;
+    --muted: #64748B;
+    --border: #E2E8F0;
+    --green: #10B981;
+    --green-bg: #ECFDF5;
+    --green-border: #A7F3D0;
+    --blue: #3B82F6;
+    --blue-bg: #EFF6FF;
+    --blue-border: #BFDBFE;
+    --yellow: #F59E0B;
+    --yellow-bg: #FFFBEB;
+    --yellow-border: #FDE68A;
+    --red: #EF4444;
+    --red-bg: #FEF2F2;
+    --red-border: #FECACA;
+    --purple: #7C3AED;
+    --orange: #EA580C;
+    --emerald: #059669;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', -apple-system, sans-serif; background:var(--bg); color:var(--text); line-height:1.7; font-size:15px; }
+
+  /* HERO */
+  .hero { background: linear-gradient(135deg, #1E3A5F, #2563EB); color:white; padding:50px 40px; text-align:center; }
+  .hero h1 { font-size:2.5em; font-weight:800; letter-spacing:-1px; }
+  .hero .sub { font-size:1.15em; opacity:0.9; margin-top:8px; }
+  .hero .tag { display:inline-block; margin-top:15px; padding:4px 16px; background:rgba(255,255,255,0.15); border-radius:20px; font-size:0.85em; }
+
+  .container { max-width:980px; margin:0 auto; padding:0 28px; }
+
+  /* TOC */
+  .toc { background:var(--card); border-radius:12px; padding:30px 36px; margin:35px auto; max-width:980px; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+  .toc h2 { font-size:1.3em; margin-bottom:16px; color:#1E3A5F; }
+  .toc ol { padding-left:22px; columns:2; column-gap:30px; }
+  .toc li { margin:6px 0; break-inside:avoid; }
+  .toc a { color:#2563EB; text-decoration:none; font-weight:500; }
+  .toc a:hover { text-decoration:underline; }
+
+  /* SECTIONS */
+  section { background:var(--card); border-radius:12px; padding:36px; margin:28px auto; max-width:980px; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+  section h2 { font-size:1.5em; color:#1E3A5F; border-bottom:3px solid var(--blue); padding-bottom:10px; margin-bottom:22px; }
+  section h3 { font-size:1.15em; color:var(--text); margin:22px 0 10px; padding-left:12px; border-left:4px solid var(--blue); }
+  section h4 { font-size:1em; color:var(--muted); margin:16px 0 8px; font-weight:600; }
+  p { margin:6px 0; }
+  ul, ol { padding-left:20px; margin:6px 0; }
+  li { margin:3px 0; }
+
+  /* MOCKUP UI COMPONENTS */
+  .ui-mock { background:#F1F5F9; border:1px solid var(--border); border-radius:10px; padding:20px; margin:16px 0; position:relative; }
+  .ui-mock::before { content:attr(data-label); position:absolute; top:-10px; left:16px; background:var(--blue); color:white; font-size:0.7em; font-weight:700; padding:2px 10px; border-radius:10px; text-transform:uppercase; letter-spacing:0.5px; }
+  .ui-mock.green::before { background:var(--emerald); }
+  .ui-mock.orange::before { background:var(--orange); }
+  .ui-mock.red::before { background:var(--red); }
+  .ui-mock.purple::before { background:var(--purple); }
+
+  /* BUTTONS */
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border-radius:7px; font-size:0.88em; font-weight:600; border:1px solid transparent; cursor:default; vertical-align:middle; }
+  .btn.primary { background:var(--blue); color:white; }
+  .btn.success { background:var(--emerald); color:white; }
+  .btn.danger { background:var(--red); color:white; }
+  .btn.warning { background:var(--yellow); color:white; }
+  .btn.outline { background:white; color:var(--text); border:1px solid var(--border); }
+  .btn.outline-blue { background:white; color:var(--blue); border:1px solid var(--blue); }
+  .btn.ghost { background:transparent; color:var(--muted); border:none; }
+  .btn.sm { padding:4px 10px; font-size:0.8em; }
+  .btn.orange { background:var(--orange); color:white; }
+
+  /* BADGES */
+  .badge { display:inline-block; padding:2px 10px; border-radius:12px; font-size:0.78em; font-weight:600; vertical-align:middle; }
+  .badge.green { background:#DCFCE7; color:#166534; }
+  .badge.red { background:#FEE2E2; color:#991B1B; }
+  .badge.blue { background:#DBEAFE; color:#1E40AF; }
+  .badge.yellow { background:#FEF3C7; color:#92400E; }
+  .badge.gray { background:#F1F5F9; color:#475569; }
+  .badge.purple { background:#EDE9FE; color:#5B21B6; }
+  .badge.orange { background:#FFF7ED; color:#9A3412; }
+  .badge.emerald { background:#D1FAE5; color:#065F46; }
+
+  /* STATUS DOT */
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; vertical-align:middle; margin-right:4px; }
+  .dot.green { background:var(--green); }
+  .dot.red { background:var(--red); }
+  .dot.yellow { background:var(--yellow); }
+  .dot.blue { background:var(--blue); }
+  .dot.gray { background:#9CA3AF; }
+  .dot.pulse { animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* FLOW ARROWS */
+  .flow { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:14px 0; padding:16px; background:#F8FAFC; border-radius:8px; border:1px dashed var(--border); }
+  .flow-step { padding:6px 14px; border-radius:6px; font-size:0.85em; font-weight:600; color:white; }
+  .flow-arrow { color:var(--muted); font-size:1.2em; font-weight:bold; }
+
+  /* ACTION CARD */
+  .action-card { border:1px solid var(--border); border-radius:8px; padding:16px; margin:10px 0; display:flex; gap:14px; align-items:flex-start; background:white; transition:box-shadow 0.2s; }
+  .action-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+  .action-num { background:var(--blue); color:white; min-width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85em; flex-shrink:0; }
+  .action-num.green { background:var(--emerald); }
+  .action-num.orange { background:var(--orange); }
+  .action-num.red { background:var(--red); }
+  .action-content { flex:1; }
+  .action-content strong { color:#1E3A5F; }
+  .action-result { margin-top:6px; padding:8px 12px; background:#F8FAFC; border-radius:6px; font-size:0.9em; border-left:3px solid var(--blue); }
+  .action-result.green { border-left-color:var(--emerald); background:var(--green-bg); }
+  .action-result.orange { border-left-color:var(--orange); background:var(--yellow-bg); }
+
+  /* MOCKUP TABLE ROW */
+  .mock-row { display:grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap:10px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--border); font-size:0.88em; }
+  .mock-row.header { font-weight:700; background:#F8FAFC; border-radius:6px 6px 0 0; }
+
+  /* CHECKLIST */
+  .checklist { margin:12px 0; }
+  .check-item { display:flex; gap:10px; align-items:center; padding:8px 12px; border:1px solid var(--border); border-radius:6px; margin:4px 0; background:white; }
+  .check-box { width:20px; height:20px; border:2px solid var(--border); border-radius:4px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.75em; }
+  .check-box.checked { background:var(--emerald); border-color:var(--emerald); color:white; }
+  .check-label { flex:1; }
+  .check-label small { display:block; color:var(--muted); font-size:0.85em; }
+
+  /* INFO BOXES */
+  .box { padding:14px 18px; border-radius:8px; margin:14px 0; display:flex; gap:10px; align-items:flex-start; font-size:0.93em; }
+  .box .ico { font-size:1.2em; flex-shrink:0; }
+  .box.info { background:var(--blue-bg); border:1px solid var(--blue-border); }
+  .box.tip { background:var(--green-bg); border:1px solid var(--green-border); }
+  .box.warn { background:var(--yellow-bg); border:1px solid var(--yellow-border); }
+  .box.danger { background:var(--red-bg); border:1px solid var(--red-border); }
+
+  /* DIALOG MOCKUP */
+  .dialog-mock { background:white; border:1px solid var(--border); border-radius:12px; padding:24px; margin:14px 0; box-shadow:0 4px 20px rgba(0,0,0,0.1); max-width:480px; }
+  .dialog-mock h4 { font-size:1.1em; margin-bottom:4px; }
+  .dialog-mock .desc { color:var(--muted); font-size:0.9em; margin-bottom:14px; }
+  .dialog-mock .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+
+  /* SIGNATURE MOCKUP */
+  .sig-area { border:2px dashed var(--border); border-radius:8px; height:100px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-style:italic; margin:8px 0; background:#FAFAFA; }
+
+  /* FOOTER */
+  .footer { text-align:center; padding:40px; color:var(--muted); font-size:0.85em; }
+
+  @media print {
+    section { box-shadow:none; border:1px solid #ddd; break-inside:avoid; }
+    .ui-mock { break-inside:avoid; }
+  }
+  @media (max-width:768px) {
+    .hero h1 { font-size:1.8em; }
+    section, .toc { padding:20px; margin:14px; }
+    .toc ol { columns:1; }
+    .mock-row { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Guide Operationnel</h1>
+  <div class="sub">Actions, boutons et workflows &mdash; Plateforme Velo CRM</div>
+  <div class="tag">Document de formation &mdash; Version 1.0 &mdash; Mars 2026</div>
+</div>
+
+<div class="toc container">
+  <h2>Sommaire</h2>
+  <ol>
+    <li><a href="#s1">Workflow global : parcours d'un dossier</a></li>
+    <li><a href="#s2">Action : Envoyer le formulaire</a></li>
+    <li><a href="#s3">Le formulaire client (6 etapes)</a></li>
+    <li><a href="#s4">Action : Relancer un client</a></li>
+    <li><a href="#s5">Action : Bypass livraison</a></li>
+    <li><a href="#s6">Action : Planifier une livraison</a></li>
+    <li><a href="#s7">Action : Envoyer les emails de planning</a></li>
+    <li><a href="#s8">Module de livraison (4 etapes)</a></li>
+    <li><a href="#s9">Controle qualite (6 points)</a></li>
+    <li><a href="#s10">Action : Gerer les documents</a></li>
+    <li><a href="#s11">Action : Reassigner les clients aux depots</a></li>
+    <li><a href="#s12">Actions en masse (selection multiple)</a></li>
+    <li><a href="#s13">Tous les statuts et leurs transitions</a></li>
+    <li><a href="#s14">Tous les emails envoyes par la plateforme</a></li>
+  </ol>
+</div>
+
+<!-- ========== 1. WORKFLOW GLOBAL ========== -->
+<section id="s1">
+  <h2>1. Workflow global : parcours d'un dossier</h2>
+
+  <p>Chaque dossier client suit un parcours en <strong>5 phases</strong>. Voici les statuts et les actions qui font avancer le dossier.</p>
+
+  <div class="ui-mock" data-label="Parcours complet">
+    <div style="font-family:monospace; font-size:0.82em; line-height:2.2; white-space:pre-wrap;">
+<strong>PHASE 1 — CONTROLE</strong>
+  Nouveau client &rarr; <span class="badge green">Controle valide</span>
+  <em>Auto : le code NAF est verifie automatiquement a l'import</em>
+
+<strong>PHASE 2 — FORMULAIRE</strong>       <em>Vous cliquez sur</em> <span class="btn primary sm">Envoyer formulaire</span>
+  <span class="badge green">Controle valide</span> &rarr; <span class="badge blue">Formulaire envoye</span> &rarr; <span class="badge emerald">Formulaire valide</span>
+  <em>Le client remplit le formulaire en ligne (6 etapes)</em>
+
+<strong>PHASE 3 — PLANIFICATION</strong>    <em>Vous cliquez sur</em> <span class="btn primary sm">Planifier</span>
+  <span class="badge emerald">Formulaire valide</span> &rarr; <span class="badge yellow">A livrer</span> &rarr; <span class="badge blue">Programmee</span>
+  <em>Vous assignez un jour, un creneau et un livreur dans le planning</em>
+
+<strong>PHASE 4 — LIVRAISON</strong>        <em>Le livreur clique sur</em> <span class="btn success sm">Livraison</span>
+  <span class="badge blue">Programmee</span> &rarr; <span class="badge yellow">En livraison</span> &rarr; <span class="badge green">Livree</span>
+  <em>Le livreur complete le module de livraison (4 etapes terrain)</em>
+
+<strong>PHASE 5 — CONTROLE QUALITE</strong> <em>L'admin clique sur</em> <span class="btn sm" style="background:#7C3AED;color:white">Valider</span>
+  <span class="badge green">Livree</span> &rarr; <span class="badge purple">CQ en cours</span> &rarr; <span class="badge emerald">CQ valide</span>
+  <em>Verification des 6 points post-livraison</em>
+    </div>
+  </div>
+
+  <div class="box info">
+    <span class="ico">&#9432;</span>
+    <div><strong>Raccourci :</strong> si le client ne peut pas remplir le formulaire, le bouton <span class="btn orange sm">Bypass</span> permet de sauter directement a la Phase 3.</div>
+  </div>
+</section>
+
+<!-- ========== 2. ENVOYER LE FORMULAIRE ========== -->
+<section id="s2">
+  <h2>2. Action : Envoyer le formulaire</h2>
+
+  <h3>Conditions requises</h3>
+  <ul>
+    <li>Le client doit etre au statut <span class="badge green">Controle valide</span> ou <span class="badge blue">Formulaire envoye</span></li>
+    <li>La validation NAF doit etre <span class="badge green">OUI</span></li>
+    <li>Le client doit avoir une adresse email renseignee</li>
+  </ul>
+
+  <h3>Depuis la liste des clients</h3>
+
+  <div class="action-card">
+    <div class="action-num">1</div>
+    <div class="action-content">
+      Cliquer sur les <span class="btn outline sm">&#8943;</span> (trois points) a droite de la ligne du client.
+    </div>
+  </div>
+  <div class="action-card">
+    <div class="action-num">2</div>
+    <div class="action-content">
+      Cliquer sur <strong>Envoyer formulaire</strong> dans le menu deroulant.
+      <div class="action-result">Ce bouton n'apparait que si les conditions ci-dessus sont remplies.</div>
+    </div>
+  </div>
+  <div class="action-card">
+    <div class="action-num">3</div>
+    <div class="action-content">
+      Une fenetre de confirmation apparait :
+      <div class="dialog-mock" style="margin-top:10px">
+        <h4>Envoyer le code + formulaire</h4>
+        <div class="desc">Un code de validation et le lien du formulaire seront envoyes a <strong>client@exemple.fr</strong></div>
+        <div class="actions">
+          <span class="btn outline">Annuler</span>
+          <span class="btn primary">Envoyer</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="action-card">
+    <div class="action-num green">4</div>
+    <div class="action-content">
+      <strong>Resultat :</strong> le client recoit <strong>2 emails</strong> :
+      <div class="action-result green">
+        <strong>Email 1 :</strong> Son code de validation ENEMAT (a saisir a l'etape 1 du formulaire)<br>
+        <strong>Email 2 :</strong> Le lien vers le formulaire en 6 etapes + instructions
+      </div>
+      Le statut passe automatiquement a <span class="badge blue">Formulaire envoye</span>.
+    </div>
+  </div>
+
+  <h3>Depuis la fiche client</h3>
+  <p>Meme action, mais le bouton est directement visible en haut de la fiche :</p>
+  <div class="ui-mock" data-label="Barre d'actions fiche client">
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <span class="btn outline">&larr;</span>
+      <span class="btn primary">Envoyer formulaire</span>
+      <span class="btn outline-blue">Copier lien</span>
+      <span class="btn success">Livraison</span>
+      <span class="btn outline">Mail livraison</span>
+      <span class="btn outline">Mail planning</span>
+    </div>
+    <div style="margin-top:8px; font-size:0.8em; color:var(--muted);">Les boutons visibles dependent du statut actuel du client.</div>
+  </div>
+
+  <div class="box tip">
+    <span class="ico">&#10004;</span>
+    <div><strong>Copier lien</strong> permet de recuperer l'URL du formulaire pour l'envoyer manuellement (SMS, WhatsApp, etc.).</div>
+  </div>
+</section>
+
+<!-- ========== 3. LE FORMULAIRE CLIENT ========== -->
+<section id="s3">
+  <h2>3. Le formulaire client (6 etapes)</h2>
+  <p>Voici exactement ce que le client voit et doit faire a chaque etape.</p>
+
+  <!-- ETAPE 1 -->
+  <h3>Etape 1 &mdash; Code de validation</h3>
+  <div class="ui-mock green" data-label="Vue client">
+    <h4 style="margin-bottom:4px">Code de validation</h4>
+    <p style="color:var(--muted); font-size:0.9em; margin-bottom:12px">Saisissez le code que vous avez recu par email</p>
+    <div style="background:var(--blue-bg); border:1px solid var(--blue-border); border-radius:6px; padding:10px 12px; font-size:0.85em; margin-bottom:12px;">
+      &#9432; Ce code vous a ete envoye par email depuis velo-cargo@patrimoine-energie.fr &mdash; vous disposez de <strong>3 tentatives</strong> pour le valider.
+    </div>
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+      <div style="flex:1; background:white; border:1px solid var(--border); border-radius:6px; padding:8px 12px; color:var(--muted); font-size:0.9em;">Entrez votre code</div>
+      <span class="btn primary">Valider le code</span>
+    </div>
+    <div style="font-size:0.82em; color:var(--muted);">3 tentative(s) restante(s)</div>
+    <div style="margin-top:12px; font-size:0.85em; color:var(--muted);">Code perdu ou email supprime ? <span style="color:var(--blue); cursor:pointer;">Renvoyer mon code par email</span></div>
+  </div>
+  <div class="box warn">
+    <span class="ico">&#9888;</span>
+    <div>Si le client echoue 3 fois, le formulaire se bloque. Utilisez <strong>Reset formulaire</strong> depuis la fiche client pour lui permettre de recommencer.</div>
+  </div>
+
+  <!-- ETAPE 2 -->
+  <h3>Etape 2 &mdash; Informations societe</h3>
+  <p>Le client verifie et complete les informations pre-remplies : raison sociale, SIRET, nom du contact, telephone. Les champs sont pre-remplis depuis la base de donnees.</p>
+
+  <!-- ETAPE 3 -->
+  <h3>Etape 3 &mdash; Adresse de livraison</h3>
+  <p>Le client confirme ou modifie l'adresse ou le velo sera livre. L'adresse est geocodee automatiquement pour determiner le depot le plus proche.</p>
+
+  <!-- ETAPE 4 -->
+  <h3>Etape 4 &mdash; Preference de reception</h3>
+  <div class="ui-mock green" data-label="Vue client">
+    <h4 style="margin-bottom:4px">Preference de reception</h4>
+    <p style="color:var(--muted); font-size:0.9em; margin-bottom:12px">Choisissez comment vous souhaitez recevoir votre velo cargo</p>
+
+    <div style="margin-bottom:10px;">
+      <div style="display:flex; gap:8px; align-items:center; padding:10px; border:2px solid var(--blue); border-radius:8px; background:var(--blue-bg); margin-bottom:6px;">
+        <div style="width:18px;height:18px;border-radius:50%;border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;"><div style="width:10px;height:10px;border-radius:50%;background:var(--blue);"></div></div>
+        <strong>Retrait au point relais</strong>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px;">
+        <div style="width:18px;height:18px;border-radius:50%;border:2px solid var(--border);"></div>
+        <span>Livraison a domicile</span> <span class="badge yellow">Payant</span>
+      </div>
+    </div>
+    <div style="background:var(--green-bg); border:1px solid var(--green-border); border-radius:6px; padding:10px; font-size:0.85em;">
+      &#10004; Votre adresse est situee a proximite d'un de nos points de retrait. Vous pouvez recuperer votre velo rapidement sur place.
+    </div>
+    <div style="margin-top:12px;">
+      <div style="font-size:0.85em; font-weight:600; margin-bottom:4px;">Preferences de livraison</div>
+      <div style="background:white; border:1px solid var(--border); border-radius:6px; padding:8px; color:var(--muted); font-size:0.85em; min-height:60px;">Ex : Je suis disponible le matin entre 8h et 12h. Merci de m'appeler 30 min avant.</div>
+    </div>
+  </div>
+  <div class="box info">
+    <span class="ico">&#9432;</span>
+    <div>Les options affichees dependent de la position du client par rapport aux depots :
+      <ul style="margin-top:4px">
+        <li><strong>Proche d'un point relais</strong> &rarr; retrait gratuit propose en priorite</li>
+        <li><strong>Zone livraison gratuite</strong> &rarr; livraison a domicile gratuite</li>
+        <li><strong>Zone etendue</strong> &rarr; livraison payante (le client est prevenu)</li>
+        <li><strong>Hors zone</strong> &rarr; message "un conseiller vous contactera"</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ETAPE 5 -->
+  <h3>Etape 5 &mdash; FNUCI</h3>
+  <p>Information sur le numero d'identification unique (FNUCI/Bicycode) qui sera grave sur le velo. Le client est invite a surveiller ses emails pour le mail Bicycode.</p>
+
+  <!-- ETAPE 6 -->
+  <h3>Etape 6 &mdash; Confirmation</h3>
+  <div class="ui-mock green" data-label="Vue client">
+    <h4 style="margin-bottom:4px">Recapitulatif</h4>
+    <p style="color:var(--muted); font-size:0.9em; margin-bottom:12px">Verifiez vos informations avant de valider</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+      <div style="background:#F8FAFC; border-radius:6px; padding:10px; font-size:0.85em;">
+        <strong>Societe</strong><br>Raison sociale : DUPONT SARL<br>SIRET : 123 456 789 00012<br>Contact : Jean Dupont
+      </div>
+      <div style="background:#F8FAFC; border-radius:6px; padding:10px; font-size:0.85em;">
+        <strong>Mode de reception</strong><br>Retrait en point relais<br>Depot : Lyon Centre
+      </div>
+    </div>
+
+    <div style="background:var(--yellow-bg); border:1px solid var(--yellow-border); border-radius:6px; padding:10px; font-size:0.85em; margin-bottom:14px;">
+      <strong>Confirmations obligatoires :</strong>
+      <div style="margin-top:6px;">
+        <div class="check-item" style="border:none; padding:4px 0;">
+          <div class="check-box checked">&#10003;</div>
+          <span>Je confirme que Jean Dupont viendra recuperer le materiel.</span>
+        </div>
+        <div class="check-item" style="border:none; padding:4px 0;">
+          <div class="check-box checked">&#10003;</div>
+          <span>Je comprends qu'une piece d'identite sera demandee lors du retrait.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <span class="btn outline">Retour</span>
+      <span class="btn success">Valider ma demande</span>
+    </div>
+  </div>
+
+  <div class="action-card">
+    <div class="action-num green">&#10003;</div>
+    <div class="action-content">
+      <strong>Apres validation :</strong>
+      <div class="action-result green">
+        Le statut passe a <span class="badge emerald">Formulaire valide</span> &rarr; une livraison est <strong>creee automatiquement</strong> au statut <span class="badge yellow">A livrer</span>.<br>
+        Un email recapitulatif est envoye au client.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 4. RELANCER ========== -->
+<section id="s4">
+  <h2>4. Action : Relancer un client</h2>
+  <p>Quand un client n'a pas rempli son formulaire apres l'envoi initial.</p>
+
+  <div class="action-card">
+    <div class="action-num">1</div>
+    <div class="action-content">Dans la liste clients, cliquer sur <span class="btn outline sm">&#8943;</span> &rarr; cliquer sur un des boutons d'action email disponibles, ou utiliser la <strong>selection multiple</strong> pour relancer en masse (voir section 12).</div>
+  </div>
+  <div class="action-card">
+    <div class="action-num green">&#10003;</div>
+    <div class="action-content">
+      <strong>Resultat :</strong> un nouvel email avec le lien du formulaire est envoye.
+      <div class="action-result">Le statut reste a <span class="badge blue">Formulaire envoye</span>.</div>
+    </div>
+  </div>
+
+  <h3>Reset formulaire</h3>
+  <p>Si le formulaire est bloque (3 tentatives de code echouees) :</p>
+  <div class="action-card">
+    <div class="action-num orange">R</div>
+    <div class="action-content">
+      Depuis la fiche client, cliquer sur <span class="btn outline sm">Reset formulaire</span>.
+      <div class="action-result orange">Le formulaire est reinitialise. Le client peut recommencer avec un nouveau code.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 5. BYPASS ========== -->
+<section id="s5">
+  <h2>5. Action : Bypass livraison</h2>
+  <p>Pour creer directement une livraison <strong>sans passer par le formulaire</strong> (client injoignable, pas d'email, urgence, etc.).</p>
+
+  <div class="action-card">
+    <div class="action-num">1</div>
+    <div class="action-content">Dans la liste clients, cliquer sur l'icone orange <span class="btn orange sm">&#9889;</span> (eclair) ou via le menu <span class="btn outline sm">&#8943;</span> &rarr; <strong>Passage direct en livraison</strong>.</div>
+  </div>
+  <div class="action-card">
+    <div class="action-num">2</div>
+    <div class="action-content">
+      <strong>Double confirmation obligatoire :</strong>
+      <div class="dialog-mock" style="margin-top:10px">
+        <h4>Passage direct en livraison</h4>
+        <div class="desc">Vous allez bypasser le formulaire pour <strong>DUPONT SARL</strong> et le passer directement au statut "A livrer". <em>Cette action est tracee.</em></div>
+        <div class="actions">
+          <span class="btn outline">Annuler</span>
+          <span class="btn warning">Continuer</span>
+        </div>
+      </div>
+      <div class="dialog-mock" style="margin-top:10px">
+        <h4>Confirmation finale</h4>
+        <div class="desc">Etes-vous sur ? Le client <strong>DUPONT SARL</strong> (statut actuel : controle_valide) sera passe a "A livrer" sans formulaire.</div>
+        <div class="actions">
+          <span class="btn outline">Annuler</span>
+          <span class="btn danger">Confirmer le bypass</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="action-card">
+    <div class="action-num green">&#10003;</div>
+    <div class="action-content">
+      <strong>Resultat :</strong>
+      <div class="action-result green">Le client passe directement a <span class="badge yellow">A livrer</span>. Une livraison est creee. Le bypass est <strong>trace dans les logs</strong>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 6. PLANIFIER ========== -->
+<section id="s6">
+  <h2>6. Action : Planifier une livraison</h2>
+
+  <h3>Depuis le planning</h3>
+
+  <div class="ui-mock" data-label="Page planning">
+    <div style="display:flex; gap:12px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
+      <div><strong style="font-size:0.85em; color:var(--muted);">Depot</strong><br><span class="btn outline sm">Lyon Centre &#9662;</span></div>
+      <div><strong style="font-size:0.85em; color:var(--muted);">Livreur</strong><br><span class="btn outline sm">Jordan Martin &#9662;</span></div>
+      <div style="flex:1"></div>
+      <span class="btn outline sm">&larr;</span>
+      <span class="btn primary sm">Aujourd'hui</span>
+      <span class="btn outline sm">&rarr;</span>
+      <span class="btn outline sm">Jour</span>
+      <span class="btn outline sm">3J</span>
+      <span class="btn primary sm">Sem.</span>
+      <span class="btn outline sm">Mois</span>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:6px;">
+      <div style="background:#F8FAFC; border:1px solid var(--border); border-radius:6px; padding:8px; text-align:center; font-size:0.82em;">
+        <strong>Lundi 16/03</strong><br><span style="color:var(--muted)">2/8 velos</span>
+        <div style="margin-top:6px; border:1px dashed var(--border); border-radius:4px; padding:4px; color:var(--blue); cursor:pointer;">+ Ajouter un client</div>
+      </div>
+      <div style="background:#F8FAFC; border:1px solid var(--border); border-radius:6px; padding:8px; text-align:center; font-size:0.82em;">
+        <strong>Mardi 17/03</strong><br><span style="color:var(--muted)">0/8 velos</span>
+        <div style="margin-top:6px; border:1px dashed var(--border); border-radius:4px; padding:4px; color:var(--blue); cursor:pointer;">+ Ajouter un client</div>
+      </div>
+      <div style="background:#F8FAFC; border:1px solid var(--border); border-radius:6px; padding:8px; text-align:center; font-size:0.82em;">
+        <strong>Mercredi 18/03</strong><br><span style="color:var(--muted)">5/8 velos</span>
+        <div style="margin-top:6px; border:1px dashed var(--border); border-radius:4px; padding:4px; color:var(--blue); cursor:pointer;">+ Ajouter un client</div>
+      </div>
+      <div style="background:#F8FAFC; border:1px solid var(--border); border-radius:6px; padding:8px; text-align:center; font-size:0.82em;">
+        <strong>Jeudi 19/03</strong><br><span style="color:var(--muted)">0/8 velos</span>
+        <div style="margin-top:6px; border:1px dashed var(--border); border-radius:4px; padding:4px; color:var(--blue); cursor:pointer;">+ Ajouter un client</div>
+      </div>
+      <div style="background:#FEF2F2; border:1px solid var(--red-border); border-radius:6px; padding:8px; text-align:center; font-size:0.82em; color:var(--muted);">
+        <strong>Vendredi 20/03</strong><br>Ce jour est ferme
+      </div>
+    </div>
+  </div>
+
+  <div class="action-card">
+    <div class="action-num">1</div>
+    <div class="action-content"><strong>Selectionner un depot</strong> dans le menu deroulant en haut a gauche.</div>
+  </div>
+  <div class="action-card">
+    <div class="action-num">2</div>
+    <div class="action-content"><strong>Selectionner un livreur</strong> dans le deuxieme menu. <em>Obligatoire avant de planifier.</em></div>
+  </div>
+  <div class="action-card">
+    <div class="action-num">3</div>
+    <div class="action-content">Cliquer sur <span class="btn outline-blue sm">+ Ajouter un client</span> dans le jour souhaite.</div>
+  </div>
+  <div class="action-card">
+    <div class="action-num">4</div>
+    <div class="action-content">
+      Dans la fenetre qui s'ouvre, <strong>rechercher le client</strong> par nom, telephone ou email.
+      <div class="dialog-mock" style="margin-top:10px">
+        <h4>Placer un client</h4>
+        <div class="desc">Date : Lundi 16 mars 2026 &mdash; Livreur : Jordan Martin</div>
+        <div style="background:#F8FAFC; border:1px solid var(--border); border-radius:6px; padding:8px; color:var(--muted); font-size:0.9em; margin-bottom:10px;">Rechercher un client (nom, tel, email)...</div>
+        <div style="font-size:0.85em;">
+          DUPONT SARL <span class="badge yellow">A livrer</span><br>
+          MARTIN & CIE <span class="badge blue">Programme 15/03</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="action-card">
+    <div class="action-num">5</div>
+    <div class="action-content">Cliquer sur le client pour le placer. Optionnel : definir une <strong>heure precise</strong> et des <strong>notes</strong>.</div>
+  </div>
+  <div class="action-card">
+    <div class="action-num green">&#10003;</div>
+    <div class="action-content">
+      <div class="action-result green">La livraison passe a <span class="badge blue">Programmee</span>. Le client apparait dans le creneau du jour.</div>
+    </div>
+  </div>
+
+  <h3>Deprogrammer</h3>
+  <div class="action-card">
+    <div class="action-num red">&#10005;</div>
+    <div class="action-content">Cliquer sur l'icone corbeille (&#128465;) a cote du client dans le planning, puis confirmer. La livraison revient au statut <span class="badge yellow">A livrer</span>.</div>
+  </div>
+</section>
+
+<!-- ========== 7. EMAILS PLANNING ========== -->
+<section id="s7">
+  <h2>7. Action : Envoyer les emails de planning</h2>
+
+  <p>Trois niveaux d'envoi sont disponibles :</p>
+
+  <table>
+    <tr><th>Niveau</th><th>Bouton</th><th>Ce que ca fait</th></tr>
+    <tr>
+      <td><strong>Un client</strong></td>
+      <td><span class="btn outline-blue sm">Mail planning</span> <em>(sur la carte du client)</em></td>
+      <td>Envoie l'email de confirmation de creneau a ce client uniquement</td>
+    </tr>
+    <tr>
+      <td><strong>Un creneau</strong></td>
+      <td><span class="btn outline-blue sm">Mail planning (N)</span> <em>(panneau droit)</em></td>
+      <td>Envoie a tous les clients de ce creneau</td>
+    </tr>
+    <tr>
+      <td><strong>Une journee</strong></td>
+      <td><span class="btn outline-blue sm">Mail planning (N clients)</span> <em>(en-tete du jour)</em></td>
+      <td>Envoie a tous les clients planifies ce jour-la</td>
+    </tr>
+  </table>
+
+  <div class="box info">
+    <span class="ico">&#9432;</span>
+    <div>L'email contient : la date, le creneau, l'adresse du depot (si retrait), et des boutons <strong>Confirmer</strong> / <strong>Refuser</strong> que le client peut cliquer directement.</div>
+  </div>
+
+  <div class="box warn">
+    <span class="ico">&#9888;</span>
+    <div>La reponse du client (confirme/refuse) est visible dans la liste des livraisons :
+      <span class="badge green">&#10003; Confirmee</span>
+      <span class="badge red">&#10005; Refusee</span>
+      <span class="badge yellow">&#9203; En attente</span>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 8. MODULE DE LIVRAISON ========== -->
+<section id="s8">
+  <h2>8. Module de livraison (4 etapes)</h2>
+  <p>Le module s'ouvre en plein ecran. Il guide le livreur a travers 4 etapes obligatoires.</p>
+
+  <div class="ui-mock" data-label="En-tete du module">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <strong style="font-size:1.1em;">Livraison &mdash; DUPONT SARL</strong><br>
+        <span style="color:var(--muted); font-size:0.85em;">Etape 1 sur 4 &mdash; Instructions</span>
+      </div>
+      <span class="badge blue">Ref. Retina : TRA-EQ-131-0042</span>
+    </div>
+    <div style="display:flex; gap:4px; margin-top:12px;">
+      <div style="flex:1; height:4px; background:var(--blue); border-radius:2px;"></div>
+      <div style="flex:1; height:4px; background:var(--border); border-radius:2px;"></div>
+      <div style="flex:1; height:4px; background:var(--border); border-radius:2px;"></div>
+      <div style="flex:1; height:4px; background:var(--border); border-radius:2px;"></div>
+    </div>
+  </div>
+
+  <!-- STEP 1 -->
+  <h3>Etape 1 &mdash; Instructions et checklist</h3>
+
+  <div class="ui-mock green" data-label="Etape 1">
+    <div style="background:var(--blue-bg); border:1px solid var(--blue-border); border-radius:8px; padding:14px; margin-bottom:14px;">
+      <strong>Instructions Retina / ENEMAT</strong>
+      <p style="font-size:0.85em; margin-top:6px;">Rendez-vous sur retina.enemat.fr pour :</p>
+      <ol style="font-size:0.85em; margin-top:4px;">
+        <li>Generer la facture du beneficiaire</li>
+        <li>Entrer les numeros FNUCI dans Retina</li>
+        <li>Signer l'AH et prendre les photos</li>
+        <li>Revenir ici pour finaliser</li>
+      </ol>
+      <div style="margin-top:8px;"><span class="btn primary sm">Ouvrir Retina &mdash; Ref. TRA-EQ-131-0042</span></div>
+    </div>
+
+    <strong>Checklist de verification :</strong>
+    <div class="checklist">
+      <div class="check-item"><div class="check-box checked">&#10003;</div><div class="check-label">Verification et explication du fonctionnement</div></div>
+      <div class="check-item"><div class="check-box checked">&#10003;</div><div class="check-label">Cable de recharge remis au beneficiaire</div></div>
+      <div class="check-item"><div class="check-box checked">&#10003;</div><div class="check-label">Les photos geolocalisees ont ete fournies au financeur CEE</div></div>
+      <div class="check-item"><div class="check-box checked">&#10003;</div><div class="check-label">Le client a bien fait sa signature electronique faciale</div></div>
+      <div class="check-item" style="border-color:var(--yellow); background:var(--yellow-bg);">
+        <div class="check-box">&#9744;</div>
+        <div class="check-label"><strong>C'est bien Jean Dupont qui a signe</strong><small>Point critique &mdash; verifier l'identite du signataire</small></div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:14px;">
+      <span class="btn outline">Annuler</span>
+      <span class="btn primary">Suivant</span>
+    </div>
+  </div>
+
+  <div class="box danger">
+    <span class="ico">&#9888;</span>
+    <div><strong>Point critique (surligne en jaune) :</strong> verifiez que c'est bien le beneficiaire nomme sur le dossier qui a signe, pas quelqu'un d'autre. Cette verification est essentielle pour la conformite du dossier.</div>
+  </div>
+
+  <!-- STEP 2 -->
+  <h3>Etape 2 &mdash; Codes FNUCI</h3>
+
+  <div class="ui-mock green" data-label="Etape 2">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <strong>Nombre de velos a livrer</strong>
+      <div style="display:flex; gap:4px; align-items:center;">
+        <span class="btn outline sm">&minus;</span>
+        <span style="font-size:1.2em; font-weight:700; padding:0 12px;">2</span>
+        <span class="btn outline sm">+</span>
+      </div>
+    </div>
+    <div style="font-size:0.85em; font-weight:600; margin-bottom:8px;">Codes FNUCI (1/2)</div>
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
+      <span style="font-size:0.85em; font-weight:600; min-width:50px;">Velo 1</span>
+      <div style="flex:1; background:white; border:1px solid var(--green); border-radius:6px; padding:6px 10px; font-size:0.9em;">BC123456 <span style="color:var(--green);">&#10003;</span></div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
+      <span style="font-size:0.85em; font-weight:600; min-width:50px;">Velo 2</span>
+      <div style="flex:1; background:white; border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:0.9em; color:var(--muted);">BCXXXXXX</div>
+      <span class="btn primary sm">Valider</span>
+    </div>
+  </div>
+
+  <div class="box info">
+    <span class="ico">&#9432;</span>
+    <div>Le code FNUCI est au format <strong>BCXXXXXX</strong>. Il est grave sur le cadre du velo. Saisissez-le et cliquez sur <strong>Valider</strong> pour verifier qu'il n'est pas deja utilise.</div>
+  </div>
+
+  <!-- STEP 3 -->
+  <h3>Etape 3 &mdash; Photo et signature</h3>
+
+  <div class="ui-mock green" data-label="Etape 3">
+    <div style="margin-bottom:14px;">
+      <strong>Photo piece d'identite *</strong>
+      <div style="border:2px dashed var(--border); border-radius:8px; padding:20px; text-align:center; margin-top:6px; background:#FAFAFA;">
+        <span class="btn primary">Prendre une photo</span>
+        <div style="font-size:0.82em; color:var(--muted); margin-top:6px;">Photographiez la piece d'identite du beneficiaire</div>
+      </div>
+    </div>
+    <div>
+      <strong>Signature du beneficiaire *</strong>
+      <div class="sig-area">Signez ici avec le doigt ou un stylet</div>
+      <div style="text-align:right;"><span class="btn ghost sm">Effacer</span></div>
+    </div>
+
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:14px;">
+      <span class="btn outline">Retour</span>
+      <span class="btn primary" style="opacity:0.5">Suivant</span>
+    </div>
+    <div style="font-size:0.82em; color:var(--red); margin-top:6px; text-align:right;">La photo et la signature sont obligatoires pour continuer</div>
+  </div>
+
+  <div class="box danger">
+    <span class="ico">&#9888;</span>
+    <div><strong>Les deux elements sont obligatoires :</strong> la photo de la piece d'identite ET la signature du beneficiaire. Le bouton "Suivant" reste grise tant que les deux ne sont pas renseignes.</div>
+  </div>
+
+  <!-- STEP 4 -->
+  <h3>Etape 4 &mdash; Confirmation et finalisation</h3>
+
+  <div class="ui-mock green" data-label="Etape 4">
+    <div style="text-align:center; margin-bottom:14px;">
+      <strong style="font-size:1.1em;">Pret a finaliser la livraison ?</strong>
+    </div>
+    <div style="background:#F8FAFC; border-radius:8px; padding:14px; font-size:0.88em; margin-bottom:14px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div><strong>Client :</strong> DUPONT SARL</div>
+        <div><strong>Velos livres :</strong> 2</div>
+        <div><strong>Codes FNUCI :</strong> BC123456, BC789012</div>
+        <div><strong>Checklist :</strong> <span style="color:var(--green)">&#10003; Complete</span></div>
+        <div><strong>Photo ID :</strong> <span style="color:var(--green)">&#10003;</span></div>
+        <div><strong>Signature :</strong> <span style="color:var(--green)">&#10003;</span></div>
+      </div>
+    </div>
+    <div style="text-align:center;">
+      <span class="btn success" style="font-size:1em; padding:12px 30px;">Confirmer la livraison</span>
+    </div>
+  </div>
+
+  <h3>Apres confirmation</h3>
+  <div class="ui-mock green" data-label="Succes">
+    <div style="text-align:center;">
+      <div style="font-size:2em; color:var(--green); margin-bottom:8px;">&#10003;</div>
+      <strong style="font-size:1.2em;">Livraison enregistree !</strong>
+      <p style="color:var(--muted);">2 velo(s) livre(s) a DUPONT SARL</p>
+      <div style="display:flex; gap:8px; justify-content:center; margin-top:16px; flex-wrap:wrap;">
+        <span class="btn primary">Telecharger l'attestation PDF</span>
+        <span class="btn outline">Imprimer</span>
+        <span class="btn success">Envoyer au client</span>
+        <span class="btn outline">Fermer</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="box tip">
+    <span class="ico">&#10004;</span>
+    <div><strong>Pensez a :</strong>
+      <ul>
+        <li><strong>Telecharger le PDF</strong> comme preuve de livraison</li>
+        <li><strong>Envoyer au client</strong> pour qu'il ait son recapitulatif par email</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 9. CONTROLE QUALITE ========== -->
+<section id="s9">
+  <h2>9. Controle qualite (6 points)</h2>
+
+  <div class="ui-mock purple" data-label="Page controle qualite">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <div>
+        <strong style="font-size:1.1em;">Controle qualite</strong><br>
+        <span style="font-size:0.82em; color:var(--muted);">Verification post-livraison : 6 points de controle par dossier</span>
+      </div>
+      <div>
+        <span class="badge red">12 Non traites</span>
+        <span class="badge orange">3 En cours</span>
+      </div>
+    </div>
+
+    <div style="overflow-x:auto; font-size:0.82em;">
+      <table style="min-width:100%;">
+        <tr style="background:#F8FAFC;">
+          <th style="padding:6px 8px;">Pris par</th>
+          <th>Societe</th>
+          <th style="text-align:center;">Piece d'identite</th>
+          <th style="text-align:center;">Photo ENEMAT</th>
+          <th style="text-align:center;">Sign. install.</th>
+          <th style="text-align:center;">Sign. client</th>
+          <th style="text-align:center;">FNUCI</th>
+          <th style="text-align:center;">Velo</th>
+          <th>Comm.</th>
+          <th>Valider</th>
+        </tr>
+        <tr>
+          <td><span class="btn outline sm" style="font-size:0.8em;">Prendre</span></td>
+          <td>DUPONT SARL</td>
+          <td style="text-align:center;"><div class="check-box" style="margin:auto;">&#9744;</div></td>
+          <td style="text-align:center;"><div class="check-box" style="margin:auto;">&#9744;</div></td>
+          <td style="text-align:center;"><div class="check-box" style="margin:auto;">&#9744;</div></td>
+          <td style="text-align:center;"><div class="check-box" style="margin:auto;">&#9744;</div></td>
+          <td style="text-align:center;"><div class="check-box" style="margin:auto;">&#9744;</div></td>
+          <td style="text-align:center;"><div class="check-box" style="margin:auto;">&#9744;</div></td>
+          <td style="color:var(--muted); font-style:italic;">+ comm.</td>
+          <td><span class="badge gray">0/6</span></td>
+        </tr>
+        <tr style="background:#F0FDF4;">
+          <td><span class="badge emerald" style="font-size:0.75em;">Jordan</span></td>
+          <td>MARTIN &amp; CIE</td>
+          <td style="text-align:center;"><div class="check-box checked" style="margin:auto;">&#10003;</div></td>
+          <td style="text-align:center;"><div class="check-box checked" style="margin:auto;">&#10003;</div></td>
+          <td style="text-align:center;"><div class="check-box checked" style="margin:auto;">&#10003;</div></td>
+          <td style="text-align:center;"><div class="check-box checked" style="margin:auto;">&#10003;</div></td>
+          <td style="text-align:center;"><div class="check-box checked" style="margin:auto;">&#10003;</div></td>
+          <td style="text-align:center;"><div class="check-box checked" style="margin:auto;">&#10003;</div></td>
+          <td style="font-size:0.85em;">RAS</td>
+          <td><span class="btn sm" style="background:var(--emerald); color:white;">6/6 &#10003;</span></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="action-card">
+    <div class="action-num" style="background:var(--purple)">1</div>
+    <div class="action-content"><strong>Prendre le dossier :</strong> cliquer sur <span class="btn outline sm">Prendre</span> pour le verrouiller a votre nom. Personne d'autre ne pourra le modifier tant que vous le tenez.</div>
+  </div>
+  <div class="action-card">
+    <div class="action-num" style="background:var(--purple)">2</div>
+    <div class="action-content"><strong>Cocher les 6 points :</strong> cliquer sur chaque case apres avoir verifie le point correspondant dans Retina/le dossier :
+      <div class="checklist" style="margin-top:8px;">
+        <div class="check-item"><div class="check-box">&#9744;</div><div class="check-label"><strong>Piece d'identite</strong><small>Photo CI/passeport du beneficiaire presente et lisible</small></div></div>
+        <div class="check-item"><div class="check-box">&#9744;</div><div class="check-label"><strong>Photo ENEMAT</strong><small>Photo de la plaque ENEMAT du velo presente et lisible</small></div></div>
+        <div class="check-item"><div class="check-box">&#9744;</div><div class="check-label"><strong>Signature installateur</strong><small>Le livreur a bien signe le bon de livraison</small></div></div>
+        <div class="check-item"><div class="check-box">&#9744;</div><div class="check-label"><strong>Signature client</strong><small>Le client/beneficiaire a bien signe le bon</small></div></div>
+        <div class="check-item"><div class="check-box">&#9744;</div><div class="check-label"><strong>N° FNUCI</strong><small>Le numero FNUCI est renseigne et correspond au velo</small></div></div>
+        <div class="check-item"><div class="check-box">&#9744;</div><div class="check-label"><strong>NB velo</strong><small>Etat du velo verifie conforme, nombre correct</small></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="action-card">
+    <div class="action-num" style="background:var(--purple)">3</div>
+    <div class="action-content"><strong>Commenter si necessaire :</strong> cliquer sur <em>+ commentaire</em> pour ajouter une observation.</div>
+  </div>
+  <div class="action-card">
+    <div class="action-num green">4</div>
+    <div class="action-content"><strong>Valider :</strong> quand les 6/6 sont coches, le bouton de validation devient vert. Cliquer pour valider le CQ.
+      <div class="action-result green">Le dossier passe en <span class="badge emerald">CQ valide</span>. Le controle est termine.</div>
+    </div>
+  </div>
+
+  <div class="box warn">
+    <span class="ico">&#9888;</span>
+    <div><strong>Cocher "Tout" :</strong> la case en haut de la colonne permet de cocher les 6 points d'un coup (utile si le dossier est manifestement complet). Mais verifiez quand meme !</div>
+  </div>
+
+  <div class="box danger">
+    <span class="ico">&#9888;</span>
+    <div><strong>Liberer le dossier :</strong> si vous ne pouvez pas terminer le controle, cliquez sur votre nom dans la colonne "Pris par" pour <strong>liberer le verrou</strong>. Sinon, aucun autre controleur ne pourra le traiter.</div>
+  </div>
+</section>
+
+<!-- ========== 10. DOCUMENTS ========== -->
+<section id="s10">
+  <h2>10. Action : Gerer les documents</h2>
+
+  <h3>Consulter / Telecharger</h3>
+  <div class="ui-mock" data-label="Section documents — fiche client">
+    <strong>Documents</strong> <span class="btn outline-blue sm" style="margin-left:8px;">Demander des pieces</span>
+    <div style="margin-top:12px; display:grid; gap:8px;">
+      <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:white; border:1px solid var(--border); border-radius:6px;">
+        <div style="width:32px; height:32px; background:var(--green-bg); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--green); font-size:1.1em;">&#128196;</div>
+        <div style="flex:1"><strong style="font-size:0.9em;">Attestation URSSAF</strong></div>
+        <span class="btn ghost sm" title="Voir">&#128065;</span>
+        <span class="btn ghost sm" title="Telecharger">&#11015;</span>
+        <span class="btn ghost sm" style="color:var(--red);" title="Supprimer">&#128465;</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:white; border:1px solid var(--border); border-radius:6px;">
+        <div style="width:32px; height:32px; background:#FEF2F2; border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--red); font-size:0.8em;">&#10005;</div>
+        <div style="flex:1"><span style="font-size:0.9em; color:var(--muted);">Attestation DSN &mdash; <em>Manquant</em></span></div>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:white; border:1px solid var(--border); border-radius:6px;">
+        <div style="width:32px; height:32px; background:var(--green-bg); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--green); font-size:1.1em;">&#128196;</div>
+        <div style="flex:1"><strong style="font-size:0.9em;">Piece d'identite</strong></div>
+        <span class="btn ghost sm">&#128065;</span>
+        <span class="btn ghost sm">&#11015;</span>
+        <span class="btn ghost sm" style="color:var(--red);">&#128465;</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>Supprimer un document</h3>
+  <div class="action-card">
+    <div class="action-num red">1</div>
+    <div class="action-content">Cliquer sur l'icone <span style="color:var(--red); font-size:1.1em;">&#128465;</span> (corbeille rouge) a cote du document.</div>
+  </div>
+  <div class="action-card">
+    <div class="action-num red">2</div>
+    <div class="action-content">
+      <strong>Double confirmation :</strong>
+      <div class="dialog-mock" style="margin-top:10px; border-color:var(--red-border);">
+        <h4>Supprimer Attestation URSSAF ?</h4>
+        <div class="desc">Cette action est irreversible. Le document sera definitivement supprime de la fiche client.</div>
+        <div class="actions">
+          <span class="btn outline">Annuler</span>
+          <span class="btn danger">Supprimer</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Demander des pieces manquantes</h3>
+  <div class="action-card">
+    <div class="action-num">1</div>
+    <div class="action-content">Cliquer sur <span class="btn outline-blue sm">Demander des pieces</span>.</div>
+  </div>
+  <div class="action-card">
+    <div class="action-num">2</div>
+    <div class="action-content">Cocher les documents a demander :
+      <div class="checklist" style="margin-top:6px;">
+        <div class="check-item"><div class="check-box">&#9744;</div><span>Attestation URSSAF (&lt; 3 mois)</span></div>
+        <div class="check-item"><div class="check-box">&#9744;</div><span>Attestation DSN format EDI</span></div>
+        <div class="check-item"><div class="check-box">&#9744;</div><span>Declaration de Benevoles</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="action-card">
+    <div class="action-num">3</div>
+    <div class="action-content">Cliquer sur <span class="btn primary sm">Envoyer la demande</span>. Un email est envoye au client avec les instructions pour fournir les documents.</div>
+  </div>
+</section>
+
+<!-- ========== 11. REASSIGNER DEPOTS ========== -->
+<section id="s11">
+  <h2>11. Action : Reassigner les clients aux depots</h2>
+
+  <div class="action-card">
+    <div class="action-num">1</div>
+    <div class="action-content">Aller sur la page <strong>Carte</strong>.</div>
+  </div>
+  <div class="action-card">
+    <div class="action-num">2</div>
+    <div class="action-content">Cliquer sur <span class="btn primary sm">Reassigner les clients</span>.</div>
+  </div>
+  <div class="action-card">
+    <div class="action-num">3</div>
+    <div class="action-content">
+      Le systeme traite tous les clients :
+      <ul>
+        <li>Clients <strong>avec GPS</strong> &rarr; assignes au depot le plus proche par distance</li>
+        <li>Clients <strong>sans GPS mais avec code postal</strong> &rarr; geocodes par CP puis assignes</li>
+        <li>Clients <strong>sans GPS ni CP</strong> &rarr; non traitables</li>
+      </ul>
+    </div>
+  </div>
+  <div class="action-card">
+    <div class="action-num green">4</div>
+    <div class="action-content">
+      Resultat affiche :
+      <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
+        <span class="badge green">42 reassigne(s)</span>
+        <span class="badge blue">12 geocode(s) par CP</span>
+        <span class="badge yellow">8 hors zone</span>
+        <span class="badge red">3 sans GPS ni CP</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 12. ACTIONS EN MASSE ========== -->
+<section id="s12">
+  <h2>12. Actions en masse (selection multiple)</h2>
+
+  <h3>Page clients</h3>
+  <div class="action-card">
+    <div class="action-num">1</div>
+    <div class="action-content">Cocher les cases a gauche des clients concernes (ou la case en tete pour tout selectionner).</div>
+  </div>
+  <div class="action-card">
+    <div class="action-num">2</div>
+    <div class="action-content">
+      Une barre flottante apparait en bas de l'ecran :
+      <div class="ui-mock" data-label="Barre d'actions groupees" style="margin-top:8px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <strong>12 client(s) selectionne(s)</strong>
+          <span class="btn primary sm">Envoyer formulaires</span>
+          <span class="btn ghost sm" style="color:var(--red);">&#10005;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="action-card">
+    <div class="action-num green">3</div>
+    <div class="action-content">Cliquer sur l'action souhaitee. Le systeme traite chaque client individuellement et affiche un recapitulatif.</div>
+  </div>
+
+  <h3>Page livraisons</h3>
+  <div class="ui-mock" data-label="Barre d'actions groupees livraisons" style="margin-top:8px;">
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <strong>5 livraison(s) selectionnee(s)</strong>
+      <span class="btn primary sm">Formulaire retrait</span>
+      <span class="btn primary sm">Mail livraison</span>
+      <span class="btn primary sm">Mail planning</span>
+      <span class="btn ghost sm" style="color:var(--red);">&#10005;</span>
+    </div>
+    <div style="font-size:0.78em; color:var(--muted); margin-top:6px;">Certains boutons sont desactives si la selection contient des livraisons au mauvais statut ou mode.</div>
+  </div>
+</section>
+
+<!-- ========== 13. TOUS LES STATUTS ========== -->
+<section id="s13">
+  <h2>13. Tous les statuts et leurs transitions</h2>
+
+  <h3>Statut commercial (processus principal)</h3>
+  <table>
+    <tr><th>Statut</th><th>Signification</th><th>Action pour passer au suivant</th></tr>
+    <tr><td><span class="badge green">Controle valide</span></td><td>NAF verifie, dossier pret</td><td>Envoyer le formulaire</td></tr>
+    <tr><td><span class="badge blue">Formulaire envoye</span></td><td>Email envoye, en attente du client</td><td>Le client remplit le formulaire</td></tr>
+    <tr><td><span class="badge emerald">Formulaire valide</span></td><td>Client a valide, livraison creee</td><td>Automatique &rarr; A livrer</td></tr>
+    <tr><td><span class="badge yellow">A livrer</span></td><td>Pret pour planification</td><td>Planifier dans le planning</td></tr>
+    <tr><td><span class="badge blue">En livraison</span></td><td>Creneau programme</td><td>Le livreur effectue la livraison</td></tr>
+    <tr><td><span class="badge green">Livre</span></td><td>Livraison effectuee</td><td>Controle qualite</td></tr>
+    <tr><td><span class="badge red">Probleme livraison</span></td><td>Echec de livraison</td><td>Reprogrammer (a relivrer)</td></tr>
+    <tr><td><span class="badge orange">A relivrer</span></td><td>En attente de replanification</td><td>Replanifier dans le planning</td></tr>
+    <tr><td><span class="badge red">Retractation</span></td><td>Client se retracte</td><td>Fin du processus</td></tr>
+    <tr><td><span class="badge red">Anomalie</span></td><td>Probleme necessitant investigation</td><td>Traitement manuel</td></tr>
+  </table>
+
+  <h3>Statut formulaire</h3>
+  <table>
+    <tr><th>Statut</th><th>Signification</th></tr>
+    <tr><td><span class="badge gray">En attente</span></td><td>Formulaire pas encore envoye</td></tr>
+    <tr><td><span class="badge blue">Formulaire envoye</span></td><td>Email envoye, en attente du client</td></tr>
+    <tr><td><span class="badge emerald">Formulaire complete</span></td><td>Client a soumis le formulaire</td></tr>
+    <tr><td><span class="badge green">Valide</span></td><td>Formulaire verifie et accepte</td></tr>
+    <tr><td><span class="badge red">Formulaire bloque</span></td><td>3 tentatives echouees / probleme</td></tr>
+  </table>
+
+  <h3>Statut livraison</h3>
+  <div class="flow">
+    <span class="flow-step" style="background:#9CA3AF;">En attente</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step" style="background:var(--blue);">Programmee</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step" style="background:var(--yellow);">En cours</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step" style="background:var(--green);">Livree</span>
+    <span style="margin-left:10px;">|</span>
+    <span class="flow-step" style="background:var(--red);">Annulee</span>
+  </div>
+
+  <h3>Validation NAF</h3>
+  <table>
+    <tr><th>Statut</th><th>Signification</th><th>Impact</th></tr>
+    <tr><td><span class="badge green">OUI</span></td><td>Code NAF eligible ENEMAT</td><td>Formulaire peut etre envoye</td></tr>
+    <tr><td><span class="badge red">NON</span></td><td>Code NAF non eligible</td><td>Formulaire bloque</td></tr>
+    <tr><td><span class="badge gray">A verifier</span></td><td>En cours de verification</td><td>Formulaire en attente</td></tr>
+  </table>
+</section>
+
+<!-- ========== 14. EMAILS ========== -->
+<section id="s14">
+  <h2>14. Tous les emails envoyes par la plateforme</h2>
+
+  <table>
+    <tr><th>Email</th><th>Declencheur</th><th>Bouton</th><th>Statut resultant</th></tr>
+    <tr>
+      <td><strong>Code ENEMAT</strong></td>
+      <td>Envoi formulaire</td>
+      <td><span class="btn primary sm">Envoyer formulaire</span></td>
+      <td><span class="badge blue">Formulaire envoye</span></td>
+    </tr>
+    <tr>
+      <td><strong>Lien formulaire</strong></td>
+      <td>Envoye en meme temps que le code</td>
+      <td><em>(meme bouton)</em></td>
+      <td><em>(idem)</em></td>
+    </tr>
+    <tr>
+      <td><strong>Confirmation formulaire</strong></td>
+      <td>Client valide le formulaire</td>
+      <td><em>Automatique</em></td>
+      <td><span class="badge emerald">Formulaire valide</span></td>
+    </tr>
+    <tr>
+      <td><strong>Relance</strong></td>
+      <td>Client ne repond pas</td>
+      <td><span class="btn outline sm">Relancer</span></td>
+      <td><em>Inchange</em></td>
+    </tr>
+    <tr>
+      <td><strong>Formulaire livraison</strong></td>
+      <td>Choix de creneau</td>
+      <td><span class="btn outline sm">Formulaire retrait</span></td>
+      <td><em>Inchange</em></td>
+    </tr>
+    <tr>
+      <td><strong>Confirmation creneau</strong></td>
+      <td>Creneau planifie</td>
+      <td><span class="btn outline-blue sm">Mail planning</span></td>
+      <td><em>Inchange</em></td>
+    </tr>
+    <tr>
+      <td><strong>Email planning</strong></td>
+      <td>Rappel livraison</td>
+      <td><span class="btn outline sm">Mail livraison</span></td>
+      <td><em>Inchange</em></td>
+    </tr>
+    <tr>
+      <td><strong>Bon de livraison</strong></td>
+      <td>Livraison effectuee</td>
+      <td><span class="btn success sm">Envoyer au client</span></td>
+      <td><em>Inchange</em></td>
+    </tr>
+    <tr>
+      <td><strong>Demande de pieces</strong></td>
+      <td>Documents manquants</td>
+      <td><span class="btn outline-blue sm">Demander des pieces</span></td>
+      <td><em>Inchange</em></td>
+    </tr>
+  </table>
+
+  <div class="box info">
+    <span class="ico">&#9432;</span>
+    <div>Tous les emails sont envoyes depuis l'adresse officielle de l'entite. <strong>PPE :</strong> velo-cargo@patrimoine-energie.fr | <strong>Ecovolt :</strong> admin@eco-volt.fr</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p><strong>Guide Operationnel Velo CRM</strong> &mdash; PPE Energie &amp; Ecovolt</p>
+  <p>Document de formation &mdash; Version 1.0 &mdash; Mars 2026</p>
+  <p>Chaque mockup represente fidelement l'interface reelle de la plateforme.</p>
+</div>
+
+</body>
+</html>

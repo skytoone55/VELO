@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manuel d'utilisation — Plateforme Velo CRM</title>
+<style>
+  :root {
+    --primary: #7CB342;
+    --primary-dark: #558B2F;
+    --accent: #F5D100;
+    --bg: #FAFAFA;
+    --card: #FFFFFF;
+    --text: #1A1A1A;
+    --text-light: #6B7280;
+    --border: #E5E7EB;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --info: #3B82F6;
+    --role-super: #7C3AED;
+    --role-admin: #2563EB;
+    --role-agent: #059669;
+    --role-livreur: #D97706;
+    --role-client: #6B7280;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* HEADER */
+  .hero {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    color: white;
+    padding: 60px 40px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.8em; font-weight: 800; margin-bottom: 10px; letter-spacing: -1px; }
+  .hero .subtitle { font-size: 1.2em; opacity: 0.9; }
+  .hero .version { margin-top: 15px; font-size: 0.85em; opacity: 0.7; }
+
+  /* LAYOUT */
+  .container { max-width: 960px; margin: 0 auto; padding: 0 30px; }
+
+  /* TABLE OF CONTENTS */
+  .toc {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 35px 40px;
+    margin: 40px auto;
+    max-width: 960px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toc h2 { font-size: 1.4em; margin-bottom: 20px; color: var(--primary-dark); }
+  .toc ol { padding-left: 24px; }
+  .toc li { margin: 8px 0; }
+  .toc a { color: var(--primary-dark); text-decoration: none; font-weight: 500; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* SECTIONS */
+  section {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 40px;
+    margin: 30px auto;
+    max-width: 960px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  section h2 {
+    font-size: 1.6em;
+    color: var(--primary-dark);
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 12px;
+    margin-bottom: 25px;
+  }
+  section h3 {
+    font-size: 1.2em;
+    color: var(--text);
+    margin: 25px 0 12px;
+    padding-left: 12px;
+    border-left: 4px solid var(--primary);
+  }
+  section h4 {
+    font-size: 1.05em;
+    color: var(--text-light);
+    margin: 18px 0 8px;
+  }
+
+  /* ROLE BADGES */
+  .role {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.75em;
+    font-weight: 700;
+    color: white;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+  .role.super { background: var(--role-super); }
+  .role.admin { background: var(--role-admin); }
+  .role.agent { background: var(--role-agent); }
+  .role.livreur { background: var(--role-livreur); }
+  .role.client { background: var(--role-client); }
+
+  /* STEP BOXES */
+  .steps { counter-reset: step; margin: 15px 0; }
+  .step {
+    display: flex;
+    gap: 16px;
+    margin: 12px 0;
+    padding: 14px 18px;
+    background: #F9FAFB;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary);
+    align-items: flex-start;
+  }
+  .step::before {
+    counter-increment: step;
+    content: counter(step);
+    background: var(--primary);
+    color: white;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85em;
+    flex-shrink: 0;
+  }
+  .step-content { flex: 1; }
+  .step-content strong { color: var(--primary-dark); }
+
+  /* CLICK INDICATOR */
+  .click {
+    display: inline-block;
+    background: #EEF2FF;
+    color: #4338CA;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9em;
+    border: 1px solid #C7D2FE;
+  }
+
+  /* TIP / WARNING / DANGER BOXES */
+  .box {
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 16px 0;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .box .icon { font-size: 1.3em; flex-shrink: 0; margin-top: 2px; }
+  .box.tip { background: #ECFDF5; border: 1px solid #A7F3D0; }
+  .box.warning { background: #FFFBEB; border: 1px solid #FDE68A; }
+  .box.danger { background: #FEF2F2; border: 1px solid #FECACA; }
+  .box.info { background: #EFF6FF; border: 1px solid #BFDBFE; }
+
+  /* TABLES */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.92em;
+  }
+  th {
+    background: #F3F4F6;
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  tr:hover td { background: #F9FAFB; }
+
+  /* ACTION BUTTONS MOCKUP */
+  .btn-mock {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin: 2px 4px;
+    border: none;
+  }
+  .btn-mock.green { background: var(--primary); color: white; }
+  .btn-mock.blue { background: var(--info); color: white; }
+  .btn-mock.red { background: var(--danger); color: white; }
+  .btn-mock.yellow { background: var(--warning); color: white; }
+  .btn-mock.gray { background: #E5E7EB; color: var(--text); }
+
+  /* WORKFLOW DIAGRAM */
+  .workflow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 16px 0;
+    padding: 16px;
+    background: #F9FAFB;
+    border-radius: 8px;
+  }
+  .wf-step {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: white;
+  }
+  .wf-arrow { color: var(--text-light); font-weight: bold; font-size: 1.2em; }
+  .wf-step.green { background: var(--success); }
+  .wf-step.blue { background: var(--info); }
+  .wf-step.yellow { background: var(--warning); }
+  .wf-step.red { background: var(--danger); }
+  .wf-step.purple { background: var(--role-super); }
+  .wf-step.gray { background: #9CA3AF; }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-light);
+    font-size: 0.85em;
+  }
+
+  /* PRINT */
+  @media print {
+    .hero { padding: 30px 20px; }
+    section { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+    .toc { break-after: page; }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 2em; }
+    section, .toc { padding: 24px; margin: 16px; }
+  }
+
+  ul, ol { padding-left: 22px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  p { margin: 8px 0; }
+  code { background: #F3F4F6; padding: 1px 6px; border-radius: 3px; font-size: 0.9em; }
+</style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="hero">
+  <h1>Manuel d'utilisation</h1>
+  <div class="subtitle">Plateforme Velo CRM &mdash; PPE Energie &amp; Ecovolt</div>
+  <div class="version">Version 1.0 &mdash; Mars 2026</div>
+</div>
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc container">
+  <h2>Sommaire</h2>
+  <ol>
+    <li><a href="#intro">Presentation de la plateforme</a></li>
+    <li><a href="#connexion">Connexion et navigation</a></li>
+    <li><a href="#roles">Les roles et permissions</a></li>
+    <li><a href="#dashboard">Le tableau de bord</a></li>
+    <li><a href="#clients">Gestion des clients</a></li>
+    <li><a href="#fiche-client">La fiche client (detail)</a></li>
+    <li><a href="#formulaire">Le formulaire client (parcours public)</a></li>
+    <li><a href="#livraisons">Gestion des livraisons</a></li>
+    <li><a href="#planning">Le planning de livraison</a></li>
+    <li><a href="#livreur">Vue livreur (terrain)</a></li>
+    <li><a href="#carte">La carte interactive</a></li>
+    <li><a href="#cq">Le controle qualite (CQ)</a></li>
+    <li><a href="#depots">Gestion des depots</a></li>
+    <li><a href="#users">Gestion des utilisateurs</a></li>
+    <li><a href="#settings">Parametres et configuration</a></li>
+    <li><a href="#workflow-global">Workflow complet : du client a la livraison</a></li>
+    <li><a href="#emails">Les emails automatiques</a></li>
+    <li><a href="#faq">Questions frequentes (FAQ)</a></li>
+  </ol>
+</div>
+
+<!-- ==================== 1. INTRODUCTION ==================== -->
+<section id="intro">
+  <h2>1. Presentation de la plateforme</h2>
+
+  <p>La plateforme <strong>Velo CRM</strong> est un outil de gestion commerciale concu pour le suivi des dossiers velos-cargos electriques. Elle couvre l'ensemble du cycle de vie d'un dossier client, de la validation du code ENEMAT jusqu'a la livraison et le controle qualite.</p>
+
+  <h3>Deux entites, une seule plateforme</h3>
+  <table>
+    <tr><th></th><th>PPE Energie</th><th>Ecovolt</th></tr>
+    <tr><td><strong>Zone geographique</strong></td><td>France metropolitaine</td><td>DOM-TOM (971, 972, 973, 974)</td></tr>
+    <tr><td><strong>Module livraison</strong></td><td>Interne (dans la plateforme)</td><td>Externe (application partenaire)</td></tr>
+    <tr><td><strong>Couleur</strong></td><td>Vert</td><td>Jaune / vert</td></tr>
+    <tr><td><strong>Email</strong></td><td>velo-cargo@patrimoine-energie.fr</td><td>admin@eco-volt.fr</td></tr>
+  </table>
+
+  <div class="box info">
+    <span class="icon">&#9432;</span>
+    <div>Les deux entites partagent le meme code et la meme interface. Seules les donnees, les emails et le module de livraison different.</div>
+  </div>
+
+  <h3>Ce que permet la plateforme</h3>
+  <ul>
+    <li>Suivi complet des dossiers clients (statuts, documents, contact)</li>
+    <li>Envoi automatise de formulaires et relances par email</li>
+    <li>Planification et suivi des livraisons</li>
+    <li>Geolocalisation des clients et assignation aux depots</li>
+    <li>Controle qualite post-livraison</li>
+    <li>Synchronisation avec Monday.com (base historique)</li>
+    <li>Gestion multi-roles (super admin, admin, agent, livreur)</li>
+  </ul>
+</section>
+
+<!-- ==================== 2. CONNEXION ==================== -->
+<section id="connexion">
+  <h2>2. Connexion et navigation</h2>
+
+  <h3>Se connecter</h3>
+  <div class="steps">
+    <div class="step"><div class="step-content">Ouvrir l'URL de la plateforme dans votre navigateur (Chrome recommande).</div></div>
+    <div class="step"><div class="step-content">Saisir votre <strong>adresse email</strong> et votre <strong>mot de passe</strong>.</div></div>
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Se connecter</span>.</div></div>
+    <div class="step"><div class="step-content">Vous etes redirige vers votre page d'accueil selon votre role :
+      <ul>
+        <li><strong>Super admin / Admin</strong> &rarr; Tableau de bord</li>
+        <li><strong>Agent secteur</strong> &rarr; Liste des clients</li>
+        <li><strong>Livreur</strong> &rarr; Mes livraisons du jour</li>
+      </ul>
+    </div></div>
+  </div>
+
+  <h3>Mot de passe oublie</h3>
+  <div class="steps">
+    <div class="step"><div class="step-content">Sur la page de connexion, cliquer sur <span class="click">Mot de passe oublie ?</span></div></div>
+    <div class="step"><div class="step-content">Saisir votre email et cliquer sur <span class="click">Envoyer</span>. Un lien de reinitialisation vous sera envoye.</div></div>
+    <div class="step"><div class="step-content">Ouvrir le lien recu par email, saisir un nouveau mot de passe et confirmer.</div></div>
+  </div>
+
+  <h3>La barre de navigation</h3>
+  <p>La barre laterale gauche donne acces aux differentes sections. Les elements visibles dependent de votre role :</p>
+  <table>
+    <tr><th>Menu</th><th>Description</th><th>Visible par</th></tr>
+    <tr><td>Tableau de bord</td><td>Vue d'ensemble et navigation rapide</td><td><span class="role super">Super Admin</span> <span class="role admin">Admin</span></td></tr>
+    <tr><td>Clients</td><td>Liste et gestion des dossiers clients</td><td><span class="role super">Super Admin</span> <span class="role admin">Admin</span> <span class="role agent">Agent</span></td></tr>
+    <tr><td>Livraisons</td><td>Suivi des livraisons</td><td><span class="role super">Super Admin</span> <span class="role admin">Admin</span> <span class="role agent">Agent</span> <span class="role livreur">Livreur</span></td></tr>
+    <tr><td>Planning</td><td>Calendrier de planification des livraisons</td><td><span class="role super">Super Admin</span> <span class="role admin">Admin</span> <span class="role agent">Agent</span></td></tr>
+    <tr><td>Carte</td><td>Vue geographique clients/depots</td><td><span class="role super">Super Admin</span> <span class="role admin">Admin</span> <span class="role agent">Agent</span></td></tr>
+    <tr><td>Controle Qualite</td><td>Verification post-livraison</td><td><span class="role super">Super Admin</span> <span class="role admin">Admin</span></td></tr>
+    <tr><td>Depots</td><td>Gestion des points de retrait/logistique</td><td><span class="role super">Super Admin</span></td></tr>
+    <tr><td>Utilisateurs</td><td>Gestion des comptes</td><td><span class="role super">Super Admin</span></td></tr>
+    <tr><td>Parametres</td><td>Configuration Monday, NAF, FNUCI</td><td><span class="role super">Super Admin</span></td></tr>
+  </table>
+</section>
+
+<!-- ==================== 3. ROLES ==================== -->
+<section id="roles">
+  <h2>3. Les roles et permissions</h2>
+
+  <p>Chaque utilisateur a un role unique qui determine ce qu'il peut voir et faire.</p>
+
+  <table>
+    <tr><th>Role</th><th>Niveau</th><th>Perimetre</th><th>Actions principales</th></tr>
+    <tr>
+      <td><span class="role super">Super Admin</span></td>
+      <td>100</td>
+      <td>Acces total</td>
+      <td>Tout : configuration, suppression, synchronisation Monday, gestion depots et utilisateurs</td>
+    </tr>
+    <tr>
+      <td><span class="role admin">Admin</span></td>
+      <td>80</td>
+      <td>Par territoire</td>
+      <td>Gestion clients/livraisons, controle qualite, creation utilisateurs, export</td>
+    </tr>
+    <tr>
+      <td><span class="role agent">Agent secteur</span></td>
+      <td>60</td>
+      <td>Ses depots uniquement</td>
+      <td>Gestion clients de ses depots, planification livraisons, envoi formulaires</td>
+    </tr>
+    <tr>
+      <td><span class="role livreur">Livreur</span></td>
+      <td>20</td>
+      <td>Ses livraisons du jour</td>
+      <td>Consulter ses livraisons, effectuer la livraison, prendre des photos, signature</td>
+    </tr>
+    <tr>
+      <td><span class="role client">Client</span></td>
+      <td>10</td>
+      <td>Son dossier</td>
+      <td>Remplir le formulaire, consulter ses informations</td>
+    </tr>
+  </table>
+
+  <div class="box warning">
+    <span class="icon">&#9888;</span>
+    <div><strong>Agent secteur :</strong> vous ne verrez que les clients rattaches a vos depots. Si un client n'apparait pas, verifiez qu'il est bien assigne a l'un de vos depots.</div>
+  </div>
+
+  <div class="box danger">
+    <span class="icon">&#9888;</span>
+    <div><strong>Suppression :</strong> seul le <span class="role super">Super Admin</span> peut supprimer des utilisateurs ou des clients. Cette action est irreversible.</div>
+  </div>
+</section>
+
+<!-- ==================== 4. DASHBOARD ==================== -->
+<section id="dashboard">
+  <h2>4. Le tableau de bord</h2>
+
+  <p>Le tableau de bord est la page d'accueil des administrateurs. Il presente des cartes de navigation rapide vers chaque section du systeme.</p>
+
+  <h3>Les cartes disponibles</h3>
+  <ul>
+    <li><strong>Clients</strong> &mdash; Acces direct a la liste des clients</li>
+    <li><strong>Livraisons</strong> &mdash; Voir toutes les livraisons en cours</li>
+    <li><strong>Planning</strong> &mdash; Planifier les livraisons de la semaine</li>
+    <li><strong>Carte</strong> &mdash; Vue geographique</li>
+    <li><strong>Controle Qualite</strong> &mdash; Dossiers a verifier post-livraison</li>
+    <li><strong>Depots</strong> &mdash; Gestion des points de retrait</li>
+    <li><strong>Utilisateurs</strong> &mdash; Gestion des comptes</li>
+    <li><strong>Parametres</strong> &mdash; Configuration systeme</li>
+  </ul>
+
+  <div class="box tip">
+    <span class="icon">&#10004;</span>
+    <div>Cliquez sur n'importe quelle carte pour acceder directement a la section correspondante.</div>
+  </div>
+</section>
+
+<!-- ==================== 5. CLIENTS ==================== -->
+<section id="clients">
+  <h2>5. Gestion des clients</h2>
+  <p><span class="role super">Super Admin</span> <span class="role admin">Admin</span> <span class="role agent">Agent</span></p>
+
+  <h3>Vue d'ensemble</h3>
+  <p>La page <strong>Clients</strong> affiche la liste paginee de tous les dossiers clients. C'est la page centrale du CRM.</p>
+
+  <h3>Les colonnes du tableau</h3>
+  <table>
+    <tr><th>Colonne</th><th>Description</th></tr>
+    <tr><td>Raison sociale</td><td>Nom de l'entreprise cliente</td></tr>
+    <tr><td>SIRET</td><td>Numero SIRET (copiable en un clic)</td></tr>
+    <tr><td>Contact</td><td>Nom et prenom du contact principal</td></tr>
+    <tr><td>Telephone</td><td>Numero de telephone (cliquable pour appeler)</td></tr>
+    <tr><td>Statut</td><td>Etape actuelle du dossier dans le processus</td></tr>
+    <tr><td>NAF</td><td>Validation NAF ENEMAT (valide / bloque / en attente)</td></tr>
+    <tr><td>Depot</td><td>Depot de retrait ou logistique assigne</td></tr>
+    <tr><td>Departement</td><td>Code departement</td></tr>
+    <tr><td>Commercial</td><td>Commercial assigne au dossier</td></tr>
+    <tr><td>Ref. Retina</td><td>Reference du dossier dans le systeme Retina</td></tr>
+    <tr><td>Actions</td><td>Boutons d'action rapide</td></tr>
+  </table>
+
+  <h3>Les filtres</h3>
+  <p>La barre de filtres en haut du tableau permet de cibler vos recherches. Tous les filtres sont <strong>cumulatifs</strong> et <strong>epinglables</strong> (ils restent actifs meme apres un rafraichissement).</p>
+
+  <table>
+    <tr><th>Filtre</th><th>Ce qu'il fait</th></tr>
+    <tr><td><span class="click">Recherche</span></td><td>Recherche par raison sociale, SIRET, email, telephone, contact</td></tr>
+    <tr><td><span class="click">Statut</span></td><td>Filtre par etape du processus (controle valide, formulaire envoye, a livrer, livre, etc.)</td></tr>
+    <tr><td><span class="click">NAF</span></td><td>Filtre par validation NAF (valide, bloque, en attente)</td></tr>
+    <tr><td><span class="click">Zone</span></td><td>Dans la zone / hors zone / non assigne</td></tr>
+    <tr><td><span class="click">Departement</span></td><td>Filtre par departement (code postal)</td></tr>
+    <tr><td><span class="click">Commercial</span></td><td>Filtre par commercial assigne</td></tr>
+    <tr><td><span class="click">Depot</span></td><td>Filtre par depot de rattachement</td></tr>
+    <tr><td><span class="click">Controle</span></td><td>Filtre par statut du controle qualite</td></tr>
+  </table>
+
+  <div class="box tip">
+    <span class="icon">&#128204;</span>
+    <div><strong>Epingler un filtre :</strong> cliquez sur l'icone d'epingle a cote d'un filtre pour le garder actif en permanence. Pratique si vous travaillez toujours sur le meme depot ou departement.</div>
+  </div>
+
+  <h3>Les actions sur un client</h3>
+  <p>En cliquant sur la ligne d'un client ou sur les boutons d'action, vous pouvez :</p>
+
+  <table>
+    <tr><th>Action</th><th>Bouton / Geste</th><th>Ce que ca fait</th></tr>
+    <tr><td>Voir la fiche</td><td>Clic sur la ligne</td><td>Ouvre la fiche detaillee du client</td></tr>
+    <tr><td>Envoyer le formulaire</td><td><span class="btn-mock blue">Envoyer formulaire</span></td><td>Envoie un email au client avec le lien du formulaire d'inscription</td></tr>
+    <tr><td>Envoyer une relance</td><td><span class="btn-mock yellow">Relancer</span></td><td>Envoie un email de relance au client qui n'a pas complete son formulaire</td></tr>
+    <tr><td>Bypass livraison</td><td><span class="btn-mock gray">Bypass</span></td><td>Cree directement une livraison sans passer par le formulaire client</td></tr>
+    <tr><td>Copier le SIRET</td><td>Clic sur l'icone copie</td><td>Copie le numero SIRET dans le presse-papier</td></tr>
+  </table>
+
+  <div class="box info">
+    <span class="icon">&#9432;</span>
+    <div><strong>Agent secteur :</strong> vous ne voyez que les clients rattaches a vos depots. Le filtre depot n'affiche que vos depots autorises.</div>
+  </div>
+</section>
+
+<!-- ==================== 6. FICHE CLIENT ==================== -->
+<section id="fiche-client">
+  <h2>6. La fiche client (detail)</h2>
+  <p><span class="role super">Super Admin</span> <span class="role admin">Admin</span> <span class="role agent">Agent</span></p>
+
+  <p>La fiche client regroupe <strong>toutes les informations</strong> d'un dossier sur une seule page.</p>
+
+  <h3>Les sections de la fiche</h3>
+
+  <h4>Identification</h4>
+  <ul>
+    <li>Raison sociale, SIRET, reference dossier, numero de devis</li>
+    <li>Format juridique, code APE/NAF, nombre de salaries</li>
+  </ul>
+
+  <h4>Contact</h4>
+  <ul>
+    <li>Nom et prenom du contact, fonction</li>
+    <li>Email principal, email beneficiaire, telephone</li>
+  </ul>
+
+  <h4>Adresses</h4>
+  <ul>
+    <li><strong>Adresse siege :</strong> adresse de la societe</li>
+    <li><strong>Adresse de livraison :</strong> ou livrer le velo (peut etre differente du siege)</li>
+  </ul>
+
+  <h4>Statuts</h4>
+  <ul>
+    <li><strong>Statut commercial :</strong> etape actuelle du dossier (voir workflow ci-dessous)</li>
+    <li><strong>Statut formulaire :</strong> etat du formulaire client (en attente, envoye, complete, valide, bloque)</li>
+    <li><strong>Statut Retina :</strong> devis cree, signe ou supprime</li>
+    <li><strong>Validation NAF :</strong> eligibilite ENEMAT du code NAF de l'entreprise</li>
+  </ul>
+
+  <h4>Velos et devis</h4>
+  <ul>
+    <li>Nombre de velos au devis vs. nombre valide</li>
+    <li>URL du devis PDF, date de signature</li>
+  </ul>
+
+  <h4>Documents</h4>
+  <p>La section documents permet de consulter, telecharger ou <strong>supprimer</strong> les pieces jointes :</p>
+  <ul>
+    <li>Attestation URSSAF</li>
+    <li>Attestation DSN</li>
+    <li>Declaration benevoles</li>
+    <li>Bon de livraison (genere a la livraison)</li>
+    <li>Photo ENEMAT (prise a la livraison)</li>
+  </ul>
+
+  <div class="box warning">
+    <span class="icon">&#9888;</span>
+    <div><strong>Supprimer un document :</strong> cliquez sur l'icone <strong>corbeille rouge</strong> a cote du document. Une fenetre de <strong>double confirmation</strong> apparaitra pour eviter toute suppression accidentelle. Cette action est irreversible.</div>
+  </div>
+
+  <h4>Depot et geolocalisation</h4>
+  <ul>
+    <li>Depot de retrait assigne</li>
+    <li>Depot logistique assigne</li>
+    <li>Distance au depot (en km)</li>
+    <li>Type de zone (dans la zone / hors zone)</li>
+  </ul>
+
+  <h4>Notes internes</h4>
+  <p>Champ libre pour ajouter des notes visibles par l'equipe (non communiquees au client).</p>
+
+  <h4>Preferences de livraison</h4>
+  <p>Affiche les preferences saisies par le client via le formulaire (jours, creneaux, contact supplementaire).</p>
+
+  <h4>Livraisons associees</h4>
+  <p>Liste de toutes les livraisons passees et en cours pour ce client, avec le nom du livreur et du controleur.</p>
+
+  <h3>Modifier une information</h3>
+  <div class="steps">
+    <div class="step"><div class="step-content">Cliquer sur le champ a modifier (il devient editable).</div></div>
+    <div class="step"><div class="step-content">Modifier la valeur.</div></div>
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Enregistrer</span> ou appuyer sur Entree.</div></div>
+    <div class="step"><div class="step-content">Si le client est lie a Monday.com, la modification est <strong>automatiquement synchronisee</strong> vers Monday.</div></div>
+  </div>
+
+  <h3>Lien vers Monday.com</h3>
+  <p>Si le dossier est synchronise avec Monday, un lien direct vers la fiche Monday est affiche en haut de page.</p>
+</section>
+
+<!-- ==================== 7. FORMULAIRE ==================== -->
+<section id="formulaire">
+  <h2>7. Le formulaire client (parcours public)</h2>
+
+  <p>Le formulaire est un parcours en <strong>6 etapes</strong> que le client remplit lui-meme apres avoir recu un email d'invitation.</p>
+
+  <h3>Comment envoyer le formulaire</h3>
+  <div class="steps">
+    <div class="step"><div class="step-content">Dans la liste des clients, trouver le client concerne.</div></div>
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Envoyer formulaire</span> dans les actions.</div></div>
+    <div class="step"><div class="step-content">Le client recoit <strong>2 emails</strong> :
+      <ul>
+        <li>Un email avec son <strong>code de validation ENEMAT</strong></li>
+        <li>Un email avec le <strong>lien vers le formulaire</strong></li>
+      </ul>
+    </div></div>
+    <div class="step"><div class="step-content">Le statut passe automatiquement a <code>formulaire_envoye</code>.</div></div>
+  </div>
+
+  <h3>Les 6 etapes du formulaire (cote client)</h3>
+
+  <h4>Etape 1 &mdash; Code ENEMAT</h4>
+  <p>Le client saisit le code de validation ENEMAT recu par email. Ce code prouve qu'il a bien ete contacte par votre equipe.</p>
+
+  <h4>Etape 2 &mdash; Informations societe</h4>
+  <p>Verification et completion des informations de l'entreprise : raison sociale, SIRET, contact, telephone.</p>
+
+  <h4>Etape 3 &mdash; Adresse de livraison</h4>
+  <p>Le client confirme ou modifie son adresse de livraison. L'adresse est geocodee automatiquement.</p>
+
+  <h4>Etape 4 &mdash; Preferences de livraison</h4>
+  <p>Le client choisit :
+    <ul>
+      <li>Ses jours de disponibilite (lundi a samedi)</li>
+      <li>Ses creneaux preferes (matin, apres-midi)</li>
+      <li>Un contact supplementaire si besoin</li>
+      <li>Des commentaires libres</li>
+    </ul>
+  </p>
+
+  <h4>Etape 5 &mdash; FNUCI</h4>
+  <p>Information sur le numero FNUCI (identification du velo) qui sera attribue a la livraison.</p>
+
+  <h4>Etape 6 &mdash; Confirmation</h4>
+  <p>Recapitulatif de toutes les informations saisies. Le client valide et le statut passe a <code>formulaire_complete</code>.</p>
+
+  <div class="box tip">
+    <span class="icon">&#10004;</span>
+    <div>Un email de confirmation recapitulatif est automatiquement envoye au client apres validation.</div>
+  </div>
+
+  <h3>Que se passe-t-il si le client ne remplit pas le formulaire ?</h3>
+  <p>Vous pouvez :</p>
+  <ul>
+    <li><strong>Relancer :</strong> cliquer sur <span class="click">Relancer</span> &rarr; un nouvel email est envoye</li>
+    <li><strong>Reinitialiser :</strong> si le formulaire est bloque, cliquer sur <span class="click">Reset formulaire</span> pour permettre au client de recommencer</li>
+    <li><strong>Bypass :</strong> si le client ne peut pas remplir en ligne, cliquer sur <span class="click">Bypass livraison</span> pour creer directement la livraison manuellement</li>
+  </ul>
+</section>
+
+<!-- ==================== 8. LIVRAISONS ==================== -->
+<section id="livraisons">
+  <h2>8. Gestion des livraisons</h2>
+  <p><span class="role super">Super Admin</span> <span class="role admin">Admin</span> <span class="role agent">Agent</span> <span class="role livreur">Livreur</span></p>
+
+  <h3>Vue d'ensemble</h3>
+  <p>La page <strong>Livraisons</strong> affiche toutes les livraisons avec leur statut, date, livreur assigne et depot.</p>
+
+  <h3>Les statuts de livraison</h3>
+  <div class="workflow">
+    <span class="wf-step gray">En attente</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step blue">Programmee</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step yellow">En livraison</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step green">Livree</span>
+  </div>
+  <p>Cas particuliers :</p>
+  <div class="workflow">
+    <span class="wf-step red">Probleme</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step yellow">A relivrer</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step blue">Reprogrammee</span>
+  </div>
+
+  <h3>Les filtres</h3>
+  <table>
+    <tr><th>Filtre</th><th>Description</th></tr>
+    <tr><td><span class="click">Recherche</span></td><td>Par raison sociale, SIRET, contact</td></tr>
+    <tr><td><span class="click">Statut</span></td><td>A livrer, programmee, en livraison, livree, probleme, a relivrer</td></tr>
+    <tr><td><span class="click">Departement</span></td><td>Par code departement</td></tr>
+    <tr><td><span class="click">Commercial</span></td><td>Par commercial assigne</td></tr>
+    <tr><td><span class="click">Depot</span></td><td>Par depot (filtre par vos depots si agent)</td></tr>
+    <tr><td><span class="click">Date</span></td><td>Plage de dates (du / au)</td></tr>
+  </table>
+
+  <h3>Actions sur une livraison</h3>
+  <table>
+    <tr><th>Action</th><th>Description</th></tr>
+    <tr><td>Voir le detail</td><td>Ouvre la fiche complete de la livraison</td></tr>
+    <tr><td>Effectuer la livraison</td><td>Ouvre le module de livraison (PPE uniquement)</td></tr>
+    <tr><td>Envoyer email planning</td><td>Envoie au client les details de sa livraison programmee</td></tr>
+    <tr><td>Envoyer bon de livraison</td><td>Envoie le recapitulatif post-livraison au client</td></tr>
+    <tr><td>Changer le statut</td><td>Modifier manuellement le statut de la livraison</td></tr>
+  </table>
+
+  <h3>Le module de livraison (PPE)</h3>
+  <p>Accessible via le bouton <span class="click">Effectuer la livraison</span>, ce module en plein ecran guide le livreur etape par etape :</p>
+  <div class="steps">
+    <div class="step"><div class="step-content"><strong>Verification d'identite :</strong> scanner/photographier la piece d'identite du beneficiaire.</div></div>
+    <div class="step"><div class="step-content"><strong>Photo ENEMAT :</strong> photographier la plaque ENEMAT du velo.</div></div>
+    <div class="step"><div class="step-content"><strong>Numero FNUCI :</strong> scanner ou saisir le numero FNUCI grave sur le velo.</div></div>
+    <div class="step"><div class="step-content"><strong>Signature installateur :</strong> le livreur signe sur l'ecran tactile.</div></div>
+    <div class="step"><div class="step-content"><strong>Signature client :</strong> le client signe sur l'ecran tactile.</div></div>
+    <div class="step"><div class="step-content"><strong>Validation finale :</strong> confirmation et passage au statut <code>livree</code>.</div></div>
+  </div>
+
+  <div class="box info">
+    <span class="icon">&#9432;</span>
+    <div><strong>Ecovolt :</strong> le module de livraison redirige vers l'application externe du partenaire. Le processus est gere en dehors de la plateforme.</div>
+  </div>
+</section>
+
+<!-- ==================== 9. PLANNING ==================== -->
+<section id="planning">
+  <h2>9. Le planning de livraison</h2>
+  <p><span class="role super">Super Admin</span> <span class="role admin">Admin</span> <span class="role agent">Agent</span></p>
+
+  <h3>Vue d'ensemble</h3>
+  <p>Le planning est un <strong>calendrier hebdomadaire</strong> qui permet de planifier les livraisons par depot, date et livreur.</p>
+
+  <h3>Naviguer dans le planning</h3>
+  <div class="steps">
+    <div class="step"><div class="step-content">Selectionner le <strong>depot</strong> dans le menu deroulant en haut.</div></div>
+    <div class="step"><div class="step-content">Naviguer entre les semaines avec les fleches <span class="click">&larr;</span> <span class="click">&rarr;</span>.</div></div>
+    <div class="step"><div class="step-content">Chaque colonne represente un jour, chaque ligne un creneau.</div></div>
+  </div>
+
+  <h3>Planifier une livraison</h3>
+  <div class="steps">
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Rechercher un client</span> pour trouver un client a planifier.</div></div>
+    <div class="step"><div class="step-content">Selectionner le client dans les resultats.</div></div>
+    <div class="step"><div class="step-content">Choisir un <strong>jour</strong> et un <strong>creneau</strong> (matin/apres-midi) en cliquant sur la case correspondante.</div></div>
+    <div class="step"><div class="step-content">Assigner un <strong>livreur</strong> dans le menu deroulant.</div></div>
+    <div class="step"><div class="step-content">Optionnel : ajouter une <strong>heure precise</strong> ou des <strong>notes</strong>.</div></div>
+    <div class="step"><div class="step-content">Le statut de la livraison passe automatiquement a <code>programmee</code>.</div></div>
+  </div>
+
+  <h3>Envoyer les emails de planning</h3>
+  <p>Trois options pour notifier les clients :</p>
+  <table>
+    <tr><th>Action</th><th>Ce que ca fait</th></tr>
+    <tr><td><span class="click">Envoyer email</span> (sur une livraison)</td><td>Envoie l'email de confirmation de creneau a UN client</td></tr>
+    <tr><td><span class="click">Envoyer tous les emails</span> (sur un jour)</td><td>Envoie les emails a TOUS les clients planifies ce jour-la</td></tr>
+    <tr><td><span class="click">Envoyer recap journee</span></td><td>Envoie un email recapitulatif de toute la journee</td></tr>
+  </table>
+
+  <h3>Deprogrammer une livraison</h3>
+  <div class="steps">
+    <div class="step"><div class="step-content">Cliquer sur la livraison planifiee dans le calendrier.</div></div>
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Deprogrammer</span>.</div></div>
+    <div class="step"><div class="step-content">La livraison revient au statut <code>a_livrer</code> et est retiree du planning.</div></div>
+  </div>
+</section>
+
+<!-- ==================== 10. VUE LIVREUR ==================== -->
+<section id="livreur">
+  <h2>10. Vue livreur (terrain)</h2>
+  <p><span class="role livreur">Livreur</span></p>
+
+  <h3>Vue d'ensemble</h3>
+  <p>La vue livreur est une interface simplifiee optimisee pour le terrain. Elle affiche <strong>uniquement vos livraisons du jour et du lendemain</strong>, triees par ordre de proximite geographique (algorithme du plus proche voisin).</p>
+
+  <h3>Utilisation</h3>
+  <div class="steps">
+    <div class="step"><div class="step-content">A la connexion, vous arrivez directement sur <strong>vos livraisons du jour</strong>.</div></div>
+    <div class="step"><div class="step-content">Chaque carte affiche : <strong>raison sociale</strong>, <strong>adresse</strong>, <strong>telephone</strong>, <strong>creneau</strong>.</div></div>
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Naviguer</span> pour ouvrir l'itineraire GPS (Google Maps / Waze).</div></div>
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Appeler</span> pour telephoner au client.</div></div>
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Livrer</span> pour ouvrir le module de livraison.</div></div>
+    <div class="step"><div class="step-content">Si probleme : cliquer sur <span class="click">Signaler un probleme</span> et decrire le souci.</div></div>
+  </div>
+
+  <h3>Basculer jour / lendemain</h3>
+  <p>Utilisez les boutons <span class="click">Aujourd'hui</span> / <span class="click">Demain</span> en haut de page pour voir les livraisons prevues.</p>
+</section>
+
+<!-- ==================== 11. CARTE ==================== -->
+<section id="carte">
+  <h2>11. La carte interactive</h2>
+  <p><span class="role super">Super Admin</span> <span class="role admin">Admin</span> <span class="role agent">Agent</span></p>
+
+  <h3>Vue d'ensemble</h3>
+  <p>La carte affiche tous les clients et depots sur une <strong>carte Google Maps</strong>. Chaque depot est entoure d'un cercle representant son rayon de couverture.</p>
+
+  <h3>Les elements sur la carte</h3>
+  <table>
+    <tr><th>Element</th><th>Representation</th></tr>
+    <tr><td>Depot de retrait</td><td>Marqueur colore avec cercle de couverture</td></tr>
+    <tr><td>Depot logistique</td><td>Marqueur colore avec cercle de couverture (plus grand)</td></tr>
+    <tr><td>Client dans la zone</td><td>Point vert</td></tr>
+    <tr><td>Client hors zone</td><td>Point rouge</td></tr>
+    <tr><td>Client sans depot</td><td>Point gris</td></tr>
+  </table>
+
+  <h3>Les filtres de la carte</h3>
+  <p>La carte dispose de filtres avances :</p>
+  <ul>
+    <li><strong>Agence :</strong> filtrer par agence commerciale</li>
+    <li><strong>Depot :</strong> selectionner un ou plusieurs depots specifiques</li>
+    <li><strong>Statut :</strong> filtrer par etape du processus</li>
+    <li><strong>NAF :</strong> validation NAF (valide/bloque/en attente)</li>
+    <li><strong>Zone :</strong> dans la zone / hors zone / non assigne</li>
+    <li><strong>Type de depot :</strong> retrait / logistique</li>
+    <li><strong>Rayon :</strong> curseur pour ajuster le rayon visible</li>
+  </ul>
+
+  <h3>Reassigner les clients aux depots</h3>
+  <p>Le bouton <span class="click">Reassigner les clients</span> recalcule l'assignation de tous les clients aux depots les plus proches.</p>
+
+  <div class="steps">
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Reassigner les clients</span>.</div></div>
+    <div class="step"><div class="step-content">Le systeme parcourt tous les clients sans depot ou avec au moins un depot manquant.</div></div>
+    <div class="step"><div class="step-content">Pour les clients sans coordonnees GPS, le systeme geocode automatiquement par <strong>code postal</strong> (fallback).</div></div>
+    <div class="step"><div class="step-content">Chaque client est assigne au depot le plus proche selon la distance a vol d'oiseau.</div></div>
+    <div class="step"><div class="step-content">Un recapitulatif s'affiche :
+      <ul>
+        <li><strong>X reassigne(s)</strong> : clients dont le depot a change</li>
+        <li><strong>X geocode(s) par CP</strong> : clients sans GPS geocodes par code postal</li>
+        <li><strong>X hors zone</strong> : clients trop eloignes de tout depot</li>
+        <li><strong>X sans GPS ni CP</strong> : clients impossibles a localiser</li>
+      </ul>
+    </div></div>
+  </div>
+
+  <div class="box warning">
+    <span class="icon">&#9888;</span>
+    <div><strong>Hors zone</strong> ne signifie pas "sans depot". Un client hors zone est quand meme assigne au depot le plus proche, mais il est marque comme etant au-dela du rayon de couverture normal.</div>
+  </div>
+
+  <h3>Cliquer sur un client</h3>
+  <p>Un clic sur un point client ouvre une info-bulle avec les details du dossier et un lien direct vers la fiche client.</p>
+</section>
+
+<!-- ==================== 12. CONTROLE QUALITE ==================== -->
+<section id="cq">
+  <h2>12. Le controle qualite (CQ)</h2>
+  <p><span class="role super">Super Admin</span> <span class="role admin">Admin</span></p>
+
+  <h3>A quoi ca sert</h3>
+  <p>Apres chaque livraison, un controle qualite est effectue pour verifier que le dossier est complet et conforme. Le CQ verifie <strong>6 points</strong> obligatoires.</p>
+
+  <h3>Les 6 points de controle</h3>
+  <table>
+    <tr><th>#</th><th>Point</th><th>Ce qu'on verifie</th></tr>
+    <tr><td>1</td><td>Piece d'identite</td><td>Photo de la CI/passeport du beneficiaire presente et lisible</td></tr>
+    <tr><td>2</td><td>Photo ENEMAT</td><td>Photo de la plaque ENEMAT du velo presente et lisible</td></tr>
+    <tr><td>3</td><td>Signature installateur</td><td>Le livreur a bien signe le bon</td></tr>
+    <tr><td>4</td><td>Signature client</td><td>Le client a bien signe le bon</td></tr>
+    <tr><td>5</td><td>FNUCI</td><td>Le numero FNUCI est renseigne et valide</td></tr>
+    <tr><td>6</td><td>Velo</td><td>Les informations du velo sont correctes</td></tr>
+  </table>
+
+  <h3>Processus de controle</h3>
+  <div class="steps">
+    <div class="step"><div class="step-content">Ouvrir la page <strong>Controle Qualite</strong> depuis le menu.</div></div>
+    <div class="step"><div class="step-content"><strong>Verrouiller le dossier :</strong> cliquer sur <span class="click">Prendre en charge</span> pour que personne d'autre ne le traite en meme temps.</div></div>
+    <div class="step"><div class="step-content"><strong>Verifier chaque point :</strong> cocher les 6 cases une par une apres verification.</div></div>
+    <div class="step"><div class="step-content">Si un point est <strong>non conforme</strong>, ajouter un commentaire explicatif.</div></div>
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Valider le controle</span> quand les 6 points sont verifies.</div></div>
+    <div class="step"><div class="step-content">Le dossier passe au statut <code>controle_valide</code>.</div></div>
+  </div>
+
+  <h3>Filtres CQ</h3>
+  <table>
+    <tr><th>Filtre</th><th>Description</th></tr>
+    <tr><td><span class="click">Recherche</span></td><td>Par raison sociale, SIRET</td></tr>
+    <tr><td><span class="click">Statut livraison</span></td><td>Livree, a verifier</td></tr>
+    <tr><td><span class="click">Date</span></td><td>Plage de dates de livraison</td></tr>
+    <tr><td><span class="click">Agent</span></td><td>Par livreur qui a effectue la livraison</td></tr>
+  </table>
+
+  <div class="box danger">
+    <span class="icon">&#9888;</span>
+    <div><strong>Ne pas oublier de deverrouiller</strong> un dossier si vous ne pouvez pas le terminer. Cliquer sur <span class="click">Liberer</span> pour permettre a un collegue de le reprendre.</div>
+  </div>
+</section>
+
+<!-- ==================== 13. DEPOTS ==================== -->
+<section id="depots">
+  <h2>13. Gestion des depots</h2>
+  <p><span class="role super">Super Admin</span></p>
+
+  <h3>Types de depots</h3>
+  <table>
+    <tr><th>Type</th><th>Description</th><th>Mode de livraison</th></tr>
+    <tr><td><strong>Retrait</strong></td><td>Point ou le client vient chercher son velo</td><td>Le client se deplace au depot</td></tr>
+    <tr><td><strong>Logistique</strong></td><td>Entrepot d'ou partent les livraisons</td><td>Le velo est livre a domicile</td></tr>
+  </table>
+
+  <h3>Creer un depot</h3>
+  <div class="steps">
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Ajouter un depot</span>.</div></div>
+    <div class="step"><div class="step-content">Renseigner : <strong>nom</strong>, <strong>type</strong> (retrait/logistique), <strong>agence</strong>, <strong>adresse</strong>.</div></div>
+    <div class="step"><div class="step-content">L'adresse est geocodee automatiquement (latitude/longitude).</div></div>
+    <div class="step"><div class="step-content">Definir le <strong>rayon de couverture</strong> (en km) &mdash; zone de livraison gratuite.</div></div>
+    <div class="step"><div class="step-content">Optionnel : definir un <strong>rayon de livraison payante</strong> et son <strong>prix</strong>.</div></div>
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Enregistrer</span>.</div></div>
+  </div>
+
+  <h3>Apres creation d'un depot</h3>
+  <div class="box info">
+    <span class="icon">&#9432;</span>
+    <div>Apres avoir cree ou modifie un depot, pensez a aller sur la <strong>Carte</strong> et cliquer sur <span class="click">Reassigner les clients</span> pour recalculer les assignations.</div>
+  </div>
+
+  <h3>Desactiver un depot</h3>
+  <p>Cliquer sur le toggle <span class="click">Actif</span> pour desactiver un depot sans le supprimer. Les clients assignes ne seront pas automatiquement reassignes &mdash; lancez une reassignation manuelle.</p>
+</section>
+
+<!-- ==================== 14. UTILISATEURS ==================== -->
+<section id="users">
+  <h2>14. Gestion des utilisateurs</h2>
+  <p><span class="role super">Super Admin</span></p>
+
+  <h3>Creer un utilisateur</h3>
+  <div class="steps">
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Ajouter un utilisateur</span>.</div></div>
+    <div class="step"><div class="step-content">Renseigner : <strong>email</strong>, <strong>nom</strong>, <strong>prenom</strong>, <strong>mot de passe</strong>.</div></div>
+    <div class="step"><div class="step-content">Choisir le <strong>role</strong> : admin, agent secteur ou livreur.</div></div>
+    <div class="step"><div class="step-content">Si agent ou livreur : selectionner les <strong>depots autorises</strong> (un ou plusieurs).</div></div>
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Creer</span>.</div></div>
+  </div>
+
+  <h3>Modifier un utilisateur</h3>
+  <p>Cliquer sur les <span class="click">...</span> (trois points) a droite de la ligne, puis <span class="click">Modifier</span>. Vous pouvez changer :</p>
+  <ul>
+    <li>Le role</li>
+    <li>Les depots assignes</li>
+    <li>Le mot de passe</li>
+    <li>Le statut actif/inactif</li>
+  </ul>
+
+  <h3>Se connecter a la place d'un utilisateur</h3>
+  <p>La fonction <strong>Impersonate</strong> permet de se connecter temporairement avec le compte d'un utilisateur pour verifier ce qu'il voit.</p>
+  <div class="steps">
+    <div class="step"><div class="step-content">Cliquer sur les <span class="click">...</span> puis <span class="click">Se connecter en tant que</span>.</div></div>
+    <div class="step"><div class="step-content">Vous etes redirige vers le tableau de bord de cet utilisateur.</div></div>
+    <div class="step"><div class="step-content">Pour revenir a votre compte : <strong>deconnectez-vous</strong> et reconnectez-vous avec votre compte.</div></div>
+  </div>
+
+  <div class="box danger">
+    <span class="icon">&#9888;</span>
+    <div><strong>Supprimer un utilisateur</strong> est reserve au <span class="role super">Super Admin</span> uniquement. Cette action supprime definitivement le compte et toutes ses donnees.</div>
+  </div>
+</section>
+
+<!-- ==================== 15. PARAMETRES ==================== -->
+<section id="settings">
+  <h2>15. Parametres et configuration</h2>
+  <p><span class="role super">Super Admin</span></p>
+
+  <h3>Monday.com &mdash; Mapping des champs</h3>
+  <p>La page <strong>Parametres &rarr; Monday</strong> permet de configurer la correspondance entre les colonnes Monday.com et les champs Supabase.</p>
+  <div class="steps">
+    <div class="step"><div class="step-content">Selectionner le <strong>board Monday</strong> dans le menu deroulant.</div></div>
+    <div class="step"><div class="step-content">Pour chaque champ Supabase, associer la <strong>colonne Monday</strong> correspondante.</div></div>
+    <div class="step"><div class="step-content">Cliquer sur <span class="click">Enregistrer</span>.</div></div>
+  </div>
+
+  <div class="box info">
+    <span class="icon">&#9432;</span>
+    <div><strong>Direction de la sync :</strong> Supabase est la source de verite. La synchronisation vers Monday est unidirectionnelle (Supabase &rarr; Monday) pour les champs mappes.</div>
+  </div>
+
+  <h3>Codes NAF</h3>
+  <p>La page <strong>Parametres &rarr; NAF</strong> gere la table de reference des 377 codes NAF et leur eligibilite ENEMAT.</p>
+  <ul>
+    <li><strong>Valide (vert) :</strong> le code NAF est eligible au dispositif ENEMAT</li>
+    <li><strong>Bloque (rouge) :</strong> le code NAF n'est pas eligible</li>
+    <li><strong>En attente :</strong> en cours de verification</li>
+  </ul>
+  <p>Cliquer sur le <strong>toggle</strong> pour changer le statut d'un code NAF.</p>
+
+  <h3>FNUCI</h3>
+  <p>La page <strong>Parametres &rarr; FNUCI</strong> gere le pool de numeros FNUCI (identification velos) :</p>
+  <ul>
+    <li><strong>Disponible :</strong> numero en attente d'attribution</li>
+    <li><strong>Attribue :</strong> numero reserve pour un client</li>
+    <li><strong>Distribue :</strong> numero effectivement appose sur un velo livre</li>
+  </ul>
+</section>
+
+<!-- ==================== 16. WORKFLOW GLOBAL ==================== -->
+<section id="workflow-global">
+  <h2>16. Workflow complet : du client a la livraison</h2>
+
+  <p>Voici le parcours complet d'un dossier client, de bout en bout :</p>
+
+  <h3>Phase 1 &mdash; Controle initial</h3>
+  <div class="workflow">
+    <span class="wf-step gray">Nouveau client</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step blue">Controle valide</span>
+  </div>
+  <p>Le client arrive en base (import Monday ou creation manuelle). Son code NAF est verifie automatiquement.</p>
+
+  <h3>Phase 2 &mdash; Formulaire</h3>
+  <div class="workflow">
+    <span class="wf-step blue">Controle valide</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step blue">Formulaire envoye</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step green">Formulaire valide</span>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-content">L'admin/agent envoie le formulaire au client (<span class="click">Envoyer formulaire</span>).</div></div>
+    <div class="step"><div class="step-content">Le client recoit 2 emails (code + lien) et remplit les 6 etapes.</div></div>
+    <div class="step"><div class="step-content">A la validation, le statut passe a <code>formulaire_valide</code> et une livraison est creee automatiquement.</div></div>
+  </div>
+
+  <h3>Phase 3 &mdash; Planification</h3>
+  <div class="workflow">
+    <span class="wf-step green">Formulaire valide</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step yellow">A livrer</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step blue">Programmee</span>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-content">La livraison apparait dans le <strong>Planning</strong> comme "a planifier".</div></div>
+    <div class="step"><div class="step-content">L'admin/agent assigne un <strong>jour</strong>, un <strong>creneau</strong> et un <strong>livreur</strong>.</div></div>
+    <div class="step"><div class="step-content">Un email de confirmation de creneau est envoye au client.</div></div>
+    <div class="step"><div class="step-content">Le client peut <strong>confirmer</strong> ou <strong>refuser</strong> le creneau via un lien dans l'email.</div></div>
+  </div>
+
+  <h3>Phase 4 &mdash; Livraison</h3>
+  <div class="workflow">
+    <span class="wf-step blue">Programmee</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step yellow">En livraison</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step green">Livree</span>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-content">Le livreur voit la livraison dans sa <strong>vue terrain</strong>.</div></div>
+    <div class="step"><div class="step-content">Il se rend sur place, ouvre le <strong>module de livraison</strong>.</div></div>
+    <div class="step"><div class="step-content">Il complete les 6 etapes (CI, photo, FNUCI, signatures).</div></div>
+    <div class="step"><div class="step-content">La livraison passe au statut <code>livree</code>.</div></div>
+  </div>
+
+  <h3>Phase 5 &mdash; Controle qualite</h3>
+  <div class="workflow">
+    <span class="wf-step green">Livree</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step purple">Controle CQ</span>
+    <span class="wf-arrow">&rarr;</span>
+    <span class="wf-step green">CQ valide</span>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-content">Le dossier apparait dans la page <strong>Controle Qualite</strong>.</div></div>
+    <div class="step"><div class="step-content">Un admin verrouille le dossier et verifie les 6 points.</div></div>
+    <div class="step"><div class="step-content">Si tout est conforme : validation. Si non : retour pour complement.</div></div>
+  </div>
+
+  <div class="box tip">
+    <span class="icon">&#10004;</span>
+    <div><strong>Raccourci :</strong> pour les clients qui ne peuvent pas remplir le formulaire en ligne, utilisez le <span class="click">Bypass livraison</span> pour passer directement a la phase 3.</div>
+  </div>
+
+  <h3>Schema recapitulatif</h3>
+  <div style="padding:20px; background: #F9FAFB; border-radius: 8px; font-family: monospace; font-size: 0.85em; line-height: 2; overflow-x: auto;">
+    <pre>
+    NOUVEAU CLIENT
+         |
+    [Controle NAF auto]
+         |
+    CONTROLE VALIDE
+         |
+    [Admin envoie formulaire]
+         |
+    FORMULAIRE ENVOYE -----> [Client ne repond pas] --> RELANCE
+         |                                                  |
+    [Client remplit]                                   [Toujours rien]
+         |                                                  |
+    FORMULAIRE VALIDE                               BYPASS LIVRAISON
+         |                                                  |
+         +-------------------+------------------------------+
+                             |
+                        A LIVRER
+                             |
+                   [Planning : jour + livreur]
+                             |
+                        PROGRAMMEE
+                             |
+               [Email confirmation creneau]
+                             |
+                     EN LIVRAISON
+                             |
+              [Module livraison : 6 etapes]
+                             |
+                         LIVREE
+                             |
+                [Controle Qualite : 6 points]
+                             |
+                       CQ VALIDE ---- DOSSIER COMPLET
+    </pre>
+  </div>
+</section>
+
+<!-- ==================== 17. EMAILS ==================== -->
+<section id="emails">
+  <h2>17. Les emails automatiques</h2>
+
+  <p>La plateforme envoie plusieurs types d'emails automatiques tout au long du processus :</p>
+
+  <table>
+    <tr><th>Email</th><th>Declencheur</th><th>Contenu</th></tr>
+    <tr>
+      <td><strong>Code de validation ENEMAT</strong></td>
+      <td>Envoi du formulaire</td>
+      <td>Le code unique que le client devra saisir a l'etape 1 du formulaire</td>
+    </tr>
+    <tr>
+      <td><strong>Lien du formulaire</strong></td>
+      <td>Envoi du formulaire</td>
+      <td>Le lien vers le formulaire en 6 etapes + instructions</td>
+    </tr>
+    <tr>
+      <td><strong>Confirmation formulaire</strong></td>
+      <td>Client valide le formulaire</td>
+      <td>Recapitulatif de toutes les informations saisies</td>
+    </tr>
+    <tr>
+      <td><strong>Relance</strong></td>
+      <td>Action manuelle "Relancer"</td>
+      <td>Rappel au client de remplir son formulaire</td>
+    </tr>
+    <tr>
+      <td><strong>Formulaire livraison</strong></td>
+      <td>Livraison creee</td>
+      <td>Demande au client de choisir ses preferences de livraison</td>
+    </tr>
+    <tr>
+      <td><strong>Confirmation de creneau</strong></td>
+      <td>Creneau planifie</td>
+      <td>Date, heure, depot — avec boutons Confirmer / Refuser</td>
+    </tr>
+    <tr>
+      <td><strong>Email planning</strong></td>
+      <td>Envoi manuel depuis le planning</td>
+      <td>Details de la livraison programmee</td>
+    </tr>
+    <tr>
+      <td><strong>Bon de livraison</strong></td>
+      <td>Livraison effectuee</td>
+      <td>Recapitulatif de la livraison avec references</td>
+    </tr>
+    <tr>
+      <td><strong>Demande de documents</strong></td>
+      <td>Action manuelle</td>
+      <td>Demande au client de fournir attestation URSSAF, DSN, etc.</td>
+    </tr>
+  </table>
+
+  <div class="box info">
+    <span class="icon">&#9432;</span>
+    <div>Tous les emails sont envoyes depuis l'adresse officielle de l'entite (PPE ou Ecovolt). Le client peut repondre directement.</div>
+  </div>
+</section>
+
+<!-- ==================== 18. FAQ ==================== -->
+<section id="faq">
+  <h2>18. Questions frequentes (FAQ)</h2>
+
+  <h3>Un client n'apparait pas dans ma liste</h3>
+  <div class="box tip">
+    <span class="icon">&#10004;</span>
+    <div>
+      <strong>Si vous etes agent secteur :</strong> verifiez que le client est bien assigne a l'un de vos depots. Allez sur la <strong>Carte</strong> et utilisez <span class="click">Reassigner les clients</span> si necessaire.<br><br>
+      <strong>Si vous etes admin :</strong> verifiez le filtre territoire. Un admin regional ne voit que les clients de son departement.
+    </div>
+  </div>
+
+  <h3>Le client dit ne pas avoir recu l'email</h3>
+  <div class="box tip">
+    <span class="icon">&#10004;</span>
+    <div>
+      <ul>
+        <li>Verifier l'adresse email dans la fiche client (fautes de frappe frequentes)</li>
+        <li>Demander au client de verifier ses <strong>spams / courrier indesirable</strong></li>
+        <li>Utiliser <span class="click">Renvoyer le code</span> ou <span class="click">Relancer</span> pour renvoyer</li>
+        <li>En dernier recours : <span class="click">Bypass livraison</span> pour passer outre</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Comment changer le depot d'un client ?</h3>
+  <div class="box tip">
+    <span class="icon">&#10004;</span>
+    <div>Le depot est assigne automatiquement par proximite geographique. Pour forcer un changement, modifiez l'adresse de livraison du client et relancez <span class="click">Reassigner les clients</span> depuis la carte.</div>
+  </div>
+
+  <h3>Un client est marque "hors zone"</h3>
+  <div class="box tip">
+    <span class="icon">&#10004;</span>
+    <div>Cela signifie que le client est au-dela du rayon de couverture de tous les depots. Il reste quand meme assigne au depot le plus proche. Vous pouvez :
+      <ul>
+        <li>Augmenter le rayon de couverture du depot le plus proche</li>
+        <li>Creer un nouveau depot plus proche du client</li>
+        <li>Laisser en l'etat (la livraison peut quand meme etre effectuee)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Comment supprimer un document ?</h3>
+  <div class="box tip">
+    <span class="icon">&#10004;</span>
+    <div>Ouvrir la fiche client, section Documents. Cliquer sur l'icone <strong>corbeille rouge</strong> a cote du document. Confirmer dans la fenetre de <strong>double validation</strong>. Attention : cette action est irreversible.</div>
+  </div>
+
+  <h3>Je ne vois pas certains menus</h3>
+  <div class="box tip">
+    <span class="icon">&#10004;</span>
+    <div>Les menus visibles dependent de votre role. Contactez votre administrateur si vous avez besoin d'un acces supplementaire.</div>
+  </div>
+
+  <h3>La page ne se charge pas / erreur</h3>
+  <div class="box tip">
+    <span class="icon">&#10004;</span>
+    <div>
+      <ul>
+        <li>Rafraichir la page (Ctrl+Shift+R ou Cmd+Shift+R)</li>
+        <li>Vider le cache du navigateur</li>
+        <li>Essayer en navigation privee</li>
+        <li>Si le probleme persiste, contacter l'administrateur</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  <p><strong>Plateforme Velo CRM</strong> &mdash; PPE Energie &amp; Ecovolt</p>
+  <p>Document genere le 12 mars 2026 &mdash; Version 1.0</p>
+  <p>Pour toute question, contacter l'administrateur systeme.</p>
+</div>
+
+</body>
+</html>
