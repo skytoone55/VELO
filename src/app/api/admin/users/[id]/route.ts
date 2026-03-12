@@ -20,7 +20,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur'])
+    // Seul super_admin peut supprimer des utilisateurs
+    const authResult = await requireRole(['super_admin'])
     if (isAuthError(authResult)) return authResult
 
     const { id } = await params
@@ -48,11 +49,6 @@ export async function DELETE(
         { error: 'Le compte Super Admin ne peut pas être supprimé.' },
         { status: 403 }
       )
-    }
-
-    // Vérification hiérarchique
-    if (ROLE_HIERARCHY[authResult.role] <= ROLE_HIERARCHY[target.role as UserRole]) {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
     // Vérifier les dépendances (livraisons)

@@ -57,6 +57,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { UsersProfile, UserRole } from '@/lib/types/database'
+import { ROLE_HIERARCHY } from '@/lib/auth/types'
 import { getTenantConfig, TENANTS } from '@/lib/tenants'
 
 const roleOptions: { value: string; label: string }[] = [
@@ -189,23 +190,39 @@ export default function AdminUsersPage() {
       if (user?.role === 'admin' && user.territoire) {
         query = query.eq('territoire', user.territoire)
       } else if (user?.role === 'agent_secteur') {
-        // Agent secteur ne voit que les livreurs (+ lui-même)
-        query = query.in('role', ['agent_secteur', 'livreur'])
-        if (user.departement) {
-          query = query.eq('departement', user.departement)
-        }
+        // Agent secteur ne voit que les livreurs de son périmètre (+ lui-même)
+        query = query.in('role', ['livreur'])
       }
 
       const { data, error } = await query
-      if (!error) setUsers(data || [])
+      if (!error) {
+        let filtered = data || []
+        // Agent : ajouter lui-même à la liste s'il n'y est pas
+        if (user?.role === 'agent_secteur') {
+          if (!filtered.find((u: any) => u.id === user.id)) {
+            const { data: self } = await supabase
+              .from('users_profile')
+              .select('*')
+              .eq('id', user.id)
+              .single()
+            if (self) filtered = [self, ...filtered]
+          }
+        }
+        setUsers(filtered)
+      }
 
-      // Fetch depots
-      const { data: depotsData } = await supabase
+      // Fetch depots — filtrer par depot_ids pour agent_secteur
+      let depotsQuery = supabase
         .from('depots')
         .select('id, nom')
         .eq('actif', true)
         .order('nom')
 
+      if (user?.role === 'agent_secteur' && user.depot_ids?.length) {
+        depotsQuery = depotsQuery.in('id', user.depot_ids)
+      }
+
+      const { data: depotsData } = await depotsQuery
       if (depotsData) setDepots(depotsData)
 
       setLoading(false)
@@ -574,33 +591,43 @@ export default function AdminUsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(u)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Modifier
-                          </DropdownMenuItem>
+                          {/* Modifier : soi-même OU hiérarchie strictement supérieure */}
+                          {(u.id === user.id || (ROLE_HIERARCHY[user.role as UserRole] > ROLE_HIERARCHY[u.role as UserRole])) && (
+                            <DropdownMenuItem onClick={() => openEditDialog(u)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Modifier
+                            </DropdownMenuItem>
+                          )}
                           {!u.is_super_admin && u.id !== user.id && (
                             <>
-                              <DropdownMenuItem onClick={() => handleResetPassword(u)}>
-                                <KeyRound className="h-4 w-4 mr-2" />
-                                Réinitialiser mot de passe
-                              </DropdownMenuItem>
+                              {ROLE_HIERARCHY[user.role as UserRole] > ROLE_HIERARCHY[u.role as UserRole] && (
+                                <DropdownMenuItem onClick={() => handleResetPassword(u)}>
+                                  <KeyRound className="h-4 w-4 mr-2" />
+                                  Réinitialiser mot de passe
+                                </DropdownMenuItem>
+                              )}
                               {user?.role === 'super_admin' && (
                                 <DropdownMenuItem onClick={() => handleImpersonate(u)}>
                                   <LogIn className="h-4 w-4 mr-2" />
                                   Se connecter en tant que
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => {
-                                  setUserToDelete(u)
-                                  setShowDeleteDialog(true)
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Supprimer
-                              </DropdownMenuItem>
+                              {/* Supprimer : super_admin uniquement */}
+                              {user?.role === 'super_admin' && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onClick={() => {
+                                      setUserToDelete(u)
+                                      setShowDeleteDialog(true)
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Supprimer
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </>
                           )}
                         </DropdownMenuContent>

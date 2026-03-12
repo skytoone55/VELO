@@ -59,11 +59,27 @@ export async function GET(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
+    // Filtrage agent_secteur par dépôts assignés
+    if (authResult.role === 'agent_secteur') {
+      if (!authResult.depot_ids?.length) {
+        return NextResponse.json({
+          clients: [],
+          pagination: { page: 1, pageSize: 20, totalPages: 0, totalFiltered: 0, totalClients: 0, startIndex: 0, endIndex: 0, velosValidesFiltered: 0 },
+          source: 'supabase',
+        })
+      }
+    }
+
     // Construire la requête de base
     let query = adminClient
       .from('clients')
       .select('*', { count: 'exact' })
       .not('monday_sync_status', 'eq', 'deleted') // Exclure les supprimés
+
+    // Restreindre aux dépôts de l'agent
+    if (authResult.role === 'agent_secteur' && authResult.depot_ids?.length) {
+      query = query.or(`depot_retrait_id.in.(${authResult.depot_ids.join(',')}),depot_logistique_id.in.(${authResult.depot_ids.join(',')})`)
+    }
 
     // Appliquer les filtres
 

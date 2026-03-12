@@ -23,7 +23,7 @@ export async function GET(
     // Récupérer le profil pour vérifier les permissions
     const { data: profile } = await supabase
       .from('users_profile')
-      .select('role, territoire')
+      .select('role, territoire, depot_ids')
       .eq('id', user.id)
       .single()
 
@@ -47,6 +47,15 @@ export async function GET(
     // Vérifier le territoire pour admin regional (FR = accès total)
     if (profile.role === 'admin' && profile.territoire && profile.territoire !== 'FR' && profile.territoire !== client.departement) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    }
+
+    // Vérifier l'accès dépôt pour agent_secteur
+    if (profile.role === 'agent_secteur') {
+      const clientDepots = [client.depot_retrait_id, client.depot_logistique_id].filter(Boolean)
+      const hasAccess = clientDepots.some((d: string) => profile.depot_ids?.includes(d))
+      if (!hasAccess) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+      }
     }
 
     // Récupérer aussi les livraisons associées
@@ -93,9 +102,37 @@ export async function GET(
       }
     }
 
+    // Enrichir les livraisons avec les noms livreur + contrôleur
+    const userIdsToResolve = new Set<string>()
+    for (const liv of (livraisons || [])) {
+      if ((liv as any).livreur_id) userIdsToResolve.add((liv as any).livreur_id)
+      if ((liv as any).cq_valide_par) userIdsToResolve.add((liv as any).cq_valide_par)
+    }
+
+    let userNamesMap: Record<string, { nom: string; prenom: string }> = {}
+    if (userIdsToResolve.size > 0) {
+      const { data: profiles } = await adminClient
+        .from('users_profile')
+        .select('id, nom, prenom')
+        .in('id', [...userIdsToResolve])
+      if (profiles) {
+        userNamesMap = Object.fromEntries(profiles.map(p => [p.id, { nom: p.nom, prenom: p.prenom }]))
+      }
+    }
+
+    const enrichedLivraisons = (livraisons || []).map((liv: any) => ({
+      ...liv,
+      livreur_nom: liv.livreur_id && userNamesMap[liv.livreur_id]
+        ? `${userNamesMap[liv.livreur_id].prenom} ${userNamesMap[liv.livreur_id].nom}`
+        : null,
+      controleur_nom: liv.cq_valide_par && userNamesMap[liv.cq_valide_par]
+        ? `${userNamesMap[liv.cq_valide_par].prenom} ${userNamesMap[liv.cq_valide_par].nom}`
+        : null,
+    }))
+
     return NextResponse.json({
       client,
-      livraisons: livraisons || [],
+      livraisons: enrichedLivraisons,
       depotRetrait,
       depotLogistique,
       distanceKm,
@@ -125,7 +162,7 @@ export async function PUT(
     // Récupérer le profil pour vérifier les permissions
     const { data: profile } = await supabase
       .from('users_profile')
-      .select('role, territoire')
+      .select('role, territoire, depot_ids')
       .eq('id', user.id)
       .single()
 
@@ -152,6 +189,15 @@ export async function PUT(
     // Vérifier le territoire pour admin regional (FR = accès total)
     if (profile.role === 'admin' && profile.territoire && profile.territoire !== 'FR' && profile.territoire !== existingClient.departement) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    }
+
+    // Vérifier l'accès dépôt pour agent_secteur
+    if (profile.role === 'agent_secteur') {
+      const clientDepots = [existingClient.depot_retrait_id, existingClient.depot_logistique_id].filter(Boolean)
+      const hasAccess = clientDepots.some((d: string) => profile.depot_ids?.includes(d))
+      if (!hasAccess) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+      }
     }
 
     // Liste de tous les champs modifiables (synchronisés vers Monday)
@@ -205,6 +251,10 @@ export async function PUT(
       'notes_internes',
       // Préférences
       'preferences_livraison',
+      // Documents
+      'attestation_urssaf_url',
+      'attestation_dsn_url',
+      'declaration_benevoles_url',
     ]
 
     // Préparer les données de mise à jour dynamiquement

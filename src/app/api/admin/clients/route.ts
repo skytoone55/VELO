@@ -28,13 +28,17 @@ export async function GET(request: Request) {
 
     let query = adminClient
       .from('clients')
-      .select('*')
+      .select('*, livraisons(cq_valide)')
       .order('created_at', { ascending: false })
 
     // Filtrer par territoire (admin regional) ou depots (agent_secteur)
     if (profile.role === 'admin' && profile.territoire && profile.territoire !== 'FR') {
       query = query.eq('departement', profile.territoire)
-    } else if (profile.role === 'agent_secteur' && profile.depot_ids?.length) {
+    } else if (profile.role === 'agent_secteur') {
+      if (!profile.depot_ids?.length) {
+        // Agent sans dépôt assigné = aucun client visible
+        return NextResponse.json({ clients: [] })
+      }
       query = query.or(`depot_retrait_id.in.(${profile.depot_ids.join(',')}),depot_logistique_id.in.(${profile.depot_ids.join(',')})`)
     }
 

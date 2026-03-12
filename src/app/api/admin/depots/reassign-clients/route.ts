@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { classifyClientZone, DepotWithCoords } from '@/lib/geo/utils'
+import { classifyClientZone, geocodeAddress, DepotWithCoords } from '@/lib/geo/utils'
 
 /**
  * API pour réassigner les clients aux dépôts les plus proches
@@ -73,28 +73,26 @@ export async function POST(request: NextRequest) {
       type: d.type as 'retrait' | 'logistique',
     }))
 
-    // Récupérer les clients avec coordonnées — pagination pour gros volumes
+    // Récupérer les clients — pagination pour gros volumes
     let allClients: any[] = []
+    let sansGpsCount = 0
+    let geocodedCount = 0
     let page = 0
     const pageSize = 1000
 
     while (true) {
       let clientsQuery = adminClient
         .from('clients')
-        .select('id, latitude, longitude, agence, depot_logistique_id, depot_retrait_id')
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
+        .select('id, latitude, longitude, agence, depot_logistique_id, depot_retrait_id, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville, adresse_societe_ligne1, adresse_societe_cp, adresse_societe_ville')
         .not('monday_sync_status', 'eq', 'deleted')
 
       if (agence) {
         clientsQuery = clientsQuery.eq('agence', agence)
       }
 
-      // Si pas en mode force, ne traiter que les clients non assignés
+      // Si pas en mode force, ne traiter que les clients avec au moins un dépôt manquant (OR, pas AND)
       if (!force) {
-        clientsQuery = clientsQuery
-          .is('depot_retrait_id', null)
-          .is('depot_logistique_id', null)
+        clientsQuery = clientsQuery.or('depot_retrait_id.is.null,depot_logistique_id.is.null')
       }
 
       const { data: clients, error } = await clientsQuery
@@ -103,7 +101,37 @@ export async function POST(request: NextRequest) {
       if (error) throw error
       if (!clients || clients.length === 0) break
 
-      allClients = allClients.concat(clients)
+      // Séparer les clients avec et sans GPS
+      for (const c of clients) {
+        if (c.latitude && c.longitude) {
+          allClients.push(c)
+        } else {
+          // Fallback : géocoder par code postal
+          const adresse = c.adresse_livraison_ligne1 || c.adresse_societe_ligne1 || ''
+          const cp = c.adresse_livraison_cp || c.adresse_societe_cp || ''
+          const ville = c.adresse_livraison_ville || c.adresse_societe_ville || ''
+
+          if (cp) {
+            try {
+              const geo = await geocodeAddress(adresse, cp, ville, 0.2)
+              if (geo) {
+                // Sauvegarder les coordonnées en base pour ne pas regeocoder
+                await adminClient.from('clients').update({
+                  latitude: geo.lat,
+                  longitude: geo.lng,
+                  updated_at: new Date().toISOString(),
+                }).eq('id', c.id)
+                c.latitude = geo.lat
+                c.longitude = geo.lng
+                allClients.push(c)
+                geocodedCount++
+                continue
+              }
+            } catch { /* ignore geocoding errors */ }
+          }
+          sansGpsCount++
+        }
+      }
       if (clients.length < pageSize) break
       page++
     }
@@ -111,9 +139,12 @@ export async function POST(request: NextRequest) {
     if (allClients.length === 0) {
       return NextResponse.json({
         success: true,
-        message: 'Aucun client à réassigner',
+        message: sansGpsCount > 0
+          ? `Aucun client géolocalisé à réassigner, mais ${sansGpsCount} client(s) sans coordonnées GPS`
+          : 'Aucun client à réassigner',
         reassigned: 0,
         horsZone: 0,
+        sansGps: sansGpsCount,
       })
     }
 
@@ -228,9 +259,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `${reassignedCount} client(s) réassigné(s), ${horsZoneCount} hors zone`,
+      message: `${reassignedCount} client(s) réassigné(s), ${horsZoneCount} hors zone` +
+        (geocodedCount > 0 ? `, ${geocodedCount} géocodé(s) par CP` : '') +
+        (sansGpsCount > 0 ? `, ${sansGpsCount} sans GPS ni CP` : ''),
       reassigned: reassignedCount,
       horsZone: horsZoneCount,
+      geocoded: geocodedCount,
+      sansGps: sansGpsCount,
       totalChecked: allClients.length,
       force,
     })
