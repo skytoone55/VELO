@@ -324,10 +324,13 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const handleOpenDelivery = async () => {
     if (!client) return
 
-    // Ecovolt → redirection vers le module externe
+    // Ecovolt → redirection vers le module externe de l'associe
     const tenantId = process.env.NEXT_PUBLIC_TENANT_ID
     if (tenantId === 'ecovolt') {
-      window.open('https://ecovolt-retrait.vercel.app/', '_blank')
+      const baseUrl = process.env.NEXT_PUBLIC_ECOVOLT_RETRAIT_URL || 'https://ecovolt-retrait.vercel.app'
+      const mondayId = client.monday_item_id || ''
+      const livId = livraisons[0]?.id || ''
+      window.open(`${baseUrl}?monday_id=${mondayId}&livraison_id=${livId}`, '_blank')
       return
     }
 

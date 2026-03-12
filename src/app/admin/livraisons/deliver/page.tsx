@@ -28,6 +28,15 @@ function DeliverContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Ecovolt utilise le module externe — redirect si acces direct
+  useEffect(() => {
+    const tenantId = process.env.NEXT_PUBLIC_TENANT_ID
+    if (tenantId === 'ecovolt') {
+      const baseUrl = process.env.NEXT_PUBLIC_ECOVOLT_RETRAIT_URL || 'https://ecovolt-retrait.vercel.app'
+      window.location.href = baseUrl
+    }
+  }, [])
+
   useEffect(() => {
     if (!livraisonId) {
       setError('ID de livraison manquant')

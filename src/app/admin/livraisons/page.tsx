@@ -22,7 +22,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { getTenantId } from '@/lib/tenants'
+import { getTenantId, getTenantConfig } from '@/lib/tenants'
 import { useAdminUser } from '@/components/admin/admin-user-provider'
 import { usePinnedFilters, PinFiltersButton } from '@/components/admin/pin-filters'
 import {
@@ -65,6 +65,7 @@ interface LivraisonRow {
     depot_retrait_id: string | null
     depot_logistique_id: string | null
     reference_retina: string | null
+    monday_item_id: string | null
   } | null
   depot: { id: string; nom: string } | null
 }
@@ -894,7 +895,18 @@ export default function AdminLivraisonsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.location.href = `/admin/livraisons/deliver?id=${liv.id}`}
+                          onClick={() => {
+                            const tenant = getTenantConfig()
+                            // ECOVOLT UNIQUEMENT : redirige vers l'app externe de l'associe
+                            // PPE utilise le module interne /admin/livraisons/deliver
+                            if (tenant.externalRetraitUrl) {
+                              const mondayId = liv.client?.monday_item_id || ''
+                              const url = `${tenant.externalRetraitUrl}?monday_id=${mondayId}&livraison_id=${liv.id}`
+                              window.open(url, '_blank')
+                            } else {
+                              window.location.href = `/admin/livraisons/deliver?id=${liv.id}`
+                            }
+                          }}
                           title="Module de livraison"
                           className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 active:scale-90 transition-all"
                         >

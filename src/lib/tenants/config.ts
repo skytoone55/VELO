@@ -66,6 +66,9 @@ export interface TenantConfig {
   // URL de l'autre tenant (pour le switch super_admin)
   url: string
 
+  // URL du module de retrait externe (ecovolt uniquement)
+  externalRetraitUrl?: string
+
   // Textes personnalisés
   texts: {
     welcomeMessage: string
@@ -83,6 +86,7 @@ const ecovoltConfig: TenantConfig = {
 
   territories: ['971', '972', '973', '974'],
   url: 'https://velo-fawn.vercel.app',
+  externalRetraitUrl: process.env.NEXT_PUBLIC_ECOVOLT_RETRAIT_URL || 'https://ecovolt-retrait.vercel.app',
 
   email: 'admin@eco-volt.fr',
   phone: '0757991125',

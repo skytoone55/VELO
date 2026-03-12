@@ -21,6 +21,7 @@ import {
   LogIn,
   Tag,
   ClipboardCheck,
+  Webhook,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getTenantConfig, TENANTS } from '@/lib/tenants'
@@ -116,6 +117,12 @@ const adminNavItems: NavItem[] = [
         href: '/admin/settings/naf',
         label: 'Codes NAF',
         icon: Tag,
+        roles: ['super_admin', 'admin'],
+      },
+      {
+        href: '/admin/settings/webhooks',
+        label: 'Webhooks',
+        icon: Webhook,
         roles: ['super_admin', 'admin'],
       },
     ],
