@@ -577,8 +577,18 @@ export default function MapPage() {
         if (data.reassigned > 0) {
           toast.success(`${data.reassigned} client(s) réassigné(s) au dépôt le plus proche`)
           loadData()
-        } else {
-          toast.info('Tous les clients sont déjà assignés au dépôt le plus proche')
+        }
+        if (data.geocoded > 0) {
+          toast.success(`${data.geocoded} client(s) géocodé(s) par code postal`)
+        }
+        if (data.sansGps > 0) {
+          toast.warning(`${data.sansGps} client(s) sans GPS ni code postal — assignation impossible`)
+        }
+        if (data.horsZone > 0) {
+          toast.warning(`${data.horsZone} client(s) hors zone`)
+        }
+        if (data.reassigned === 0 && !data.sansGps && !data.horsZone) {
+          toast.info('Tous les clients sont déjà assignés à un dépôt')
         }
       } else {
         toast.error(data.error || 'Erreur lors de la réassignation')

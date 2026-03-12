@@ -199,12 +199,15 @@ export default function AdminLivraisonsPage() {
 
   // Load filter options
   useEffect(() => {
-    // Depots
+    // Depots — filtrer par depot_ids pour agent_secteur
     fetch('/api/depots').then(r => r.json()).then(data => {
-      const depots = Array.isArray(data) ? data : data.depots || []
+      let depots: { id: string; nom: string }[] = Array.isArray(data) ? data : data.depots || []
+      if (adminUser?.role === 'agent_secteur' && adminUser.depot_ids?.length) {
+        depots = depots.filter(d => adminUser.depot_ids!.includes(d.id))
+      }
       setDepotOptions([
         { value: 'all', label: 'Dépôt' },
-        ...depots.map((d: { id: string; nom: string }) => ({ value: d.id, label: d.nom }))
+        ...depots.map((d) => ({ value: d.id, label: d.nom }))
       ])
     }).catch(() => {})
 

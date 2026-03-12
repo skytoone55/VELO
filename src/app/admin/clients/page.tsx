@@ -280,16 +280,21 @@ export default function AdminClientsPage() {
     }
   }, [])
 
-  // Load depots for zone calculation
+  // Load depots for zone calculation — filtrer par depot_ids pour agent_secteur
   useEffect(() => {
     const supabase = createClient()
-    supabase
+    let query = supabase
       .from('depots')
       .select('id, nom, latitude, longitude, rayon_couverture_km, type, agence')
-      .then(({ data }) => {
-        if (data) setDepots(data as DepotWithCoords[])
-      })
-  }, [])
+
+    if (user?.role === 'agent_secteur' && user.depot_ids?.length) {
+      query = query.in('id', user.depot_ids)
+    }
+
+    query.then(({ data }) => {
+      if (data) setDepots(data as DepotWithCoords[])
+    })
+  }, [user])
 
   // Debounce pour la recherche (éviter trop de requêtes)
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
@@ -1002,7 +1007,7 @@ export default function AdminClientsPage() {
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       {(() => {
-                        const depot = depots.find((d: any) => d.id === client.depot_logistique_id)
+                        const depot = depots.find((d: any) => d.id === (client.depot_retrait_id || client.depot_logistique_id))
                         return depot ? (
                           <Badge variant="outline" className="text-xs">{depot.nom}</Badge>
                         ) : (

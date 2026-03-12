@@ -18,6 +18,16 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Loader2,
   ArrowLeft,
   Building2,
@@ -46,6 +56,7 @@ import {
   Pencil,
   Check,
   X,
+  Trash2,
 } from 'lucide-react'
 import { Client, Livraison, Depot } from '@/lib/types/database'
 import { PROCESS_STATUTS, STATUT_COLORS, STATUT_TRANSITIONS, type ProcessStatut } from '@/lib/constants'
@@ -168,6 +179,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [docRequestOpen, setDocRequestOpen] = useState(false)
   const [docRequestLoading, setDocRequestLoading] = useState(false)
   const [selectedDocs, setSelectedDocs] = useState<string[]>([])
+  const [docToDelete, setDocToDelete] = useState<{ type: 'client' | 'livraison'; field: string; label: string } | null>(null)
+  const [docDeleting, setDocDeleting] = useState(false)
 
   // Mail livraison / formulaire retrait / mail planning
   const [mailLivraisonLoading, setMailLivraisonLoading] = useState(false)
@@ -372,6 +385,42 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       setError(message)
     } finally {
       setDocRequestLoading(false)
+    }
+  }
+
+  const handleDeleteDocument = async () => {
+    if (!client || !docToDelete) return
+    setDocDeleting(true)
+    try {
+      if (docToDelete.type === 'client') {
+        // Passer par l'API admin (bypass RLS, guard agent depot_ids)
+        const res = await fetch(`/api/admin/clients/${client.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [docToDelete.field]: null }),
+        })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || 'Erreur suppression')
+        }
+        setClient({ ...client, [docToDelete.field]: null } as any)
+      } else if (docToDelete.type === 'livraison' && livraison) {
+        // Pour les livraisons, utiliser le client admin via une API dédiée
+        const supabase = createClient()
+        const { error } = await supabase
+          .from('livraisons')
+          .update({ [docToDelete.field]: null, updated_at: new Date().toISOString() })
+          .eq('id', livraison.id)
+        if (error) throw error
+        setLivraisons(prev => prev.map(l => l.id === livraison.id ? { ...l, [docToDelete.field]: null } as any : l))
+      }
+      setSuccess(`${docToDelete.label} supprimé`)
+      setDocToDelete(null)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur suppression'
+      setError(message)
+    } finally {
+      setDocDeleting(false)
     }
   }
 
@@ -1120,6 +1169,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                     }}>
                       <Download className="h-4 w-4" />
                     </Button>
+                    <Button variant="ghost" size="sm" title="Supprimer" className="text-destructive hover:text-destructive" onClick={() => setDocToDelete({ type: 'livraison', field: 'document_identite_url', label: "Pièce d'identité" })}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 )}
               </div>
@@ -1159,6 +1211,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                     }}>
                       <Download className="h-4 w-4" />
                     </Button>
+                    <Button variant="ghost" size="sm" title="Supprimer" className="text-destructive hover:text-destructive" onClick={() => setDocToDelete({ type: 'livraison', field: 'attestation_pdf_url', label: 'PDF de livraison' })}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 )}
               </div>
@@ -1187,6 +1242,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       window.open(downloadUrl, '_blank')
                     }}>
                       <Download className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" title="Supprimer" className="text-destructive hover:text-destructive" onClick={() => setDocToDelete({ type: 'client', field: 'attestation_urssaf_url', label: 'Attestation URSSAF' })}>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
@@ -1217,6 +1275,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                     }}>
                       <Download className="h-4 w-4" />
                     </Button>
+                    <Button variant="ghost" size="sm" title="Supprimer" className="text-destructive hover:text-destructive" onClick={() => setDocToDelete({ type: 'client', field: 'attestation_dsn_url', label: 'Attestation DSN' })}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 )}
               </div>
@@ -1245,6 +1306,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       window.open(downloadUrl, '_blank')
                     }}>
                       <Download className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" title="Supprimer" className="text-destructive hover:text-destructive" onClick={() => setDocToDelete({ type: 'client', field: 'declaration_benevoles_url', label: 'Déclaration Bénévoles' })}>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
@@ -1341,6 +1405,29 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialog de confirmation suppression document */}
+      <AlertDialog open={!!docToDelete} onOpenChange={(open) => { if (!open) setDocToDelete(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer {docToDelete?.label} ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le document sera définitivement supprimé de la fiche client.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={docDeleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={docDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteDocument}
+            >
+              {docDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   )
