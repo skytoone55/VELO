@@ -40,7 +40,7 @@ export async function GET(
     if (currentUser.role === 'livreur' && livraison.livreur_id !== currentUser.id) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
-    if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length && !currentUser.depot_ids.includes(livraison.depot_id)) {
+    if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length && livraison.depot_id && !currentUser.depot_ids.includes(livraison.depot_id)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
@@ -74,7 +74,7 @@ export async function PATCH(
         .select('depot_id')
         .eq('id', id)
         .single()
-      if (existing && !currentUser.depot_ids.includes(existing.depot_id)) {
+      if (existing && existing.depot_id && !currentUser.depot_ids.includes(existing.depot_id)) {
         return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
       }
     }

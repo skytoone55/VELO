@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   // Fetch client
   const { data: client, error: fetchError } = await adminClient
     .from('clients')
-    .select('id, statut_commercial, raison_sociale, bypass_formulaire, depot_retrait_id')
+    .select('id, statut_commercial, raison_sociale, bypass_formulaire, depot_retrait_id, depot_logistique_id')
     .eq('id', clientId)
     .single()
 
@@ -60,12 +60,14 @@ export async function POST(request: NextRequest) {
 
   // Create livraison if none exists
   if (!existingLivraison) {
+    const depotId = client.depot_logistique_id || client.depot_retrait_id || null
     const { error: createLivError } = await adminClient
       .from('livraisons')
       .insert({
         client_id: clientId,
         statut: 'a_livrer',
         mode_livraison: client.depot_retrait_id ? 'retrait' : 'livraison',
+        depot_id: depotId,
         created_at: now,
         updated_at: now,
       })
