@@ -16,18 +16,26 @@ export async function PATCH(
 
   const adminClient = createAdminClient()
 
-  // Vérifier le verrou : si pris par un autre, interdire la modification
+  // Vérifier le verrou : il faut d'abord "Prendre" le dossier pour le modifier
   const { data: lockCheck } = await adminClient
     .from('livraisons')
     .select('cq_pris_par')
     .eq('id', livraisonId)
     .single()
 
-  if (lockCheck?.cq_pris_par && lockCheck.cq_pris_par !== auth.id && auth.role !== 'super_admin') {
-    return NextResponse.json(
-      { error: 'Ce dossier est verrouillé par un autre agent' },
-      { status: 403 }
-    )
+  if (auth.role !== 'super_admin') {
+    if (!lockCheck?.cq_pris_par) {
+      return NextResponse.json(
+        { error: 'Vous devez d\'abord prendre le dossier avant de le modifier' },
+        { status: 403 }
+      )
+    }
+    if (lockCheck.cq_pris_par !== auth.id) {
+      return NextResponse.json(
+        { error: 'Ce dossier est verrouillé par un autre agent' },
+        { status: 403 }
+      )
+    }
   }
 
   // Mode commentaire seul

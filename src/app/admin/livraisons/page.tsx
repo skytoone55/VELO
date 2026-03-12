@@ -161,6 +161,7 @@ export default function AdminLivraisonsPage() {
   const { loadPinned, saveFilters, hasPinned } = usePinnedFilters(adminUser?.id, 'livraisons')
   const [isPinned, setIsPinned] = useState(false)
   const pinnedLoaded = useRef(false)
+  const [filtersReady, setFiltersReady] = useState(false)
 
   useEffect(() => {
     if (pinnedLoaded.current) return
@@ -176,6 +177,7 @@ export default function AdminLivraisonsPage() {
       if (pinned.controle) setControleFilter(pinned.controle)
       if (pinned.pageSize) setPageSize(pinned.pageSize)
     }
+    setFiltersReady(true)
   }, [loadPinned])
 
   const handlePinFilters = () => {
@@ -313,8 +315,9 @@ export default function AdminLivraisonsPage() {
   }, [statutFilter, depotFilter, commercialFilter, departementFilter, zoneFilter, controleFilter, sortBy, sortOrder])
 
   useEffect(() => {
+    if (!filtersReady) return
     fetchLivraisons()
-  }, [fetchLivraisons, debouncedSearch])
+  }, [fetchLivraisons, debouncedSearch, filtersReady])
 
   const handleSort = (column: string) => {
     if (sortBy === column) {

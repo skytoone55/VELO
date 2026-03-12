@@ -107,6 +107,7 @@ export default function ControlePage() {
   const { loadPinned, saveFilters, hasPinned } = usePinnedFilters(user?.id, 'controle')
   const [isPinned, setIsPinned] = useState(false)
   const pinnedLoaded = useRef(false)
+  const [filtersReady, setFiltersReady] = useState(false)
 
   useEffect(() => {
     if (pinnedLoaded.current) return
@@ -118,6 +119,7 @@ export default function ControlePage() {
       if (pinned.agentFilter) setAgentFilter(pinned.agentFilter)
       if (pinned.pageSize) setPageSize(pinned.pageSize)
     }
+    setFiltersReady(true)
   }, [loadPinned])
 
   const handlePinFilters = () => {
@@ -154,7 +156,7 @@ export default function ControlePage() {
     }
   }, [filter, agentFilter, search, page, pageSize])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => { if (filtersReady) fetchData() }, [fetchData, filtersReady])
   useEffect(() => { setPage(1) }, [filter, agentFilter, search])
 
   // --- Lock / Unlock ---
@@ -301,10 +303,11 @@ export default function ControlePage() {
     CQ_CHECK_KEYS.filter(key => item[key]).length
 
   // Can this user interact with this item's checks?
+  // Il faut d'abord "Prendre" le dossier pour pouvoir cocher les cases
   const canEdit = (item: ControleItem) => {
-    if (!item.cq_pris_par) return true // Pas verrouillé = tout le monde peut (mais devrait prendre d'abord)
-    if (item.cq_pris_par === user?.id) return true
     if (user?.role === 'super_admin') return true
+    if (!item.cq_pris_par) return false // Pas pris = personne ne peut modifier
+    if (item.cq_pris_par === user?.id) return true
     return false
   }
 

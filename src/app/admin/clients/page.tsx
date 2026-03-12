@@ -196,6 +196,7 @@ export default function AdminClientsPage() {
   const { loadPinned, saveFilters, hasPinned } = usePinnedFilters(user?.id, 'clients')
   const [isPinned, setIsPinned] = useState(false)
   const pinnedLoaded = useRef(false)
+  const [filtersReady, setFiltersReady] = useState(false)
 
   useEffect(() => {
     if (pinnedLoaded.current) return
@@ -212,6 +213,7 @@ export default function AdminClientsPage() {
       if (pinned.controle) setControleFilter(pinned.controle)
       if (pinned.pageSize) setPageSize(pinned.pageSize)
     }
+    setFiltersReady(true)
   }, [loadPinned])
 
   const handlePinFilters = () => {
@@ -393,10 +395,11 @@ export default function AdminClientsPage() {
     }
   }, [debouncedSearch, statutFilter, departementFilter, pageSize, nafFilter, zoneFilter, commercialFilter, depotFilter, controleFilter, sortBy, sortOrder])
 
-  // Charger les clients quand les paramètres changent
+  // Charger les clients quand les paramètres changent (attendre que les filtres figés soient chargés)
   useEffect(() => {
+    if (!filtersReady) return
     fetchClients(false, currentPage, pageSize)
-  }, [currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter, commercialFilter, depotFilter, controleFilter, sortBy, sortOrder])
+  }, [currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter, commercialFilter, depotFilter, controleFilter, sortBy, sortOrder, filtersReady])
 
   const handleSendForm = async (client: Client) => {
     setSendingEmail(true)
