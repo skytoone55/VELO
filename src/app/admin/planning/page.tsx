@@ -21,6 +21,7 @@ import {
 import { DELIVERY_STATUS } from '@/lib/constants'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { getTenantConfig } from '@/lib/tenants'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1192,15 +1193,21 @@ function PlanningContent() {
                                   </button>
                                 </Link>
                               )}
-                              <a
-                                href={`/admin/livraisons/deliver?id=${livraison.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
+                                onClick={() => {
+                                  const tenant = getTenantConfig()
+                                  if (tenant.externalRetraitUrl) {
+                                    const mondayId = (livraison as any).client?.monday_item_id || ''
+                                    window.open(`${tenant.externalRetraitUrl}?monday_id=${mondayId}&livraison_id=${livraison.id}`, '_blank')
+                                  } else {
+                                    window.open(`/admin/livraisons/deliver?id=${livraison.id}`, '_blank')
+                                  }
+                                }}
                                 className="w-7 h-7 rounded flex items-center justify-center text-green-600 hover:bg-green-50 transition-colors"
                                 title="Démarrer la livraison"
                               >
                                 <Truck className="h-3.5 w-3.5" />
-                              </a>
+                              </button>
                               <button
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveLivraison(livraison.id) }}
                                 disabled={removingLivraisonId === livraison.id}

@@ -81,16 +81,6 @@ export default function FnuciManagementPage() {
   const [searchInput, setSearchInput] = useState('')
   const [pendingAction, setPendingAction] = useState<{ id: string; currentStatut: string; targetStatut: string } | null>(null)
 
-  // PPE guard
-  const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
-  if (tenantId === 'ecovolt') {
-    return (
-      <div className="p-8 text-center text-muted-foreground">
-        La gestion FNUCI n&apos;est pas disponible pour ce tenant.
-      </div>
-    )
-  }
-
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
@@ -230,7 +220,7 @@ export default function FnuciManagementPage() {
                 <tr>
                   <th className="px-3 py-2 text-left">
                     <button className="flex items-center gap-1 font-medium" onClick={() => toggleSort('numero')}>
-                      N\u00b0 etiquette <ArrowUpDown className="h-3 w-3" />
+                      N° etiquette <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </th>
                   <th className="px-3 py-2 text-left">
@@ -289,14 +279,14 @@ export default function FnuciManagementPage() {
                           {r.client.raison_sociale}
                         </Link>
                       ) : (
-                        <span className="text-muted-foreground">\u2014</span>
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </td>
                     <td className="px-3 py-2 font-mono text-xs">
-                      {r.client?.reference_retina || '\u2014'}
+                      {r.client?.reference_retina || '—'}
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">
-                      {r.attribue_at ? new Date(r.attribue_at).toLocaleDateString('fr-FR') : '\u2014'}
+                      {r.attribue_at ? new Date(r.attribue_at).toLocaleDateString('fr-FR') : '—'}
                     </td>
                     <td className="px-3 py-2 text-right">
                       {actionLoading === r.id ? (

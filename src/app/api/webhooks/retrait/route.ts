@@ -277,6 +277,42 @@ export async function POST(request: NextRequest) {
 
     await supabase.from('clients').update(clientUpdate).eq('id', client.id)
 
+    // 8b. Creer/mettre a jour les records FNUCI individuels (comme PPE)
+    if (fnuci_codes && Array.isArray(fnuci_codes) && fnuci_codes.length > 0) {
+      for (const code of fnuci_codes) {
+        const ref = String(code).trim().toUpperCase()
+        if (!ref) continue
+
+        // Chercher si le code existe deja dans la table fnuci
+        const { data: existing } = await supabase
+          .from('fnuci')
+          .select('id')
+          .eq('reference', ref)
+          .limit(1)
+          .single()
+
+        if (existing) {
+          // Mettre a jour le record existant → attribue + lien client/livraison
+          await supabase.from('fnuci').update({
+            statut: 'attribue',
+            client_id: client.id,
+            livraison_id: livraison.id,
+            attribue_at: now,
+          }).eq('id', existing.id)
+        } else {
+          // Creer un nouveau record FNUCI
+          await supabase.from('fnuci').insert({
+            numero: 0, // sera mis a jour lors du prochain sync Monday
+            reference: ref,
+            statut: 'attribue',
+            client_id: client.id,
+            livraison_id: livraison.id,
+            attribue_at: now,
+          })
+        }
+      }
+    }
+
     // 9. Log succes
     await updateLog(supabase, logId, 'success', null, livraison.id)
 
