@@ -104,7 +104,7 @@ function generateTimeSlots(durationMinutes: number): TimeSlot[] {
   return slots
 }
 
-function getAvailableDates(joursOuverture: string[] | null, count: number = 30): string[] {
+function getAvailableDates(joursOuverture: string[] | null, count: number = 10): string[] {
   const dates: string[] = []
   const allowedDays = new Set(
     (joursOuverture || ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'])
