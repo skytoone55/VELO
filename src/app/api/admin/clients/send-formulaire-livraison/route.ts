@@ -53,9 +53,10 @@ export async function POST(request: NextRequest) {
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
 
-    if (normalizedStatut !== 'a_livrer') {
+    const statutsEligibles = ['a_livrer', 'en_livraison', 'retrait_planifie']
+    if (!statutsEligibles.includes(normalizedStatut)) {
       return NextResponse.json({
-        error: `Client non eligible : statut commercial doit etre "a_livrer" (actuellement : ${client.statut_commercial || 'aucun'})`,
+        error: `Client non eligible : statut commercial doit etre "a_livrer", "en_livraison" ou "retrait_planifie" (actuellement : ${client.statut_commercial || 'aucun'})`,
         guard: 'statut',
       }, { status: 422 })
     }
@@ -82,12 +83,12 @@ export async function POST(request: NextRequest) {
       }, { status: 422 })
     }
 
-    // Verifier que le creneau n'est pas deja choisi
+    // Si un creneau existe deja, on le reset pour permettre la relance
     if (livraison.creneau_date) {
-      return NextResponse.json({
-        error: 'Un creneau a deja ete choisi pour cette livraison',
-        guard: 'creneau_deja_choisi',
-      }, { status: 422 })
+      await adminClient
+        .from('livraisons')
+        .update({ creneau_date: null, creneau_heure_debut: null, creneau_heure_fin: null })
+        .eq('id', livraison.id)
     }
 
     // Recuperer le depot pour le nom et l'adresse

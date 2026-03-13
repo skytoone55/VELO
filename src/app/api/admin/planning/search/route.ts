@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const q = adminClient
       .from('clients')
       .select('id, raison_sociale, velo_devis, velo_valide, telephone, email, statut_commercial, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville, depot_logistique_id, depot_retrait_id')
-      .eq('statut_commercial', 'a_livrer')
+      .in('statut_commercial', ['a_livrer', 'en_livraison'])
       .or(`raison_sociale.ilike.%${query}%,telephone.ilike.%${query}%,email.ilike.%${query}%`)
 
     const { data, error } = await q.limit(50)

@@ -625,7 +625,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             )}
 
 
-            {client.statut_commercial !== 'livre' && ['a_livrer', 'retrait_planifie'].includes(client.statut_commercial || '') && client.depot_retrait_id && (
+            {client.statut_commercial !== 'livre' && ['a_livrer', 'en_livraison', 'retrait_planifie'].includes(client.statut_commercial || '') && client.depot_retrait_id && (
               <Button
                 size="sm"
                 variant="ghost"
