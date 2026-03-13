@@ -353,21 +353,8 @@ export function classifyClientZone(
       }
     }
 
-    // Hors zone — assigner quand meme le depot le plus proche
-    // Retrait prioritaire sur logistique
-    const nearestRetraitHZ = nearestRetrait
-    if (nearestRetraitHZ && (!nearestLogistique || nearestRetraitHZ.distanceKm <= nearestLogistique.distanceKm)) {
-      return {
-        depotRetraitId: nearestRetraitHZ.depot.id,
-        depotLogistiqueId: null,
-        modeLivraison: 'retrait',
-        zoneLivraison: 'hors_zone',
-        depotInfo: nearestRetraitHZ.depot,
-        distanceKm: nearestRetraitHZ.distanceKm,
-        horsZone: true,
-      }
-    }
-
+    // Hors zone — toujours assigner un dépôt LOGISTIQUE (livraison domicile)
+    // Un client hors zone ne viendra jamais chercher en retrait
     return {
       depotRetraitId: null,
       depotLogistiqueId: nearestLogistique.depot.id,
@@ -379,14 +366,28 @@ export function classifyClientZone(
     }
   }
 
-  // 3. Aucun depot — chercher dans tous les depots confondus
+  // 3. Aucun dépôt logistique trouvé — chercher le logistique le plus proche parmi tous
+  const depotsLogistiqueAll = depots.filter((d) => d.type === 'logistique')
+  const nearestLogAll = findNearestDepot(lat, lng, depotsLogistiqueAll)
+  if (nearestLogAll) {
+    return {
+      depotRetraitId: null,
+      depotLogistiqueId: nearestLogAll.depot.id,
+      modeLivraison: 'domicile',
+      zoneLivraison: 'hors_zone',
+      depotInfo: nearestLogAll.depot,
+      distanceKm: nearestLogAll.distanceKm,
+      horsZone: true,
+    }
+  }
+
+  // 4. Aucun dépôt logistique du tout — fallback sur n'importe quel dépôt
   const nearestAny = findNearestDepot(lat, lng, depots)
   if (nearestAny) {
-    const isRetrait = nearestAny.depot.type === 'retrait'
     return {
-      depotRetraitId: isRetrait ? nearestAny.depot.id : null,
-      depotLogistiqueId: isRetrait ? null : nearestAny.depot.id,
-      modeLivraison: isRetrait ? 'retrait' : 'domicile',
+      depotRetraitId: null,
+      depotLogistiqueId: nearestAny.depot.id,
+      modeLivraison: 'domicile',
       zoneLivraison: 'hors_zone',
       depotInfo: nearestAny.depot,
       distanceKm: nearestAny.distanceKm,
