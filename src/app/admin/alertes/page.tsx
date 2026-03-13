@@ -530,7 +530,8 @@ export default function ControlePage() {
                           {(() => {
                             const d = item.date_livraison_effective || item.date_livraison
                             if (!d) return '—'
-                            const dt = new Date(d)
+                            const raw = String(d)
+                            const dt = new Date(raw.endsWith('Z') || raw.includes('+') ? raw : raw + 'Z')
                             return (
                               <div>
                                 <div>{dt.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })}</div>
