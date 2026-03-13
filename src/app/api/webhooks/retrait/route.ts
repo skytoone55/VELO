@@ -225,8 +225,8 @@ export async function POST(request: NextRequest) {
         .from('livraisons')
         .insert({
           client_id: client.id,
-          depot_id: client.depot_logistique_id || client.depot_retrait_id,
-          mode_livraison: client.adresse_livraison_ligne1 ? 'domicile' : 'retrait',
+          depot_id: client.depot_retrait_id || client.depot_logistique_id,
+          mode_livraison: 'retrait',
           adresse_livraison_ligne1: client.adresse_livraison_ligne1 || client.adresse_societe_ligne1,
           adresse_livraison_cp: client.adresse_livraison_cp || client.adresse_societe_cp,
           adresse_livraison_ville: client.adresse_livraison_ville || client.adresse_societe_ville,
