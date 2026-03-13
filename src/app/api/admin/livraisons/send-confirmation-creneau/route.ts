@@ -43,7 +43,8 @@ export async function POST(request: NextRequest) {
         nom,
         adresse,
         code_postal,
-        ville
+        ville,
+        creneaux
       )
     `)
     .eq('id', livraisonId)
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
     adresse: string | null
     code_postal: string | null
     ville: string | null
+    creneaux: { heure_debut: string; heure_fin: string }[] | null
   } | null
 
   // Ensure token exists — generate and persist if missing
@@ -125,6 +127,7 @@ export async function POST(request: NextRequest) {
       depotAddress: depot?.adresse
         ? `${depot.adresse}${depot.code_postal ? ', ' + depot.code_postal : ''}${depot.ville ? ' ' + depot.ville : ''}`
         : undefined,
+      depotCreneaux: isRetrait && depot?.creneaux ? depot.creneaux : undefined,
       token,
     })
 

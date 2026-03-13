@@ -647,12 +647,13 @@ export async function sendFormulaireLivraisonEmail(params: {
   depotName: string
   depotAddress?: string
   depotContact?: string
+  depotCreneaux?: { heure_debut: string; heure_fin: string }[]
   modeLivraison: string
   formulaireUrl: string
   tenantName: string
 }) {
   const tenant = getTenantConfig()
-  const { to, clientName, depotName, depotAddress, depotContact, modeLivraison, formulaireUrl } = params
+  const { to, clientName, depotName, depotAddress, depotContact, depotCreneaux, modeLivraison, formulaireUrl } = params
 
   const isRetrait = modeLivraison === 'point_relais' || modeLivraison === 'retrait'
   const modeLabel = isRetrait ? 'retrait' : 'livraison'
@@ -697,6 +698,7 @@ export async function sendFormulaireLivraisonEmail(params: {
                   ${depotName}
                 </p>
                 ${depotAddress ? `<p style="margin: 0 0 4px 0; color: #0369a1; font-size: 14px;">${depotAddress}</p>` : ''}
+                ${depotCreneaux && depotCreneaux.length > 0 ? `<p style="margin: 4px 0 4px 0; color: #0369a1; font-size: 13px;">🕐 Horaires : ${depotCreneaux.map(c => `${c.heure_debut} - ${c.heure_fin}`).join(' / ')}</p>` : ''}
                 ${depotContact ? `<p style="margin: 0; color: #0369a1; font-size: 13px;">${depotContact}</p>` : ''}
               </div>
 
@@ -958,6 +960,7 @@ export async function sendConfirmationCreneauEmail({
   depotName,
   depotAddress,
   depotContact,
+  depotCreneaux,
   token,
 }: {
   to: string
@@ -970,6 +973,7 @@ export async function sendConfirmationCreneauEmail({
   depotName?: string
   depotAddress?: string
   depotContact?: string
+  depotCreneaux?: { heure_debut: string; heure_fin: string }[]
   token?: string
 }) {
   const tenant = getTenantConfig()
@@ -1000,6 +1004,7 @@ export async function sendConfirmationCreneauEmail({
         ${depotName}
       </p>
       ${depotAddress ? `<p style="margin: 0 0 4px 0; color: #0369a1; font-size: 14px;">${depotAddress}</p>` : ''}
+      ${depotCreneaux && depotCreneaux.length > 0 ? `<p style="margin: 4px 0 4px 0; color: #0369a1; font-size: 13px;">🕐 Horaires : ${depotCreneaux.map((c: { heure_debut: string; heure_fin: string }) => `${c.heure_debut} - ${c.heure_fin}`).join(' / ')}</p>` : ''}
       ${depotContact ? `<p style="margin: 0; color: #0369a1; font-size: 13px;">${depotContact}</p>` : ''}
     </div>
   ` : ''

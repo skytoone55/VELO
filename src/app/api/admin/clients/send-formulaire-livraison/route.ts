@@ -91,18 +91,20 @@ export async function POST(request: NextRequest) {
         .eq('id', livraison.id)
     }
 
-    // Recuperer le depot pour le nom et l'adresse
+    // Recuperer le depot pour le nom, l'adresse et les creneaux
     let depotName = 'Depot'
     let depotAddress = ''
+    let depotCreneaux: { heure_debut: string; heure_fin: string }[] = []
     if (livraison.depot_id) {
       const { data: depot } = await adminClient
         .from('depots')
-        .select('nom, adresse, code_postal, ville')
+        .select('nom, adresse, code_postal, ville, creneaux')
         .eq('id', livraison.depot_id)
         .single()
       if (depot) {
         depotName = depot.nom
         depotAddress = [depot.adresse, depot.code_postal, depot.ville].filter(Boolean).join(', ')
+        depotCreneaux = Array.isArray(depot.creneaux) ? depot.creneaux : []
       }
     }
 
@@ -149,6 +151,7 @@ export async function POST(request: NextRequest) {
         clientName,
         depotName,
         depotAddress,
+        depotCreneaux,
         modeLivraison: livraison.mode_livraison,
         formulaireUrl,
         tenantName: tenant.name,
