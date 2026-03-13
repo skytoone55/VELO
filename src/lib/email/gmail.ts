@@ -979,7 +979,6 @@ export async function sendConfirmationCreneauEmail({
   const tenant = getTenantConfig()
   const modeLabel = isRetrait ? 'retrait' : 'livraison'
   const baseUrl = tenant.url || process.env.NEXT_PUBLIC_APP_URL || ''
-  const cancelUrl = `${baseUrl}/api/livraisons/cancel-creneau?token=${token || ''}`
   const confirmCreneauUrl = `${baseUrl}/livraisons/confirm-creneau?token=${token || ''}`
 
   const dateFormatted = (() => {
@@ -1056,11 +1055,6 @@ export async function sendConfirmationCreneauEmail({
             </a>
           </div>
 
-          <div style="text-align: center; margin-bottom: 20px;">
-            <a href="${cancelUrl}" style="display: inline-block; padding: 12px 24px; background-color: #ef4444; color: white; border: 1px solid #dc2626; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500;">
-              Je refuse ce créneau
-            </a>
-          </div>
 
           ${getIdentityReminderHtml(clientName, isRetrait)}
 
