@@ -21,6 +21,14 @@ export async function GET(request: Request) {
       )
     }
 
+    // Agent : vérifier que le dépôt demandé est dans ses dépôts assignés
+    if (authResult.role === 'agent_secteur') {
+      const allowed = authResult.depot_ids || []
+      if (!allowed.includes(depotId)) {
+        return NextResponse.json({ error: 'Accès refusé à ce dépôt' }, { status: 403 })
+      }
+    }
+
     const adminClient = createAdminClient()
 
     // 1. Fetch depot info

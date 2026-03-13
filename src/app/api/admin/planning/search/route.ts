@@ -15,6 +15,14 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q') || ''
     const depotId = searchParams.get('depot')
 
+    // Agent : vérifier que le dépôt demandé est dans ses dépôts assignés
+    if (auth.role === 'agent_secteur' && depotId) {
+      const allowed = auth.depot_ids || []
+      if (!allowed.includes(depotId)) {
+        return NextResponse.json({ error: 'Accès refusé à ce dépôt' }, { status: 403 })
+      }
+    }
+
     if (query.length < 2) {
       return NextResponse.json({ clients: [] })
     }

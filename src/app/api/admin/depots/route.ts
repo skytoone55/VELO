@@ -8,11 +8,18 @@ export async function GET() {
     if (isAuthError(authResult)) return authResult
 
     const adminClient = createAdminClient()
-    const { data, error } = await adminClient
+    let query = adminClient
       .from('depots')
       .select('id, nom, type, jours_ouverture, capacite_velos_jour, creneau_duree_minutes, actif')
       .eq('actif', true)
       .order('nom')
+
+    // Agent/livreur : restreindre aux dépôts assignés
+    if (['agent_secteur', 'livreur'].includes(authResult.role) && authResult.depot_ids?.length) {
+      query = query.in('id', authResult.depot_ids)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

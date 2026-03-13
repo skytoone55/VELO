@@ -299,7 +299,11 @@ function PlanningContent() {
         const json = await res.json()
         if (!res.ok) throw new Error(json.error || 'Erreur chargement dépôts')
 
-        const depotList = (json.depots || []) as DepotOption[]
+        let depotList = (json.depots || []) as DepotOption[]
+        // L'API filtre déjà côté serveur, mais double-check côté client
+        if (adminUser.role === 'agent_secteur' && adminUser.depot_ids?.length) {
+          depotList = depotList.filter(d => adminUser.depot_ids!.includes(d.id))
+        }
         setDepots(depotList)
 
         // Auto-select: prefer depot_id from URL, then user's depot, otherwise first depot

@@ -191,6 +191,7 @@ export default function AdminDepotsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [depotToDelete, setDepotToDelete] = useState<Depot | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [reassigning, setReassigning] = useState(false)
 
   useEffect(() => {
     const fetchDepots = async () => {
@@ -302,6 +303,8 @@ export default function AdminDepotsPage() {
         updated_at: new Date().toISOString(),
       }
 
+      let savedDepotId: string | null = null
+
       if (editingDepot) {
         const { error: updateError } = await supabase
           .from('depots')
@@ -310,6 +313,7 @@ export default function AdminDepotsPage() {
 
         if (updateError) throw updateError
 
+        savedDepotId = editingDepot.id
         setDepots(depots.map(d => d.id === editingDepot.id ? { ...d, ...depotData } : d))
         setSuccess('Depot mis a jour avec succes')
       } else {
@@ -321,6 +325,7 @@ export default function AdminDepotsPage() {
 
         if (insertError) throw insertError
 
+        savedDepotId = newDepot.id
         setDepots([...depots, newDepot])
         setSuccess('Depot cree avec succes')
       }
@@ -329,16 +334,16 @@ export default function AdminDepotsPage() {
       setDialogOpen(false)
       setEditingDepot(null)
 
-      // Réassignation en arrière-plan (ne bloque pas le dialog)
+      // Réassignation ciblée en arrière-plan (uniquement le périmètre du dépôt)
       fetch('/api/admin/depots/reassign-clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ force: true }),
+        body: JSON.stringify({ depotId: savedDepotId }),
       })
         .then(r => r.json())
         .then(data => {
           if (data.reassigned > 0) {
-            setSuccess(`${data.reassigned} client(s) réassigné(s), ${data.horsZone || 0} hors zone.`)
+            toast.success(`${data.reassigned} client(s) réassigné(s), ${data.horsZone || 0} hors zone.`)
           }
         })
         .catch(err => console.error('Erreur réassignation:', err))
@@ -361,13 +366,17 @@ export default function AdminDepotsPage() {
     if (!updateError) {
       setDepots(depots.map(d => d.id === depot.id ? { ...d, actif: newActif } : d))
 
-      // Réassigner les clients (le changement d'état affecte la couverture)
+      // Réassigner les clients du périmètre de ce dépôt
       try {
-        await fetch('/api/admin/depots/reassign-clients', {
+        const res = await fetch('/api/admin/depots/reassign-clients', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ force: true }),
+          body: JSON.stringify({ depotId: depot.id }),
         })
+        const data = await res.json()
+        if (data.reassigned > 0) {
+          toast.success(`${data.reassigned} client(s) réassigné(s)`)
+        }
       } catch (reassignErr) {
         console.error('Erreur réassignation après toggle:', reassignErr)
       }
@@ -407,12 +416,12 @@ export default function AdminDepotsPage() {
       setShowDeleteDialog(false)
       setDepotToDelete(null)
 
-      // Réassigner les clients qui étaient sur ce dépôt
+      // Réassigner uniquement les clients qui étaient sur ce dépôt
       try {
         const reassignResponse = await fetch('/api/admin/depots/reassign-clients', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ force: true }),
+          body: JSON.stringify({ deletedDepotId: depotToDelete.id }),
         })
         const reassignData = await reassignResponse.json()
         if (reassignData.reassigned > 0) {
@@ -442,12 +451,43 @@ export default function AdminDepotsPage() {
             Gérez les points de retrait et dépôts logistiques
           </p>
         </div>
-        {user?.role === 'super_admin' && (
-          <Button onClick={openCreateDialog}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nouveau depot
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {user?.role === 'super_admin' && (
+            <Button
+              variant="outline"
+              disabled={reassigning}
+              onClick={async () => {
+                setReassigning(true)
+                try {
+                  const res = await fetch('/api/admin/depots/reassign-clients', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ force: true }),
+                  })
+                  const data = await res.json()
+                  if (data.error) {
+                    toast.error(data.error)
+                  } else {
+                    toast.success(`${data.reassigned} client(s) réassigné(s), ${data.horsZone || 0} hors zone sur ${data.totalChecked || 0} vérifiés`)
+                  }
+                } catch (err) {
+                  toast.error('Erreur lors de la réassignation')
+                } finally {
+                  setReassigning(false)
+                }
+              }}
+            >
+              {reassigning ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Navigation className="h-4 w-4 mr-2" />}
+              {reassigning ? 'Réassignation...' : 'Réassigner tous les clients'}
+            </Button>
+          )}
+          {user?.role === 'super_admin' && (
+            <Button onClick={openCreateDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouveau depot
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
