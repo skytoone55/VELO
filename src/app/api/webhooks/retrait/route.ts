@@ -24,27 +24,51 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 const STORAGE_BUCKET = 'livraisons-documents'
 
-async function uploadBase64ToStorage(
+async function uploadToStorage(
   supabase: ReturnType<typeof createAdminClient>,
-  base64Data: string,
+  rawData: string,
   folder: string,
   filename: string
 ): Promise<string | null> {
   try {
-    let mimeType = 'application/pdf'
-    let cleanBase64 = base64Data
+    let mimeType = filename.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'
+    let buffer: Buffer
 
-    if (base64Data.startsWith('data:')) {
-      const match = base64Data.match(/^data:([^;]+);base64,(.+)$/)
+    // Case 1: URL — fetch the file
+    if (rawData.startsWith('http://') || rawData.startsWith('https://')) {
+      console.log(`[webhook-retrait] ${filename}: received URL (${rawData.length} chars), fetching...`)
+      const resp = await fetch(rawData, { signal: AbortSignal.timeout(15000) })
+      if (!resp.ok) {
+        console.error(`[webhook-retrait] Fetch URL failed: ${resp.status} ${resp.statusText}`)
+        return null
+      }
+      const ct = resp.headers.get('content-type')
+      if (ct) mimeType = ct.split(';')[0]
+      buffer = Buffer.from(await resp.arrayBuffer())
+    }
+    // Case 2: data URI (data:mime;base64,...)
+    else if (rawData.startsWith('data:')) {
+      const match = rawData.match(/^data:([^;]*);base64,(.+)$/)
       if (match) {
-        mimeType = match[1]
-        cleanBase64 = match[2]
+        if (match[1]) mimeType = match[1]
+        buffer = Buffer.from(match[2], 'base64')
+      } else {
+        console.error(`[webhook-retrait] ${filename}: data URI format non reconnu (${rawData.substring(0, 50)}...)`)
+        return null
       }
     }
+    // Case 3: raw base64
+    else {
+      buffer = Buffer.from(rawData, 'base64')
+    }
 
-    const buffer = Buffer.from(cleanBase64, 'base64')
+    // Validate: buffer must be > 100 bytes to be a real file
+    if (buffer.length < 100) {
+      console.error(`[webhook-retrait] ${filename}: buffer trop petit (${buffer.length} octets). Input debut: "${rawData.substring(0, 80)}..."`)
+      return null
+    }
+
     const path = `${folder}/${filename}`
-
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(path, buffer, {
@@ -53,7 +77,7 @@ async function uploadBase64ToStorage(
       })
 
     if (error) {
-      console.error(`Erreur upload ${path}:`, error)
+      console.error(`[webhook-retrait] Erreur upload ${path}:`, error)
       return null
     }
 
@@ -61,9 +85,10 @@ async function uploadBase64ToStorage(
       .from(STORAGE_BUCKET)
       .getPublicUrl(path)
 
+    console.log(`[webhook-retrait] ${filename}: upload OK (${buffer.length} octets)`)
     return urlData.publicUrl
   } catch (err) {
-    console.error(`Erreur upload base64 ${filename}:`, err)
+    console.error(`[webhook-retrait] Erreur upload ${filename}:`, err)
     return null
   }
 }
@@ -228,7 +253,7 @@ export async function POST(request: NextRequest) {
     let idPhotoUrl: string | null = null
 
     if (pdf_base64) {
-      pdfUrl = await uploadBase64ToStorage(
+      pdfUrl = await uploadToStorage(
         supabase, pdf_base64,
         `retrait/${clientRef}`,
         `attestation-livraison.pdf`
@@ -237,7 +262,7 @@ export async function POST(request: NextRequest) {
 
     if (id_photo_base64) {
       const ext = id_photo_base64.startsWith('data:image/png') ? 'png' : 'jpg'
-      idPhotoUrl = await uploadBase64ToStorage(
+      idPhotoUrl = await uploadToStorage(
         supabase, id_photo_base64,
         `retrait/${clientRef}`,
         `carte-identite.${ext}`
@@ -252,6 +277,7 @@ export async function POST(request: NextRequest) {
       source_livraison: 'ecovolt_retrait',
     }
     if (pdfUrl) livUpdate.attestation_pdf_url = pdfUrl
+    if (idPhotoUrl) livUpdate.document_identite_url = idPhotoUrl
 
     const { error: livError } = await supabase
       .from('livraisons')

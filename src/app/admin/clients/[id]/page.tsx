@@ -227,8 +227,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         if (data.depotLogistique) setDepotLogistique(data.depotLogistique)
         if (data.distanceKm) setDistanceKm(data.distanceKm)
 
-        // Fetch FNUCI records (PPE only)
-        if (process.env.NEXT_PUBLIC_TENANT_ID !== 'ecovolt' && data.client?.id) {
+        // Fetch FNUCI records
+        if (data.client?.id) {
           try {
             const supabase = createClient()
             const { data: fnuci } = await supabase
@@ -1317,8 +1317,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 )}
               </div>
 
-              {/* FNUCI attribués — PPE only, inside Documents */}
-              {tenantId !== 'ecovolt' && fnuciRecords.length > 0 && (
+              {/* FNUCI attribués — inside Documents */}
+              {fnuciRecords.length > 0 && (
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
