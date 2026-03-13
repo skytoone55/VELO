@@ -821,7 +821,11 @@ export default function AdminLivraisonsPage() {
                       />
                     </TableCell>
                     <TableCell className="max-w-[180px]">
-                      <div className="font-medium truncate" title={liv.client?.raison_sociale || ''}>{liv.client?.raison_sociale || 'N/A'}</div>
+                      {liv.client?.id ? (
+                        <a href={`/admin/clients/${liv.client.id}`} className="font-medium truncate block text-blue-600 hover:underline" title={liv.client.raison_sociale || ''}>{liv.client.raison_sociale || 'N/A'}</a>
+                      ) : (
+                        <div className="font-medium truncate" title="">N/A</div>
+                      )}
                       <div className="text-xs text-muted-foreground truncate">{liv.client?.siret}</div>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">

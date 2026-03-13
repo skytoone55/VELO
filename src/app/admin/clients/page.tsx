@@ -973,7 +973,7 @@ export default function AdminClientsPage() {
                     </TableCell>
                     <TableCell className="max-w-[180px]">
                       <div>
-                        <div className="font-medium truncate" title={client.raison_sociale}>{client.raison_sociale}</div>
+                        <a href={`/admin/clients/${client.id}`} className="font-medium truncate block text-blue-600 hover:underline" title={client.raison_sociale}>{client.raison_sociale}</a>
                         <div className="text-sm text-muted-foreground font-mono truncate">
                           {client.siret || '-'}
                         </div>
