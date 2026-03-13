@@ -22,6 +22,8 @@ import {
   Tag,
   ClipboardCheck,
   Webhook,
+  BookOpen,
+  GraduationCap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getTenantConfig, TENANTS } from '@/lib/tenants'
@@ -369,6 +371,26 @@ export function AdminNav({ user }: AdminNavProps) {
 
           {/* Right: Tenant switch + User menu (desktop) + Mobile hamburger */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Raccourcis — Manuel PDF + Formation */}
+            <a
+              href="/manuel-procedure-ppe.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              title="Manuel de procédure"
+            >
+              <BookOpen className="h-4 w-4" />
+            </a>
+            <a
+              href="https://app.arcade.software/share/u8GVQBXrn6IFnxKmK3H1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              title="Formation"
+            >
+              <GraduationCap className="h-4 w-4" />
+            </a>
+
             {/* Tenant switch — super_admin only, visible on desktop */}
             {user.is_super_admin && (() => {
               const otherTenantId: TenantId = tenant.id === 'ppe' ? 'ecovolt' : 'ppe'
@@ -546,6 +568,28 @@ export function AdminNav({ user }: AdminNavProps) {
                 </div>
               )
             })()}
+
+            {/* Raccourcis Manuel + Formation (mobile) */}
+            <div className="pt-2 mt-2 border-t border-gray-200">
+              <a
+                href="/manuel-procedure-ppe.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <BookOpen className="h-5 w-5" />
+                Manuel de procedure
+              </a>
+              <a
+                href="https://app.arcade.software/share/u8GVQBXrn6IFnxKmK3H1"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <GraduationCap className="h-5 w-5" />
+                Formation
+              </a>
+            </div>
 
             {/* User info + sign out in mobile menu */}
             <div className="pt-2 mt-2 border-t border-gray-200">
