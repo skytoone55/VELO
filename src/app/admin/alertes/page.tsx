@@ -71,6 +71,7 @@ interface ControleItem {
     reference_retina: string | null
     commercial_assigne: string | null
     velo_valide: number | null
+    fnuci_ids: string[] | null
   } | null
   depot: { id: string; nom: string } | null
   livreur: { nom: string; prenom: string } | null
@@ -547,12 +548,14 @@ export default function ControlePage() {
                               </span>
                             )}
                             {item.client ? (
-                              <Link
+                              <a
                                 href={`/admin/clients/${item.client.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="text-blue-600 hover:underline"
                               >
                                 {item.client.raison_sociale}
-                              </Link>
+                              </a>
                             ) : (
                               <span className="text-muted-foreground">—</span>
                             )}
@@ -586,9 +589,24 @@ export default function ControlePage() {
                             ? `${item.livreur.prenom} ${item.livreur.nom}`
                             : '—'}
                         </TableCell>
-                        {/* Nb vélos */}
+                        {/* Nb vélos + tooltip FNUCI */}
                         <TableCell className="text-center">
-                          {item.client?.velo_valide || '—'}
+                          {item.client?.velo_valide ? (
+                            <span className="relative group cursor-default">
+                              {item.client.velo_valide}
+                              {item.client.fnuci_ids && item.client.fnuci_ids.length > 0 && (
+                                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                  <span className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
+                                    <span className="font-semibold block mb-1">FNUCI :</span>
+                                    {item.client.fnuci_ids.map((code, i) => (
+                                      <span key={i} className="block font-mono">{code}</span>
+                                    ))}
+                                  </span>
+                                  <span className="w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
+                                </span>
+                              )}
+                            </span>
+                          ) : '—'}
                         </TableCell>
 
                         {/* Tout cocher */}

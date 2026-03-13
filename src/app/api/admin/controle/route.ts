@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       cq_signature_client, cq_fnuci, cq_velo,
       cq_valide, cq_valide_par, cq_valide_at, cq_en_cours, cq_commentaire,
       cq_pris_par, cq_pris_at, reactivated_at,
-      client:clients!livraisons_client_id_fkey(id, raison_sociale, contact_nom, contact_prenom, telephone, reference_retina, commercial_assigne, depot_logistique_id, depot_retrait_id, velo_valide),
+      client:clients!livraisons_client_id_fkey(id, raison_sociale, contact_nom, contact_prenom, telephone, reference_retina, commercial_assigne, depot_logistique_id, depot_retrait_id, velo_valide, fnuci_ids),
       depot:depots!livraisons_depot_id_fkey(id, nom)
     `, { count: 'exact' })
     .eq('statut', 'livree')
