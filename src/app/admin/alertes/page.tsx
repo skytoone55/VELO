@@ -532,8 +532,8 @@ export default function ControlePage() {
                             const dt = new Date(d)
                             return (
                               <div>
-                                <div>{dt.toLocaleDateString('fr-FR')}</div>
-                                <div className="text-xs text-muted-foreground">{dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                                <div>{dt.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })}</div>
+                                <div className="text-xs text-muted-foreground">{dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}</div>
                               </div>
                             )
                           })()}
