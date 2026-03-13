@@ -376,19 +376,19 @@ export function AdminNav({ user }: AdminNavProps) {
               href="/manuel-procedure-ppe.pdf"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden md:flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              className="hidden md:flex items-center justify-center w-9 h-9 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
               title="Manuel de procédure"
             >
-              <BookOpen className="h-4 w-4" />
+              <BookOpen className="h-5 w-5" />
             </a>
             <a
               href="https://app.arcade.software/share/u8GVQBXrn6IFnxKmK3H1"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden md:flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              className="hidden md:flex items-center justify-center w-9 h-9 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
               title="Formation"
             >
-              <GraduationCap className="h-4 w-4" />
+              <GraduationCap className="h-5 w-5" />
             </a>
 
             {/* Tenant switch — super_admin only, visible on desktop */}

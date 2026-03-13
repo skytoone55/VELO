@@ -12,6 +12,8 @@ import {
   Building2,
   Settings,
   Calendar,
+  BookOpen,
+  GraduationCap,
 } from 'lucide-react'
 
 interface MenuCard {
@@ -90,6 +92,31 @@ const menuCards: MenuCard[] = [
   },
 ]
 
+interface ExternalCard {
+  href: string
+  label: string
+  description: string
+  icon: React.ElementType
+  color: string
+}
+
+const externalCards: ExternalCard[] = [
+  {
+    href: '/manuel-procedure-ppe.pdf',
+    label: 'Manuel de procedure',
+    description: 'Guide complet de gestion et livraison des velos cargo',
+    icon: BookOpen,
+    color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
+  },
+  {
+    href: 'https://app.arcade.software/share/u8GVQBXrn6IFnxKmK3H1',
+    label: 'Formation',
+    description: 'Tutoriel interactif pour prendre en main le systeme',
+    icon: GraduationCap,
+    color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400',
+  },
+]
+
 export default function DashboardPage() {
   const user = useAdminUser()
 
@@ -125,6 +152,31 @@ export default function DashboardPage() {
               </div>
             </div>
           </Link>
+        ))}
+      </div>
+
+      {/* Ressources — Manuel + Formation */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl w-full mt-8">
+        {externalCards.map((card) => (
+          <a
+            key={card.href}
+            href={card.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-4 p-5 rounded-xl border bg-card hover:border-primary/50 hover:shadow-md transition-all"
+          >
+            <div className={`p-3 rounded-xl shrink-0 ${card.color}`}>
+              <card.icon className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="font-semibold text-sm group-hover:text-primary transition-colors">
+                {card.label}
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {card.description}
+              </div>
+            </div>
+          </a>
         ))}
       </div>
     </div>
