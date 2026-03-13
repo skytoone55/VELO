@@ -25,6 +25,12 @@ interface ClientData {
   velo_devis: number
 }
 
+interface CreneauConfig {
+  heure_debut: string
+  heure_fin: string
+  capacite_velos: number
+}
+
 interface DepotData {
   id: string
   nom: string
@@ -35,6 +41,7 @@ interface DepotData {
   jours_ouverture: string[] | null
   capacite_velos_jour: number | null
   creneau_duree_minutes: number | null
+  creneaux: CreneauConfig[] | null
 }
 
 interface ValidateResponse {
@@ -192,7 +199,10 @@ function FormulaireLivraisonContent() {
 
   // Available dates & time slots
   const availableDates = depot ? getAvailableDates(depot.jours_ouverture) : []
-  const timeSlots = depot?.creneau_duree_minutes ? generateTimeSlots(depot.creneau_duree_minutes) : generateTimeSlots(30)
+  // Utiliser les créneaux configurés du dépôt, sinon fallback sur génération automatique
+  const timeSlots: TimeSlot[] = depot?.creneaux && depot.creneaux.length > 0
+    ? depot.creneaux.map(c => ({ debut: c.heure_debut, fin: c.heure_fin, label: `${c.heure_debut} - ${c.heure_fin}` }))
+    : depot?.creneau_duree_minutes ? generateTimeSlots(depot.creneau_duree_minutes) : generateTimeSlots(60)
 
   const canSubmit = selectedDate && selectedSlot && confirmPersonne && confirmIdentite && !submitting
 
@@ -472,7 +482,7 @@ function FormulaireLivraisonContent() {
               Choisissez un creneau horaire
             </h2>
             <p className="text-sm text-gray-500 mb-4">
-              Selectionnez le creneau de {depot?.creneau_duree_minutes || 30} minutes qui vous convient.
+              Selectionnez le creneau qui vous convient.
             </p>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1">
