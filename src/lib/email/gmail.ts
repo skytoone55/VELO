@@ -290,16 +290,8 @@ export async function sendFormulaireLinkEmail(
                 Pour finaliser votre livraison, veuillez remplir le formulaire ci-dessous avec vos informations de livraison.
               </p>
 
-              ${validationCode ? `
-              <div style="background-color: #f0f9ff; border: 2px solid ${tenant.branding.colors.secondary}; border-radius: 8px; padding: 20px; margin: 0 0 30px 0; text-align: center;">
-                <p style="margin: 0 0 8px 0; color: #52525b; font-size: 14px;">Votre code de validation PPE :</p>
-                <p style="margin: 0; color: #18181b; font-size: 28px; font-weight: 700; letter-spacing: 4px;">${validationCode}</p>
-                <p style="margin: 8px 0 0 0; color: #71717a; font-size: 12px;">Ce code vous sera demandé à la première étape du formulaire</p>
-              </div>
-              ` : ''}
-
               <!-- CTA Button -->
-              <table width="100%" cellpadding="0" cellspacing="0">
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 20px 0;">
                 <tr>
                   <td align="center">
                     <a href="${formulaireLink}"
@@ -310,14 +302,20 @@ export async function sendFormulaireLinkEmail(
                 </tr>
               </table>
 
-              <p style="margin: 30px 0 0 0; color: #71717a; font-size: 14px; line-height: 1.6;">
+              ${validationCode ? `
+              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin: 0 0 20px 0; text-align: center;">
+                <p style="margin: 0; color: #64748b; font-size: 13px;">Code de validation : <strong style="color: #18181b; font-size: 18px; letter-spacing: 2px;">${validationCode}</strong></p>
+              </div>
+              ` : ''}
+
+              <p style="margin: 0 0 0 0; color: #71717a; font-size: 14px; line-height: 1.6;">
                 Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
                 <a href="${formulaireLink}" style="color: ${tenant.branding.colors.secondary}; word-break: break-all;">
                   ${formulaireLink}
                 </a>
               </p>
 
-              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
+              <hr style="margin: 20px 0; border: none; border-top: 1px solid #e4e4e7;">
 
               <p style="margin: 0; color: #71717a; font-size: 13px; line-height: 1.5;">
                 Ce lien est personnel et unique. Veuillez ne pas le partager.<br>

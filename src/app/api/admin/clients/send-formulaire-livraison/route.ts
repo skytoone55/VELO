@@ -90,15 +90,19 @@ export async function POST(request: NextRequest) {
       }, { status: 422 })
     }
 
-    // Recuperer le depot pour le nom
+    // Recuperer le depot pour le nom et l'adresse
     let depotName = 'Depot'
+    let depotAddress = ''
     if (livraison.depot_id) {
       const { data: depot } = await adminClient
         .from('depots')
-        .select('nom')
+        .select('nom, adresse, code_postal, ville')
         .eq('id', livraison.depot_id)
         .single()
-      if (depot) depotName = depot.nom
+      if (depot) {
+        depotName = depot.nom
+        depotAddress = [depot.adresse, depot.code_postal, depot.ville].filter(Boolean).join(', ')
+      }
     }
 
     const clientName = client.contact_prenom && client.contact_nom
@@ -133,9 +137,7 @@ export async function POST(request: NextRequest) {
       .eq('id', clientId)
 
     // 3. Construire l'URL du formulaire
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-      || 'http://localhost:3001'
+    const baseUrl = tenant.url || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
     const formulaireUrl = `${baseUrl}/formulaire-livraison?token=${token}`
 
     // 4. Envoyer l'email
@@ -145,6 +147,7 @@ export async function POST(request: NextRequest) {
         to: recipientEmail,
         clientName,
         depotName,
+        depotAddress,
         modeLivraison: livraison.mode_livraison,
         formulaireUrl,
         tenantName: tenant.name,

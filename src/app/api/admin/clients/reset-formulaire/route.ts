@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { generateValidationCode, hashValidationCode } from '@/lib/utils'
 import { sendCodeValidationEmail, sendFormulaireLinkEmail } from '@/lib/email/gmail'
 import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
+import { getTenantConfig } from '@/lib/tenants'
 
 export async function POST(request: NextRequest) {
   // console.log('=== API reset-formulaire called ===')
@@ -152,9 +153,8 @@ export async function POST(request: NextRequest) {
         .eq('id', clientId)
 
       // Construire l'URL du formulaire
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL
-        || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-        || 'http://localhost:3001'
+      const tenant = getTenantConfig()
+      const baseUrl = tenant.url || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
       formulaireUrl = `${baseUrl}/formulaire?token=${token}`
 
       // Envoyer l'email du formulaire

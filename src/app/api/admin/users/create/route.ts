@@ -4,6 +4,7 @@ import { sendUserInvitationEmail } from '@/lib/email/gmail'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { creatableRoles } from '@/lib/auth/helpers'
 import { UserRole } from '@/lib/types/database'
+import { getTenantConfig } from '@/lib/tenants'
 
 export async function POST(request: NextRequest) {
   try {
@@ -186,7 +187,8 @@ export async function POST(request: NextRequest) {
     let emailSent = false
     try {
       const userName = `${prenom} ${nom}`
-      const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/auth/login`
+      const tenant = getTenantConfig()
+      const loginUrl = `${tenant.url || process.env.NEXT_PUBLIC_APP_URL || ''}/auth/login`
       await sendUserInvitationEmail(email, userName, role, loginUrl, password)
       emailSent = true
     } catch (emailError) {

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendFormulaireLinkEmail } from '@/lib/email/gmail'
 import { syncClientToMonday, isMondayConfigured } from '@/lib/monday/api'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
+import { getTenantConfig } from '@/lib/tenants'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,12 +50,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erreur mise à jour client' }, { status: 500 })
     }
 
-    // Construire le lien du formulaire
-    // NEXT_PUBLIC_APP_URL doit être défini dans Vercel: https://velo-fawn.vercel.app
-    // VERCEL_URL est défini automatiquement par Vercel mais sans https://
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-      || 'http://localhost:3001'
+    // Construire le lien du formulaire via tenant config (fiable multi-tenant)
+    const tenant = getTenantConfig()
+    const baseUrl = tenant.url || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
     const formulaireUrl = `${baseUrl}/formulaire?token=${token}`
 
     // Nom du client pour l'email

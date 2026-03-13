@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { sendTourneeConfirmationEmail } from '@/lib/email/gmail'
+import { getTenantConfig } from '@/lib/tenants'
 
 /**
  * GET /api/admin/tournees
@@ -135,9 +136,8 @@ export async function POST(request: NextRequest) {
 
     // Mettre à jour chaque livraison
     const emailResults: { clientId: string; success: boolean; error?: string }[] = []
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000'
+    const tenant = getTenantConfig()
+    const baseUrl = tenant.url || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
 
     for (const liv of livraisons) {
       // Générer un token de confirmation

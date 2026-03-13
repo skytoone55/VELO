@@ -194,7 +194,7 @@ function FormulaireLivraisonContent() {
   const availableDates = depot ? getAvailableDates(depot.jours_ouverture) : []
   const timeSlots = depot?.creneau_duree_minutes ? generateTimeSlots(depot.creneau_duree_minutes) : generateTimeSlots(30)
 
-  const canSubmit = selectedDate && (isRetrait || selectedSlot) && confirmPersonne && confirmIdentite && !submitting
+  const canSubmit = selectedDate && selectedSlot && confirmPersonne && confirmIdentite && !submitting
 
   const handleSubmit = async () => {
     if (!canSubmit || !token || !selectedDate) return
@@ -465,8 +465,8 @@ function FormulaireLivraisonContent() {
           </div>
         </div>
 
-        {/* Time slot picker (logistique only) */}
-        {isLogistique && selectedDate && (
+        {/* Time slot picker */}
+        {selectedDate && (
           <div className="bg-white rounded-xl shadow-sm p-5">
             <h2 className="text-base font-semibold text-gray-900 mb-1">
               Choisissez un creneau horaire
@@ -501,7 +501,7 @@ function FormulaireLivraisonContent() {
         )}
 
         {/* Confirmations */}
-        {selectedDate && (isRetrait || selectedSlot) && (
+        {selectedDate && selectedSlot && (
           <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
             <h2 className="text-base font-semibold text-gray-900">Confirmations obligatoires</h2>
 
