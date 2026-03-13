@@ -536,6 +536,10 @@ export type Database = {
           cq_commentaire: string | null
           cq_pris_par: string | null
           cq_pris_at: string | null
+          reactivated_by: string | null
+          reactivation_comment: string | null
+          reactivated_at: string | null
+          cq_alerte_envoyee: boolean
         }
         Insert: {
           adresse_livraison_cp?: string | null
@@ -593,6 +597,10 @@ export type Database = {
           cq_commentaire?: string | null
           cq_pris_par?: string | null
           cq_pris_at?: string | null
+          reactivated_by?: string | null
+          reactivation_comment?: string | null
+          reactivated_at?: string | null
+          cq_alerte_envoyee?: boolean
         }
         Update: {
           adresse_livraison_cp?: string | null
@@ -650,6 +658,10 @@ export type Database = {
           cq_commentaire?: string | null
           cq_pris_par?: string | null
           cq_pris_at?: string | null
+          reactivated_by?: string | null
+          reactivation_comment?: string | null
+          reactivated_at?: string | null
+          cq_alerte_envoyee?: boolean
         }
         Relationships: []
       }

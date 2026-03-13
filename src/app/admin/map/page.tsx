@@ -1164,7 +1164,7 @@ export default function MapPage() {
 
         {/* Carte - sans padding, bords arrondis intégrés */}
         <Card className="lg:col-span-3 overflow-hidden rounded-lg">
-          <CardContent className="p-0 h-[calc(100vh-180px)] min-h-[500px]">
+          <CardContent className="p-0 h-[calc(100vh-210px)] min-h-[500px]">
             {mapNotAvailable ? (
               <div className="h-full flex flex-col items-center justify-center bg-muted/30">
                 <MapPin className="h-16 w-16 text-muted-foreground mb-4" />

@@ -69,6 +69,9 @@ export interface TenantConfig {
   // URL du module de retrait externe (ecovolt uniquement)
   externalRetraitUrl?: string
 
+  // Email alerte contrôle qualité (si non pris dans les 5 min)
+  emailAlerteCQ?: string
+
   // Textes personnalisés
   texts: {
     welcomeMessage: string
@@ -144,6 +147,7 @@ const ppeConfig: TenantConfig = {
 
   territories: ['FR'],
   url: 'https://velo-ppe.vercel.app',
+  emailAlerteCQ: 'charlotte.pochet@patrimoine-energie.fr',
 
   email: 'velo-cargo@patrimoine-energie.fr',
   phone: '0974161400',

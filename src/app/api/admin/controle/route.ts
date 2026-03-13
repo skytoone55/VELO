@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validatePagination } from '@/lib/constants'
+import { sendEmail } from '@/lib/email/gmail'
+import { getTenantConfig } from '@/lib/tenants'
 
 export async function GET(request: NextRequest) {
   const auth = await requireRole(['super_admin', 'admin'])
@@ -27,8 +29,8 @@ export async function GET(request: NextRequest) {
       cq_piece_identite, cq_photo_enemat, cq_signature_installateur,
       cq_signature_client, cq_fnuci, cq_velo,
       cq_valide, cq_valide_par, cq_valide_at, cq_en_cours, cq_commentaire,
-      cq_pris_par, cq_pris_at,
-      client:clients!livraisons_client_id_fkey(id, raison_sociale, contact_nom, contact_prenom, telephone, reference_retina, commercial_assigne, depot_logistique_id, depot_retrait_id),
+      cq_pris_par, cq_pris_at, reactivated_at,
+      client:clients!livraisons_client_id_fkey(id, raison_sociale, contact_nom, contact_prenom, telephone, reference_retina, commercial_assigne, depot_logistique_id, depot_retrait_id, velo_valide),
       depot:depots!livraisons_depot_id_fkey(id, nom)
     `, { count: 'exact' })
     .eq('statut', 'livree')
@@ -39,6 +41,8 @@ export async function GET(request: NextRequest) {
     query = query.eq('cq_en_cours', false)
   } else if (filter === 'en_cours') {
     query = query.eq('cq_en_cours', true)
+  } else if (filter === 'sav') {
+    query = query.not('reactivated_at', 'is', null)
   }
 
   // Filtre par agent (verrouillage)
@@ -165,14 +169,84 @@ export async function GET(request: NextRequest) {
     .eq('cq_valide', false)
     .eq('cq_en_cours', true)
 
+  const { count: totalSav } = await adminClient
+    .from('livraisons')
+    .select('id', { count: 'exact', head: true })
+    .eq('statut', 'livree')
+    .eq('cq_valide', false)
+    .not('reactivated_at', 'is', null)
+
+  // Compteur d'alertes : dossiers non pris depuis > 1 min
+  const oneMinAgo = new Date(Date.now() - 60 * 1000).toISOString()
+  const { count: alertsCount } = await adminClient
+    .from('livraisons')
+    .select('id', { count: 'exact', head: true })
+    .eq('statut', 'livree')
+    .eq('cq_valide', false)
+    .is('cq_pris_par', null)
+    .lt('date_livraison_effective', oneMinAgo)
+
+  // Fire-and-forget : alerter par email si dossiers > 5 min non pris
+  checkAndSendAlerts(adminClient).catch(() => {})
+
   return NextResponse.json({
     items: enrichedItems,
     agents,
     stats: {
       non_traites: totalNonTraites || 0,
       en_cours: totalEnCours || 0,
+      sav: totalSav || 0,
       total: count || 0,
     },
+    alerts_count: alertsCount || 0,
     pagination: { page, pageSize, total: count || 0 },
+  })
+}
+
+/**
+ * Fire-and-forget : envoie un email d'alerte si des dossiers CQ
+ * sont non pris depuis > 5 minutes (et pas déjà alertés).
+ */
+async function checkAndSendAlerts(adminClient: ReturnType<typeof createAdminClient>) {
+  const tenant = getTenantConfig()
+  const alertEmail = tenant.emailAlerteCQ
+  if (!alertEmail) return
+
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+
+  // Marquer les alertes AVANT d'envoyer (évite doublons multi-admin)
+  const { data: toAlert } = await adminClient
+    .from('livraisons')
+    .select('id, client:clients!livraisons_client_id_fkey(raison_sociale)')
+    .eq('statut', 'livree')
+    .eq('cq_valide', false)
+    .is('cq_pris_par', null)
+    .eq('cq_alerte_envoyee', false)
+    .lt('date_livraison_effective', fiveMinAgo)
+    .limit(20)
+
+  if (!toAlert || toAlert.length === 0) return
+
+  // Marquer immédiatement
+  await adminClient
+    .from('livraisons')
+    .update({ cq_alerte_envoyee: true })
+    .in('id', toAlert.map(l => l.id))
+
+  // Construire et envoyer l'email
+  const clientNames = toAlert.map(l => {
+    const c = l.client as any
+    return c?.raison_sociale || 'N/A'
+  })
+
+  await sendEmail({
+    to: alertEmail,
+    subject: `⚠️ ${toAlert.length} dossier(s) CQ en attente > 5 min — ${tenant.name}`,
+    html: `
+      <h2>Alerte Contrôle Qualité — ${tenant.name}</h2>
+      <p>${toAlert.length} dossier(s) livré(s) sont en attente de contrôle depuis plus de 5 minutes :</p>
+      <ul>${clientNames.map(n => `<li>${n}</li>`).join('')}</ul>
+      <p>Connectez-vous à <a href="${tenant.url}/admin/alertes">l'interface CQ</a> pour les traiter.</p>
+    `,
   })
 }

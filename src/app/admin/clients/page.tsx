@@ -32,7 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Trash2, MoreHorizontal, Navigation, Eye, Phone, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from 'lucide-react'
+import { Loader2, Search, Filter, Building2, MapPin, Send, Mail, ExternalLink, Copy, Check, RefreshCw, Trash2, MoreHorizontal, Navigation, Eye, Phone, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, Download } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
@@ -55,7 +55,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Client } from '@/lib/types/database'
 import { toast } from 'sonner'
-import { getTenantId } from '@/lib/tenants'
+import { getTenantId, getTenantConfig } from '@/lib/tenants'
+import { exportToXlsx } from '@/lib/export-xlsx'
 import { PROCESS_STATUTS, STATUT_COLORS, type ProcessStatut } from '@/lib/constants'
 import { getCommercialName, getDepartementLabel, getStaticDepartementOptions, getStaticCommercialOptions } from '@/lib/tenants/commercial'
 import { getSimpleZoneStatus, type DepotWithCoords } from '@/lib/geo/utils'
@@ -355,6 +356,26 @@ export default function AdminClientsPage() {
   // Rafraîchir les données
   const handleForceRefresh = () => {
     fetchClients(true)
+  }
+
+  // Export Excel
+  const handleExportClients = () => {
+    const tenant = getTenantConfig()
+    const today = new Date().toISOString().slice(0, 10)
+    exportToXlsx(clients, [
+      { header: 'Raison sociale', accessor: r => r.raison_sociale },
+      { header: 'Réf. Retina', accessor: r => r.reference_retina },
+      { header: 'Contact nom', accessor: r => r.contact_nom },
+      { header: 'Contact prénom', accessor: r => r.contact_prenom },
+      { header: 'Téléphone', accessor: r => r.telephone },
+      { header: 'Adresse', accessor: r => r.adresse_societe_ligne1 },
+      { header: 'CP', accessor: r => r.adresse_societe_cp },
+      { header: 'Ville', accessor: r => r.adresse_societe_ville },
+      { header: 'Dépôt', accessor: r => depots.find((d: any) => d.id === (r.depot_retrait_id || r.depot_logistique_id))?.nom },
+      { header: 'Département', accessor: r => r.departement },
+      { header: 'Nb vélos', accessor: r => r.velo_valide || r.velo_confirme || 0 },
+      { header: 'Statut', accessor: r => r.statut_commercial },
+    ], `Export-Clients-${tenant.name}-${today}.xlsx`)
   }
 
   // Reset page quand les filtres ou la recherche changent
@@ -873,6 +894,13 @@ export default function AdminClientsPage() {
         </Select>
 
         <PinFiltersButton onPin={handlePinFilters} isPinned={isPinned} />
+
+        {user?.role !== 'livreur' && (
+          <Button variant="outline" size="sm" onClick={handleExportClients} disabled={clients.length === 0}>
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
+        )}
       </div>
 
       {/* Table */}

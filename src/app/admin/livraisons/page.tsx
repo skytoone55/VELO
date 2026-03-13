@@ -16,13 +16,21 @@ import {
   Loader2, Search, Truck, MapPin, Calendar, Phone, RefreshCw,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
   Eye, X, Send, Mail, CheckCircle, ChevronDown, CalendarCheck, Copy,
+  Download, RotateCcw,
 } from 'lucide-react'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 import { getTenantId, getTenantConfig } from '@/lib/tenants'
+import { exportToXlsx } from '@/lib/export-xlsx'
 import { useAdminUser } from '@/components/admin/admin-user-provider'
 import { usePinnedFilters, PinFiltersButton } from '@/components/admin/pin-filters'
 import {
@@ -67,6 +75,7 @@ interface LivraisonRow {
     reference_retina: string | null
     monday_item_id: string | null
   } | null
+  cq_valide?: boolean
   depot: { id: string; nom: string } | null
 }
 
@@ -151,6 +160,55 @@ export default function AdminLivraisonsPage() {
   const [mailLivraisonLoading, setMailLivraisonLoading] = useState(false)
   const [bulkMessage, setBulkMessage] = useState<{ text: string; isError: boolean } | null>(null)
   const bulkMessageTimerRef = useRef<NodeJS.Timeout>(null)
+
+  // SAV reactivation
+  const [reactivateTarget, setReactivateTarget] = useState<LivraisonRow | null>(null)
+  const [reactivateComment, setReactivateComment] = useState('')
+  const [reactivateLoading, setReactivateLoading] = useState(false)
+
+  const handleReactivate = async () => {
+    if (!reactivateTarget || !reactivateComment.trim()) return
+    setReactivateLoading(true)
+    try {
+      const res = await fetch(`/api/admin/livraisons/${reactivateTarget.id}/reactivate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: reactivateComment.trim() }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Erreur')
+      }
+      toast.success('Dossier réactivé — il réapparaît dans le contrôle qualité')
+      setReactivateTarget(null)
+      setReactivateComment('')
+      fetchLivraisons()
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setReactivateLoading(false)
+    }
+  }
+
+  // Export Excel
+  const handleExport = () => {
+    const tenant = getTenantConfig()
+    const today = new Date().toISOString().slice(0, 10)
+    exportToXlsx(livraisons, [
+      { header: 'Raison sociale', accessor: r => r.client?.raison_sociale },
+      { header: 'Réf. Retina', accessor: r => r.client?.reference_retina },
+      { header: 'Contact nom', accessor: r => r.client?.contact_nom },
+      { header: 'Contact prénom', accessor: r => r.client?.contact_prenom },
+      { header: 'Téléphone', accessor: r => r.client?.telephone },
+      { header: 'Adresse', accessor: r => r.adresse_livraison_ligne1 },
+      { header: 'CP', accessor: r => r.adresse_livraison_cp },
+      { header: 'Ville', accessor: r => r.adresse_livraison_ville },
+      { header: 'Dépôt', accessor: r => r.depot?.nom },
+      { header: 'Département', accessor: r => r.client?.departement },
+      { header: 'Nb vélos', accessor: r => r.client?.velo_valide },
+      { header: 'Date', accessor: r => r.creneau_date || r.date_livraison },
+    ], `Export-Livraisons-${tenant.name}-${today}.xlsx`)
+  }
 
   const showBulkMessage = (text: string, isError = false) => {
     if (bulkMessageTimerRef.current) clearTimeout(bulkMessageTimerRef.current)
@@ -703,6 +761,13 @@ export default function AdminLivraisonsPage() {
           </Button>
         )}
         <PinFiltersButton onPin={handlePinFilters} isPinned={isPinned} />
+
+        {adminUser?.role !== 'livreur' && (
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={livraisons.length === 0}>
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
+        )}
       </div>
 
       {/* Table */}
@@ -913,6 +978,17 @@ export default function AdminLivraisonsPage() {
                           <Truck className="h-4 w-4" />
                         </Button>
                       )}
+                      {liv.statut === 'livree' && (liv as any).cq_valide && ['super_admin', 'admin'].includes(adminUser?.role || '') && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setReactivateTarget(liv); setReactivateComment('') }}
+                          title="Réactivation SAV — renvoyer en contrôle qualité"
+                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 active:scale-90 transition-all"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1018,6 +1094,36 @@ export default function AdminLivraisonsPage() {
           </Card>
         </div>
       )}
+
+      {/* Dialog réactivation SAV */}
+      <AlertDialog open={!!reactivateTarget} onOpenChange={(open) => { if (!open) setReactivateTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Réactivation SAV</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le dossier <strong>{reactivateTarget?.client?.raison_sociale}</strong> sera renvoyé en contrôle qualité.
+              Tous les checks seront remis à zéro. Cette action est tracée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            placeholder="Motif de réactivation (obligatoire)..."
+            value={reactivateComment}
+            onChange={e => setReactivateComment(e.target.value)}
+            className="min-h-[80px]"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={reactivateLoading}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleReactivate}
+              disabled={!reactivateComment.trim() || reactivateLoading}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {reactivateLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RotateCcw className="h-4 w-4 mr-2" />}
+              Confirmer la réactivation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   )

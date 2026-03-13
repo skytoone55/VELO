@@ -154,6 +154,25 @@ export function AdminNav({ user }: AdminNavProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [cqAlertsCount, setCqAlertsCount] = useState(0)
+
+  // Polling léger CQ alerts (60s) — visible sur toutes les pages sauf carte
+  useEffect(() => {
+    if (!['super_admin', 'admin'].includes(user.role)) return
+    const fetchAlerts = async () => {
+      try {
+        const res = await fetch('/api/admin/controle?filter=all&page=1&pageSize=1')
+        if (res.ok) {
+          const data = await res.json()
+          setCqAlertsCount(data.alerts_count || 0)
+        }
+      } catch {}
+    }
+    fetchAlerts()
+    const interval = setInterval(fetchAlerts, 30000)
+    return () => clearInterval(interval)
+  }, [user.role])
+
   const [settingsOpen, setSettingsOpen] = useState(
     pathname.startsWith('/admin/settings') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/depots')
     || pathname.startsWith('/admin/settings/fnuci') || pathname.startsWith('/admin/settings/naf')
@@ -335,6 +354,11 @@ export function AdminNav({ user }: AdminNavProps) {
                 >
                   <item.icon className="h-4 w-4" />
                   <span>{item.label}</span>
+                  {cqAlertsCount > 0 && item.href === '/admin/alertes' && !pathname.startsWith('/admin/map') && (
+                    <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full animate-pulse">
+                      {cqAlertsCount}
+                    </span>
+                  )}
                   {isActive && (
                     <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />
                   )}

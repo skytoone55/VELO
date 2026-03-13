@@ -132,6 +132,7 @@ export async function GET(request: NextRequest) {
         *,
         client:clients!livraisons_client_id_fkey!inner(
           id, raison_sociale, siret, email, email_beneficiaire, telephone,
+          contact_nom, contact_prenom,
           departement, adresse_societe_cp, commercial_assigne, monday_board_id,
           statut_commercial, validation_naf, type_de_zone, velo_devis, velo_valide, agence,
           reference_retina, depot_retrait_id, depot_logistique_id, monday_item_id

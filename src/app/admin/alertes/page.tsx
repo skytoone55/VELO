@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,6 +33,8 @@ import {
   ExternalLink,
   Lock,
   Unlock,
+  RefreshCw,
+  RotateCcw,
 } from 'lucide-react'
 import Link from 'next/link'
 import { CQ_CHECKS, CQ_CHECK_KEYS, type CqCheckKey } from '@/lib/constants'
@@ -59,6 +61,7 @@ interface ControleItem {
   cq_pris_par: string | null
   cq_pris_at: string | null
   cq_pris_par_nom: string | null
+  reactivated_at: string | null
   client: {
     id: string
     raison_sociale: string
@@ -67,6 +70,7 @@ interface ControleItem {
     telephone: string | null
     reference_retina: string | null
     commercial_assigne: string | null
+    velo_valide: number | null
   } | null
   depot: { id: string; nom: string } | null
   livreur: { nom: string; prenom: string } | null
@@ -81,6 +85,7 @@ interface AgentOption {
 interface Stats {
   non_traites: number
   en_cours: number
+  sav: number
   total: number
 }
 
@@ -88,7 +93,7 @@ export default function ControlePage() {
   const user = useAdminUser()
   const [items, setItems] = useState<ControleItem[]>([])
   const [agents, setAgents] = useState<AgentOption[]>([])
-  const [stats, setStats] = useState<Stats>({ non_traites: 0, en_cours: 0, total: 0 })
+  const [stats, setStats] = useState<Stats>({ non_traites: 0, en_cours: 0, sav: 0, total: 0 })
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [agentFilter, setAgentFilter] = useState('all')
@@ -102,6 +107,7 @@ export default function ControlePage() {
   const [editingComment, setEditingComment] = useState<string | null>(null)
   const [commentDraft, setCommentDraft] = useState('')
   const [savingComment, setSavingComment] = useState(false)
+  const [alertsCount, setAlertsCount] = useState(0)
 
   // Filtres figés par utilisateur
   const { loadPinned, saveFilters, hasPinned } = usePinnedFilters(user?.id, 'controle')
@@ -147,8 +153,9 @@ export default function ControlePage() {
       const data = await res.json()
       setItems(data.items || [])
       setAgents(data.agents || [])
-      setStats(data.stats || { non_traites: 0, en_cours: 0, total: 0 })
+      setStats(data.stats || { non_traites: 0, en_cours: 0, sav: 0, total: 0 })
       setTotal(data.pagination?.total || 0)
+      setAlertsCount(data.alerts_count || 0)
     } catch (err) {
       console.error('Erreur fetch controle:', err)
     } finally {
@@ -328,16 +335,23 @@ export default function ControlePage() {
 
       {/* Stats */}
       <div className="flex gap-3">
-        <div className="flex items-center gap-2 border border-red-200 bg-red-50/50 rounded-lg px-4 py-2">
-          <AlertCircle className="h-5 w-5 text-red-500" />
+        <div className="flex items-center gap-2 border border-blue-200 bg-blue-50/50 rounded-lg px-4 py-2">
+          <AlertCircle className="h-5 w-5 text-blue-500" />
           <span className="text-sm text-muted-foreground">Non traités</span>
-          <span className="text-lg font-bold text-red-700">{stats.non_traites}</span>
+          <span className="text-lg font-bold text-blue-700">{stats.non_traites}</span>
         </div>
-        <div className="flex items-center gap-2 border border-orange-200 bg-orange-50/50 rounded-lg px-4 py-2">
-          <Clock className="h-5 w-5 text-orange-500" />
+        <div className="flex items-center gap-2 border border-amber-200 bg-amber-50/50 rounded-lg px-4 py-2">
+          <Clock className="h-5 w-5 text-amber-500" />
           <span className="text-sm text-muted-foreground">En cours</span>
-          <span className="text-lg font-bold text-orange-700">{stats.en_cours}</span>
+          <span className="text-lg font-bold text-amber-700">{stats.en_cours}</span>
         </div>
+        {stats.sav > 0 && (
+          <div className="flex items-center gap-2 border border-purple-200 bg-purple-50/50 rounded-lg px-4 py-2">
+            <RotateCcw className="h-5 w-5 text-purple-500" />
+            <span className="text-sm text-muted-foreground">SAV</span>
+            <span className="text-lg font-bold text-purple-700">{stats.sav}</span>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -350,6 +364,9 @@ export default function ControlePage() {
             <SelectItem value="all">Tous ({stats.non_traites + stats.en_cours})</SelectItem>
             <SelectItem value="non_traites">Non traités ({stats.non_traites})</SelectItem>
             <SelectItem value="en_cours">En cours ({stats.en_cours})</SelectItem>
+            {stats.sav > 0 && (
+              <SelectItem value="sav">SAV ({stats.sav})</SelectItem>
+            )}
           </SelectContent>
         </Select>
 
@@ -401,6 +418,16 @@ export default function ControlePage() {
           ENEMAT Retina
         </a>
 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => fetchData()}
+          disabled={loading}
+          title="Rafraîchir"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
+
         <PinFiltersButton onPin={handlePinFilters} isPinned={isPinned} />
       </div>
 
@@ -423,14 +450,14 @@ export default function ControlePage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-center min-w-[70px]">Pris par</TableHead>
+                    <TableHead>Date livraison</TableHead>
                     <TableHead className="min-w-[180px]">Société</TableHead>
                     <TableHead>Nom / Prénom</TableHead>
                     <TableHead>Téléphone</TableHead>
                     <TableHead>Réf. Retina</TableHead>
-                    <TableHead>Date livraison</TableHead>
-                    <TableHead>Commercial</TableHead>
                     <TableHead>Dépôt</TableHead>
                     <TableHead>Livreur</TableHead>
+                    <TableHead className="text-center">Vélos</TableHead>
                     <TableHead className="text-center min-w-[50px]" title="Tout cocher / décocher">
                       <span className="text-xs leading-tight block font-semibold">Tout</span>
                     </TableHead>
@@ -497,17 +524,39 @@ export default function ControlePage() {
                           )}
                         </TableCell>
 
+                        {/* Date livraison + heure */}
+                        <TableCell>
+                          {(() => {
+                            const d = item.date_livraison_effective || item.date_livraison
+                            if (!d) return '—'
+                            const dt = new Date(d)
+                            return (
+                              <div>
+                                <div>{dt.toLocaleDateString('fr-FR')}</div>
+                                <div className="text-xs text-muted-foreground">{dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                              </div>
+                            )
+                          })()}
+                        </TableCell>
+
                         <TableCell className="font-medium">
-                          {item.client ? (
-                            <Link
-                              href={`/admin/clients/${item.client.id}`}
-                              className="text-blue-600 hover:underline"
-                            >
-                              {item.client.raison_sociale}
-                            </Link>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {item.reactivated_at && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 shrink-0">
+                                SAV
+                              </span>
+                            )}
+                            {item.client ? (
+                              <Link
+                                href={`/admin/clients/${item.client.id}`}
+                                className="text-blue-600 hover:underline"
+                              >
+                                {item.client.raison_sociale}
+                              </Link>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {item.client?.contact_prenom || item.client?.contact_nom
@@ -531,21 +580,15 @@ export default function ControlePage() {
                             </button>
                           ) : '—'}
                         </TableCell>
-                        <TableCell>
-                          {item.date_livraison_effective
-                            ? new Date(item.date_livraison_effective).toLocaleDateString('fr-FR')
-                            : item.date_livraison
-                              ? new Date(item.date_livraison).toLocaleDateString('fr-FR')
-                              : '—'}
-                        </TableCell>
-                        <TableCell>
-                          {item.client?.commercial_assigne || '—'}
-                        </TableCell>
                         <TableCell>{item.depot?.nom || '—'}</TableCell>
                         <TableCell>
                           {item.livreur
                             ? `${item.livreur.prenom} ${item.livreur.nom}`
                             : '—'}
+                        </TableCell>
+                        {/* Nb vélos */}
+                        <TableCell className="text-center">
+                          {item.client?.velo_valide || '—'}
                         </TableCell>
 
                         {/* Tout cocher */}
