@@ -15,8 +15,8 @@ import {
 } from '@/components/ui/popover'
 import {
   Loader2, ChevronLeft, ChevronRight, Calendar, Truck,
-  Send, MapPin, Bike, Clock, Search, Eye, X, Trash2, Mail,
-  Phone, Info, Pencil, Check, Users,
+  MapPin, Bike, Clock, Search, Eye, X, Trash2, Mail,
+  Phone, Info, Pencil, Check, Users, Route, ArrowRight,
 } from 'lucide-react'
 import { DELIVERY_STATUS } from '@/lib/constants'
 import Link from 'next/link'
@@ -221,19 +221,28 @@ function PlanningContent() {
   const adminUser = useAdminUser()
   const searchParams = useSearchParams()
   const initialDepotId = searchParams.get('depot_id')
+  const initialDate = searchParams.get('date')
+  const initialLivreurId = searchParams.get('livreur_id')
 
   // State
   const [depots, setDepots] = useState<DepotOption[]>([])
   const [selectedDepotId, setSelectedDepotId] = useState<string>('')
-  const [viewMode, setViewMode] = useState<ViewMode>('semaine')
-  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date())
-  const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()))
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768 ? '3jours' : 'semaine'
+  )
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    if (initialDate) { const d = new Date(initialDate + 'T00:00:00'); if (!isNaN(d.getTime())) return d }
+    return new Date()
+  })
+  const [weekStart, setWeekStart] = useState<Date>(() => {
+    if (initialDate) { const d = new Date(initialDate + 'T00:00:00'); if (!isNaN(d.getTime())) return getMonday(d) }
+    return getMonday(new Date())
+  })
   const [loading, setLoading] = useState(true)
   const [loadingData, setLoadingData] = useState(false)
   const [livraisons, setLivraisons] = useState<PlanningLivraison[]>([])
   const [clientsALivrer, setClientsALivrer] = useState<PlanningClient[]>([])
   const [depot, setDepot] = useState<DepotFull | null>(null)
-  const [sendingFormulaire, setSendingFormulaire] = useState<string | null>(null)
   const [miniCalMonth, setMiniCalMonth] = useState<Date>(() => getFirstOfMonth(new Date()))
   const [livreurs, setLivreurs] = useState<LivreurOption[]>([])
   const [selectedLivreurId, setSelectedLivreurId] = useState<string>('')
@@ -250,6 +259,7 @@ function PlanningContent() {
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false)
   const [selectedCreneau, setSelectedCreneau] = useState<SelectedCreneau | null>(null)
   const searchContainerRef = useRef<HTMLDivElement>(null)
+  const initialUrlApplied = useRef(false)
 
   // Week days array (Mon-Sun)
   const weekDays = useMemo(() => {
@@ -258,9 +268,9 @@ function PlanningContent() {
 
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart])
 
-  // Filter livraisons by selected livreur (empty string = no livreur selected, show all read-only)
+  // Filter livraisons by selected livreur (empty string or _all = show all)
   const filteredLivraisons = useMemo(() => {
-    if (!selectedLivreurId) return livraisons
+    if (!selectedLivreurId || selectedLivreurId === '_all') return livraisons
     return livraisons.filter(l => l.livreur_id === selectedLivreurId || !l.livreur_id)
   }, [livraisons, selectedLivreurId])
 
@@ -339,9 +349,19 @@ function PlanningContent() {
           .order('nom')
         const livreurList = (data || []) as LivreurOption[]
         setLivreurs(livreurList)
-        // Auto-select: si le user est livreur, sélectionner lui-même, sinon le premier
-        const selfMatch = livreurList.find(l => l.id === adminUser.id)
-        setSelectedLivreurId(selfMatch ? selfMatch.id : (livreurList.length > 0 ? livreurList[0].id : ''))
+        // Auto-select livreur
+        if (!initialUrlApplied.current && (initialDate || initialLivreurId)) {
+          // Arrivée depuis un lien (tournées intelligentes, etc.) — utiliser le livreur spécifié ou montrer tous
+          initialUrlApplied.current = true
+          if (initialLivreurId && livreurList.find(l => l.id === initialLivreurId)) {
+            setSelectedLivreurId(initialLivreurId)
+          } else {
+            setSelectedLivreurId('_all')
+          }
+        } else {
+          const selfMatch = livreurList.find(l => l.id === adminUser.id)
+          setSelectedLivreurId(selfMatch ? selfMatch.id : (livreurList.length > 0 ? livreurList[0].id : ''))
+        }
       } catch (err) {
         console.error('Erreur chargement livreurs:', err)
       }
@@ -485,7 +505,7 @@ function PlanningContent() {
 
   const handlePlaceClient = async (clientId: string) => {
     if (!selectedDepotId || !placementDate) return
-    if (!selectedLivreurId) {
+    if (!selectedLivreurId || selectedLivreurId === '_all') {
       alert('Veuillez sélectionner un livreur avant de planifier.')
       return
     }
@@ -534,7 +554,7 @@ function PlanningContent() {
       if (placementCreneau) {
         updateData.creneau_heure_debut = placementCreneau
       }
-      if (selectedLivreurId) {
+      if (selectedLivreurId && selectedLivreurId !== '_all') {
         updateData.livreur_id = selectedLivreurId
       }
 
@@ -644,31 +664,6 @@ function PlanningContent() {
     }, 0)
   }
 
-  // Send formulaire livraison
-  async function handleSendFormulaire(clientId: string) {
-    if (sendingFormulaire) return
-    setSendingFormulaire(clientId)
-    try {
-      const res = await fetch('/api/admin/clients/send-formulaire-livraison', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: clientId }),
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        alert(`Erreur : ${err.error || 'Envoi échoué'}`)
-      } else {
-        alert('Formulaire de livraison envoyé avec succès')
-        loadPlanningData()
-      }
-    } catch (err) {
-      console.error('Erreur envoi formulaire:', err)
-      alert('Erreur lors de l\'envoi')
-    } finally {
-      setSendingFormulaire(null)
-    }
-  }
-
   // Search: show dropdown of matching clients from ALL livraisons
   const handleSearchChange = (value: string) => {
     setSearchQuery(value)
@@ -769,11 +764,20 @@ function PlanningContent() {
 
   // Livraisons displayed in the créneau detail panel
   const creneauLivraisons = selectedCreneau
-    ? filteredLivraisons.filter(
-        l =>
-          l.creneau_date === selectedCreneau.date &&
-          l.creneau_heure_debut?.slice(0, 5) === selectedCreneau.heure_debut
-      )
+    ? selectedCreneau.heure_debut === '_hors_creneau'
+      ? (() => {
+          // Hors créneau: livraisons without creneau_heure_debut for that date
+          const dayLivs = filteredLivraisons.filter(l => l.creneau_date === selectedCreneau.date)
+          const assignedIds = new Set(
+            dayLivs.filter(l => l.creneau_heure_debut).map(l => l.id)
+          )
+          return dayLivs.filter(l => !assignedIds.has(l.id))
+        })()
+      : filteredLivraisons.filter(
+          l =>
+            l.creneau_date === selectedCreneau.date &&
+            l.creneau_heure_debut?.slice(0, 5) === selectedCreneau.heure_debut
+        )
     : []
 
   const creneauVelos = creneauLivraisons.reduce(
@@ -802,8 +806,9 @@ function PlanningContent() {
         </h1>
       </div>
 
-      {/* Search bar with dropdown */}
-      <div className="relative max-w-md" ref={searchContainerRef}>
+      {/* Search bar + Tournée intelligente */}
+      <div className="flex items-center gap-3">
+      <div className="relative max-w-md flex-1" ref={searchContainerRef}>
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
           placeholder="Rechercher un client dans l'agenda..."
@@ -886,6 +891,12 @@ function PlanningContent() {
           </div>
         )}
       </div>
+      <Link href="/admin/tournees-intelligentes">
+        <Button variant="outline" size="sm" className="text-purple-700 border-purple-200 bg-purple-50 hover:bg-purple-100 hover:border-purple-300 whitespace-nowrap">
+          <Route className="h-4 w-4 mr-1" /> Tournée intelligente
+        </Button>
+      </Link>
+      </div>
 
       {/* Main layout: Calendar + Créneau detail panel */}
       <div className="flex flex-col lg:flex-row gap-4">
@@ -932,12 +943,12 @@ function PlanningContent() {
                 </div>
 
                 {/* Center: Depot + Livreur selectors */}
-                <div className="flex items-start gap-10 flex-wrap justify-center">
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span className="text-xs text-muted-foreground font-medium">Dépôt</span>
+                <div className="flex items-center gap-3 flex-nowrap justify-center">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground font-medium hidden lg:inline">Dépôt</span>
                     <Select value={selectedDepotId} onValueChange={setSelectedDepotId}>
-                      <SelectTrigger className="w-56">
-                        <SelectValue placeholder="Sélectionner un dépôt" />
+                      <SelectTrigger className="w-36 lg:w-44">
+                        <SelectValue placeholder="Dépôt" />
                       </SelectTrigger>
                       <SelectContent>
                         {depots.map((d) => (
@@ -950,13 +961,14 @@ function PlanningContent() {
                   </div>
 
                   {livreurs.length > 0 && (
-                    <div className="flex flex-col items-center gap-1.5">
-                      <span className="text-xs text-muted-foreground font-medium">Livreur</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-muted-foreground font-medium hidden lg:inline">Livreur</span>
                       <Select value={selectedLivreurId} onValueChange={setSelectedLivreurId}>
-                        <SelectTrigger className="w-56">
-                          <SelectValue placeholder="Choisir un livreur" />
+                        <SelectTrigger className="w-36 lg:w-44">
+                          <SelectValue placeholder="Livreur" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="_all">Tous les livreurs</SelectItem>
                           {livreurs.map((l) => (
                             <SelectItem key={l.id} value={l.id}>
                               {l.prenom} {l.nom}
@@ -967,7 +979,7 @@ function PlanningContent() {
                     </div>
                   )}
 
-                  {livreurs.length > 0 && !selectedLivreurId && (
+                  {livreurs.length > 0 && (!selectedLivreurId || selectedLivreurId === '_all') && (
                     <span className="text-xs text-amber-600 font-medium">
                       Sélectionnez un livreur pour planifier
                     </span>
@@ -1021,7 +1033,7 @@ function PlanningContent() {
                   creneaux={depot?.creneaux || []}
                   isOpen={isDayOpen(selectedDate)}
                   isToday={isSameDay(selectedDate, today)}
-                  canAddClient={!!selectedLivreurId}
+                  canAddClient={!!selectedLivreurId && selectedLivreurId !== '_all'}
                   onAddClient={(creneauHeure) => openPlacement(formatDate(selectedDate), creneauHeure)}
                   onRemoveLivraison={handleRemoveLivraison}
                   removingLivraisonId={removingLivraisonId}
@@ -1056,7 +1068,7 @@ function PlanningContent() {
                   getVelosForDay={getVelosForDay}
                   isDayOpen={isDayOpen}
                   onDayClick={goToDay}
-                  canAddClient={!!selectedLivreurId}
+                  canAddClient={!!selectedLivreurId && selectedLivreurId !== '_all'}
                   onAddClient={(day, creneauHeure) => openPlacement(formatDate(day), creneauHeure)}
                   onRemoveLivraison={handleRemoveLivraison}
                   removingLivraisonId={removingLivraisonId}
@@ -1078,7 +1090,7 @@ function PlanningContent() {
                   getVelosForDay={getVelosForDay}
                   isDayOpen={isDayOpen}
                   onDayClick={goToDay}
-                  canAddClient={!!selectedLivreurId}
+                  canAddClient={!!selectedLivreurId && selectedLivreurId !== '_all'}
                   onAddClient={(day, creneauHeure) => openPlacement(formatDate(day), creneauHeure)}
                   onRemoveLivraison={handleRemoveLivraison}
                   removingLivraisonId={removingLivraisonId}
@@ -1107,11 +1119,18 @@ function PlanningContent() {
                         {selectedCreneauDayLabel}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5" />
-                          {selectedCreneau.heure_debut}
-                          {selectedCreneau.heure_fin ? ` – ${selectedCreneau.heure_fin}` : ''}
-                        </span>
+                        {selectedCreneau.heure_debut === '_hors_creneau' ? (
+                          <span className="text-sm text-amber-600 font-medium flex items-center gap-1">
+                            <Bike className="h-3.5 w-3.5" />
+                            Hors créneau
+                          </span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            {selectedCreneau.heure_debut}
+                            {selectedCreneau.heure_fin ? ` – ${selectedCreneau.heure_fin}` : ''}
+                          </span>
+                        )}
                         {selectedCreneau.capacite > 0 && (
                           <Badge variant="secondary" className="text-xs">
                             {creneauVelos}/{selectedCreneau.capacite} vélos
@@ -1127,23 +1146,32 @@ function PlanningContent() {
                     </button>
                   </div>
 
-                  {/* Mail planning button */}
-                  {creneauLivraisons.length > 0 && (
+                  {/* Action buttons (side by side) */}
+                  {creneauLivraisons.length > 0 && selectedCreneau.heure_debut !== '_hors_creneau' && (
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="w-full text-xs bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 shadow-sm"
+                        className="flex-1 text-xs bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 shadow-sm"
                         onClick={() => handleSendMailPlanning(creneauLivraisons.map(l => l.id))}
                         disabled={sendingMailPlanning}
                       >
                         {sendingMailPlanning ? (
-                          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                         ) : (
-                          <Mail className="h-3.5 w-3.5 mr-1.5" />
+                          <Mail className="h-3.5 w-3.5 mr-1" />
                         )}
-                        Mail planning ({creneauLivraisons.length})
+                        Mail ({creneauLivraisons.length})
                       </Button>
+                      <Link
+                        href={`/admin/tournees-intelligentes?from_creneau=1&date=${selectedCreneau.date}&capacite=${Math.max(1, selectedCreneau.capacite - creneauVelos)}&include=${creneauLivraisons.map(l => l.client_id).filter(Boolean).join(',')}&creneau_debut=${selectedCreneau.heure_debut}&creneau_fin=${selectedCreneau.heure_fin}&capacite_max=${selectedCreneau.capacite - creneauVelos}${selectedLivreurId && selectedLivreurId !== '_all' ? `&livreur_id=${selectedLivreurId}` : ''}`}
+                        className="flex-1"
+                      >
+                        <Button size="sm" variant="outline" className="w-full text-xs bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 shadow-sm">
+                          <Route className="h-3.5 w-3.5 mr-1" />
+                          Tournée
+                        </Button>
+                      </Link>
                     </div>
                   )}
                   {mailPlanningMessage && (
@@ -1152,10 +1180,61 @@ function PlanningContent() {
                     </p>
                   )}
 
+                  {/* Tout basculer buttons for hors créneau — one per créneau with capacity */}
+                  {selectedCreneau.heure_debut === '_hors_creneau' && creneauLivraisons.length > 0 && (() => {
+                    const horsVelos = creneauLivraisons.reduce((s, l) => s + (l.client?.velo_devis || 0), 0)
+                    const dayLivs = filteredLivraisons.filter(l => l.creneau_date === selectedCreneau.date)
+                    const fitCreneaux = (depot?.creneaux || []).map(c => {
+                      const slotLivs = dayLivs.filter(l => l.creneau_heure_debut?.slice(0, 5) === c.heure_debut.slice(0, 5))
+                      const slotVelos = slotLivs.reduce((s, l) => s + (l.client?.velo_devis || 0), 0)
+                      const remaining = c.capacite_velos - slotVelos
+                      return { ...c, remaining }
+                    }).filter(c => c.remaining >= horsVelos)
+                    return fitCreneaux.length > 0 ? (
+                      <div className="space-y-1">
+                        <p className="text-[11px] text-amber-700 font-medium">Tout basculer ({horsVelos} vélo{horsVelos > 1 ? 's' : ''}) :</p>
+                        <div className="flex flex-wrap gap-1">
+                          {fitCreneaux.map(tc => (
+                            <Button
+                              key={tc.heure_debut}
+                              size="sm"
+                              variant="outline"
+                              className="text-xs bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 hover:border-amber-300 shadow-sm"
+                              onClick={async () => {
+                                for (const l of creneauLivraisons) {
+                                  await fetch(`/api/admin/livraisons/${l.id}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      creneau_heure_debut: tc.heure_debut.slice(0, 5),
+                                      creneau_heure_fin: tc.heure_fin.slice(0, 5),
+                                    }),
+                                  })
+                                }
+                                setSelectedCreneau(null)
+                                setLivraisons(prev => prev.map(l => {
+                                  const match = creneauLivraisons.find(cl => cl.id === l.id)
+                                  return match ? { ...l, creneau_heure_debut: tc.heure_debut.slice(0, 5), creneau_heure_fin: tc.heure_fin.slice(0, 5) } : l
+                                }))
+                              }}
+                            >
+                              <ArrowRight className="h-3 w-3 mr-1" />
+                              {tc.heure_debut.slice(0, 5)} – {tc.heure_fin.slice(0, 5)} ({tc.remaining} dispo)
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                        Aucun créneau n&apos;a assez de capacité pour {horsVelos} vélo{horsVelos > 1 ? 's' : ''}
+                      </p>
+                    )
+                  })()}
+
                   {/* Client list */}
                   {creneauLivraisons.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-6">
-                      Aucun client dans ce créneau
+                      {selectedCreneau.heure_debut === '_hors_creneau' ? 'Aucun client hors créneau' : 'Aucun client dans ce créneau'}
                     </p>
                   ) : (
                     <div className="space-y-2">
@@ -1168,10 +1247,10 @@ function PlanningContent() {
                             className="flex items-center justify-between gap-2 p-2.5 rounded-lg border bg-white hover:bg-gray-50 transition-colors"
                           >
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium truncate">
-                                  {client?.raison_sociale || 'Client inconnu'}
-                                </p>
+                              <p className="text-sm font-medium" title={client?.raison_sociale || 'Client inconnu'}>
+                                {client?.raison_sociale || 'Client inconnu'}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
                                 <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 shrink-0 ${getStatutColor(livraison.statut)}`}>
                                   {getStatutLabel(livraison.statut)}
                                 </Badge>
@@ -1185,6 +1264,25 @@ function PlanningContent() {
                                   <span>{client.telephone}</span>
                                 )}
                               </div>
+                              {/* Move buttons for hors-créneau */}
+                              {selectedCreneau.heure_debut === '_hors_creneau' && (depot?.creneaux || []).length > 0 && (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <span className="text-[10px] text-muted-foreground mr-0.5">→</span>
+                                  {(depot?.creneaux || []).map(c => (
+                                    <MoveToCreneauButton
+                                      key={c.heure_debut}
+                                      livraisonId={livraison.id}
+                                      creneauDebut={c.heure_debut.slice(0, 5)}
+                                      creneauFin={c.heure_fin.slice(0, 5)}
+                                      onMoved={(data) => {
+                                        setLivraisons(prev => prev.map(l =>
+                                          l.id === livraison.id ? { ...l, ...data } : l
+                                        ))
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
                               {livraison.client_id && (
@@ -1255,7 +1353,7 @@ function PlanningContent() {
             <p className="text-sm text-muted-foreground mb-3">
               Date : {(() => { const [y, m, d] = placementDate.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) })()}
               {placementCreneau && <> &mdash; Créneau : <span className="font-medium text-blue-600">{placementCreneau.slice(0, 5)}</span></>}
-              {selectedLivreurId && livreurs.length > 0 && (
+              {selectedLivreurId && selectedLivreurId !== '_all' && livreurs.length > 0 && (
                 <> &mdash; Livreur : {livreurs.find(l => l.id === selectedLivreurId)?.prenom} {livreurs.find(l => l.id === selectedLivreurId)?.nom}</>
               )}
             </p>
@@ -1326,6 +1424,39 @@ function PlanningContent() {
 
 // ---------------------------------------------------------------------------
 // Livraison card sub-component
+// ---------------------------------------------------------------------------
+
+function MoveToCreneauButton({ livraisonId, creneauDebut, creneauFin, onMoved }: {
+  livraisonId: string
+  creneauDebut: string
+  creneauFin: string
+  onMoved: (data: Partial<PlanningLivraison>) => void
+}) {
+  const [moving, setMoving] = useState(false)
+  const move = async () => {
+    setMoving(true)
+    try {
+      const res = await fetch(`/api/admin/livraisons/${livraisonId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creneau_heure_debut: creneauDebut, creneau_heure_fin: creneauFin }),
+      })
+      if (res.ok) {
+        onMoved({ creneau_heure_debut: creneauDebut, creneau_heure_fin: creneauFin })
+      }
+    } finally { setMoving(false) }
+  }
+  return (
+    <button
+      onClick={move}
+      disabled={moving}
+      className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 transition-colors disabled:opacity-50"
+    >
+      {moving ? '...' : `${creneauDebut.slice(0, 5)}`}
+    </button>
+  )
+}
+
 // ---------------------------------------------------------------------------
 
 function LivraisonCard({
@@ -1727,18 +1858,33 @@ function DayView({
                       />
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onAddClient(c.heure_debut) }}
-                    disabled={isFull || !canAddClient}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                      isFull || !canAddClient
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                    title={!canAddClient ? 'Sélectionnez un livreur pour planifier' : undefined}
-                  >
-                    <span className="text-base leading-none">+</span> Ajouter
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {slotLivraisons.length > 0 && (
+                    <Link
+                      href={`/admin/tournees-intelligentes?from_creneau=1&date=${dateStr}&capacite=${Math.max(1, c.capacite_velos - slotVelos)}&include=${slotLivraisons.map(l => l.client_id).filter(Boolean).join(',')}&creneau_debut=${c.heure_debut}&creneau_fin=${c.heure_fin}&capacite_max=${c.capacite_velos - slotVelos}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-200"
+                        title="Simuler une tournée intelligente à partir de ce créneau"
+                      >
+                        <Route className="h-3.5 w-3.5" />
+                      </button>
+                    </Link>
+                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onAddClient(c.heure_debut) }}
+                      disabled={isFull || !canAddClient}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        isFull || !canAddClient
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                      title={!canAddClient ? 'Sélectionnez un livreur pour planifier' : undefined}
+                    >
+                      <span className="text-base leading-none">+</span> Ajouter
+                    </button>
+                  </div>
                 </div>
 
                 {/* Livraisons in this créneau */}
@@ -1768,7 +1914,7 @@ function DayView({
           {unassigned.length > 0 && (
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <div className="px-4 py-2 bg-gray-50 border-b flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-600">Autres (sans créneau)</span>
+                <span className="text-sm font-semibold text-gray-600">Autres (sans créneau) — {unassigned.length}</span>
                 <button
                   onClick={() => onAddClient(undefined)}
                   disabled={!canAddClient}
@@ -1784,14 +1930,29 @@ function DayView({
               </div>
               <div className="p-3 space-y-2">
                 {unassigned.map((livraison) => (
-                  <LivraisonCard
-                    key={livraison.id}
-                    livraison={livraison}
-                    expanded
-                    onRemove={onRemoveLivraison}
-                    removing={removingLivraisonId === livraison.id}
-                    onUpdate={onUpdateLivraison}
-                  />
+                  <div key={livraison.id}>
+                    <LivraisonCard
+                      livraison={livraison}
+                      expanded
+                      onRemove={onRemoveLivraison}
+                      removing={removingLivraisonId === livraison.id}
+                      onUpdate={onUpdateLivraison}
+                    />
+                    {creneaux.length > 0 && (
+                      <div className="flex items-center gap-1 mt-1 ml-2">
+                        <span className="text-[10px] text-gray-400">Déplacer →</span>
+                        {creneaux.map((c) => (
+                          <MoveToCreneauButton
+                            key={c.heure_debut}
+                            livraisonId={livraison.id}
+                            creneauDebut={c.heure_debut}
+                            creneauFin={c.heure_fin}
+                            onMoved={(data) => onUpdateLivraison?.(livraison.id, data)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -2005,18 +2166,33 @@ function WeekView({
                               <span className="text-[11px] font-semibold text-gray-700">
                                 {c.heure_debut.slice(0, 5)} – {c.heure_fin.slice(0, 5)}
                               </span>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onAddClient(day, c.heure_debut) }}
-                                disabled={isFull || !canAddClient}
-                                className={`shrink-0 w-5 h-5 rounded flex items-center justify-center text-xs font-bold transition-colors ${
-                                  isFull || !canAddClient
-                                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                                    : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                                }`}
-                                title={!canAddClient ? 'Sélectionnez un livreur pour planifier' : `Ajouter dans ${c.heure_debut.slice(0, 5)}-${c.heure_fin.slice(0, 5)}`}
-                              >
-                                +
-                              </button>
+                              <div className="flex items-center gap-1">
+                                {slotLivraisons.length > 0 && (
+                                <Link
+                                  href={`/admin/tournees-intelligentes?from_creneau=1&date=${dateStr}&capacite=${Math.max(1, c.capacite_velos - slotVelos)}&include=${slotLivraisons.map(l => l.client_id).filter(Boolean).join(',')}&creneau_debut=${c.heure_debut}&creneau_fin=${c.heure_fin}&capacite_max=${c.capacite_velos - slotVelos}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div
+                                    className="shrink-0 w-5 h-5 rounded flex items-center justify-center transition-colors bg-purple-100 text-purple-600 hover:bg-purple-200"
+                                    title="Tournée intelligente"
+                                  >
+                                    <Route className="h-3 w-3" />
+                                  </div>
+                                </Link>
+                                )}
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onAddClient(day, c.heure_debut) }}
+                                  disabled={isFull || !canAddClient}
+                                  className={`shrink-0 w-5 h-5 rounded flex items-center justify-center text-xs font-bold transition-colors ${
+                                    isFull || !canAddClient
+                                      ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                      : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                                  }`}
+                                  title={!canAddClient ? 'Sélectionnez un livreur pour planifier' : `Ajouter dans ${c.heure_debut.slice(0, 5)}-${c.heure_fin.slice(0, 5)}`}
+                                >
+                                  +
+                                </button>
+                              </div>
                             </div>
                             {/* Stats */}
                             {(() => {
@@ -2060,16 +2236,34 @@ function WeekView({
                       )
                     })}
 
-                    {/* Livraisons non assignées — compteur simple */}
+                    {/* Livraisons non assignées — liste détaillée */}
                     {(() => {
                       const assignedIds = new Set(
                         creneaux.flatMap((c) => getLivraisonsForCreneau(c).map((l) => l.id))
                       )
                       const unassigned = dayLivraisons.filter((l) => !assignedIds.has(l.id))
+                      const isHorsSelected = selectedCreneau?.date === dateStr && selectedCreneau?.heure_debut === '_hors_creneau'
                       return unassigned.length > 0 ? (
-                        <div className="rounded-lg border border-amber-200 bg-amber-50/50 px-1.5 py-1 flex items-center gap-1.5">
-                          <Bike className="h-3 w-3 text-amber-600" />
-                          <span className="text-[10px] text-amber-700">{unassigned.length} hors créneau</span>
+                        <div
+                          onClick={() => onSelectCreneau(dateStr, '_hors_creneau', '', 0)}
+                          className={`rounded-lg border overflow-hidden cursor-pointer transition-all ${
+                            isHorsSelected
+                              ? 'border-amber-500 ring-1 ring-amber-300 bg-amber-50'
+                              : 'border-amber-200 bg-amber-50/50 hover:border-amber-300'
+                          } px-1.5 py-1 space-y-0.5`}
+                        >
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <Bike className="h-3 w-3 text-amber-600" />
+                            <span className="text-[10px] font-medium text-amber-700">{unassigned.length} hors créneau</span>
+                          </div>
+                          {unassigned.map((l) => {
+                            const client = l.client
+                            return (
+                              <div key={l.id} className="text-[10px] text-amber-800 truncate pl-4" title={client?.raison_sociale || ''}>
+                                {client?.raison_sociale || 'Client'}
+                              </div>
+                            )
+                          })}
                         </div>
                       ) : null
                     })()}
