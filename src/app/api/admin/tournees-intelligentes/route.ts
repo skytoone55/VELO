@@ -15,7 +15,7 @@ const CLIENT_SELECT = `
   id, raison_sociale, latitude, longitude, departement,
   adresse_livraison_ville, adresse_livraison_ligne1, adresse_livraison_cp,
   velo_devis, velo_valide, statut_commercial, telephone, email,
-  depot_logistique_id
+  depot_logistique_id, validation_naf
 `
 
 /**
@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
         .select('departement')
         .not('departement', 'is', null)
         .not('departement', 'eq', '')
+        .eq('validation_naf', 'OUI')
 
       if (statuts.length > 0) q = q.in('statut_commercial', statuts)
 
@@ -66,6 +67,7 @@ export async function GET(request: NextRequest) {
         .from('clients')
         .select('adresse_livraison_cp')
         .like('adresse_livraison_cp', `${prefix}%`)
+        .eq('validation_naf', 'OUI')
 
       if (statuts.length > 0) q = q.in('statut_commercial', statuts)
 
@@ -114,6 +116,7 @@ export async function GET(request: NextRequest) {
         .select(CLIENT_SELECT)
         .or(`raison_sociale.ilike.%${search}%,siret.ilike.%${search}%,email.ilike.%${search}%`)
         .not('latitude', 'is', null)
+        .eq('validation_naf', 'OUI')
 
       if (statuts.length > 0) q = q.in('statut_commercial', statuts)
 
@@ -154,6 +157,7 @@ export async function GET(request: NextRequest) {
       .not('latitude', 'is', null)
       .not('longitude', 'is', null)
       .in('statut_commercial', statuts)
+      .eq('validation_naf', 'OUI')
 
     // Exclure les clients en retrait (sans dépôt logistique) — pas de livraison = pas de tournée
     query = query.not('depot_logistique_id', 'is', null)
@@ -179,6 +183,7 @@ export async function GET(request: NextRequest) {
         .in('id', includeIds)
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
+        .eq('validation_naf', 'OUI')
 
       if (creneauError || !creneauClients?.length) {
         return NextResponse.json({ error: 'Clients du créneau introuvables' }, { status: 400 })
@@ -225,6 +230,7 @@ export async function GET(request: NextRequest) {
         .from('clients')
         .select(CLIENT_SELECT)
         .eq('id', value!)
+        .eq('validation_naf', 'OUI')
         .single()
 
       if (refError || !refClient || !refClient.latitude || !refClient.longitude) {
@@ -261,6 +267,7 @@ export async function GET(request: NextRequest) {
         .or('latitude.is.null,longitude.is.null')
         .not('adresse_livraison_cp', 'is', null)
         .in('statut_commercial', statuts)
+        .eq('validation_naf', 'OUI')
 
       if (method === 'departement') sansGPSQuery = sansGPSQuery.eq('departement', value)
       if (depotId) sansGPSQuery = sansGPSQuery.eq('depot_logistique_id', depotId)
