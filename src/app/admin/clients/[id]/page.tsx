@@ -198,6 +198,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   // FNUCI (PPE only)
   const [fnuciRecords, setFnuciRecords] = useState<Array<{ id: string; numero: number; reference: string; statut: string; attribue_at: string | null }>>([])
   const [livreurNom, setLivreurNom] = useState<string | null>(null)
+  const [enematHistory, setEnematHistory] = useState<any[]>([])
   const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
 
   // Zone calculée à partir de la distance au dépôt
@@ -253,6 +254,40 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               .eq('id', livraisonLivree.livreur_id)
               .single()
             if (livreur) setLivreurNom(`${livreur.prenom || ''} ${livreur.nom || ''}`.trim())
+          } catch {
+            // Non-blocking
+          }
+        }
+
+        // Fetch ENEMAT history (toujours, même si le client n'est plus dans ENEMAT)
+        if (data.client?.id) {
+          try {
+            const supabase = createClient()
+            const { data: history } = await supabase
+              .from('enemat_history')
+              .select('id, statut_avant, statut_apres, changed_by, changed_at, notes')
+              .eq('client_id', data.client.id)
+              .order('changed_at', { ascending: false })
+              .limit(20)
+
+            if (history && history.length > 0) {
+              // Fetch user names for changed_by
+              const userIds = [...new Set(history.filter(h => h.changed_by).map(h => h.changed_by!))]
+              let userNames: Record<string, string> = {}
+              if (userIds.length > 0) {
+                const { data: users } = await supabase
+                  .from('users_profile')
+                  .select('id, nom, prenom')
+                  .in('id', userIds)
+                if (users) {
+                  userNames = Object.fromEntries(users.map(u => [u.id, `${u.prenom || ''} ${u.nom || ''}`.trim()]))
+                }
+              }
+              setEnematHistory(history.map(h => ({
+                ...h,
+                changed_by_name: h.changed_by ? userNames[h.changed_by] || null : null,
+              })))
+            }
           } catch {
             // Non-blocking
           }
@@ -1407,6 +1442,77 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </CardContent>
         </Card>
+
+        {/* ENEMAT — visible si in_enemat ou si historique ENEMAT existe */}
+        {(client.in_enemat || enematHistory.length > 0) && (
+          <Card className="lg:col-span-2 shadow-sm border-2 border-violet-200">
+            <CardContent className="px-4 py-3">
+              <div className="flex items-center gap-3 mb-3">
+                <FileText className="h-5 w-5 text-violet-600" />
+                <h3 className="font-semibold text-foreground">ENEMAT</h3>
+                <Badge className={
+                  client.statut_enemat === 'a_deposer_enemat' ? 'bg-amber-100 text-amber-800' :
+                  client.statut_enemat === 'depose_enemat' ? 'bg-blue-100 text-blue-800' :
+                  client.statut_enemat === 'apf_enemat' ? 'bg-indigo-100 text-indigo-800' :
+                  client.statut_enemat === 'paye_enemat' ? 'bg-green-100 text-green-800' :
+                  'bg-gray-100 text-gray-600'
+                }>
+                  {client.statut_enemat === 'a_deposer_enemat' ? 'A deposer' :
+                   client.statut_enemat === 'depose_enemat' ? 'Depose' :
+                   client.statut_enemat === 'apf_enemat' ? 'APF' :
+                   client.statut_enemat === 'paye_enemat' ? 'Paye' :
+                   client.statut_enemat || '-'}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+                {client.date_entree_enemat && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Entree ENEMAT</span>
+                    <span className="font-medium">{new Date(client.date_entree_enemat).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                )}
+                {client.date_depot_enemat && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Depot</span>
+                    <span className="font-medium">{new Date(client.date_depot_enemat).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                )}
+                {client.date_apf_enemat && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">APF</span>
+                    <span className="font-medium">{new Date(client.date_apf_enemat).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                )}
+                {client.date_paye_enemat && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Paye</span>
+                    <span className="font-medium">{new Date(client.date_paye_enemat).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                )}
+              </div>
+              {/* Historique ENEMAT */}
+              {enematHistory.length > 0 && (
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-xs text-muted-foreground mb-2 font-medium">Historique des changements</p>
+                  <div className="space-y-1">
+                    {enematHistory.map((h: any) => (
+                      <div key={h.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{new Date(h.changed_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="text-foreground font-medium">
+                          {h.statut_avant || '(nouveau)'} &rarr; {h.statut_apres}
+                        </span>
+                        {h.changed_by_name && (
+                          <span>par {h.changed_by_name}</span>
+                        )}
+                        {h.notes && <span className="italic">{h.notes}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Dialog de confirmation suppression document */}

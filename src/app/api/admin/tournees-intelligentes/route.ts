@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
       let q = supabase
         .from('clients')
         .select(CLIENT_SELECT)
-        .or(`raison_sociale.ilike.%${search}%,siret.ilike.%${search}%,email.ilike.%${search}%`)
+        .or(`raison_sociale.ilike.%${search}%,siret.ilike.%${search}%,reference_retina.ilike.%${search}%,telephone.ilike.%${search}%,email.ilike.%${search}%`)
         .not('latitude', 'is', null)
         .eq('validation_naf', 'OUI')
 
@@ -373,7 +373,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireRole(['super_admin', 'admin'])
+    const auth = await requireRole(['super_admin', 'admin', 'agent_secteur'])
     if (isAuthError(auth)) return auth
 
     const supabase = createAdminClient()

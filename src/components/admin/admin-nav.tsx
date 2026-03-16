@@ -21,6 +21,7 @@ import {
   LogIn,
   Tag,
   ClipboardCheck,
+  FileCheck,
   Webhook,
   BookOpen,
   GraduationCap,
@@ -84,6 +85,12 @@ const adminNavItems: NavItem[] = [
     label: 'Contrôle',
     icon: ClipboardCheck,
     roles: ['super_admin', 'admin'],
+  },
+  {
+    href: '/admin/enemat',
+    label: 'ENEMAT',
+    icon: FileCheck,
+    roles: ['super_admin'],
   },
   {
     href: '/admin/settings',

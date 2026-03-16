@@ -16,7 +16,7 @@ import {
   Loader2, Search, Truck, MapPin, Calendar, Phone, RefreshCw,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
   Eye, X, Send, Mail, CheckCircle, ChevronDown, CalendarCheck, Copy,
-  Download, RotateCcw,
+  Download, RotateCcw, FileCheck,
 } from 'lucide-react'
 import {
   Popover,
@@ -74,6 +74,7 @@ interface LivraisonRow {
     depot_logistique_id: string | null
     reference_retina: string | null
     monday_item_id: string | null
+    in_enemat?: boolean
   } | null
   cq_valide?: boolean
   depot: { id: string; nom: string } | null
@@ -501,6 +502,24 @@ export default function AdminLivraisonsPage() {
           showBulkMessage('Erreur lors de l\'envoi des mails planning', true)
         }
       }
+      if (action === 'enter_enemat') {
+        try {
+          const res = await fetch('/api/admin/enemat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_ids: clientIds }),
+          })
+          if (!res.ok) {
+            const err = await res.json()
+            showBulkMessage(err.error || 'Erreur', true)
+          } else {
+            const data = await res.json()
+            showBulkMessage(`${data.count} client${data.count > 1 ? 's' : ''} bascule${data.count > 1 ? 's' : ''} vers ENEMAT`)
+          }
+        } catch {
+          showBulkMessage('Erreur lors du basculement ENEMAT', true)
+        }
+      }
       if (action !== 'send_formulaire_retrait' && action !== 'send_mail_livraison') {
         setSelectedLivraisons(new Set())
         fetchLivraisons()
@@ -922,12 +941,13 @@ export default function AdminLivraisonsPage() {
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1.5">
-                          {(liv as any).cq_valide && (
+                          {liv.client?.in_enemat ? (
+                            <span className="inline-block w-2.5 h-2.5 rounded-full bg-violet-500 shrink-0" title="ENEMAT" />
+                          ) : (liv as any).cq_valide ? (
                             <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" title="Contrôle qualité validé" />
-                          )}
-                          {!(liv as any).cq_valide && (liv as any).cq_en_cours && (
+                          ) : (liv as any).cq_en_cours ? (
                             <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 animate-pulse" title="Contrôle en cours — à finaliser" />
-                          )}
+                          ) : null}
                           <Badge className={statutColors[liv.statut || 'a_livrer']}>
                             {statutLabels[liv.statut || 'a_livrer'] || liv.statut}
                           </Badge>
@@ -1085,6 +1105,22 @@ export default function AdminLivraisonsPage() {
                   Mail planning
                 </Button>
               </div>
+              {adminUser?.role === 'super_admin' && (() => {
+                const selectedLivs = livraisons.filter(l => selectedLivraisons.has(l.id))
+                const allCQValide = selectedLivs.length > 0 && selectedLivs.every(l => (l as any).cq_valide === true)
+                return allCQValide ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleBulkAction('enter_enemat')}
+                    disabled={bulkActionLoading}
+                    className="text-violet-700 hover:text-violet-800 hover:bg-violet-50 border-violet-300"
+                  >
+                    <FileCheck className="h-4 w-4 mr-2" />
+                    Basculer vers ENEMAT
+                  </Button>
+                ) : null
+              })()}
               {bulkMessage && (
                 <span className={`text-xs font-medium px-2 py-1 rounded ${bulkMessage.isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                   {bulkMessage.text}

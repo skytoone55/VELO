@@ -549,14 +549,19 @@ export default function ControlePage() {
                               </span>
                             )}
                             {item.client ? (
-                              <a
-                                href={`/admin/clients/${item.client.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline"
-                              >
-                                {item.client.raison_sociale}
-                              </a>
+                              <div className="flex items-center gap-1.5">
+                                <a
+                                  href={`/admin/clients/${item.client.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {item.client.raison_sociale}
+                                </a>
+                                {(item.client as any).in_enemat && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-700">ENEMAT</span>
+                                )}
+                              </div>
                             ) : (
                               <span className="text-muted-foreground">—</span>
                             )}

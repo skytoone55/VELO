@@ -128,6 +128,12 @@ export type Database = {
           bypass_formulaire: boolean
           bypass_formulaire_par: string | null
           bypass_formulaire_at: string | null
+          in_enemat: boolean
+          statut_enemat: string | null
+          date_depot_enemat: string | null
+          date_apf_enemat: string | null
+          date_paye_enemat: string | null
+          date_entree_enemat: string | null
         }
         Insert: {
           adresse_livraison_cp?: string | null
@@ -206,6 +212,12 @@ export type Database = {
           bypass_formulaire?: boolean
           bypass_formulaire_par?: string | null
           bypass_formulaire_at?: string | null
+          in_enemat?: boolean
+          statut_enemat?: string | null
+          date_depot_enemat?: string | null
+          date_apf_enemat?: string | null
+          date_paye_enemat?: string | null
+          date_entree_enemat?: string | null
         }
         Update: {
           adresse_livraison_cp?: string | null
@@ -284,6 +296,12 @@ export type Database = {
           bypass_formulaire?: boolean
           bypass_formulaire_par?: string | null
           bypass_formulaire_at?: string | null
+          in_enemat?: boolean
+          statut_enemat?: string | null
+          date_depot_enemat?: string | null
+          date_apf_enemat?: string | null
+          date_paye_enemat?: string | null
+          date_entree_enemat?: string | null
         }
         Relationships: []
       }
@@ -902,6 +920,51 @@ export type Database = {
         }
         Relationships: []
       }
+      enemat_history: {
+        Row: {
+          id: string
+          client_id: string
+          statut_avant: string | null
+          statut_apres: string
+          changed_by: string | null
+          changed_at: string
+          notes: string | null
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          statut_avant?: string | null
+          statut_apres: string
+          changed_by?: string | null
+          changed_at?: string
+          notes?: string | null
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          statut_avant?: string | null
+          statut_apres?: string
+          changed_by?: string | null
+          changed_at?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enemat_history_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enemat_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monday_boards: {
         Row: {
           id: string
@@ -988,6 +1051,9 @@ export type NafCode = Tables<'naf_codes'>
 export type Tournee = Tables<'tournees'>
 export type LivreurAgent = Tables<'livreur_agents'>
 export type MondayBoard = Tables<'monday_boards'>
+export type EnematHistory = Tables<'enemat_history'>
+export type EnematHistoryInsert = TablesInsert<'enemat_history'>
+export type EnematHistoryUpdate = TablesUpdate<'enemat_history'>
 
 // Role types
 export type UserRole =

@@ -26,30 +26,46 @@ export async function GET(request: Request) {
     // Utiliser le client admin pour bypasser RLS
     const adminClient = createAdminClient()
 
-    let query = adminClient
-      .from('clients')
-      .select('*, livraisons(cq_valide)')
-      .order('created_at', { ascending: false })
+    // Pagination pour récupérer TOUS les clients (Supabase limite à 1000 par requête)
+    const allClients: any[] = []
+    const PAGE_SIZE = 1000
+    let offset = 0
+    let hasMore = true
 
-    // Filtrer par territoire (admin regional) ou depots (agent_secteur)
-    if (profile.role === 'admin' && profile.territoire && profile.territoire !== 'FR') {
-      query = query.eq('departement', profile.territoire)
-    } else if (profile.role === 'agent_secteur') {
-      if (!profile.depot_ids?.length) {
-        // Agent sans dépôt assigné = aucun client visible
-        return NextResponse.json({ clients: [] })
+    while (hasMore) {
+      let query = adminClient
+        .from('clients')
+        .select('*, livraisons(cq_valide)')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + PAGE_SIZE - 1)
+
+      // Filtrer par territoire (admin regional) ou depots (agent_secteur)
+      if (profile.role === 'admin' && profile.territoire && profile.territoire !== 'FR') {
+        query = query.eq('departement', profile.territoire)
+      } else if (profile.role === 'agent_secteur') {
+        if (!profile.depot_ids?.length) {
+          return NextResponse.json({ clients: [] })
+        }
+        query = query.or(`depot_retrait_id.in.(${profile.depot_ids.join(',')}),depot_logistique_id.in.(${profile.depot_ids.join(',')})`)
       }
-      query = query.or(`depot_retrait_id.in.(${profile.depot_ids.join(',')}),depot_logistique_id.in.(${profile.depot_ids.join(',')})`)
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('Erreur Supabase:', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      if (data && data.length > 0) {
+        allClients.push(...data)
+        offset += PAGE_SIZE
+        hasMore = data.length === PAGE_SIZE
+      } else {
+        hasMore = false
+      }
     }
 
-    const { data, error } = await query
-
-    if (error) {
-      console.error('Erreur Supabase:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ clients: data || [] })
+    return NextResponse.json({ clients: allClients })
   } catch (error: any) {
     console.error('Erreur API:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })

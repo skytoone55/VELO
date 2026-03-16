@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
         `siret.ilike.%${search}%,` +
         `email.ilike.%${search}%,` +
         `reference_dossier.ilike.%${search}%,` +
+        `reference_retina.ilike.%${search}%,` +
         `telephone.ilike.%${search}%`
       )
     }
@@ -204,6 +205,7 @@ export async function GET(request: NextRequest) {
         `siret.ilike.%${search}%,` +
         `email.ilike.%${search}%,` +
         `reference_dossier.ilike.%${search}%,` +
+        `reference_retina.ilike.%${search}%,` +
         `telephone.ilike.%${search}%`
       )
     }

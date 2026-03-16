@@ -210,6 +210,29 @@ export type CqCheckKey = keyof typeof CQ_CHECKS
 export const CQ_CHECK_KEYS = Object.keys(CQ_CHECKS) as CqCheckKey[]
 
 // =================================================================
+// STATUTS ENEMAT (module suivi post-livraison)
+// =================================================================
+export const ENEMAT_STATUTS = {
+  a_deposer_enemat: 'À déposer',
+  depose_enemat: 'Déposé',
+  apf_enemat: 'APF reçu',
+  paye_enemat: 'Payé',
+} as const
+
+export type EnematStatut = keyof typeof ENEMAT_STATUTS
+
+// Couleurs par statut ENEMAT (pour badges)
+export const ENEMAT_STATUT_COLORS: Record<EnematStatut, string> = {
+  a_deposer_enemat: 'bg-amber-100 text-amber-800',
+  depose_enemat: 'bg-blue-100 text-blue-800',
+  apf_enemat: 'bg-indigo-100 text-indigo-800',
+  paye_enemat: 'bg-green-100 text-green-800',
+}
+
+// Pastille ENEMAT (pour la page livraisons — quand in_enemat = true)
+export const ENEMAT_BADGE_COLOR = 'bg-violet-100 text-violet-800'
+
+// =================================================================
 // VALIDATION HELPERS
 // =================================================================
 

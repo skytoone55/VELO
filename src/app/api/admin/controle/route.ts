@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       cq_signature_client, cq_fnuci, cq_velo,
       cq_valide, cq_valide_par, cq_valide_at, cq_en_cours, cq_commentaire,
       cq_pris_par, cq_pris_at, reactivated_at,
-      client:clients!livraisons_client_id_fkey(id, raison_sociale, contact_nom, contact_prenom, telephone, reference_retina, commercial_assigne, depot_logistique_id, depot_retrait_id, velo_valide, fnuci_ids),
+      client:clients!livraisons_client_id_fkey(id, raison_sociale, contact_nom, contact_prenom, telephone, reference_retina, commercial_assigne, depot_logistique_id, depot_retrait_id, velo_valide, fnuci_ids, in_enemat),
       depot:depots!livraisons_depot_id_fkey(id, nom)
     `, { count: 'exact' })
     .eq('statut', 'livree')
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     const { data: matchingClients } = await adminClient
       .from('clients')
       .select('id')
-      .or(`raison_sociale.ilike.%${search}%,reference_retina.ilike.%${search}%,telephone.ilike.%${search}%`)
+      .or(`raison_sociale.ilike.%${search}%,siret.ilike.%${search}%,reference_retina.ilike.%${search}%,telephone.ilike.%${search}%,email.ilike.%${search}%`)
     const matchingIds = matchingClients?.map(c => c.id) || []
     if (matchingIds.length === 0) {
       return NextResponse.json({
@@ -78,7 +78,9 @@ export async function GET(request: NextRequest) {
   // Pagination + order
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
-  query = query.order('date_livraison_effective', { ascending: false, nullsFirst: false })
+  query = query
+    .order('reactivated_at', { ascending: false, nullsFirst: false })
+    .order('date_livraison_effective', { ascending: false, nullsFirst: false })
     .range(from, to)
 
   const { data: items, error, count } = await query
