@@ -243,12 +243,12 @@ async function checkAndSendAlerts(adminClient: ReturnType<typeof createAdminClie
 
   await sendEmail({
     to: alertEmail,
-    subject: `⚠️ ${toAlert.length} dossier(s) CQ en attente > 5 min — ${tenant.name}`,
+    subject: `\u26a0\ufe0f ${toAlert.length} dossier(s) CQ en attente > 5 min \u2014 ${tenant.name}`,
     html: `
-      <h2>Alerte Contrôle Qualité — ${tenant.name}</h2>
-      <p>${toAlert.length} dossier(s) livré(s) sont en attente de contrôle depuis plus de 5 minutes :</p>
+      <h2>Alerte Contr\u00f4le Qualit\u00e9 \u2014 ${tenant.name}</h2>
+      <p>${toAlert.length} dossier(s) livr\u00e9(s) sont en attente de contr\u00f4le depuis plus de 5 minutes :</p>
       <ul>${clientNames.map(n => `<li>${n}</li>`).join('')}</ul>
-      <p>Connectez-vous à <a href="${tenant.url}/admin/alertes">l'interface CQ</a> pour les traiter.</p>
+      <p>Connectez-vous \u00e0 <a href="${tenant.url}/admin/alertes">l'interface CQ</a> pour les traiter.</p>
     `,
   })
 }
