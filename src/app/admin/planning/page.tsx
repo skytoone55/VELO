@@ -660,7 +660,7 @@ function PlanningContent() {
   function getVelosForDay(day: Date): number {
     const dayLivraisons = getLivraisonsForDay(day)
     return dayLivraisons.reduce((total, l) => {
-      return total + (l.client?.velo_devis || 0)
+      return total + (l.client?.velo_valide || l.client?.velo_devis || 0)
     }, 0)
   }
 
@@ -781,7 +781,7 @@ function PlanningContent() {
     : []
 
   const creneauVelos = creneauLivraisons.reduce(
-    (sum, l) => sum + (l.client?.velo_devis || 0),
+    (sum, l) => sum + (l.client?.velo_valide || l.client?.velo_devis || 0),
     0
   )
 
@@ -1182,11 +1182,11 @@ function PlanningContent() {
 
                   {/* Tout basculer buttons for hors créneau — one per créneau with capacity */}
                   {selectedCreneau.heure_debut === '_hors_creneau' && creneauLivraisons.length > 0 && (() => {
-                    const horsVelos = creneauLivraisons.reduce((s, l) => s + (l.client?.velo_devis || 0), 0)
+                    const horsVelos = creneauLivraisons.reduce((s, l) => s + (l.client?.velo_valide || l.client?.velo_devis || 0), 0)
                     const dayLivs = filteredLivraisons.filter(l => l.creneau_date === selectedCreneau.date)
                     const fitCreneaux = (depot?.creneaux || []).map(c => {
                       const slotLivs = dayLivs.filter(l => l.creneau_heure_debut?.slice(0, 5) === c.heure_debut.slice(0, 5))
-                      const slotVelos = slotLivs.reduce((s, l) => s + (l.client?.velo_devis || 0), 0)
+                      const slotVelos = slotLivs.reduce((s, l) => s + (l.client?.velo_valide || l.client?.velo_devis || 0), 0)
                       const remaining = c.capacite_velos - slotVelos
                       return { ...c, remaining }
                     }).filter(c => c.remaining >= horsVelos)
@@ -1240,7 +1240,7 @@ function PlanningContent() {
                     <div className="space-y-2">
                       {creneauLivraisons.map((livraison) => {
                         const client = livraison.client
-                        const nbVelos = client?.velo_devis || 0
+                        const nbVelos = client?.velo_valide || client?.velo_devis || 0
                         return (
                           <div
                             key={livraison.id}
@@ -1404,7 +1404,7 @@ function PlanningContent() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {client.velo_devis || client.velo_valide || '?'} vélo(s)
+                        {client.velo_valide || client.velo_devis || '?'} vélo(s)
                         {client.adresse_livraison_ville && ` — ${client.adresse_livraison_cp} ${client.adresse_livraison_ville}`}
                       </p>
                     </button>
@@ -1473,7 +1473,7 @@ function LivraisonCard({
   onUpdate?: (id: string, data: Partial<PlanningLivraison>) => void
 }) {
   const clientName = livraison.client?.raison_sociale || 'Client inconnu'
-  const nbVelos = livraison.client?.velo_devis || 0
+  const nbVelos = livraison.client?.velo_valide || livraison.client?.velo_devis || 0
   const heureDebut = livraison.creneau_heure_debut
     ? livraison.creneau_heure_debut.slice(0, 5)
     : null
@@ -1812,7 +1812,7 @@ function DayView({
         <div className="space-y-3">
           {creneaux.map((c) => {
             const slotLivraisons = getLivraisonsForCreneau(c)
-            const slotVelos = slotLivraisons.reduce((sum, l) => sum + (l.client?.velo_devis || 0), 0)
+            const slotVelos = slotLivraisons.reduce((sum, l) => sum + (l.client?.velo_valide || l.client?.velo_devis || 0), 0)
             const slotRatio = c.capacite_velos > 0 ? slotVelos / c.capacite_velos : 0
             const isFull = slotVelos >= c.capacite_velos
             const isSelected =
@@ -2138,7 +2138,7 @@ function WeekView({
                   <div className="flex-1 p-1.5 space-y-1.5 overflow-y-auto">
                     {creneaux.map((c) => {
                       const slotLivraisons = getLivraisonsForCreneau(c)
-                      const slotVelos = slotLivraisons.reduce((sum, l) => sum + (l.client?.velo_devis || 0), 0)
+                      const slotVelos = slotLivraisons.reduce((sum, l) => sum + (l.client?.velo_valide || l.client?.velo_devis || 0), 0)
                       const slotRatio = c.capacite_velos > 0 ? slotVelos / c.capacite_velos : 0
                       const isFull = slotVelos >= c.capacite_velos
                       const isSelected =
