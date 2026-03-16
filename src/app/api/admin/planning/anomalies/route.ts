@@ -99,7 +99,7 @@ export async function POST() {
       )
     }
 
-    // Build a map: client_id → livraison (oldest without creneau)
+    // Build a map: client_id \u2192 livraison (oldest without creneau)
     const livraisonByClient = new Map<
       string,
       { id: string; created_at: string; depot_id: string | null }
@@ -150,7 +150,7 @@ export async function POST() {
 
     for (const client of clients) {
       const livraison = livraisonByClient.get(client.id)
-      if (!livraison) continue // No livraison without creneau → skip
+      if (!livraison) continue // No livraison without creneau \u2192 skip
 
       const createdAt = new Date(livraison.created_at)
       const depotId = livraison.depot_id ?? client.depot_logistique_id
@@ -172,7 +172,7 @@ export async function POST() {
       return NextResponse.json({
         count: 0,
         clients: [],
-        message: 'Aucune anomalie J+10 détectée',
+        message: 'Aucune anomalie J+10 d\u00e9tect\u00e9e',
       })
     }
 
@@ -182,19 +182,30 @@ export async function POST() {
       .from('clients')
       .update({
         statut_commercial: 'anomalie',
-        statut_anomalie: `Anomalie J+10 : livraison non programmée depuis plus de 10 jours ouvrés (détecté le ${now.toISOString().split('T')[0]})`,
+        statut_anomalie: `Anomalie J+10 : livraison non programm\u00e9e depuis plus de 10 jours ouvr\u00e9s (d\u00e9tect\u00e9 le ${now.toISOString().split('T')[0]})`,
         date_statut: now.toISOString(),
         updated_at: now.toISOString(),
       })
       .in('id', anomalyIds)
 
     if (updateError) {
-      console.error('Erreur mise à jour anomalies:', updateError)
+      console.error('Erreur mise \u00e0 jour anomalies:', updateError)
       return NextResponse.json(
-        { error: 'Erreur lors de la mise à jour des anomalies' },
+        { error: 'Erreur lors de la mise \u00e0 jour des anomalies' },
         { status: 500 }
       )
     }
+
+    // Sync statut client \u2194 livraison
+    // Reset livraisons to 'a_livrer' \u2014 anomalie = on repart de z\u00e9ro
+    await adminClient
+      .from('livraisons')
+      .update({
+        statut: 'a_livrer',
+        updated_at: now.toISOString(),
+      })
+      .in('client_id', anomalyIds)
+      .not('statut', 'in', '("annulee","retractation")')
 
     // 6. Log in audit_log
     const auditEntries = anomalies.map((a) => ({
@@ -222,7 +233,7 @@ export async function POST() {
     return NextResponse.json({
       count: anomalies.length,
       clients: anomalies.map((a) => a.raison_sociale),
-      message: `${anomalies.length} client(s) passé(s) en anomalie`,
+      message: `${anomalies.length} client(s) pass\u00e9(s) en anomalie`,
     })
   } catch (error) {
     console.error('Erreur POST /api/admin/planning/anomalies:', error)
