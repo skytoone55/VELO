@@ -14,6 +14,7 @@ interface DeliverBody {
   signature_base64: string
   photo_identite_base64?: string
   attestation_pdf_base64?: string
+  attestation_pdf_url?: string
   notes?: string
 }
 
@@ -32,7 +33,7 @@ export async function POST(
 
     const { id: livraisonId } = await params
     const body: DeliverBody = await request.json()
-    const { fnuci_codes, checklist, signature_base64, photo_identite_base64, attestation_pdf_base64, notes } = body
+    const { fnuci_codes, checklist, signature_base64, photo_identite_base64, attestation_pdf_base64, attestation_pdf_url: clientPdfUrl, notes } = body
 
     // --- Validations de base ---
     if (!fnuci_codes || !Array.isArray(fnuci_codes) || fnuci_codes.length === 0) {
@@ -192,8 +193,9 @@ export async function POST(
     }
 
     // --- 6a. Stocker le PDF dans Supabase storage ---
-    let attestationPdfUrl: string | null = null
-    if (attestation_pdf_base64) {
+    // Si le frontend a déjà uploadé le PDF, utiliser son URL directement
+    let attestationPdfUrl: string | null = clientPdfUrl || null
+    if (!attestationPdfUrl && attestation_pdf_base64) {
       try {
         // Le base64 est au format data:application/pdf;base64,XXXX
         const base64Data = attestation_pdf_base64.split(',')[1] || attestation_pdf_base64
@@ -225,6 +227,7 @@ export async function POST(
       .from('livraisons')
       .update({
         statut: 'livree',
+        livreur_id: currentUser.id,
         date_livraison: now,
         date_livraison_effective: now,
         signature_client: signature_base64,

@@ -767,7 +767,7 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
     const file = e.target.files?.[0]
     if (!file) return
     try {
-      const compressed = await compressImage(file, 1200, 0.8)
+      const compressed = await compressImage(file, 800, 0.6)
       setPhotoIdentite(compressed)
     } catch {
       setError('Erreur lors de la compression de la photo')
@@ -817,8 +817,30 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
         modeLivraison: livraison.mode_livraison,
       })
 
-      // Convert PDF to base64 for server storage
-      const pdfBase64 = doc.output('datauristring')
+      // Upload PDF directement vers Supabase Storage (évite la limite 4.5MB Vercel)
+      const pdfBlob = doc.output('blob')
+      const refRetina = client.reference_retina || livraison.id
+      const pdfFileName = `attestations/${client.id}/${refRetina}-BL.pdf`
+
+      let attestationPdfUrl: string | null = null
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabaseClient = createClient()
+        const { error: uploadErr } = await supabaseClient.storage
+          .from('documents')
+          .upload(pdfFileName, pdfBlob, { contentType: 'application/pdf', upsert: true })
+        if (!uploadErr) {
+          const { data: urlData } = supabaseClient.storage.from('documents').getPublicUrl(pdfFileName)
+          attestationPdfUrl = urlData.publicUrl
+        }
+      } catch {
+        // Non bloquant — le serveur n'aura pas l'URL mais la livraison sera quand même validée
+      }
+
+      // Compresser la signature (PNG → JPEG) pour réduire le payload
+      const signatureCompressed = signature!.startsWith('data:image/png')
+        ? await compressImage(await fetch(signature!).then(r => r.blob()).then(b => new File([b], 'sig.png', { type: 'image/png' })), 600, 0.7)
+        : signature
 
       const res = await fetch(`/api/admin/livraisons/${livraison.id}/deliver`, {
         method: 'POST',
@@ -831,9 +853,9 @@ export default function DeliveryModule({ livraison, onComplete, onClose, fullPag
             cable_recharge: checklist.cable_recharge,
             photos_cee: checklist.photos_cee,
           },
-          signature_base64: signature,
+          signature_base64: signatureCompressed,
           photo_identite_base64: photoIdentite,
-          attestation_pdf_base64: pdfBase64,
+          ...(attestationPdfUrl ? { attestation_pdf_url: attestationPdfUrl } : {}),
         }),
       })
 
