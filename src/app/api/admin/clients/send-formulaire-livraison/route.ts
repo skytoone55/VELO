@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erreur lors de la mise a jour' }, { status: 500 })
     }
 
-    // 2b. Mettre a jour le statut commercial du client → en_livraison
+    // 2b. Mettre a jour le statut commercial du client \u2192 en_livraison
     await adminClient
       .from('clients')
       .update({
@@ -138,6 +138,15 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', clientId)
+
+    // Sync statut client \u2194 livraison
+    await adminClient
+      .from('livraisons')
+      .update({
+        statut: 'en_livraison',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', livraison.id)
 
     // 3. Construire l'URL du formulaire
     const baseUrl = tenant.url || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
