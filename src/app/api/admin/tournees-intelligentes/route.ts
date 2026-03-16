@@ -432,12 +432,11 @@ export async function POST(request: NextRequest) {
         .in('id', clientsToBypass.map(c => c.id))
     }
 
-    // Vérifier les livraisons déjà existantes pour éviter les doublons
+    // Vérifier les livraisons déjà existantes pour éviter les doublons (toutes dates confondues)
     const { data: existingLivraisons } = await supabase
       .from('livraisons')
       .select('client_id')
       .in('client_id', clients.map(c => c.id))
-      .eq('creneau_date', date)
       .not('statut', 'in', '("annulee","retractation")')
 
     const existingClientIds = new Set((existingLivraisons ?? []).map(l => l.client_id))

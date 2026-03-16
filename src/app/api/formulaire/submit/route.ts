@@ -62,7 +62,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 3. Créer la livraison
+    // 3. Vérifier qu'aucune livraison active n'existe déjà pour ce client
+    const { data: existingLiv } = await adminClient
+      .from('livraisons')
+      .select('id')
+      .eq('client_id', clientId)
+      .not('statut', 'in', '("annulee","retractation")')
+      .limit(1)
+
+    if (existingLiv && existingLiv.length > 0) {
+      // Livraison déjà existante — ne pas créer de doublon
+      return NextResponse.json({ success: true, message: 'Livraison déjà existante' })
+    }
+
+    // 4. Créer la livraison
     const { error: livraisonError } = await adminClient.from('livraisons').insert({
       client_id: clientId,
       mode_livraison: modeLivraison,
