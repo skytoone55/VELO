@@ -283,6 +283,24 @@ async function handleBulkChangeStatus(
         continue
       }
 
+      // Sync statut client \u2194 livraison
+      const statutLivraisonMap: Record<string, string> = {
+        en_livraison: 'en_livraison',
+        a_livrer: 'a_livrer',
+        livre: 'livree',
+      }
+      const newLivraisonStatut = statutLivraisonMap[newStatut]
+      if (newLivraisonStatut) {
+        await adminClient
+          .from('livraisons')
+          .update({
+            statut: newLivraisonStatut,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('client_id', client.id)
+          .not('statut', 'in', '("annulee","retractation")')
+      }
+
       // Synchroniser vers Monday si configuré
       if (client.monday_item_id && isMondayConfigured()) {
         try {
