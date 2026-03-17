@@ -213,8 +213,32 @@ export async function GET(request: NextRequest) {
     const totalFiltered = count || 0
     const totalPages = Math.ceil(totalFiltered / pageSize)
 
-    // Calculer le total des vélos validés pour les livraisons filtrées
-    const velosValidesFiltered = (data || []).reduce((sum: number, liv: any) => {
+    // Calculer le total des vélos validés sur TOUS les résultats filtrés (pas juste la page)
+    // Récupérer tous les client_ids distincts des livraisons filtrées
+    let velosQuery = adminClient
+      .from('livraisons')
+      .select('client:clients!livraisons_client_id_fkey!inner(velo_valide)')
+
+    // Ré-appliquer les mêmes filtres (sans pagination)
+    if (statutFilter && statutFilter !== 'all') {
+      const statuts = statutFilter.split(',').filter(Boolean)
+      if (statuts.length === 1) velosQuery = velosQuery.eq('statut', statuts[0])
+      else if (statuts.length > 1) velosQuery = velosQuery.in('statut', statuts)
+    }
+    if (clientIds) velosQuery = velosQuery.in('client_id', clientIds)
+    if (depotFilter && depotFilter !== 'all') {
+      const depots = depotFilter.split(',').filter(Boolean)
+      if (depots.length === 1) velosQuery = velosQuery.eq('depot_id', depots[0])
+      else if (depots.length > 1) velosQuery = velosQuery.in('depot_id', depots)
+    }
+    if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
+      velosQuery = velosQuery.in('depot_id', currentUser.depot_ids)
+    } else if (currentUser.role === 'livreur') {
+      velosQuery = velosQuery.eq('livreur_id', currentUser.id)
+    }
+
+    const { data: velosData } = await velosQuery
+    const velosValidesFiltered = (velosData || []).reduce((sum: number, liv: any) => {
       return sum + (Number(liv.client?.velo_valide) || 0)
     }, 0)
 

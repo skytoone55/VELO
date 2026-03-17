@@ -284,8 +284,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const { data: velosData } = await velosQuery
-    const velosValidesFiltered = (velosData || []).reduce((sum, c) => sum + (Number(c.velo_valide) || 0), 0)
+    // Paginer pour dépasser la limite Supabase de 1000 rows
+    let allVelosData: any[] = []
+    let veloOffset = 0
+    const VELO_PAGE = 1000
+    let hasMoreVelos = true
+    while (hasMoreVelos) {
+      const { data: batch } = await velosQuery.range(veloOffset, veloOffset + VELO_PAGE - 1)
+      if (batch && batch.length > 0) {
+        allVelosData = allVelosData.concat(batch)
+        veloOffset += VELO_PAGE
+        if (batch.length < VELO_PAGE) hasMoreVelos = false
+      } else {
+        hasMoreVelos = false
+      }
+    }
+    const velosValidesFiltered = allVelosData.reduce((sum, c) => sum + (Number(c.velo_valide) || 0), 0)
 
     // Appliquer la pagination
     const startIndex = (page - 1) * pageSize
