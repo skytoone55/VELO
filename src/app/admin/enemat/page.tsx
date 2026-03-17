@@ -141,7 +141,7 @@ export default function AdminEnematPage() {
   const [sortBy, setSortBy] = useState('date_entree_enemat')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  const [pageSize, setPageSize] = useState(200)
   const [paginationInfo, setPaginationInfo] = useState({ totalPages: 0, totalFiltered: 0, startIndex: 0, endIndex: 0 })
   const [counts, setCounts] = useState<Record<string, number>>({ a_deposer_enemat: 0, depose_enemat: 0, apf_enemat: 0, paye_enemat: 0 })
 
@@ -727,7 +727,7 @@ export default function AdminEnematPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {[10, 25, 50, 100].map(n => <SelectItem key={n} value={n.toString()}>{n}</SelectItem>)}
+            {[20, 50, 100, 200, 500].map(n => <SelectItem key={n} value={n.toString()}>{n}</SelectItem>)}
           </SelectContent>
         </Select>
 

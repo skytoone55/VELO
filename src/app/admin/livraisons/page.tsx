@@ -787,7 +787,7 @@ export default function AdminLivraisonsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {[20, 50, 100, 200].map(n => <SelectItem key={n} value={n.toString()}>{n}</SelectItem>)}
+            {[20, 50, 100, 200, 500].map(n => <SelectItem key={n} value={n.toString()}>{n}</SelectItem>)}
           </SelectContent>
         </Select>
         {hasActiveFilters && (
