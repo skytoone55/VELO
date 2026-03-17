@@ -66,10 +66,12 @@ export async function sendEmail({ to, subject, html, from }: EmailOptions) {
     const transporter = await createTransporter()
 
     const mailOptions = {
-      from: from || `${tenant.name} <${process.env.SMTP_USER || process.env.GMAIL_USER}>`,
+      from: from || `=?UTF-8?B?${Buffer.from(tenant.name).toString('base64')}?= <${process.env.SMTP_USER || process.env.GMAIL_USER}>`,
       to,
       subject,
       html,
+      encoding: 'utf-8' as const,
+      textEncoding: 'base64' as const,
     }
 
     const result = await transporter.sendMail(mailOptions)
@@ -1149,10 +1151,12 @@ export async function sendBonLivraisonEmail(params: {
   `
 
   const result = await transporter.sendMail({
-    from: `${tenant.name} <${process.env.SMTP_USER || process.env.GMAIL_USER}>`,
+    from: `=?UTF-8?B?${Buffer.from(tenant.name).toString('base64')}?= <${process.env.SMTP_USER || process.env.GMAIL_USER}>`,
     to,
     subject: `Votre bon de ${typeDoc} — ${raisonSociale}`,
     html,
+    encoding: 'utf-8' as const,
+    textEncoding: 'base64' as const,
     attachments: [{
       filename: `bon-${typeDoc}-${raisonSociale.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
       content: pdfBuffer,
