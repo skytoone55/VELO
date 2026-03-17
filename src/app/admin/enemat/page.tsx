@@ -144,6 +144,7 @@ export default function AdminEnematPage() {
   const [pageSize, setPageSize] = useState(200)
   const [paginationInfo, setPaginationInfo] = useState({ totalPages: 0, totalFiltered: 0, startIndex: 0, endIndex: 0 })
   const [counts, setCounts] = useState<Record<string, number>>({ a_deposer_enemat: 0, depose_enemat: 0, apf_enemat: 0, paye_enemat: 0 })
+  const [velosValidesFiltered, setVelosValidesFiltered] = useState(0)
 
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
@@ -200,6 +201,7 @@ export default function AdminEnematPage() {
       }
 
       setClients(data.clients || [])
+      setVelosValidesFiltered(data.velosValidesFiltered || 0)
       const total = data.total || 0
       const totalPages = Math.ceil(total / pageSize)
       setPaginationInfo({
@@ -520,7 +522,9 @@ export default function AdminEnematPage() {
 
       {/* Stats compteurs */}
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="font-semibold">{totalEnemat} <span className="text-muted-foreground font-normal">dossiers ENEMAT</span></span>
+        <span className="font-semibold">{paginationInfo.totalFiltered} <span className="text-muted-foreground font-normal">clients</span></span>
+        <span className="text-muted-foreground">—</span>
+        <span className="font-semibold text-blue-600">{velosValidesFiltered} <span className="text-muted-foreground font-normal">vélos validés</span></span>
         <span className="text-muted-foreground">|</span>
         {ENEMAT_STATUTS.map(s => (
           <button

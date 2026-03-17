@@ -563,6 +563,8 @@ export default function AdminLivraisonsPage() {
       {/* Stats inline */}
       <div className="flex items-center gap-3 text-sm">
         <span className="font-semibold">{pagination.totalFiltered} <span className="text-muted-foreground font-normal">livraisons</span></span>
+        <span className="text-muted-foreground">—</span>
+        <span className="font-semibold text-blue-600">{(pagination as any).velosValidesFiltered ?? 0} <span className="text-muted-foreground font-normal">vélos validés</span></span>
       </div>
 
       {/* Filters */}

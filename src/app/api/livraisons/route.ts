@@ -213,6 +213,11 @@ export async function GET(request: NextRequest) {
     const totalFiltered = count || 0
     const totalPages = Math.ceil(totalFiltered / pageSize)
 
+    // Calculer le total des vélos validés pour les livraisons filtrées
+    const velosValidesFiltered = (data || []).reduce((sum: number, liv: any) => {
+      return sum + (Number(liv.client?.velo_valide) || 0)
+    }, 0)
+
     return NextResponse.json({
       livraisons: data || [],
       pagination: {
@@ -222,6 +227,7 @@ export async function GET(request: NextRequest) {
         totalFiltered,
         startIndex: startIndex + 1,
         endIndex: Math.min(startIndex + pageSize, totalFiltered),
+        velosValidesFiltered,
       },
     })
   } catch (error) {

@@ -262,6 +262,13 @@ export async function GET(request: NextRequest) {
     if (depotFilter && depotFilter !== 'all') {
       velosQuery = velosQuery.or(`depot_retrait_id.eq.${depotFilter},depot_logistique_id.eq.${depotFilter}`)
     }
+    if (enematFilter && enematFilter !== 'all') {
+      velosQuery = velosQuery.eq('in_enemat', enematFilter === 'oui')
+    }
+    // Restreindre aux dépôts de l'agent (même filtre que la query principale)
+    if (authResult.role === 'agent_secteur' && authResult.depot_ids?.length) {
+      velosQuery = velosQuery.or(`depot_retrait_id.in.(${authResult.depot_ids.join(',')}),depot_logistique_id.in.(${authResult.depot_ids.join(',')})`)
+    }
     if (controleFilter && controleFilter !== 'all') {
       // Réutilise la même logique que le filtre principal (ok/en_cours/attente)
       const { data: cqLiv2 } = await adminClient

@@ -98,7 +98,10 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ clients, total: count ?? 0, page, limit })
+    // Sommer les vélos validés sur les résultats filtrés
+    const velosValidesFiltered = clients.reduce((sum: number, c: any) => sum + (Number(c.velo_valide) || 0), 0)
+
+    return NextResponse.json({ clients, total: count ?? 0, page, limit, velosValidesFiltered })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erreur interne'
     console.error('Erreur GET /api/admin/enemat:', message)
