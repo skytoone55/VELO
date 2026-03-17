@@ -145,6 +145,7 @@ export default function AdminClientsPage() {
   const [commercialFilter, setCommercialFilter] = useState('all')
   const [depotFilter, setDepotFilter] = useState('all')
   const [controleFilter, setControleFilter] = useState('all')
+  const [enematFilter, setEnematFilter] = useState('all')
   const [sortBy, setSortBy] = useState('updated_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
@@ -212,6 +213,7 @@ export default function AdminClientsPage() {
       if (pinned.commercial) setCommercialFilter(pinned.commercial)
       if (pinned.depot) setDepotFilter(pinned.depot)
       if (pinned.controle) setControleFilter(pinned.controle)
+      if (pinned.enemat) setEnematFilter(pinned.enemat)
       if (pinned.pageSize) setPageSize(pinned.pageSize)
     }
     setFiltersReady(true)
@@ -226,6 +228,7 @@ export default function AdminClientsPage() {
       commercial: commercialFilter,
       depot: depotFilter,
       controle: controleFilter,
+      enemat: enematFilter,
       pageSize,
     })
     setIsPinned(true)
@@ -324,6 +327,7 @@ export default function AdminClientsPage() {
       if (commercialFilter !== 'all') params.set('commercial', commercialFilter)
       if (depotFilter !== 'all') params.set('depot', depotFilter)
       if (controleFilter !== 'all') params.set('controle', controleFilter)
+      if (enematFilter !== 'all') params.set('enemat', enematFilter)
       if (sortBy !== 'updated_at' || sortOrder !== 'desc') {
         params.set('sortBy', sortBy)
         params.set('sortOrder', sortOrder)
@@ -419,13 +423,13 @@ export default function AdminClientsPage() {
       setCurrentPage(1)
       prevFilters.current = cur
     }
-  }, [debouncedSearch, statutFilter, departementFilter, pageSize, nafFilter, zoneFilter, commercialFilter, depotFilter, controleFilter, sortBy, sortOrder])
+  }, [debouncedSearch, statutFilter, departementFilter, pageSize, nafFilter, zoneFilter, commercialFilter, depotFilter, controleFilter, enematFilter, sortBy, sortOrder])
 
   // Charger les clients quand les paramètres changent (attendre que les filtres figés soient chargés)
   useEffect(() => {
     if (!filtersReady) return
     fetchClients(false, currentPage, pageSize)
-  }, [currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter, commercialFilter, depotFilter, controleFilter, sortBy, sortOrder, filtersReady])
+  }, [currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter, commercialFilter, depotFilter, controleFilter, enematFilter, sortBy, sortOrder, filtersReady])
 
   const handleSendForm = async (client: Client) => {
     setSendingEmail(true)
@@ -880,6 +884,16 @@ export default function AdminClientsPage() {
             <SelectItem value="attente">CQ En attente</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={enematFilter} onValueChange={setEnematFilter}>
+          <SelectTrigger className={`h-8 w-auto min-w-[80px] text-xs px-2 shrink-0 ${enematFilter !== 'all' ? 'bg-violet-100 text-violet-800 border-violet-300' : ''}`}>
+            <SelectValue placeholder="ENEMAT" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">ENEMAT</SelectItem>
+            <SelectItem value="oui">Oui</SelectItem>
+            <SelectItem value="non">Non</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
           <SelectTrigger className="h-8 w-[52px] text-xs px-2 shrink-0">
             <SelectValue />
@@ -1045,12 +1059,13 @@ export default function AdminClientsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
-                        {client.livraisons?.some((l: any) => l.cq_valide) && (
+                        {client.in_enemat ? (
+                          <span className="inline-block w-2.5 h-2.5 rounded-full bg-violet-500 shrink-0" title="ENEMAT" />
+                        ) : client.livraisons?.some((l: any) => l.cq_valide) ? (
                           <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" title="Contrôle qualité validé" />
-                        )}
-                        {!client.livraisons?.some((l: any) => l.cq_valide) && client.livraisons?.some((l: any) => l.cq_en_cours) && (
+                        ) : client.livraisons?.some((l: any) => l.cq_en_cours) ? (
                           <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 animate-pulse" title="Contrôle en cours — à finaliser" />
-                        )}
+                        ) : null}
                         {(() => {
                           const display = getStatutDisplay(client.statut_commercial)
                           return (

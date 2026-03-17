@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     const departementFilter = searchParams.get('departement')
     const zoneFilter = searchParams.get('zone')
     const controleFilter = searchParams.get('controle')
+    const enematFilter = searchParams.get('enemat')
 
     const sortByParam = searchParams.get('sortBy') || 'created_at'
     const sortOrderParam = searchParams.get('sortOrder') || 'desc'
@@ -48,9 +49,10 @@ export async function GET(request: NextRequest) {
     const hasDepartement = departementFilter && departementFilter !== 'all'
     const hasZone = zoneFilter && zoneFilter !== 'all'
     const hasControle = controleFilter && controleFilter !== 'all'
+    const hasEnemat = enematFilter && enematFilter !== 'all'
 
     // Note: hasControle n'est PAS inclus ici car c'est un filtre sur livraisons (étape 2), pas sur clients
-    if (search || hasCommercial || hasDepartement || hasZone) {
+    if (search || hasCommercial || hasDepartement || hasZone || hasEnemat) {
       let clientQuery = adminClient
         .from('clients')
         .select('id')
@@ -113,6 +115,10 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      if (hasEnemat) {
+        clientQuery = clientQuery.eq('in_enemat', enematFilter === 'oui')
+      }
+
       const { data: matchingClients } = await clientQuery
       clientIds = matchingClients?.map(c => c.id) || []
 
@@ -135,7 +141,7 @@ export async function GET(request: NextRequest) {
           contact_nom, contact_prenom,
           departement, adresse_societe_cp, commercial_assigne, monday_board_id,
           statut_commercial, validation_naf, type_de_zone, velo_devis, velo_valide, agence,
-          reference_retina, depot_retrait_id, depot_logistique_id, monday_item_id
+          reference_retina, depot_retrait_id, depot_logistique_id, monday_item_id, in_enemat
         ),
         depot:depots(id, nom)
       `, { count: 'exact' })

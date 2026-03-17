@@ -150,6 +150,7 @@ export default function AdminLivraisonsPage() {
   const [departementFilter, setDepartementFilter] = useState<string[]>([])
   const [zoneFilter, setZoneFilter] = useState<string[]>([])
   const [controleFilter, setControleFilter] = useState<string[]>([])
+  const [enematFilter, setEnematFilter] = useState('')
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
@@ -235,6 +236,7 @@ export default function AdminLivraisonsPage() {
       if (pinned.departement) setDepartementFilter(Array.isArray(pinned.departement) ? pinned.departement : [pinned.departement])
       if (pinned.zone) setZoneFilter(pinned.zone)
       if (pinned.controle) setControleFilter(pinned.controle)
+      if (pinned.enemat) setEnematFilter(pinned.enemat)
       if (pinned.pageSize) setPageSize(pinned.pageSize)
     }
     setFiltersReady(true)
@@ -248,6 +250,7 @@ export default function AdminLivraisonsPage() {
       departement: departementFilter,
       zone: zoneFilter,
       controle: controleFilter,
+      enemat: enematFilter,
       pageSize,
     })
     setIsPinned(true)
@@ -309,6 +312,7 @@ export default function AdminLivraisonsPage() {
       if (departementFilter.length > 0) params.set('departement', departementFilter.join(','))
       if (zoneFilter.length > 0) params.set('zone', zoneFilter.join(','))
       if (controleFilter.length > 0) params.set('controle', controleFilter.join(','))
+      if (enematFilter) params.set('enemat', enematFilter)
       if (sortBy !== 'created_at' || sortOrder !== 'desc') {
         params.set('sortBy', sortBy)
         params.set('sortOrder', sortOrder)
@@ -328,7 +332,7 @@ export default function AdminLivraisonsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter, departementFilter, zoneFilter, controleFilter, sortBy, sortOrder])
+  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter, departementFilter, zoneFilter, controleFilter, enematFilter, sortBy, sortOrder])
 
   // Debounce search
   const searchTimerRef = useRef<NodeJS.Timeout>(null)
@@ -399,13 +403,14 @@ export default function AdminLivraisonsPage() {
     setDepartementFilter([])
     setZoneFilter([])
     setControleFilter([])
+    setEnematFilter('')
     setSortBy('created_at')
     setSortOrder('desc')
     setPage(1)
   }
 
   const hasActiveFilters = searchQuery || statutFilter.length > 0 || depotFilter.length > 0 ||
-    commercialFilter.length > 0 || departementFilter.length > 0 || zoneFilter.length > 0 || controleFilter.length > 0
+    commercialFilter.length > 0 || departementFilter.length > 0 || zoneFilter.length > 0 || controleFilter.length > 0 || !!enematFilter
 
   const handleToggleSelect = (livraisonId: string) => {
     const newSelected = new Set(selectedLivraisons)
@@ -765,6 +770,17 @@ export default function AdminLivraisonsPage() {
             )}
           </PopoverContent>
         </Popover>
+        {/* ENEMAT filter */}
+        <Select value={enematFilter || 'all'} onValueChange={(v) => { setEnematFilter(v === 'all' ? '' : v); setPage(1) }}>
+          <SelectTrigger className={`h-8 w-[90px] text-xs px-2 shrink-0 ${enematFilter ? 'bg-violet-100 text-violet-800 border-violet-300' : ''}`}>
+            <SelectValue placeholder="ENEMAT" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">ENEMAT</SelectItem>
+            <SelectItem value="oui">Oui</SelectItem>
+            <SelectItem value="non">Non</SelectItem>
+          </SelectContent>
+        </Select>
         {/* PageSize selector */}
         <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
           <SelectTrigger className="h-8 w-[52px] text-xs px-2 shrink-0">

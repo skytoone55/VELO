@@ -459,17 +459,12 @@ export default function AdminEnematPage() {
     exportToXlsx(filteredClients, [
       { header: 'Raison sociale', accessor: r => r.raison_sociale },
       { header: 'Réf. Retina', accessor: r => r.reference_retina },
-      { header: 'Téléphone', accessor: r => r.telephone },
-      { header: 'Commercial', accessor: r => getCommercialName(r) },
-      { header: 'Dépôt', accessor: r => r.depot?.nom || r.depot_nom },
-      { header: 'Mode livraison', accessor: r => r.mode_livraison || r.livraison?.mode_livraison },
-      { header: 'Date livraison', accessor: r => r.date_livraison_effective || r.livraison?.date_livraison_effective },
       { header: 'Nb vélos', accessor: r => r.velo_valide },
       { header: 'Date contrôle', accessor: r => r.livraison?.cq_valide_at || r.date_controle },
       { header: 'Date dépôt ENEMAT', accessor: r => r.date_depot_enemat },
+      { header: 'Statut ENEMAT', accessor: r => ENEMAT_LABELS[r.statut_enemat || ''] || r.statut_enemat },
       { header: 'Date APF', accessor: r => r.date_apf_enemat },
       { header: 'Date payé', accessor: r => r.date_paye_enemat },
-      { header: 'Statut ENEMAT', accessor: r => ENEMAT_LABELS[r.statut_enemat || ''] || r.statut_enemat },
     ], `Export-ENEMAT-${tenant.name}-${today}.xlsx`)
   }
 

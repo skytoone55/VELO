@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
     const commercialFilter = searchParams.get('commercial')
     const depotFilter = searchParams.get('depot')
     const controleFilter = searchParams.get('controle')
+    const enematFilter = searchParams.get('enemat')
 
     // Tri serveur
     const sortByParam = searchParams.get('sortBy') || 'updated_at'
@@ -158,6 +159,11 @@ export async function GET(request: NextRequest) {
     // Filtre par dépôt (retrait OU logistique)
     if (depotFilter && depotFilter !== 'all') {
       query = query.or(`depot_retrait_id.eq.${depotFilter},depot_logistique_id.eq.${depotFilter}`)
+    }
+
+    // Filtre ENEMAT
+    if (enematFilter && enematFilter !== 'all') {
+      query = query.eq('in_enemat', enematFilter === 'oui')
     }
 
     // Filtre par contrôle qualité (via livraisons)
