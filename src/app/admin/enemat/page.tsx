@@ -52,6 +52,9 @@ interface EnematClient {
   date_depot_enemat: string | null
   date_apf_enemat: string | null
   date_paye_enemat: string | null
+  fnuci_ids: string[] | null
+  fnuci_declared: boolean | null
+  fnuci_declared_at: string | null
   depot_nom: string | null
   livraison: {
     mode_livraison: string | null
@@ -127,6 +130,8 @@ export default function AdminEnematPage() {
   const [depotFilter, setDepotFilter] = useState<string[]>([])
   const [commercialFilter, setCommercialFilter] = useState<string[]>([])
   const [cqFilter, setCqFilter] = useState<string>('all')
+  const [fnuciFilter, setFnuciFilter] = useState<string>('all')
+  const [fnuciDeclareLoading, setFnuciDeclareLoading] = useState(false)
   const [dateDepotFrom, setDateDepotFrom] = useState('')
   const [dateDepotTo, setDateDepotTo] = useState('')
   const [dateApfFrom, setDateApfFrom] = useState('')
@@ -185,6 +190,7 @@ export default function AdminEnematPage() {
       if (statutFilter.length > 0) params.set('statut_enemat', statutFilter.join(','))
       if (depotFilter.length > 0) params.set('depot_id', depotFilter[0]) // API supports single depot
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter[0])
+      if (fnuciFilter !== 'all') params.set('fnuci', fnuciFilter)
 
       const res = await fetch(`/api/admin/enemat?${params.toString()}`)
       const data = await res.json()
@@ -216,7 +222,7 @@ export default function AdminEnematPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter])
+  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter, fnuciFilter])
 
   const fetchCounts = async () => {
     try {
@@ -303,7 +309,7 @@ export default function AdminEnematPage() {
     setPage(1)
   }
 
-  const hasActiveFilters = searchQuery || statutFilter.length > 0 || depotFilter.length > 0 || commercialFilter.length > 0 || cqFilter !== 'all' || dateDepotFrom || dateDepotTo || dateApfFrom || dateApfTo || datePayeFrom || datePayeTo
+  const hasActiveFilters = searchQuery || statutFilter.length > 0 || depotFilter.length > 0 || commercialFilter.length > 0 || cqFilter !== 'all' || fnuciFilter !== 'all' || dateDepotFrom || dateDepotTo || dateApfFrom || dateApfTo || datePayeFrom || datePayeTo
 
   // ─── Selection ────────────────────────────────────────────────
   const handleToggleSelect = (clientId: string) => {
@@ -351,6 +357,34 @@ export default function AdminEnematPage() {
       toast.error(err.message)
     } finally {
       setBulkActionLoading(false)
+    }
+  }
+
+  // ─── Déclarer FNUCI ──────────────────────────────────────────
+  const handleFnuciDeclare = async () => {
+    if (selectedClients.size === 0) return
+    setFnuciDeclareLoading(true)
+    try {
+      const res = await fetch('/api/admin/fnuci/declare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_ids: Array.from(selectedClients) }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
+
+      const { summary } = data
+      if (summary.bikes_failed > 0) {
+        toast.warning(`${summary.bikes_declared} vélo(s) déclaré(s), ${summary.bikes_failed} en erreur`)
+      } else {
+        toast.success(`${summary.bikes_declared} vélo(s) déclaré(s) pour ${summary.clients_declared} client(s)`)
+      }
+      setSelectedClients(new Set())
+      fetchClients()
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setFnuciDeclareLoading(false)
     }
   }
 
@@ -628,6 +662,17 @@ export default function AdminEnematPage() {
           </SelectContent>
         </Select>
 
+        <Select value={fnuciFilter} onValueChange={(v) => { setFnuciFilter(v); setPage(1) }}>
+          <SelectTrigger className={`h-8 w-[120px] text-xs px-2 shrink-0 ${fnuciFilter !== 'all' ? 'bg-violet-100 text-violet-800 border-violet-300' : ''}`}>
+            <SelectValue placeholder="FNUCI" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">FNUCI : Tous</SelectItem>
+            <SelectItem value="oui">Déclaré</SelectItem>
+            <SelectItem value="non">Non déclaré</SelectItem>
+          </SelectContent>
+        </Select>
+
         {/* Date filters */}
         <Popover>
           <PopoverTrigger asChild>
@@ -733,6 +778,7 @@ export default function AdminEnematPage() {
                     <TableHead className="hidden md:table-cell">Livraison</TableHead>
                     <TableHead className="hidden lg:table-cell text-center">Velos</TableHead>
                     <TableHead className="hidden xl:table-cell">Controle</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">FNUCI</TableHead>
                     <TableHead className="hidden md:table-cell">Depot ENEMAT</TableHead>
                     <TableHead className="hidden lg:table-cell">APF</TableHead>
                     <TableHead className="hidden lg:table-cell">Paye</TableHead>
@@ -801,6 +847,15 @@ export default function AdminEnematPage() {
                         <span className="text-sm text-muted-foreground">
                           {client.livraison?.cq_valide_at ? formatDate(client.livraison.cq_valide_at) : (client.date_controle ? formatDate(client.date_controle) : '-')}
                         </span>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-center">
+                        {client.fnuci_declared ? (
+                          <Badge className="bg-violet-100 text-violet-800">Déclaré</Badge>
+                        ) : client.fnuci_ids?.length ? (
+                          <Badge variant="outline" className="text-amber-600 border-amber-300">Non déclaré</Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <span className="text-sm">{formatDate(client.date_depot_enemat)}</span>
@@ -923,6 +978,18 @@ export default function AdminEnematPage() {
                   </Popover>
                 )
               })()}
+
+              {/* Déclarer FNUCI */}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleFnuciDeclare}
+                disabled={fnuciDeclareLoading || bulkActionLoading}
+                className="text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+              >
+                {fnuciDeclareLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileCheck className="h-4 w-4 mr-1" />}
+                Déclarer FNUCI
+              </Button>
 
               <Button
                 size="sm"

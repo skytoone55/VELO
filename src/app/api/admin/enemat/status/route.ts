@@ -38,7 +38,7 @@ export async function PATCH(request: NextRequest) {
     // Récupérer les statuts actuels pour vérifier le workflow
     const { data: currentClients, error: fetchError } = await supabase
       .from('clients')
-      .select('id, statut_enemat, raison_sociale')
+      .select('id, statut_enemat, raison_sociale, fnuci_declared')
       .in('id', client_ids)
 
     if (fetchError) {
@@ -51,10 +51,12 @@ export async function PATCH(request: NextRequest) {
     const eligible: string[] = []
     for (const c of (currentClients || [])) {
       const nextAllowed = WORKFLOW_ORDER[c.statut_enemat || '']
-      if (nextAllowed === statut) {
-        eligible.push(c.id)
-      } else {
+      if (nextAllowed !== statut) {
         rejected.push(`${c.raison_sociale} (${c.statut_enemat} → ${statut} interdit)`)
+      } else if (statut === 'depose_enemat' && !c.fnuci_declared) {
+        rejected.push(`${c.raison_sociale} (FNUCI non déclaré — obligatoire avant dépôt ENEMAT)`)
+      } else {
+        eligible.push(c.id)
       }
     }
 

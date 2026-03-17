@@ -23,12 +23,15 @@ export async function GET(request: NextRequest) {
 
     const supabase = createAdminClient()
 
+    const fnuciFilter = searchParams.get('fnuci')
+
     let query = supabase
       .from('clients')
       .select(
         `id, raison_sociale, reference_retina, telephone, email, commercial_assigne,
          depot_logistique_id, velo_valide,
          statut_enemat, date_depot_enemat, date_apf_enemat, date_paye_enemat, date_entree_enemat, in_enemat,
+         fnuci_ids, fnuci_declared, fnuci_declared_at,
          livraisons(mode_livraison, creneau_date, date_livraison_effective, cq_valide_at)`,
         { count: 'exact' }
       )
@@ -52,6 +55,12 @@ export async function GET(request: NextRequest) {
 
     if (commercial) {
       query = query.eq('commercial_assigne', commercial)
+    }
+
+    if (fnuciFilter === 'oui') {
+      query = query.eq('fnuci_declared', true)
+    } else if (fnuciFilter === 'non') {
+      query = query.or('fnuci_declared.eq.false,fnuci_declared.is.null')
     }
 
     const { data, error, count } = await query
