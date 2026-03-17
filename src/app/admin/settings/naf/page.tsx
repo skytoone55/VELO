@@ -149,14 +149,14 @@ export default function NafCodesPage() {
         <h1 className="text-2xl font-bold">Codes NAF ENEMAT</h1>
         <p className="text-muted-foreground text-sm">
           {pagination.totalCodes} codes au total
-          {valideFilter === 'all' && ` \u2014 ${totalOk} eligibles / ${totalKo} non eligibles sur cette page`}
+          {valideFilter === 'all' && ` — ${totalOk} eligibles / ${totalKo} non eligibles sur cette page`}
         </p>
       </div>
 
       {lastResult && (
         <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-2 rounded-md text-sm flex items-center justify-between">
           <span>{lastResult}</span>
-          <button onClick={() => setLastResult(null)} className="text-green-600 hover:text-green-800 ml-2">\u2715</button>
+          <button onClick={() => setLastResult(null)} className="text-green-600 hover:text-green-800 ml-2">✕</button>
         </div>
       )}
 
@@ -258,7 +258,7 @@ export default function NafCodesPage() {
                       {c.clients_count > 0 ? (
                         <Badge variant="outline" className="font-mono">{c.clients_count}</Badge>
                       ) : (
-                        <span className="text-muted-foreground">\u2014</span>
+                        <span className="text-muted-foreground">0</span>
                       )}
                     </td>
                     <td className="px-3 py-2 text-right">
