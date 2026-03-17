@@ -64,10 +64,10 @@ export function Step6Confirmation() {
 
       setSuccess(true)
 
-      // Ne pas reset le store imm\u00e9diatement - laisser l'utilisateur voir le message de succ\u00e8s
+      // Ne pas reset le store immédiatement - laisser l'utilisateur voir le message de succès
       // Le store sera reset quand l'utilisateur cliquera sur un des boutons
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue. R\u00e9essayez.')
+      setError(err.message || 'Une erreur est survenue. Réessayez.')
     } finally {
       setSubmitting(false)
     }
@@ -78,7 +78,7 @@ export function Step6Confirmation() {
     router.push(path)
   }
 
-  // D\u00e9terminer le mode final
+  // Déterminer le mode final
   const isRetrait = data.preferenceMode === 'retrait' || data.modeLivraisonFinal === 'retrait'
   const isLivraisonPayante = data.preferenceMode === 'livraison_payante' || data.livraisonPayante
 
@@ -89,22 +89,22 @@ export function Step6Confirmation() {
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
             <CheckCircle className="w-10 h-10 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Demande enregistr\u00e9e !</h2>
+          <h2 className="text-2xl font-bold mb-2">Demande enregistrée !</h2>
           <p className="text-muted-foreground mb-4 max-w-md">
-            Votre demande a \u00e9t\u00e9 enregistr\u00e9e avec succ\u00e8s.
+            Votre demande a été enregistrée avec succès.
           </p>
 
-          {/* Bloc livraison pr\u00e9vue */}
+          {/* Bloc livraison prévue */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 max-w-md text-left">
             <div className="flex items-start gap-3">
               <Calendar className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
               <div>
                 <p className="font-semibold text-blue-900">
-                  Livraison pr\u00e9vue entre Avril et Juin 2026
+                  Livraison prévue entre Avril et Juin 2026
                 </p>
                 <p className="text-sm text-blue-800 mt-1">
-                  Selon les arrivages et les secteurs g\u00e9ographiques. Notre \u00e9quipe vous contactera
-                  pour {isRetrait ? 'convenir d\'un cr\u00e9neau de retrait' : 'programmer la livraison'} de votre v\u00e9lo cargo.
+                  Selon les arrivages et les secteurs géographiques. Notre équipe vous contactera
+                  pour {isRetrait ? 'convenir d\'un créneau de retrait' : 'programmer la livraison'} de votre vélo cargo.
                 </p>
               </div>
             </div>
@@ -115,7 +115,7 @@ export function Step6Confirmation() {
             <Mail className="h-4 w-4" />
             <AlertDescription>
               N'oubliez pas de surveiller vos emails (y compris les spams) pour l'email
-              de <span className="font-semibold">Bicycode</span> concernant l'identification de votre v\u00e9lo.
+              de <span className="font-semibold">Bicycode</span> concernant l'identification de votre vélo.
             </AlertDescription>
           </Alert>
 
@@ -123,7 +123,7 @@ export function Step6Confirmation() {
           <Alert className="max-w-md mb-4 text-left">
             <Mail className="h-4 w-4" />
             <AlertDescription>
-              Restez attentif \u00e0 vos emails. Vous recevrez des informations importantes concernant
+              Restez attentif à vos emails. Vous recevrez des informations importantes concernant
               votre livraison depuis <span className="font-semibold">{tenant.email}</span>.
             </AlertDescription>
           </Alert>
@@ -145,7 +145,7 @@ export function Step6Confirmation() {
           </div>
 
           <p className="text-sm text-muted-foreground text-center mt-6">
-            Vous pouvez fermer cette page en toute s\u00e9curit\u00e9.
+            Vous pouvez fermer cette page en toute sécurité.
           </p>
         </CardContent>
       </Card>
@@ -158,9 +158,9 @@ export function Step6Confirmation() {
         <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
           <CheckCircle className="w-8 h-8 text-green-600" />
         </div>
-        <CardTitle>R\u00e9capitulatif</CardTitle>
+        <CardTitle>Récapitulatif</CardTitle>
         <CardDescription>
-          V\u00e9rifiez vos informations avant de valider
+          Vérifiez vos informations avant de valider
         </CardDescription>
       </CardHeader>
 
@@ -172,11 +172,11 @@ export function Step6Confirmation() {
           </Alert>
         )}
 
-        {/* R\u00e9cap soci\u00e9t\u00e9 */}
+        {/* Récap société */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Building2 className="h-4 w-4 text-muted-foreground" />
-            Soci\u00e9t\u00e9
+            Société
           </div>
           <div className="bg-muted rounded-lg p-3 text-sm">
             <div className="font-medium">{data.raisonSociale}</div>
@@ -191,7 +191,7 @@ export function Step6Confirmation() {
 
         <Separator />
 
-        {/* R\u00e9cap mode de r\u00e9ception */}
+        {/* Récap mode de réception */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
             {isRetrait ? (
@@ -199,7 +199,7 @@ export function Step6Confirmation() {
             ) : (
               <Truck className="h-4 w-4 text-muted-foreground" />
             )}
-            Mode de r\u00e9ception
+            Mode de réception
           </div>
           <div className="bg-muted rounded-lg p-3 text-sm">
             {isRetrait ? (
@@ -218,7 +218,7 @@ export function Step6Confirmation() {
             ) : (
               <>
                 <div className="font-medium flex items-center gap-2">
-                  Livraison \u00e0 domicile
+                  Livraison à domicile
                   {isLivraisonPayante && (
                     <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1 border">
                       <Euro className="h-3 w-3" />
@@ -238,13 +238,13 @@ export function Step6Confirmation() {
           </div>
           {data.complementAdresse && (
             <div className="bg-muted/50 rounded-lg p-3 text-sm">
-              <span className="font-medium">Compl\u00e9ment d&apos;adresse :</span>{' '}
+              <span className="font-medium">Complément d&apos;adresse :</span>{' '}
               <span className="text-muted-foreground">{data.complementAdresse}</span>
             </div>
           )}
           {data.preferencesLivraison && (
             <div className="bg-muted/50 rounded-lg p-3 text-sm">
-              <span className="font-medium">Pr\u00e9f\u00e9rences de livraison :</span>{' '}
+              <span className="font-medium">Préférences de livraison :</span>{' '}
               <span className="text-muted-foreground">{data.preferencesLivraison}</span>
             </div>
           )}
@@ -254,15 +254,15 @@ export function Step6Confirmation() {
           <Alert>
             <Euro className="h-4 w-4" />
             <AlertDescription>
-              Des frais de livraison suppl\u00e9mentaires seront \u00e0 votre charge.
-              Notre \u00e9quipe vous contactera pour confirmer le montant.
+              Des frais de livraison supplémentaires seront à votre charge.
+              Notre équipe vous contactera pour confirmer le montant.
             </AlertDescription>
           </Alert>
         )}
 
         <Separator />
 
-        {/* Confirmations obligatoires - 2 colonnes c\u00f4te \u00e0 c\u00f4te */}
+        {/* Confirmations obligatoires - 2 colonnes côte à côte */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-sm font-medium">
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -289,27 +289,27 @@ export function Step6Confirmation() {
                 <span className="text-sm leading-relaxed">
                   {isRetrait ? (
                     <>
-                      Je confirme que <span className="font-semibold">{data.contactPrenom} {data.contactNom}</span> viendra r\u00e9cup\u00e9rer le mat\u00e9riel. *
+                      Je confirme que <span className="font-semibold">{data.contactPrenom} {data.contactNom}</span> viendra récupérer le matériel. *
                     </>
                   ) : (
                     <>
-                      Je confirme que <span className="font-semibold">{data.contactPrenom} {data.contactNom}</span> r\u00e9ceptionnera la livraison. *
+                      Je confirme que <span className="font-semibold">{data.contactPrenom} {data.contactNom}</span> réceptionnera la livraison. *
                     </>
                   )}
                 </span>
               </div>
             </label>
 
-            {/* Bloc 2 - Confirmation pi\u00e8ce d'identit\u00e9 */}
+            {/* Bloc 2 - Confirmation pièce d'identité */}
             <label
               htmlFor="confirmIdentite"
               className="flex flex-col p-4 border rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
             >
-              {/* Ic\u00f4nes des documents accept\u00e9s */}
+              {/* Icônes des documents acceptés */}
               <div className="flex justify-center gap-4 mb-3">
                 <div className="flex flex-col items-center gap-1">
                   <IdCard className="h-8 w-8 text-foreground" />
-                  <span className="text-[10px] text-muted-foreground">Carte d&apos;identit\u00e9</span>
+                  <span className="text-[10px] text-muted-foreground">Carte d&apos;identité</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <BookOpen className="h-8 w-8 text-foreground" />
@@ -321,7 +321,7 @@ export function Step6Confirmation() {
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <FileText className="h-8 w-8 text-foreground" />
-                  <span className="text-[10px] text-muted-foreground">Titre de s\u00e9jour</span>
+                  <span className="text-[10px] text-muted-foreground">Titre de séjour</span>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -334,11 +334,11 @@ export function Step6Confirmation() {
                 <span className="text-sm leading-relaxed">
                   {isRetrait ? (
                     <>
-                      Je comprends qu'une <span className="font-semibold">pi\u00e8ce d'identit\u00e9</span> (l'un de ces documents) sera demand\u00e9e lors du retrait. *
+                      Je comprends qu'une <span className="font-semibold">pièce d'identité</span> (l'un de ces documents) sera demandée lors du retrait. *
                     </>
                   ) : (
                     <>
-                      Je comprends qu'une <span className="font-semibold">pi\u00e8ce d'identit\u00e9</span> (l'un de ces documents) sera demand\u00e9e \u00e0 la livraison. *
+                      Je comprends qu'une <span className="font-semibold">pièce d'identité</span> (l'un de ces documents) sera demandée à la livraison. *
                     </>
                   )}
                 </span>

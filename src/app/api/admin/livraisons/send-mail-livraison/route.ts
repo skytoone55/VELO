@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (!client) {
-    return NextResponse.json({ error: 'Client non trouv\u00e9' }, { status: 404 })
+    return NextResponse.json({ error: 'Client non trouvé' }, { status: 404 })
   }
 
   const recipientEmail = client.email_beneficiaire || client.email
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Erreur envoi email' }, { status: 500 })
   }
 
-  // Mettre a jour le statut commercial du client \u2192 en_livraison
+  // Mettre a jour le statut commercial du client → en_livraison
   await adminClient
     .from('clients')
     .update({
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     })
     .eq('id', clientId)
 
-  // Sync statut client \u2194 livraison
+  // Sync statut client ↔ livraison
   const { data: activeLivraison } = await adminClient
     .from('livraisons')
     .select('id')

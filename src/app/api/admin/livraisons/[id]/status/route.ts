@@ -16,7 +16,7 @@ const LIVRAISON_TRANSITIONS: Record<string, string[]> = {
   probleme: ['en_cours', 'annulee'],
 }
 
-// Mapping: livraison statut \u2192 client statut_commercial
+// Mapping: livraison statut → client statut_commercial
 const LIVRAISON_TO_CLIENT_STATUT: Record<string, string> = {
   en_cours: 'en_livraison',
   livree: 'livre',
@@ -57,7 +57,7 @@ export async function PATCH(
     const validStatuts = Object.keys(LIVRAISON_TRANSITIONS)
     if (!validStatuts.includes(statut)) {
       return NextResponse.json(
-        { error: `Statut invalide : "${statut}". Valeurs accept\u00e9es : ${validStatuts.join(', ')}` },
+        { error: `Statut invalide : "${statut}". Valeurs acceptées : ${validStatuts.join(', ')}` },
         { status: 400 }
       )
     }
@@ -73,17 +73,17 @@ export async function PATCH(
 
     if (fetchError || !livraison) {
       return NextResponse.json(
-        { error: 'Livraison non trouv\u00e9e' },
+        { error: 'Livraison non trouvée' },
         { status: 404 }
       )
     }
 
     // Role-based access check
     if (currentUser.role === 'livreur' && livraison.livreur_id !== currentUser.id) {
-      return NextResponse.json({ error: 'Acc\u00e8s refus\u00e9' }, { status: 403 })
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
     if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length && !currentUser.depot_ids.includes(livraison.depot_id)) {
-      return NextResponse.json({ error: 'Acc\u00e8s refus\u00e9' }, { status: 403 })
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
     // 2. Validate transition
@@ -93,7 +93,7 @@ export async function PATCH(
     if (!allowedTransitions.includes(statut)) {
       return NextResponse.json(
         {
-          error: `Transition non autoris\u00e9e : "${currentStatut}" \u2192 "${statut}". Transitions possibles : ${allowedTransitions.join(', ') || 'aucune'}`,
+          error: `Transition non autorisée : "${currentStatut}" → "${statut}". Transitions possibles : ${allowedTransitions.join(', ') || 'aucune'}`,
         },
         { status: 400 }
       )
@@ -123,9 +123,9 @@ export async function PATCH(
       .single()
 
     if (updateError) {
-      console.error('Erreur mise \u00e0 jour livraison:', updateError)
+      console.error('Erreur mise à jour livraison:', updateError)
       return NextResponse.json(
-        { error: 'Erreur lors de la mise \u00e0 jour de la livraison' },
+        { error: 'Erreur lors de la mise à jour de la livraison' },
         { status: 500 }
       )
     }
@@ -150,7 +150,7 @@ export async function PATCH(
         .eq('id', livraison.client_id)
 
       if (clientError) {
-        console.error('Erreur mise \u00e0 jour client:', clientError)
+        console.error('Erreur mise à jour client:', clientError)
         // Non-blocking: livraison already updated, log but don't fail
       }
     }

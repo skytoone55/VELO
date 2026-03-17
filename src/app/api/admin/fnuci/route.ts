@@ -101,7 +101,7 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (fetchErr || !current) {
-      return NextResponse.json({ error: 'Code FNUCI non trouv\u00e9' }, { status: 404 })
+      return NextResponse.json({ error: 'Code FNUCI non trouvé' }, { status: 404 })
     }
 
     // Validate transition
@@ -113,7 +113,7 @@ export async function PATCH(request: NextRequest) {
     }
     if (!allowed[current.statut]?.includes(statut)) {
       return NextResponse.json(
-        { error: `Transition ${current.statut} \u2192 ${statut} non autoris\u00e9e` },
+        { error: `Transition ${current.statut} → ${statut} non autorisée` },
         { status: 400 }
       )
     }
