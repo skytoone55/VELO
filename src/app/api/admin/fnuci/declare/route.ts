@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
+/** Convertit un numéro français (06...) en format international (+336...) */
+function formatPhoneInternational(phone: string): string {
+  const cleaned = phone.replace(/[\s.-]/g, '')
+  if (cleaned.startsWith('+')) return cleaned
+  if (cleaned.startsWith('0') && cleaned.length === 10) {
+    return '+33' + cleaned.slice(1)
+  }
+  return cleaned ? '+33' + cleaned : ''
+}
+
 /**
  * POST /api/admin/fnuci/declare
  * Déclare les vélos FNUCI auprès de Bicycode (API OBike)
@@ -126,7 +136,7 @@ export async function POST(request: NextRequest) {
               bike_owner: {
                 gender: 2,
                 social_reason: client.raison_sociale,
-                phone: client.telephone || '',
+                phone: formatPhoneInternational(client.telephone || ''),
                 mail: client.email_beneficiaire || '',
                 address: {
                   street_name: client.adresse_societe_ligne1 || '',
