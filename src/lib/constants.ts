@@ -131,6 +131,7 @@ export const PROCESS_STATUTS = {
   a_relivrer: 'À relivrer',
   retractation: 'Rétractation',
   anomalie: 'Anomalie',
+  client_hs: 'Client HS',
 } as const
 
 export type ProcessStatut = keyof typeof PROCESS_STATUTS
@@ -147,6 +148,7 @@ export const STATUT_COLORS: Record<ProcessStatut, string> = {
   a_relivrer: 'bg-pink-100 text-pink-800',
   retractation: 'bg-gray-100 text-gray-800',
   anomalie: 'bg-rose-100 text-rose-800',
+  client_hs: 'bg-red-600 text-white',
 }
 
 // Transitions autorisées entre statuts
@@ -161,6 +163,7 @@ export const STATUT_TRANSITIONS: Record<ProcessStatut, ProcessStatut[]> = {
   a_relivrer: ['en_livraison', 'retractation', 'anomalie'],
   retractation: [],
   anomalie: [],
+  client_hs: [],
 }
 
 // =================================================================
