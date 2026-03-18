@@ -311,25 +311,19 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     setHsLoading(true)
     setError(null)
     try {
-      const supabase = createClient()
+      const res = await fetch(`/api/admin/clients/${client.id}/hs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: hsComment.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
       const now = new Date().toISOString()
       const logEntry = `[HS ${new Date().toLocaleDateString('fr-FR')} par ${user?.nom || user?.email || 'Admin'}] ${hsComment.trim()}`
       const existingNotes = client.notes_internes ? client.notes_internes + '\n' : ''
-      const res = await fetch(`/api/admin/clients/${client.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          statut_commercial: 'client_hs',
-          date_statut: now,
-          notes_internes: existingNotes + logEntry,
-        }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Erreur')
-      }
-      setClient({ ...client, statut_commercial: 'client_hs', notes_internes: existingNotes + logEntry, date_statut: now })
-      setSuccess('Client passé en HS')
+      setClient({ ...client, statut_commercial: 'client_hs', notes_internes: existingNotes + logEntry, date_statut: now, fnuci_ids: [] })
+      setLivraisons(livraisons.map(l => ({ ...l, statut: 'annulee', cq_valide: false, cq_en_cours: false })))
+      setSuccess(`Client HS — ${data.livraisons_annulees} livraison(s) annulée(s), ${data.fnuci_liberes} FNUCI libéré(s)`)
       setHsDialogOpen(false)
       setHsConfirmOpen(false)
       setHsComment('')
@@ -654,9 +648,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
 
-          {/* Centre — boutons Planifier + Livrer + mails livraison */}
+          {/* Centre — boutons Planifier + Livrer + mails livraison (masqués si HS) */}
           <div className="flex items-center justify-center gap-2 flex-1 flex-wrap">
-            {client.statut_commercial !== 'livre' && client.statut_commercial === 'a_livrer' && !livraisons[0]?.creneau_date && (
+            {client.statut_commercial !== 'client_hs' && client.statut_commercial !== 'livre' && client.statut_commercial === 'a_livrer' && !livraisons[0]?.creneau_date && (
               <Button
                 size="sm"
                 asChild
@@ -669,7 +663,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </Button>
             )}
 
-            {client.statut_commercial !== 'livre' && ['a_livrer', 'en_livraison'].includes(client.statut_commercial || '') && (
+            {client.statut_commercial !== 'client_hs' && client.statut_commercial !== 'livre' && ['a_livrer', 'en_livraison'].includes(client.statut_commercial || '') && (
               <Button
                 size="sm"
                 onClick={handleOpenDelivery}
