@@ -417,12 +417,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Aucun client trouvé (${client_ids.length} IDs envoyés). Vérifiez que les clients existent.` }, { status: 400 })
     }
 
-    // Vérifier les livraisons déjà existantes pour éviter les doublons (toutes dates confondues)
+    // Vérifier les livraisons actives (en cours) pour éviter les doublons
+    // On ne bloque QUE les clients ayant une livraison en cours (programmee, en_livraison, a_livrer)
+    // Les clients déjà livrés ou annulés peuvent être re-planifiés
     const { data: existingLivraisons } = await supabase
       .from('livraisons')
       .select('client_id')
       .in('client_id', clients.map(c => c.id))
-      .not('statut', 'in', '("annulee","retractation")')
+      .in('statut', ['programmee', 'en_livraison', 'a_livrer'])
 
     const existingClientIds = new Set((existingLivraisons ?? []).map(l => l.client_id))
     const newClients = clients.filter(c => !existingClientIds.has(c.id))
