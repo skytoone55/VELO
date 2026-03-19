@@ -51,8 +51,8 @@ export async function GET(request: NextRequest) {
     const hasControle = controleFilter && controleFilter !== 'all'
     const hasEnemat = enematFilter && enematFilter !== 'all'
 
-    // Note: hasControle n'est PAS inclus ici car c'est un filtre sur livraisons (étape 2), pas sur clients
-    if (search || hasCommercial || hasDepartement || hasZone || hasEnemat) {
+    // Note: hasControle et hasEnemat ne sont PAS inclus ici — filtres appliques en etape 2 via jointure inner
+    if (search || hasCommercial || hasDepartement || hasZone) {
       let clientQuery = adminClient
         .from('clients')
         .select('id')
@@ -115,10 +115,6 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      if (hasEnemat) {
-        clientQuery = clientQuery.eq('in_enemat', enematFilter === 'oui')
-      }
-
       const { data: matchingClients } = await clientQuery
       clientIds = matchingClients?.map(c => c.id) || []
 
@@ -158,6 +154,11 @@ export async function GET(request: NextRequest) {
     // Apply search filter (client IDs from step 1)
     if (clientIds) {
       query = query.in('client_id', clientIds)
+    }
+
+    // Filtre ENEMAT via jointure inner (evite liste d'IDs trop longue)
+    if (hasEnemat) {
+      query = query.eq('client.in_enemat', enematFilter === 'oui')
     }
 
     // Depot filter via livraisons.depot_id

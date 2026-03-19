@@ -136,6 +136,7 @@ export default function AdminClientsPage() {
   const user = useAdminUser()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
+  const [copiedRef, setCopiedRef] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statutFilter, setStatutFilter] = useState('all')
   const [statutOptions, setStatutOptions] = useState(defaultStatutOptions)
@@ -579,6 +580,12 @@ export default function AdminClientsPage() {
     }
   }
 
+  const copyRef = (ref: string) => {
+    navigator.clipboard.writeText(ref)
+    setCopiedRef(ref)
+    setTimeout(() => setCopiedRef(null), 2000)
+  }
+
   const handleClearSelection = () => {
     setSelectedClients(new Set())
   }
@@ -955,13 +962,13 @@ export default function AdminClientsPage() {
                     />
                   </TableHead>
                   <SortableHeader label="Société" column="raison_sociale" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Ref. Retina" column="reference_retina" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
                   <SortableHeader label="Email client" column="email_beneficiaire" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
                   <SortableHeader label="Téléphone" column="telephone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
                   <SortableHeader label="Commercial" column="monday_board_id" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
                   <SortableHeader label="Dép." column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="Velos" column="velo_devis" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="NAF" column="validation_naf" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
-                  <SortableHeader label="Ref. Retina" column="reference_retina" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
                   <SortableHeader label="Dépôt" column="depot_logistique_id" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
                   <SortableHeader label="Zone" column="type_de_zone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
                   <SortableHeader label="Statut" column="statut_commercial" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
@@ -992,6 +999,24 @@ export default function AdminClientsPage() {
                           {client.siret || '-'}
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      {client.reference_retina ? (
+                        <button
+                          onClick={() => copyRef(client.reference_retina!)}
+                          className="flex items-center gap-1 text-xs font-mono hover:text-blue-600 transition-colors"
+                          title="Copier"
+                        >
+                          {client.reference_retina}
+                          {copiedRef === client.reference_retina ? (
+                            <Check className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <Copy className="h-3 w-3 text-muted-foreground" />
+                          )}
+                        </button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
                       <div className="text-sm">
@@ -1041,11 +1066,6 @@ export default function AdminClientsPage() {
                         if (client.validation_naf === 'NON') return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">NON</Badge>
                         return <Badge variant="outline" className="text-muted-foreground">A vérifier</Badge>
                       })()}
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell">
-                      <span className="text-xs font-mono text-muted-foreground">
-                        {client.reference_retina || '-'}
-                      </span>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       {(() => {
