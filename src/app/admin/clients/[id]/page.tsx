@@ -191,6 +191,18 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [hsComment, setHsComment] = useState('')
   const [hsLoading, setHsLoading] = useState(false)
 
+  // Retour vers Data Client
+  const [toDataDialogOpen, setToDataDialogOpen] = useState(false)
+  const [toDataConfirmOpen, setToDataConfirmOpen] = useState(false)
+  const [toDataComment, setToDataComment] = useState('')
+  const [toDataLoading, setToDataLoading] = useState(false)
+
+  // Edition velo_valide
+  const [editingVelos, setEditingVelos] = useState(false)
+  const [editVelosValue, setEditVelosValue] = useState(0)
+  const [velosConfirmOpen, setVelosConfirmOpen] = useState(false)
+  const [savingVelos, setSavingVelos] = useState(false)
+
   // Inline edit — préférences & complément
   const [editingPreferences, setEditingPreferences] = useState(false)
   const [editPreferencesValue, setEditPreferencesValue] = useState('')
@@ -331,6 +343,54 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       setError(err.message)
     } finally {
       setHsLoading(false)
+    }
+  }
+
+  const handleToData = async () => {
+    if (!client || !toDataComment.trim()) return
+    setToDataLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/admin/clients/${client.id}/to-data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: toDataComment.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
+      setToDataDialogOpen(false)
+      setToDataConfirmOpen(false)
+      setToDataComment('')
+      setSuccess(`Client renvoyé vers Data — ${data.livraisonsAnnulees} livraison(s) annulée(s), ${data.fnuciLiberes} FNUCI libéré(s)`)
+      // Rediriger vers la liste après 2s
+      setTimeout(() => router.push('/admin/clients'), 2000)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setToDataLoading(false)
+    }
+  }
+
+  const handleSaveVelos = async () => {
+    if (!client) return
+    setSavingVelos(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/admin/clients/${client.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ velo_valide: editVelosValue }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
+      setClient({ ...client, velo_valide: editVelosValue })
+      setEditingVelos(false)
+      setVelosConfirmOpen(false)
+      setSuccess('Nombre de vélos mis à jour')
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setSavingVelos(false)
     }
   }
 
@@ -816,6 +876,45 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </Dialog>
             )}
 
+            {/* Bouton Renvoyer vers Data — admin et super_admin uniquement */}
+            {(user?.role === 'super_admin' || user?.role === 'admin') && client.statut_commercial !== 'client_hs' && (
+              <Dialog open={toDataDialogOpen} onOpenChange={setToDataDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="border-orange-400 text-orange-300 hover:bg-orange-500/20">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Vers Data
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Renvoyer vers Data Client</DialogTitle>
+                    <DialogDescription>
+                      Ce client sera retiré de l&apos;espace actif et renvoyé vers Data Client. Les livraisons et FNUCI seront annulés.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-3">
+                    <label className="text-sm font-medium mb-2 block">Motif du retour *</label>
+                    <textarea
+                      className="w-full border rounded-md p-3 text-sm min-h-[80px] focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="Ex: Erreur de calcul, dossier incomplet, en attente de validation..."
+                      value={toDataComment}
+                      onChange={(e) => setToDataComment(e.target.value)}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => { setToDataDialogOpen(false); setToDataComment('') }}>Annuler</Button>
+                    <Button
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      disabled={!toDataComment.trim()}
+                      onClick={() => { setToDataDialogOpen(false); setToDataConfirmOpen(true) }}
+                    >
+                      Confirmer
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+
             {/* Séparateur avant badges statut */}
             <div className="h-6 w-px bg-white/20 mx-1" />
 
@@ -852,8 +951,33 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <div className="flex items-center justify-center gap-1 text-slate-300 text-xs uppercase tracking-wide mb-1">
               <Bike className="h-3.5 w-3.5" />
               Vélos
+              {(user?.role === 'super_admin' || user?.role === 'admin') && !editingVelos && (
+                <button
+                  onClick={() => { setEditVelosValue(client.velo_valide || 0); setEditingVelos(true) }}
+                  className="ml-1 text-slate-400 hover:text-white transition-colors"
+                  title="Modifier"
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+              )}
             </div>
-            <div className="text-xl font-bold">{client.velo_valide || 0}<span className="text-slate-400">/{client.velo_devis}</span></div>
+            {editingVelos ? (
+              <div className="flex items-center justify-center gap-1">
+                <input
+                  type="number"
+                  min={0}
+                  max={client.velo_devis || 99}
+                  value={editVelosValue}
+                  onChange={(e) => setEditVelosValue(Math.min(parseInt(e.target.value) || 0, client.velo_devis || 99))}
+                  className="w-12 text-center text-lg font-bold bg-white/10 border border-white/30 rounded px-1 py-0 text-white"
+                />
+                <span className="text-slate-400">/{client.velo_devis}</span>
+                <button onClick={() => { if (editVelosValue > (client.velo_devis || 99)) { return } setVelosConfirmOpen(true) }} className="text-green-400 hover:text-green-300 ml-1"><Check className="h-4 w-4" /></button>
+                <button onClick={() => setEditingVelos(false)} className="text-red-400 hover:text-red-300"><X className="h-4 w-4" /></button>
+              </div>
+            ) : (
+              <div className="text-xl font-bold">{client.velo_valide || 0}<span className="text-slate-400">/{client.velo_devis}</span></div>
+            )}
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 text-slate-300 text-xs uppercase tracking-wide mb-1">
@@ -1619,6 +1743,53 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             >
               {hsLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Oui, passer en HS
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog double confirmation Retour Data */}
+      <AlertDialog open={toDataConfirmOpen} onOpenChange={setToDataConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer le retour vers Data Client</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le client <strong>{client?.raison_sociale}</strong> sera retiré de l&apos;espace actif et renvoyé vers Data Client.<br />
+              Motif : &quot;{toDataComment}&quot;<br /><br />
+              Les livraisons en cours seront annulées et les FNUCI libérés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={toDataLoading} onClick={() => { setToDataConfirmOpen(false); setToDataDialogOpen(true) }}>Retour</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={toDataLoading}
+              className="bg-orange-600 text-white hover:bg-orange-700"
+              onClick={handleToData}
+            >
+              {toDataLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Oui, renvoyer vers Data
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog confirmation modification vélos */}
+      <AlertDialog open={velosConfirmOpen} onOpenChange={setVelosConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Modifier le nombre de vélos validés</AlertDialogTitle>
+            <AlertDialogDescription>
+              Passer de <strong>{client?.velo_valide || 0}</strong> à <strong>{editVelosValue}</strong> vélo(s) validé(s) pour {client?.raison_sociale} ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={savingVelos}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={savingVelos}
+              onClick={handleSaveVelos}
+            >
+              {savingVelos && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Confirmer
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

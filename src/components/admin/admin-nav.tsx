@@ -25,6 +25,7 @@ import {
   Webhook,
   BookOpen,
   GraduationCap,
+  Database,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getTenantConfig, TENANTS } from '@/lib/tenants'
@@ -117,6 +118,12 @@ const adminNavItems: NavItem[] = [
         roles: ['super_admin'],
       },
       {
+        href: '/admin/settings/data-client',
+        label: 'Data Client',
+        icon: Database,
+        roles: ['super_admin', 'admin'],
+      },
+      {
         href: '/admin/settings/fnuci',
         label: 'FNUCI',
         icon: FileText,
@@ -185,6 +192,7 @@ export function AdminNav({ user }: AdminNavProps) {
   const [settingsOpen, setSettingsOpen] = useState(
     pathname.startsWith('/admin/settings') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/depots')
     || pathname.startsWith('/admin/settings/fnuci') || pathname.startsWith('/admin/settings/naf')
+    || pathname.startsWith('/admin/settings/data-client')
   )
   const [desktopSettingsOpen, setDesktopSettingsOpen] = useState(false)
   const desktopSettingsRef = useRef<HTMLDivElement>(null)
