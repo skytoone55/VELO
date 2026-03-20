@@ -133,8 +133,8 @@ export async function POST(request: NextRequest) {
             // Col N : Raison sociale
             newRow.getCell(col).value = row.raison_sociale
           } else if (col === 15) {
-            // Col O : Téléphone
-            newRow.getCell(col).value = row.telephone
+            // Col O : Téléphone (sans espace — format +33612345678)
+            newRow.getCell(col).value = (row.telephone || '').replace(/\s/g, '')
           } else if (col === 16) {
             // Col P : Email
             newRow.getCell(col).value = row.email
@@ -149,8 +149,9 @@ export async function POST(request: NextRequest) {
       const buffer = new Uint8Array(arrayBuffer)
       const suffix = chunks.length > 1 ? `-${chunkIdx + 1}` : ''
       const today = new Date().toISOString().slice(0, 10)
+      const tenantName = process.env.NEXT_PUBLIC_TENANT_ID === 'ppe' ? 'PPE-Energie' : 'Ecovolt'
       files.push({
-        name: `declaration-fnuci-${today}${suffix}.xlsx`,
+        name: `declaration-fnuci-${tenantName}-${today}${suffix}.xlsx`,
         buffer,
       })
     }
