@@ -146,11 +146,11 @@ export default function DataClientPage() {
   const [loading, setLoading] = useState(true)
   const [copiedRef, setCopiedRef] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [statutFilter, setStatutFilter] = useState('all')
+  const [statutFilter, setStatutFilter] = useState<string[]>([])
   const [statutOptions, setStatutOptions] = useState(defaultStatutOptions)
   const [nafFilter, setNafFilter] = useState('all')
   const [departementFilter, setDepartementFilter] = useState<string[]>([])
-  const [commercialFilter, setCommercialFilter] = useState('all')
+  const [commercialFilter, setCommercialFilter] = useState<string[]>([])
   const [sortBy, setSortBy] = useState('updated_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
@@ -206,10 +206,10 @@ export default function DataClientPage() {
     const pinned = loadPinned()
     if (pinned) {
       setIsPinned(true)
-      if (pinned.statut) setStatutFilter(pinned.statut)
+      if (pinned.statut) setStatutFilter(Array.isArray(pinned.statut) ? pinned.statut : pinned.statut.split(',').filter(Boolean))
       if (pinned.departement) setDepartementFilter(Array.isArray(pinned.departement) ? pinned.departement : [pinned.departement])
       if (pinned.naf) setNafFilter(pinned.naf)
-      if (pinned.commercial) setCommercialFilter(pinned.commercial)
+      if (pinned.commercial) setCommercialFilter(Array.isArray(pinned.commercial) ? pinned.commercial : pinned.commercial.split(',').filter(Boolean))
       if (pinned.pageSize) setPageSize(pinned.pageSize)
     }
     setFiltersReady(true)
@@ -217,10 +217,10 @@ export default function DataClientPage() {
 
   const handlePinFilters = () => {
     saveFilters({
-      statut: statutFilter,
+      statut: statutFilter.join(','),
       departement: departementFilter,
       naf: nafFilter,
-      commercial: commercialFilter,
+      commercial: commercialFilter.join(','),
       pageSize,
     })
     setIsPinned(true)
@@ -295,10 +295,10 @@ export default function DataClientPage() {
 
       if (forceRefresh) params.set('refresh', 'true')
       if (debouncedSearch) params.set('search', debouncedSearch)
-      if (statutFilter !== 'all') params.set('statut', statutFilter)
+      if (statutFilter.length > 0) params.set('statut', statutFilter.join(','))
       if (departementFilter.length > 0) params.set('departement', departementFilter.join(','))
       if (nafFilter !== 'all') params.set('naf', nafFilter)
-      if (commercialFilter !== 'all') params.set('commercial', commercialFilter)
+      if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
       if (sortBy !== 'updated_at' || sortOrder !== 'desc') {
         params.set('sortBy', sortBy)
         params.set('sortOrder', sortOrder)
@@ -353,11 +353,11 @@ export default function DataClientPage() {
   // Reset page quand les filtres changent
   const prevFilters = useRef({
     search: debouncedSearch,
-    statut: statutFilter,
+    statut: statutFilter.join(','),
     dept: departementFilter.join(','),
     pageSize,
     naf: nafFilter,
-    commercial: commercialFilter,
+    commercial: commercialFilter.join(','),
     sortBy,
     sortOrder,
   })
@@ -366,11 +366,11 @@ export default function DataClientPage() {
     const prev = prevFilters.current
     const cur = {
       search: debouncedSearch,
-      statut: statutFilter,
+      statut: statutFilter.join(','),
       dept: departementFilter.join(','),
       pageSize,
       naf: nafFilter,
-      commercial: commercialFilter,
+      commercial: commercialFilter.join(','),
       sortBy,
       sortOrder,
     }
@@ -641,18 +641,38 @@ export default function DataClientPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select value={statutFilter} onValueChange={setStatutFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Statut" />
-          </SelectTrigger>
-          <SelectContent>
-            {statutOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Statut {statutFilter.length > 0 && `(${statutFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {statutOptions.filter(o => o.value !== 'all').map(o => (
+                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={statutFilter.includes(o.value)}
+                    onChange={(e) => {
+                      setStatutFilter(prev =>
+                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {statutFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setStatutFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
@@ -697,16 +717,38 @@ export default function DataClientPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={commercialFilter} onValueChange={setCommercialFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Commercial" />
-          </SelectTrigger>
-          <SelectContent>
-            {commercialOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Commercial {commercialFilter.length > 0 && `(${commercialFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {commercialOptions.filter(o => o.value !== 'all').map(o => (
+                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={commercialFilter.includes(o.value)}
+                    onChange={(e) => {
+                      setCommercialFilter(prev =>
+                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {commercialFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setCommercialFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
         <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
           <SelectTrigger className="h-8 w-[52px] text-xs px-2 shrink-0">
             <SelectValue />
@@ -736,7 +778,7 @@ export default function DataClientPage() {
               <Database className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h3 className="font-medium mb-1">Aucun client data</h3>
               <p className="text-muted-foreground text-sm">
-                {searchQuery || statutFilter !== 'all' || departementFilter.length > 0
+                {searchQuery || statutFilter.length > 0 || departementFilter.length > 0
                   ? 'Aucun client ne correspond à vos critères'
                   : 'Aucun client data dans la base'}
               </p>

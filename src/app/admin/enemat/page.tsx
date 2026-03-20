@@ -362,25 +362,53 @@ export default function AdminEnematPage() {
     }
   }
 
-  // ─── Déclarer FNUCI ──────────────────────────────────────────
+  // ─── Export FNUCI Bicycode (Excel) ──────────────────────────
   const handleFnuciDeclare = async () => {
     if (selectedClients.size === 0) return
     setFnuciDeclareLoading(true)
     try {
-      const res = await fetch('/api/admin/fnuci/declare', {
+      const res = await fetch('/api/admin/fnuci/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_ids: Array.from(selectedClients) }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
 
-      const { summary } = data
-      if (summary.bikes_failed > 0) {
-        toast.warning(`${summary.bikes_declared} vélo(s) déclaré(s), ${summary.bikes_failed} en erreur`)
-      } else {
-        toast.success(`${summary.bikes_declared} vélo(s) déclaré(s) pour ${summary.clients_declared} client(s)`)
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Erreur')
       }
+
+      const contentType = res.headers.get('content-type') || ''
+
+      if (contentType.includes('spreadsheetml')) {
+        // Un seul fichier — télécharger directement
+        const blob = await res.blob()
+        const disposition = res.headers.get('content-disposition') || ''
+        const match = disposition.match(/filename="(.+)"/)
+        const filename = match ? match[1] : 'declaration-fnuci.xlsx'
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(url)
+        toast.success('Fichier FNUCI exporté — FNUCI marqués comme déclarés')
+      } else {
+        // Plusieurs fichiers (JSON avec base64)
+        const data = await res.json()
+        for (const file of data.files) {
+          const byteArray = Uint8Array.from(atob(file.data), c => c.charCodeAt(0))
+          const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = file.name
+          a.click()
+          URL.revokeObjectURL(url)
+        }
+        toast.success(`${data.summary.total_fichiers} fichier(s) FNUCI exporté(s) — ${data.summary.total_velos} vélo(s) déclaré(s)`)
+      }
+
       setSelectedClients(new Set())
       fetchClients()
     } catch (err: any) {
@@ -991,8 +1019,8 @@ export default function AdminEnematPage() {
                 disabled={fnuciDeclareLoading || bulkActionLoading}
                 className="text-violet-600 hover:text-violet-700 hover:bg-violet-50"
               >
-                {fnuciDeclareLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileCheck className="h-4 w-4 mr-1" />}
-                Déclarer FNUCI
+                {fnuciDeclareLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
+                Export FNUCI Bicycode
               </Button>
 
               <Button

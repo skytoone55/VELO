@@ -96,12 +96,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Filtre par statut commercial
+    // Filtre par statut commercial (multi-select, valeurs séparées par virgule)
     if (statutFilter && statutFilter !== 'all') {
-      if (statutFilter === '__null__') {
-        query = query.is('statut_commercial', null)
-      } else {
-        query = query.eq('statut_commercial', statutFilter)
+      const statuts = statutFilter.split(',').filter(Boolean)
+      if (statuts.length === 1) {
+        if (statuts[0] === '__null__') query = query.is('statut_commercial', null)
+        else query = query.eq('statut_commercial', statuts[0])
+      } else if (statuts.length > 1) {
+        query = query.in('statut_commercial', statuts)
       }
     }
 
@@ -144,15 +146,16 @@ export async function GET(request: NextRequest) {
       query = query.eq('type_de_zone', zoneFilter)
     }
 
-    // Filtre par commercial (tenant-aware)
+    // Filtre par commercial (tenant-aware, multi-select)
     if (commercialFilter && commercialFilter !== 'all') {
+      const commercials = commercialFilter.split(',').filter(Boolean)
       const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
       if (tenantId === 'ppe') {
-        // PPE : commercial = board Monday → filtrer par monday_board_id
-        query = query.eq('monday_board_id', commercialFilter)
+        if (commercials.length === 1) query = query.eq('monday_board_id', commercials[0])
+        else if (commercials.length > 1) query = query.in('monday_board_id', commercials)
       } else {
-        // Ecovolt : commercial = email agent → filtrer par email
-        query = query.eq('email', commercialFilter)
+        if (commercials.length === 1) query = query.eq('email', commercials[0])
+        else if (commercials.length > 1) query = query.in('email', commercials)
       }
     }
 
@@ -216,10 +219,12 @@ export async function GET(request: NextRequest) {
       )
     }
     if (statutFilter && statutFilter !== 'all') {
-      if (statutFilter === '__null__') {
-        velosQuery = velosQuery.is('statut_commercial', null)
-      } else {
-        velosQuery = velosQuery.eq('statut_commercial', statutFilter)
+      const statuts = statutFilter.split(',').filter(Boolean)
+      if (statuts.length === 1) {
+        if (statuts[0] === '__null__') velosQuery = velosQuery.is('statut_commercial', null)
+        else velosQuery = velosQuery.eq('statut_commercial', statuts[0])
+      } else if (statuts.length > 1) {
+        velosQuery = velosQuery.in('statut_commercial', statuts)
       }
     }
     if (departementFilter && departementFilter !== 'all') {
@@ -252,11 +257,14 @@ export async function GET(request: NextRequest) {
       velosQuery = velosQuery.eq('type_de_zone', zoneFilter)
     }
     if (commercialFilter && commercialFilter !== 'all') {
+      const commercials = commercialFilter.split(',').filter(Boolean)
       const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
       if (tenantId === 'ppe') {
-        velosQuery = velosQuery.eq('monday_board_id', commercialFilter)
+        if (commercials.length === 1) velosQuery = velosQuery.eq('monday_board_id', commercials[0])
+        else if (commercials.length > 1) velosQuery = velosQuery.in('monday_board_id', commercials)
       } else {
-        velosQuery = velosQuery.eq('email', commercialFilter)
+        if (commercials.length === 1) velosQuery = velosQuery.eq('email', commercials[0])
+        else if (commercials.length > 1) velosQuery = velosQuery.in('email', commercials)
       }
     }
     if (depotFilter && depotFilter !== 'all') {
