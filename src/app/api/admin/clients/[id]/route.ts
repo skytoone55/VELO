@@ -154,6 +154,17 @@ export async function GET(
       }
     }
 
+    // Guard : rattrapage statut client si livraison livree mais client pas livre
+    if (client.statut_commercial !== 'livre' && livraisons?.some((l: any) => l.statut === 'livree')) {
+      client.statut_commercial = 'livre'
+      client.date_statut = livraisons.find((l: any) => l.statut === 'livree')?.date_livraison_effective || new Date().toISOString()
+      await adminClient.from('clients').update({
+        statut_commercial: 'livre',
+        date_statut: client.date_statut,
+      }).eq('id', id)
+      console.log(`[guard] Client ${id} corrigé → livre (livraison livree détectée)`)
+    }
+
     // Enrichir les livraisons avec les noms livreur + contrôleur
     const userIdsToResolve = new Set<string>()
     for (const liv of (livraisons || [])) {

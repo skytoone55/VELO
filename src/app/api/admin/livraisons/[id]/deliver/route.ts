@@ -75,6 +75,21 @@ export async function POST(
     }
 
     if (livraison.statut === 'livree') {
+      // Guard : rattrapage si le client est resté désynchronisé
+      if (livraison.client_id) {
+        const { data: clientCheck } = await supabase
+          .from('clients')
+          .select('statut_commercial')
+          .eq('id', livraison.client_id)
+          .single()
+        if (clientCheck && clientCheck.statut_commercial !== 'livre') {
+          await supabase.from('clients').update({
+            statut_commercial: 'livre',
+            date_statut: livraison.date_livraison_effective || new Date().toISOString(),
+          }).eq('id', livraison.client_id)
+          console.log(`[guard] Client ${livraison.client_id} corrigé → livre (était ${clientCheck.statut_commercial})`)
+        }
+      }
       return NextResponse.json(
         { error: 'Cette livraison a déjà été effectuée' },
         { status: 400 }
