@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { syncClientToMonday, getChangedFields } from '@/lib/monday/api'
 import { isMondayConfigured } from '@/lib/monday/config'
+import { geocodeAddress, calculateHaversineDistance } from '@/lib/geo/utils'
 
 // GET - Récupérer un client par ID
 export async function GET(
@@ -88,9 +89,60 @@ export async function GET(
       depotLogistique = depot
     }
 
-    // Récupérer la distance depuis le cache si disponible
+    // Lazy geocoding : si le client a une adresse mais pas de coordonnées GPS
+    if (!client.latitude && !client.longitude) {
+      const cp = client.adresse_societe_cp || client.adresse_livraison_cp
+      const ville = client.adresse_societe_ville || client.adresse_livraison_ville
+      const adresse = client.adresse_societe_ligne1 || client.adresse_livraison_ligne1 || ''
+      if (cp && ville) {
+        try {
+          const geo = await geocodeAddress(adresse, cp, ville, 0.2)
+          if (geo) {
+            client.latitude = geo.lat
+            client.longitude = geo.lng
+            await adminClient
+              .from('clients')
+              .update({ latitude: geo.lat, longitude: geo.lng })
+              .eq('id', id)
+            console.log(`[lazy-geocode] Client ${id} géocodé: ${geo.lat},${geo.lng} (score ${geo.score})`)
+          }
+        } catch (err) {
+          console.error(`[lazy-geocode] Erreur pour client ${id}:`, err)
+        }
+      }
+    }
+
+    // Calculer la distance au dépôt (Haversine)
     const depotId = client.depot_retrait_id || client.depot_logistique_id
-    if (depotId) {
+    const depot = depotRetrait || depotLogistique
+    if (client.latitude && client.longitude && depot?.latitude && depot?.longitude) {
+      distanceKm = Math.round(
+        calculateHaversineDistance(
+          client.latitude, client.longitude,
+          parseFloat(depot.latitude), parseFloat(depot.longitude)
+        ) * 10
+      ) / 10
+
+      // Mettre en cache si pas déjà fait
+      if (depotId) {
+        const { data: existing } = await adminClient
+          .from('distances_cache')
+          .select('id')
+          .eq('client_id', id)
+          .eq('depot_id', depotId)
+          .single()
+        if (!existing) {
+          try {
+            await adminClient.from('distances_cache').insert({
+              client_id: id,
+              depot_id: depotId,
+              distance_km: distanceKm,
+            })
+          } catch { /* ignore duplicate */ }
+        }
+      }
+    } else if (depotId) {
+      // Fallback : distance depuis le cache
       const { data: distanceCache } = await adminClient
         .from('distances_cache')
         .select('distance_km')
