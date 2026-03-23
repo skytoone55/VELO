@@ -33,6 +33,7 @@ export const ALL_BOARD_NAMES: Record<string, string> = {
  */
 export function getCommercialName(client: {
   monday_board_id?: string | null
+  commercial_assigne?: string | null
   email?: string | null
 }): string {
   const tenant = getTenantId()
@@ -40,10 +41,10 @@ export function getCommercialName(client: {
     if (client.monday_board_id && PPE_BOARD_NAMES[client.monday_board_id]) {
       return PPE_BOARD_NAMES[client.monday_board_id]
     }
-    return 'Inconnu'
+    return client.commercial_assigne || 'Inconnu'
   }
-  // Ecovolt : email = email commercial
-  return client.email || 'Inconnu'
+  // Ecovolt : commercial_assigne en priorité, sinon email
+  return client.commercial_assigne || client.email || 'Inconnu'
 }
 
 // Ecovolt : labels lisibles pour les départements DOM-TOM
