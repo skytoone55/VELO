@@ -30,6 +30,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
+  Pencil,
+  Check,
+  X,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -80,6 +83,11 @@ export default function FnuciManagementPage() {
   const [sortOrder, setSortOrder] = useState('asc')
   const [searchInput, setSearchInput] = useState('')
   const [pendingAction, setPendingAction] = useState<{ id: string; currentStatut: string; targetStatut: string } | null>(null)
+  const [editingRefId, setEditingRefId] = useState<string | null>(null)
+  const [editRefValue, setEditRefValue] = useState('')
+  const [editRefOld, setEditRefOld] = useState('')
+  const [refConfirmOpen, setRefConfirmOpen] = useState(false)
+  const [refSaving, setRefSaving] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -267,7 +275,35 @@ export default function FnuciManagementPage() {
                 ) : sortedRecords.map((r) => (
                   <tr key={r.id} className="border-b hover:bg-muted/30 transition-colors">
                     <td className="px-3 py-2 font-mono">{r.numero}</td>
-                    <td className="px-3 py-2 font-mono font-medium">{r.reference}</td>
+                    <td className="px-3 py-2 font-mono font-medium">
+                      {editingRefId === r.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={editRefValue}
+                            onChange={(e) => setEditRefValue(e.target.value.toUpperCase())}
+                            className="h-7 w-32 font-mono text-sm"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') setEditingRefId(null)
+                              if (e.key === 'Enter' && editRefValue.trim() && editRefValue !== editRefOld) setRefConfirmOpen(true)
+                            }}
+                          />
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                            if (editRefValue.trim() && editRefValue !== editRefOld) setRefConfirmOpen(true)
+                          }}><Check className="h-3 w-3" /></Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingRefId(null)}><X className="h-3 w-3" /></Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 group">
+                          <span>{r.reference}</span>
+                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => {
+                            setEditingRefId(r.id)
+                            setEditRefValue(r.reference)
+                            setEditRefOld(r.reference)
+                          }}><Pencil className="h-3 w-3" /></Button>
+                        </div>
+                      )}
+                    </td>
                     <td className="px-3 py-2">
                       <Badge className={STATUT_COLORS[r.statut] || ''} variant="secondary">
                         {STATUT_LABELS[r.statut] || r.statut}
@@ -388,6 +424,42 @@ export default function FnuciManagementPage() {
             >
               {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Double validation modification référence */}
+      <AlertDialog open={refConfirmOpen} onOpenChange={setRefConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Modifier la référence FNUCI ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous allez changer la référence de <span className="font-mono font-bold">{editRefOld}</span> en <span className="font-mono font-bold">{editRefValue}</span>. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction disabled={refSaving} onClick={async () => {
+              setRefSaving(true)
+              try {
+                const newRef = editRefValue.trim().toUpperCase()
+                const res = await fetch('/api/admin/fnuci', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id: editingRefId, reference: newRef, old_reference: editRefOld }),
+                })
+                if (res.ok) {
+                  await fetchData()
+                  setEditingRefId(null)
+                  setRefConfirmOpen(false)
+                }
+              } catch {
+                // silent
+              } finally {
+                setRefSaving(false)
+              }
+            }}>
+              {refSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirmer'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

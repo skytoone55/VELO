@@ -82,11 +82,34 @@ export async function PATCH(request: NextRequest) {
     if (isAuthError(auth)) return auth
 
     const body = await request.json()
-    const { id, statut } = body as { id: string; statut: string }
+    const { id, statut, reference, old_reference } = body as { id: string; statut?: string; reference?: string; old_reference?: string }
 
-    if (!id || !['disponible', 'bloque'].includes(statut)) {
+    if (!id) {
+      return NextResponse.json({ error: 'id requis' }, { status: 400 })
+    }
+
+    // Mode édition de référence
+    if (reference && old_reference) {
+      const supabase = createAdminClient()
+      const newRef = reference.trim().toUpperCase()
+      const { error: updateErr } = await supabase.from('fnuci').update({ reference: newRef }).eq('id', id)
+      if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
+      // Mettre à jour fnuci_ids du client associé
+      const { data: fnuciRecord } = await supabase.from('fnuci').select('client_id').eq('id', id).single()
+      if (fnuciRecord?.client_id) {
+        const { data: client } = await supabase.from('clients').select('fnuci_ids').eq('id', fnuciRecord.client_id).single()
+        if (client?.fnuci_ids) {
+          const ids = Array.isArray(client.fnuci_ids) ? (client.fnuci_ids as unknown as string[]) : []
+          const updated = ids.map(r => r === old_reference ? newRef : r)
+          await supabase.from('clients').update({ fnuci_ids: updated }).eq('id', fnuciRecord.client_id)
+        }
+      }
+      return NextResponse.json({ success: true, reference: newRef })
+    }
+
+    if (!statut || !['disponible', 'bloque'].includes(statut)) {
       return NextResponse.json(
-        { error: 'id et statut (disponible|bloque) requis' },
+        { error: 'statut (disponible|bloque) ou reference requis' },
         { status: 400 }
       )
     }
