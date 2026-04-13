@@ -48,6 +48,8 @@ interface NavItem {
   icon: React.ElementType
   roles: UserRole[]
   children?: NavItem[]
+  externalHref?: string // URL externe (ouvre dans un nouvel onglet)
+  tenantOnly?: 'ppe' | 'ecovolt' // Visible uniquement pour ce tenant
 }
 
 const adminNavItems: NavItem[] = [
@@ -68,6 +70,14 @@ const adminNavItems: NavItem[] = [
     label: 'Livraisons',
     icon: Truck,
     roles: ['super_admin', 'admin', 'agent_secteur', 'livreur'],
+  },
+  {
+    href: '#',
+    label: 'Module Retrait',
+    icon: Truck,
+    roles: ['super_admin', 'admin', 'agent_secteur'],
+    externalHref: process.env.NEXT_PUBLIC_ECOVOLT_RETRAIT_URL || 'https://ecovolt-retrait.vercel.app',
+    tenantOnly: 'ecovolt',
   },
   {
     href: '/admin/planning',
@@ -243,8 +253,9 @@ export function AdminNav({ user }: AdminNavProps) {
     router.refresh()
   }
 
+  const tenantId = (process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt') as TenantId
   const filteredNavItems = adminNavItems.filter(item =>
-    item.roles.includes(user.role)
+    item.roles.includes(user.role) && (!item.tenantOnly || item.tenantOnly === tenantId)
   )
 
   const userInitials = `${user.prenom?.[0] ?? ''}${user.nom?.[0] ?? ''}`.toUpperCase()
@@ -358,6 +369,22 @@ export function AdminNav({ user }: AdminNavProps) {
               }
 
               const isActive = isItemActive(item)
+
+              if (item.externalHref) {
+                return (
+                  <a
+                    key={item.label}
+                    href={item.externalHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </a>
+                )
+              }
+
               return (
                 <Link
                   key={item.href}
@@ -550,6 +577,22 @@ export function AdminNav({ user }: AdminNavProps) {
               }
 
               const isActive = isItemActive(item)
+
+              if (item.externalHref) {
+                return (
+                  <a
+                    key={item.label}
+                    href={item.externalHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors text-gray-700 hover:bg-gray-100"
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </a>
+                )
+              }
+
               return (
                 <Link
                   key={item.href}

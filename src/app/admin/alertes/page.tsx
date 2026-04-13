@@ -35,9 +35,12 @@ import {
   Unlock,
   RefreshCw,
   RotateCcw,
+  Download,
 } from 'lucide-react'
 import Link from 'next/link'
 import { CQ_CHECKS, CQ_CHECK_KEYS, type CqCheckKey } from '@/lib/constants'
+import { exportToXlsx } from '@/lib/export-xlsx'
+import { getTenantConfig } from '@/lib/tenants'
 import { useAdminUser } from '@/components/admin/admin-user-provider'
 import { toast } from 'sonner'
 import { usePinnedFilters, PinFiltersButton } from '@/components/admin/pin-filters'
@@ -310,6 +313,36 @@ export default function ControlePage() {
   const getCheckedCount = (item: ControleItem) =>
     CQ_CHECK_KEYS.filter(key => item[key]).length
 
+  // Export Excel
+  const handleExportControle = () => {
+    const tenant = getTenantConfig()
+    const today = new Date().toISOString().slice(0, 10)
+    exportToXlsx(items, [
+      { header: 'Date livraison', accessor: r => {
+        const d = r.date_livraison_effective || r.date_livraison
+        if (!d) return ''
+        const raw = String(d)
+        const dt = new Date(raw.endsWith('Z') || raw.includes('+') ? raw : raw + 'Z')
+        return dt.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })
+      }},
+      { header: 'Société', accessor: r => r.client?.raison_sociale || '' },
+      { header: 'Nom', accessor: r => r.client?.contact_nom || '' },
+      { header: 'Prénom', accessor: r => r.client?.contact_prenom || '' },
+      { header: 'Téléphone', accessor: r => r.client?.telephone || '' },
+      { header: 'Réf. Retina', accessor: r => r.client?.reference_retina || '' },
+      { header: 'Dépôt', accessor: r => r.depot?.nom || '' },
+      { header: 'Livreur', accessor: r => r.livreur ? `${r.livreur.prenom} ${r.livreur.nom}` : '' },
+      { header: 'Nb vélos', accessor: r => r.client?.velo_valide || 0 },
+      { header: 'Pris par', accessor: r => r.cq_pris_par_nom || '' },
+      ...CQ_CHECK_KEYS.map(key => ({
+        header: CQ_CHECKS[key].label,
+        accessor: (r: ControleItem) => r[key] ? 'OUI' : 'NON',
+      })),
+      { header: 'Commentaire', accessor: r => r.cq_commentaire || '' },
+      { header: 'Contrôle validé', accessor: r => r.cq_valide ? 'OUI' : 'NON' },
+    ], `Export-Controle-${tenant.name}-${today}.xlsx`)
+  }
+
   // Can this user interact with this item's checks?
   // Il faut d'abord "Prendre" le dossier pour pouvoir cocher les cases
   const canEdit = (item: ControleItem) => {
@@ -418,6 +451,11 @@ export default function ControlePage() {
           <ExternalLink className="h-4 w-4" />
           ENEMAT Retina
         </a>
+
+        <Button variant="outline" size="sm" onClick={handleExportControle} disabled={items.length === 0}>
+          <Download className="h-4 w-4 mr-1" />
+          Export
+        </Button>
 
         <Button
           variant="outline"

@@ -132,6 +132,7 @@ export const PROCESS_STATUTS = {
   retractation: 'Rétractation',
   anomalie: 'Anomalie',
   client_hs: 'Client HS',
+  rcs_ferme: 'RCS fermé',
 } as const
 
 export type ProcessStatut = keyof typeof PROCESS_STATUTS
@@ -149,6 +150,7 @@ export const STATUT_COLORS: Record<ProcessStatut, string> = {
   retractation: 'bg-gray-100 text-gray-800',
   anomalie: 'bg-rose-100 text-rose-800',
   client_hs: 'bg-red-600 text-white',
+  rcs_ferme: 'bg-gray-800 text-white',
 }
 
 // Transitions autorisées entre statuts
@@ -164,6 +166,7 @@ export const STATUT_TRANSITIONS: Record<ProcessStatut, ProcessStatut[]> = {
   retractation: [],
   anomalie: [],
   client_hs: [],
+  rcs_ferme: [],
 }
 
 // =================================================================
