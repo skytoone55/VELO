@@ -13,6 +13,16 @@ export async function GET(request: NextRequest) {
     if (isAuthError(authResult)) return authResult
 
     const { searchParams } = new URL(request.url)
+
+    // Mode distinct : retourne les valeurs uniques d'une colonne
+    const distinctCol = searchParams.get('distinct')
+    if (distinctCol === 'commercial_assigne') {
+      const adminClient = createAdminClient()
+      const { data } = await adminClient.from('data_clients').select('commercial_assigne').not('commercial_assigne', 'is', null)
+      const unique = [...new Set((data || []).map(d => d.commercial_assigne).filter(Boolean))].sort()
+      return NextResponse.json({ commercials: unique })
+    }
+
     const search = searchParams.get('search')?.toLowerCase()
     const { page, pageSize } = validatePagination(
       searchParams.get('page') || '1',
@@ -62,7 +72,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (commercialFilter && commercialFilter !== 'all') {
-      query = query.eq('monday_board_id', commercialFilter)
+      query = query.eq('commercial_assigne', commercialFilter)
     }
 
     if (nafFilter && nafFilter !== 'all') {

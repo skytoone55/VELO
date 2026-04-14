@@ -236,24 +236,26 @@ export default function DataClientPage() {
     setStatutOptions([{ value: 'all', label: 'Statut' }, ...options])
   }, [])
 
-  // Load commercial options
+  // Load commercial options from data_clients distinct values
   useEffect(() => {
-    const staticOpts = getStaticCommercialOptions()
-    if (staticOpts) {
-      setCommercialOptions([{ value: 'all', label: 'Commercial' }, ...staticOpts])
-    } else {
-      fetch('/api/clients/commercials')
-        .then(res => res.json())
-        .then((emails: string[]) => {
-          if (Array.isArray(emails)) {
-            setCommercialOptions([
-              { value: 'all', label: 'Commercial' },
-              ...emails.map(e => ({ value: e, label: e }))
-            ])
-          }
-        })
-        .catch(() => {})
-    }
+    fetch('/api/admin/data-clients?distinct=commercial_assigne')
+      .then(res => res.json())
+      .then((data) => {
+        const commercials: string[] = data.commercials || []
+        if (commercials.length > 0) {
+          setCommercialOptions([
+            { value: 'all', label: 'Commercial' },
+            ...commercials.map(c => ({ value: c, label: c }))
+          ])
+        }
+      })
+      .catch(() => {
+        // Fallback : options statiques
+        const staticOpts = getStaticCommercialOptions()
+        if (staticOpts) {
+          setCommercialOptions([{ value: 'all', label: 'Commercial' }, ...staticOpts])
+        }
+      })
   }, [])
 
   // Load dynamic department options
