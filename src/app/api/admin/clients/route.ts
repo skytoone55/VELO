@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     while (hasMore) {
       let query = adminClient
         .from('clients')
-        .select('*, livraisons(cq_valide)')
+        .select('*, livraisons(cq_valide, cq_en_cours, date_livraison_effective)')
         .order('created_at', { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1)
 

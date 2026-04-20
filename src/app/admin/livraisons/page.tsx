@@ -196,6 +196,12 @@ export default function AdminLivraisonsPage() {
   const handleExport = () => {
     const tenant = getTenantConfig()
     const today = new Date().toISOString().slice(0, 10)
+    const ENEMAT_LABELS: Record<string, string> = {
+      a_deposer_enemat: 'À déposer',
+      depose_enemat: 'Déposé',
+      apf_enemat: 'APF',
+      paye_enemat: 'Payé',
+    }
     exportToXlsx(livraisons, [
       { header: 'Raison sociale', accessor: r => r.client?.raison_sociale },
       { header: 'Réf. Retina', accessor: r => r.client?.reference_retina },
@@ -203,6 +209,13 @@ export default function AdminLivraisonsPage() {
       { header: 'Contact prénom', accessor: r => r.client?.contact_prenom },
       { header: 'Téléphone', accessor: r => r.client?.telephone },
       { header: 'Email', accessor: r => r.client?.email },
+      { header: 'Commercial', accessor: r => getCommercialName(r.client) },
+      { header: 'ENEMAT', accessor: r => r.client?.in_enemat ? 'Oui' : 'Non' },
+      { header: 'Statut ENEMAT', accessor: r => {
+        const s = (r.client as any)?.statut_enemat
+        return (s && ENEMAT_LABELS[s]) || ''
+      } },
+      { header: 'CQ valide', accessor: r => (r as any).cq_valide ? 'Oui' : 'Non' },
       { header: 'Adresse', accessor: r => r.adresse_livraison_ligne1 },
       { header: 'CP', accessor: r => r.adresse_livraison_cp },
       { header: 'Ville', accessor: r => r.adresse_livraison_ville },

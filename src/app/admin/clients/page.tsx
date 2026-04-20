@@ -367,6 +367,20 @@ export default function AdminClientsPage() {
   const handleExportClients = () => {
     const tenant = getTenantConfig()
     const today = new Date().toISOString().slice(0, 10)
+    const ENEMAT_LABELS: Record<string, string> = {
+      a_deposer_enemat: 'À déposer',
+      depose_enemat: 'Déposé',
+      apf_enemat: 'APF',
+      paye_enemat: 'Payé',
+    }
+    const firstDeliveredDate = (r: any) => {
+      const livs = Array.isArray(r.livraisons) ? r.livraisons : []
+      const dates = livs
+        .map((l: any) => l?.date_livraison_effective)
+        .filter((d: any) => !!d)
+        .sort()
+      return dates[0] || ''
+    }
     exportToXlsx(clients, [
       { header: 'Raison sociale', accessor: r => r.raison_sociale },
       { header: 'Réf. Retina', accessor: r => r.reference_retina },
@@ -374,6 +388,11 @@ export default function AdminClientsPage() {
       { header: 'Contact prénom', accessor: r => r.contact_prenom },
       { header: 'Téléphone', accessor: r => r.telephone },
       { header: 'Email', accessor: r => r.email },
+      { header: 'Commercial', accessor: r => getCommercialName(r) },
+      { header: 'Date livraison', accessor: r => firstDeliveredDate(r) },
+      { header: 'ENEMAT', accessor: r => r.in_enemat ? 'Oui' : 'Non' },
+      { header: 'Statut ENEMAT', accessor: r => (r.statut_enemat && ENEMAT_LABELS[r.statut_enemat]) || '' },
+      { header: 'CQ valide', accessor: r => (Array.isArray(r.livraisons) && r.livraisons.some((l: any) => l?.cq_valide)) ? 'Oui' : 'Non' },
       { header: 'Adresse', accessor: r => r.adresse_societe_ligne1 },
       { header: 'CP', accessor: r => r.adresse_societe_cp },
       { header: 'Ville', accessor: r => r.adresse_societe_ville },

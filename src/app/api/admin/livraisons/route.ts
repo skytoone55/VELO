@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('livraisons')
-      .select('*, clients!inner(id, raison_sociale, contact_nom, contact_prenom, velo_valide, velo_devis, email_beneficiaire, telephone, adresse_societe_ligne1, adresse_societe_cp, adresse_societe_ville, statut_commercial, departement)')
+      .select('*, clients!inner(id, raison_sociale, contact_nom, contact_prenom, velo_valide, velo_devis, email_beneficiaire, telephone, adresse_societe_ligne1, adresse_societe_cp, adresse_societe_ville, statut_commercial, departement, in_enemat, statut_enemat)')
       .order('created_at', { ascending: false })
       .limit(Math.min(limit, 200))
 
