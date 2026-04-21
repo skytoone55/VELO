@@ -26,6 +26,7 @@ import {
   BookOpen,
   GraduationCap,
   Database,
+  Wallet,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getTenantConfig, TENANTS } from '@/lib/tenants'
@@ -101,6 +102,12 @@ const adminNavItems: NavItem[] = [
     href: '/admin/enemat',
     label: 'ENEMAT',
     icon: FileCheck,
+    roles: ['super_admin'],
+  },
+  {
+    href: '/admin/paiements',
+    label: 'Paiements',
+    icon: Wallet,
     roles: ['super_admin'],
   },
   {
