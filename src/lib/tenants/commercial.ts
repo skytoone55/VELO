@@ -30,10 +30,12 @@ export const ALL_BOARD_NAMES: Record<string, string> = {
  * Nom commercial d'un client selon le tenant.
  * - PPE : dérivé du monday_board_id
  * - Ecovolt : champ email (= email du commercial)
+ * Fallbacks : commercial_code (nouveau champ normalisé), puis commercial_assigne.
  */
 export function getCommercialName(client: {
   monday_board_id?: string | null
   commercial_assigne?: string | null
+  commercial_code?: string | null
   email?: string | null
 }): string {
   const tenant = getTenantId()
@@ -41,10 +43,60 @@ export function getCommercialName(client: {
     if (client.monday_board_id && PPE_BOARD_NAMES[client.monday_board_id]) {
       return PPE_BOARD_NAMES[client.monday_board_id]
     }
-    return client.commercial_assigne || 'Inconnu'
+    return client.commercial_code || client.commercial_assigne || 'Inconnu'
   }
-  // Ecovolt : commercial_assigne en priorité, sinon email
-  return client.commercial_assigne || client.email || 'Inconnu'
+  // Ecovolt : commercial_code, puis commercial_assigne, sinon email
+  return client.commercial_code || client.commercial_assigne || client.email || 'Inconnu'
+}
+
+/**
+ * Type décrivant un commercial depuis la table `commerciaux`.
+ */
+export interface CommercialRow {
+  id: string
+  code: string
+  nom: string
+  parent_code: string | null
+  tenant: string
+  actif: boolean
+  notes: string | null
+}
+
+/**
+ * Récupère la liste des commerciaux actifs depuis la table `commerciaux`
+ * pour un tenant donné (ex. 'ppe', 'ecovolt').
+ * Retourne la hiérarchie brute ; le consommateur peut regrouper par parent_code.
+ *
+ * @param supabase Client Supabase (admin ou server — doit pouvoir lire `commerciaux`)
+ * @param tenant  Identifiant tenant (défaut: getTenantId())
+ */
+export async function getCommerciauxFromDB(
+  supabase: {
+    from: (table: string) => {
+      select: (cols: string) => {
+        eq: (col: string, val: any) => {
+          eq: (col: string, val: any) => {
+            order: (col: string, opts?: any) => Promise<{ data: any; error: any }>
+          }
+        }
+      }
+    }
+  },
+  tenant?: string
+): Promise<CommercialRow[]> {
+  const t = tenant || getTenantId()
+  const { data, error } = await supabase
+    .from('commerciaux')
+    .select('id, code, nom, parent_code, tenant, actif, notes')
+    .eq('tenant', t)
+    .eq('actif', true)
+    .order('nom', { ascending: true })
+
+  if (error) {
+    console.error('[getCommerciauxFromDB] erreur Supabase:', error)
+    return []
+  }
+  return (data || []) as CommercialRow[]
 }
 
 // Ecovolt : labels lisibles pour les départements DOM-TOM
