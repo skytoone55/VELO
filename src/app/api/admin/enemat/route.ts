@@ -98,8 +98,40 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Sommer les vélos validés sur les résultats filtrés
-    const velosValidesFiltered = clients.reduce((sum: number, c: any) => sum + (Number(c.velo_valide) || 0), 0)
+    // Deuxieme requete : somme des velos valides sur TOUS les clients filtres (pas seulement la page)
+    let sumQuery = supabase
+      .from('clients')
+      .select('velo_valide')
+      .eq('in_enemat', true)
+
+    if (statutEnemat) {
+      sumQuery = sumQuery.eq('statut_enemat', statutEnemat)
+    }
+    if (search) {
+      sumQuery = sumQuery.or(
+        `raison_sociale.ilike.%${search}%,siret.ilike.%${search}%,reference_retina.ilike.%${search}%,telephone.ilike.%${search}%,email.ilike.%${search}%`
+      )
+    }
+    if (depotId) {
+      sumQuery = sumQuery.eq('depot_logistique_id', depotId)
+    }
+    if (commercial) {
+      sumQuery = sumQuery.eq('commercial_assigne', commercial)
+    }
+    if (fnuciFilter === 'oui') {
+      sumQuery = sumQuery.eq('fnuci_declared', true)
+    } else if (fnuciFilter === 'non') {
+      sumQuery = sumQuery.or('fnuci_declared.eq.false,fnuci_declared.is.null')
+    }
+
+    const { data: sumData, error: sumError } = await sumQuery
+    if (sumError) {
+      console.error('Erreur GET /api/admin/enemat (sum):', sumError)
+    }
+    const velosValidesFiltered = (sumData || []).reduce(
+      (sum: number, c: { velo_valide: number | null }) => sum + (Number(c.velo_valide) || 0),
+      0
+    )
 
     return NextResponse.json({ clients, total: count ?? 0, page, limit, velosValidesFiltered })
   } catch (error: unknown) {

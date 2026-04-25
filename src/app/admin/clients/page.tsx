@@ -156,7 +156,7 @@ export default function AdminClientsPage() {
 
   // Pagination côté serveur
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(50)
   const [pagination, setPagination] = useState<{
     page: number
     pageSize: number
@@ -398,7 +398,8 @@ export default function AdminClientsPage() {
       { header: 'Ville', accessor: r => r.adresse_societe_ville },
       { header: 'Dépôt', accessor: r => depots.find((d: any) => d.id === (r.depot_retrait_id || r.depot_logistique_id))?.nom },
       { header: 'Département', accessor: r => r.departement },
-      { header: 'Nb vélos', accessor: r => r.velo_valide || r.velo_confirme || 0 },
+      { header: 'Vélos validés', accessor: r => r.velo_valide || r.velo_confirme || 0 },
+      { header: 'Vélos devis', accessor: r => r.velo_devis || 0 },
       { header: 'Statut', accessor: r => r.statut_commercial },
     ], `Export-Clients-${tenant.name}-${today}.xlsx`)
   }

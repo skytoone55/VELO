@@ -194,30 +194,61 @@ function StatusBadge({
   )
 }
 
-// Badge ENEMAT : vert = payé, orange = APF envoyé, gris = à faire (lecture seule)
+// Badge ENEMAT : miroir du statut du module ENEMAT (lecture seule)
+// 4 valeurs : a_deposer / depose / apf / paye — couleurs alignees sur la page ENEMAT
 function EnematBadge({ statut }: { statut: string | null }) {
   if (statut === 'paye_enemat') {
     return (
       <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-green-200">
         <CheckCircle2 className="h-3 w-3 mr-1" />
-        ENEMAT payé
+        Payé
       </Badge>
     )
   }
   if (statut === 'apf_enemat') {
     return (
-      <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200 border-orange-200">
+      <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-200 border-indigo-200">
         <Mail className="h-3 w-3 mr-1" />
-        APF ENEMAT envoyé
+        APF reçu
+      </Badge>
+    )
+  }
+  if (statut === 'depose_enemat') {
+    return (
+      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200">
+        <Circle className="h-3 w-3 mr-1" />
+        Déposé
+      </Badge>
+    )
+  }
+  if (statut === 'a_deposer_enemat') {
+    return (
+      <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200">
+        <Circle className="h-3 w-3 mr-1" />
+        À déposer
       </Badge>
     )
   }
   return (
     <Badge className="bg-gray-100 text-gray-600 hover:bg-gray-200 border-gray-200">
       <Circle className="h-3 w-3 mr-1" />
-      ENEMAT à faire
+      —
     </Badge>
   )
+}
+
+// Filtre ENEMAT : 4 statuts visibles dans Paiements (a_deposer exclu cote API)
+type EnematStatutFiltre = 'all' | 'depose_enemat' | 'apf_enemat' | 'paye_enemat'
+
+const ENEMAT_FILTRE_OPTIONS: { value: EnematStatutFiltre; label: string }[] = [
+  { value: 'all', label: 'Tous' },
+  { value: 'depose_enemat', label: 'Déposé' },
+  { value: 'apf_enemat', label: 'APF reçu' },
+  { value: 'paye_enemat', label: 'Payé' },
+]
+
+function enematFiltreLabel(v: EnematStatutFiltre): string {
+  return ENEMAT_FILTRE_OPTIONS.find(o => o.value === v)?.label ?? 'Tous'
 }
 
 // =====================================================
@@ -252,7 +283,7 @@ export default function AdminPaiementsPage() {
   const [depotFilter, setDepotFilter] = useState<string[]>([])
   const [livreurFilter, setLivreurFilter] = useState<string[]>([])
   const [commercialFilter, setCommercialFilter] = useState<string[]>([])
-  const [enematFilter, setEnematFilter] = useState<TriState>('all')
+  const [enematFilter, setEnematFilter] = useState<EnematStatutFiltre>('all')
   const [commercialPayeFilter, setCommercialPayeFilter] = useState<TriState>('all')
   const [livreurPayeFilter, setLivreurPayeFilter] = useState<TriState>('all')
   const [commercialApfFilter, setCommercialApfFilter] = useState<TriState>('all')
@@ -260,7 +291,7 @@ export default function AdminPaiementsPage() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  const [pageSize, setPageSize] = useState(200)
   const [totalVelosValides, setTotalVelosValides] = useState(0)
 
   // Sélection
@@ -297,7 +328,15 @@ export default function AdminPaiementsPage() {
       if (pinned.depot !== undefined) setDepotFilter(toArr(pinned.depot))
       if (pinned.livreur !== undefined) setLivreurFilter(toArr(pinned.livreur))
       if (pinned.commercial !== undefined) setCommercialFilter(toArr(pinned.commercial))
-      if (pinned.enemat) setEnematFilter(pinned.enemat)
+      if (pinned.enemat) {
+        // Retrocompat : ancien tri-state ('oui'/'non'/'all') -> nouveau filtre 4 valeurs
+        const v = pinned.enemat
+        if (v === 'oui') setEnematFilter('paye_enemat')
+        else if (v === 'depose_enemat' || v === 'apf_enemat' || v === 'paye_enemat' || v === 'all') {
+          setEnematFilter(v)
+        }
+        // 'non' ou autre -> on garde 'all' (defaut)
+      }
       if (pinned.commercialPaye) setCommercialPayeFilter(pinned.commercialPaye)
       if (pinned.livreurPaye) setLivreurPayeFilter(pinned.livreurPaye)
       if (pinned.pageSize) setPageSize(pinned.pageSize)
@@ -377,7 +416,7 @@ export default function AdminPaiementsPage() {
       if (depotFilter.length > 0) params.set('depot_ids', depotFilter.join(','))
       if (livreurFilter.length > 0) params.set('livreur_ids', livreurFilter.join(','))
       if (commercialFilter.length > 0) params.set('commercial_codes', commercialFilter.join(','))
-      if (enematFilter !== 'all') params.set('enemat_paye', enematFilter === 'oui' ? 'true' : 'false')
+      if (enematFilter !== 'all') params.set('statut_enemat', enematFilter)
       if (commercialPayeFilter !== 'all') params.set('commercial_paye', commercialPayeFilter === 'oui' ? 'true' : 'false')
       if (livreurPayeFilter !== 'all') params.set('livreur_paye', livreurPayeFilter === 'oui' ? 'true' : 'false')
       if (commercialApfFilter !== 'all') params.set('commercial_apf_envoye', commercialApfFilter === 'oui' ? 'true' : 'false')
@@ -563,7 +602,7 @@ export default function AdminPaiementsPage() {
       if (depotFilter.length > 0) body.depot_ids = depotFilter
       if (livreurFilter.length > 0) body.livreur_ids = livreurFilter
       if (commercialFilter.length > 0) body.commercial_codes = commercialFilter
-      if (enematFilter !== 'all') body.enemat_paye = enematFilter === 'oui'
+      if (enematFilter !== 'all') body.statut_enemat = enematFilter
       if (commercialPayeFilter !== 'all') body.commercial_paye = commercialPayeFilter === 'oui'
       if (livreurPayeFilter !== 'all') body.livreur_paye = livreurPayeFilter === 'oui'
       if (commercialApfFilter !== 'all') body.commercial_apf_envoye = commercialApfFilter === 'oui'
@@ -856,17 +895,19 @@ export default function AdminPaiementsPage() {
               </PopoverContent>
             </Popover>
 
-            {/* Tri-states */}
-            <Select value={enematFilter} onValueChange={(v) => setEnematFilter(v as TriState)}>
-              <SelectTrigger className="h-9 w-[170px]">
-                <SelectValue>ENEMAT payé : {triLabel(enematFilter)}</SelectValue>
+            {/* Filtre ENEMAT : statut complet (miroir du module ENEMAT, lecture seule) */}
+            <Select value={enematFilter} onValueChange={(v) => setEnematFilter(v as EnematStatutFiltre)}>
+              <SelectTrigger className="h-9 w-[200px]">
+                <SelectValue>Statut ENEMAT : {enematFiltreLabel(enematFilter)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
-                <SelectItem value="oui">Oui</SelectItem>
-                <SelectItem value="non">Non</SelectItem>
+                {ENEMAT_FILTRE_OPTIONS.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
+
+            {/* Tri-states (autres filtres binaires) */}
 
             <Select value={commercialPayeFilter} onValueChange={(v) => setCommercialPayeFilter(v as TriState)}>
               <SelectTrigger className="h-9 w-[190px]">

@@ -51,6 +51,13 @@ export async function GET(request: NextRequest) {
       ? commercialCodesParam
       : (commercialCodeSingle ? [commercialCodeSingle] : [])
 
+    // Filtre ENEMAT : nouveau param `statut_enemat` (4 valeurs) prioritaire,
+    // fallback sur l'ancien `enemat_paye` (true/false) pour retrocompat.
+    const ENEMAT_VALEURS_PAIEMENTS = ['depose_enemat', 'apf_enemat', 'paye_enemat'] as const
+    const statutEnematParam = searchParams.get('statut_enemat')
+    const statutEnematFiltre = (ENEMAT_VALEURS_PAIEMENTS as readonly string[]).includes(statutEnematParam || '')
+      ? statutEnematParam
+      : null
     const enematPaye = searchParams.get('enemat_paye')
     const commercialPaye = searchParams.get('commercial_paye')
     const livreurPaye = searchParams.get('livreur_paye')
@@ -100,9 +107,14 @@ export async function GET(request: NextRequest) {
     } else if (commercialCodes.length > 1) {
       query = query.in('commercial_code', commercialCodes)
     }
-    // enemat_paye = virtuel (derive de statut_enemat)
-    if (enematPaye === 'true') query = query.eq('statut_enemat', 'paye_enemat')
-    else if (enematPaye === 'false') query = query.neq('statut_enemat', 'paye_enemat')
+    // Filtre ENEMAT : `statut_enemat` (nouveau, prioritaire) ou `enemat_paye` (legacy)
+    if (statutEnematFiltre) {
+      query = query.eq('statut_enemat', statutEnematFiltre)
+    } else if (enematPaye === 'true') {
+      query = query.eq('statut_enemat', 'paye_enemat')
+    } else if (enematPaye === 'false') {
+      query = query.neq('statut_enemat', 'paye_enemat')
+    }
 
     if (commercialPaye === 'true') query = query.eq('commercial_paye', true)
     else if (commercialPaye === 'false') query = query.eq('commercial_paye', false)
@@ -151,8 +163,13 @@ export async function GET(request: NextRequest) {
     else if (livreurIds.length > 1) sumQuery = sumQuery.in('paiement_livreur_id', livreurIds)
     if (commercialCodes.length === 1) sumQuery = sumQuery.eq('commercial_code', commercialCodes[0])
     else if (commercialCodes.length > 1) sumQuery = sumQuery.in('commercial_code', commercialCodes)
-    if (enematPaye === 'true') sumQuery = sumQuery.eq('statut_enemat', 'paye_enemat')
-    else if (enematPaye === 'false') sumQuery = sumQuery.neq('statut_enemat', 'paye_enemat')
+    if (statutEnematFiltre) {
+      sumQuery = sumQuery.eq('statut_enemat', statutEnematFiltre)
+    } else if (enematPaye === 'true') {
+      sumQuery = sumQuery.eq('statut_enemat', 'paye_enemat')
+    } else if (enematPaye === 'false') {
+      sumQuery = sumQuery.neq('statut_enemat', 'paye_enemat')
+    }
     if (commercialPaye === 'true') sumQuery = sumQuery.eq('commercial_paye', true)
     else if (commercialPaye === 'false') sumQuery = sumQuery.eq('commercial_paye', false)
     if (livreurPaye === 'true') sumQuery = sumQuery.eq('livreur_paye', true)

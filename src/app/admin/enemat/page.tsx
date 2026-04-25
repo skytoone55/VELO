@@ -181,6 +181,33 @@ export default function AdminEnematPage() {
     }
   }, [])
 
+  const fetchCounts = useCallback(async () => {
+    try {
+      // Fetch each statut count — use 4 parallel requests with limit=1 to get count
+      // Transmettre les filtres actifs (sauf statut_enemat qui est force a chaque appel)
+      const statuts = ['a_deposer_enemat', 'depose_enemat', 'apf_enemat', 'paye_enemat']
+      const buildParams = (statut: string) => {
+        const p = new URLSearchParams()
+        p.set('statut_enemat', statut)
+        p.set('limit', '1')
+        p.set('page', '1')
+        if (searchQuery) p.set('search', searchQuery)
+        if (depotFilter.length > 0) p.set('depot_id', depotFilter[0])
+        if (commercialFilter.length > 0) p.set('commercial', commercialFilter[0])
+        if (fnuciFilter !== 'all') p.set('fnuci', fnuciFilter)
+        return p.toString()
+      }
+      const results = await Promise.all(
+        statuts.map(s => fetch(`/api/admin/enemat?${buildParams(s)}`).then(r => r.json()))
+      )
+      const newCounts: Record<string, number> = {}
+      statuts.forEach((s, i) => {
+        newCounts[s] = results[i]?.total || 0
+      })
+      setCounts(newCounts)
+    } catch {}
+  }, [searchQuery, depotFilter, commercialFilter, fnuciFilter])
+
   const fetchClients = useCallback(async () => {
     setLoading(true)
     try {
@@ -224,22 +251,7 @@ export default function AdminEnematPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter, fnuciFilter])
-
-  const fetchCounts = async () => {
-    try {
-      // Fetch each statut count — use 4 parallel requests with limit=1 to get count
-      const statuts = ['a_deposer_enemat', 'depose_enemat', 'apf_enemat', 'paye_enemat']
-      const results = await Promise.all(
-        statuts.map(s => fetch(`/api/admin/enemat?statut_enemat=${s}&limit=1&page=1`).then(r => r.json()))
-      )
-      const newCounts: Record<string, number> = {}
-      statuts.forEach((s, i) => {
-        newCounts[s] = results[i]?.total || 0
-      })
-      setCounts(newCounts)
-    } catch {}
-  }
+  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter, fnuciFilter, fetchCounts])
 
   // Debounce search
   const searchTimerRef = useRef<NodeJS.Timeout>(null)

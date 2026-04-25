@@ -15,6 +15,8 @@ interface ExportBody {
   depot_id?: string
   paiement_livreur_id?: string
   commercial_code?: string
+  // Nouveau filtre ENEMAT (statut complet) — prioritaire sur enemat_paye legacy
+  statut_enemat?: 'depose_enemat' | 'apf_enemat' | 'paye_enemat'
   enemat_paye?: boolean
   commercial_paye?: boolean
   livreur_paye?: boolean
@@ -81,7 +83,11 @@ export async function POST(request: NextRequest) {
     else if (livreurIds.length > 1) query = query.in('paiement_livreur_id', livreurIds)
     if (commercialCodes.length === 1) query = query.eq('commercial_code', commercialCodes[0])
     else if (commercialCodes.length > 1) query = query.in('commercial_code', commercialCodes)
-    if (typeof body.enemat_paye === 'boolean') {
+    // Filtre ENEMAT : statut_enemat (4 valeurs) prioritaire, fallback enemat_paye legacy
+    const ENEMAT_VALEURS_PAIEMENTS = ['depose_enemat', 'apf_enemat', 'paye_enemat']
+    if (body.statut_enemat && ENEMAT_VALEURS_PAIEMENTS.includes(body.statut_enemat)) {
+      query = query.eq('statut_enemat', body.statut_enemat)
+    } else if (typeof body.enemat_paye === 'boolean') {
       if (body.enemat_paye) query = query.eq('statut_enemat', 'paye_enemat')
       else query = query.neq('statut_enemat', 'paye_enemat')
     }
