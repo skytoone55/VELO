@@ -372,7 +372,7 @@ RETURN p.slug, p.props.silo;
 | `NEXT_PUBLIC_TENANT_ID` | `ecovolt` |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://irpnllwlxivlylclfjwd.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_Ll_6Ha1lwUqKYyx0Nt51wA_*` |
-| `SUPABASE_SERVICE_ROLE_KEY` | `sb_secret_lpvxlHGLu_tuB4YABASg9Q_*` (service_role, server only) |
+| `SUPABASE_SERVICE_ROLE_KEY` | `sb_secret_<MASKED — voir Vercel env Ecovolt>` (service_role, server only — révoqué + rotation A-42 2026-04-27) |
 | `NEXT_PUBLIC_APP_URL` | `https://velo-ecovolt.vercel.app` |
 | `MONDAY_API_KEY` | JWT Monday compte alexandredelannays |
 | `MONDAY_BOARD_ID` | `9990833105` |
@@ -390,7 +390,7 @@ RETURN p.slug, p.props.silo;
 | `NEXT_PUBLIC_TENANT_ID` | `ppe` |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://zfpzhhdovxllchlsihcr.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_-eV40xJPpPxRA308jeoGzQ_*` |
-| `SUPABASE_SERVICE_ROLE_KEY` | `sb_secret_JvgUBGsqRlCU--Dom9MQXA_*` |
+| `SUPABASE_SERVICE_ROLE_KEY` | `sb_secret_<MASKED — voir Vercel env PPE>` (révoqué + rotation A-42 2026-04-27) |
 | `NEXT_PUBLIC_APP_URL` | `https://velo-ppe.vercel.app` |
 | `SMTP_HOST` | `smtp.office365.com` |
 | `SMTP_PORT` | `587` |
@@ -400,7 +400,7 @@ RETURN p.slug, p.props.silo;
 | `MONDAY_API_KEY` | (à ajouter) — compte crm-oreka |
 | `MONDAY_BOARD_IDS` | (à ajouter) — array 7 IDs |
 
-> ⚠️ **Token Monday access** pour MCP Supabase PPE : `sbp_8ff1c47744c5884e41235f838e16bfad64af0fd7` (org PPE-VELO-CARGO, corrigé 2026-03-06).
+> ⚠️ **Token Monday access** pour MCP Supabase PPE : `sbp_<MASKED — voir 1Password>` (org PPE-VELO-CARGO, corrigé 2026-03-06). Token original révoqué suite audit sécurité 2026-04-27 (anomalie A-42).
 
 #### Procédure rotation env var Vercel
 

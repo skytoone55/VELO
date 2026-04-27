@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, time, sys, urllib.request, urllib.error
+import json, time, sys, os, urllib.request, urllib.error
 from collections import defaultdict
 try:
     import openpyxl
@@ -9,7 +9,9 @@ except ImportError:
     print('ERROR: openpyxl not installed'); sys.exit(1)
 
 API_URL = "https://api.monday.com/v2"
-API_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjU2MDA3NDEzMiwiYWFpIjoxMSwidWlkIjo4MjUxNjA2MywiaWFkIjoiMjAyNS0wOS0wOVQxODo1NDozMC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MzEyMTU4MDksInJnbiI6ImV1YzEifQ.coddlcxR_0AFKA-vQ9RXdGKSVDOEeM7Bj-oTDhotMH4"
+# Monday API token (account PPE — crm-oreka, 7 boards)
+API_TOKEN = os.environ.get('MONDAY_API_KEY')
+assert API_TOKEN, 'MONDAY_API_KEY env var required (PPE account)'
 API_VERSION = "2024-10"
 OUTPUT = "/Users/john/JARVIS/CLAUDE/Stats_PPE_Energie.xlsx"
 NAF_FILE = "/Users/john/JARVIS/projets/velo/docs/naf-enemat-reference.json"

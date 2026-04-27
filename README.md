@@ -1,5 +1,17 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Required env vars
+
+Avant de lancer l'app ou les scripts utilitaires (`data/`, `scripts/`), copier `.env.example` vers `.env.local` et renseigner :
+
+- `MONDAY_API_KEY` — token Monday.com (2 comptes distincts : PPE crm-oreka **OU** Ecovolt alexandredelannays-team — exporter celui qui correspond au script lancé)
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (server-side only — jamais exposé client)
+- Email : `GMAIL_*` (Ecovolt) **OU** `SMTP_*` (PPE), `RESEND_API_KEY`
+- Webhooks : `ECOVOLT_RETRAIT_WEBHOOK_SECRET`
+
+Voir `.env.example` pour la liste complète.
+
 ## Getting Started
 
 First, run the development server:

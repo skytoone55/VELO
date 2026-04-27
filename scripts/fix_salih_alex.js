@@ -1,7 +1,9 @@
 const fs = require('fs');
 const https = require('https');
 
-const API_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjU2MDA3NDEzMiwiYWFpIjoxMSwidWlkIjo4MjUxNjA2MywiaWFkIjoiMjAyNS0wOS0wOVQxODo1NDozMC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MzEyMTU4MDksInJnbiI6ImV1YzEifQ.coddlcxR_0AFKA-vQ9RXdGKSVDOEeM7Bj-oTDhotMH4';
+// Monday API token (account PPE — crm-oreka, 7 boards)
+const API_KEY = process.env.MONDAY_API_KEY;
+if (!API_KEY) throw new Error('MONDAY_API_KEY env var required (PPE account)');
 const API_URL = 'https://api.monday.com/v2';
 
 const FIELD_MAP = {

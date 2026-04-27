@@ -15,7 +15,9 @@ import unicodedata
 
 # --- Config ---
 ECOVOLT_DIR = "/Users/john/JARVIS/projets/velo/documents-client-velo/ECOVOLT"
-MONDAY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjYwNzQ0NzE0NiwiYWFpIjoxMSwidWlkIjo4MjAyNTk1MiwiaWFkIjoiMjAyNi0wMS0xNFQxMjo1MTozMi4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU5OTgxMjEsInJnbiI6InVzZTEifQ.pKHUmGDm_nv37bFv0aXwLQ1y4HimaLnW0FM6bWuBp5M"
+# Monday API token (account Ecovolt — alexandredelannays-team, board 9990833105)
+MONDAY_TOKEN = os.environ.get('MONDAY_API_KEY')
+assert MONDAY_TOKEN, 'MONDAY_API_KEY env var required (Ecovolt account)'
 BOARD_ID = "9990833105"
 RETINA_COL = "text_mkvfxbkp"
 STATUT_COL = "color_mkvfws5n"
