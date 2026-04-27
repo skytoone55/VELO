@@ -108,6 +108,8 @@ interface PaiementClient {
   livreur_paye: boolean | null
   livreur_paye_le: string | null
   paiement_notes: string | null
+  numero_lot_enemat: string | null
+  numero_facture_enemat: string | null
   velo_valide: number | null
   depot?: { id: string; nom: string } | null
   commercial?: { code: string; nom: string; parent_code: string | null } | null
@@ -288,6 +290,8 @@ export default function AdminPaiementsPage() {
   const [livreurPayeFilter, setLivreurPayeFilter] = useState<TriState>('all')
   const [commercialApfFilter, setCommercialApfFilter] = useState<TriState>('all')
   const [livreurApfFilter, setLivreurApfFilter] = useState<TriState>('all')
+  const [lotFilter, setLotFilter] = useState<string>('')
+  const [factureFilter, setFactureFilter] = useState<string>('')
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -403,7 +407,7 @@ export default function AdminPaiementsPage() {
   // Reset page 1 quand filtres changent
   useEffect(() => {
     setCurrentPage(1)
-  }, [debouncedSearch, depotFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, pageSize])
+  }, [debouncedSearch, depotFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, pageSize])
 
   // ========== Fetch clients ==========
   const fetchClients = async () => {
@@ -421,6 +425,8 @@ export default function AdminPaiementsPage() {
       if (livreurPayeFilter !== 'all') params.set('livreur_paye', livreurPayeFilter === 'oui' ? 'true' : 'false')
       if (commercialApfFilter !== 'all') params.set('commercial_apf_envoye', commercialApfFilter === 'oui' ? 'true' : 'false')
       if (livreurApfFilter !== 'all') params.set('livreur_apf_envoye', livreurApfFilter === 'oui' ? 'true' : 'false')
+      if (lotFilter) params.set('lot', lotFilter)
+      if (factureFilter) params.set('facture', factureFilter)
 
       const res = await fetch(`/api/admin/paiements?${params.toString()}`)
       const data = await res.json()
@@ -445,7 +451,7 @@ export default function AdminPaiementsPage() {
     if (!filtersReady) return
     fetchClients()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, debouncedSearch, depotFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, filtersReady])
+  }, [currentPage, pageSize, debouncedSearch, depotFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, filtersReady])
 
   // ========== Sélection ==========
   const allSelectedOnPage = clients.length > 0 && clients.every(c => selectedIds.has(c.id))
@@ -607,6 +613,8 @@ export default function AdminPaiementsPage() {
       if (livreurPayeFilter !== 'all') body.livreur_paye = livreurPayeFilter === 'oui'
       if (commercialApfFilter !== 'all') body.commercial_apf_envoye = commercialApfFilter === 'oui'
       if (livreurApfFilter !== 'all') body.livreur_apf_envoye = livreurApfFilter === 'oui'
+      if (lotFilter) body.lot = lotFilter
+      if (factureFilter) body.facture = factureFilter
       if (debouncedSearch) body.search = debouncedSearch
 
       const res = await fetch('/api/admin/paiements/export', {
@@ -642,14 +650,17 @@ export default function AdminPaiementsPage() {
     setEnematFilter('all')
     setCommercialPayeFilter('all')
     setLivreurPayeFilter('all')
+    setLotFilter('')
+    setFactureFilter('')
     setSearchQuery('')
   }
 
   const hasActiveFilters = useMemo(() => {
     return depotFilter.length > 0 || livreurFilter.length > 0 || commercialFilter.length > 0 ||
       enematFilter !== 'all' || commercialPayeFilter !== 'all' || livreurPayeFilter !== 'all' ||
+      !!lotFilter || !!factureFilter ||
       searchQuery.length > 0
-  }, [depotFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, searchQuery])
+  }, [depotFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, searchQuery])
 
   const selectedCount = selectedIds.size
 
@@ -953,6 +964,58 @@ export default function AdminPaiementsPage() {
               </SelectContent>
             </Select>
 
+            {/* Filtre Lot ENEMAT */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={`h-9 px-3 ${lotFilter ? 'border-primary text-primary' : ''}`}>
+                  Lot {lotFilter && '●'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-2" align="start">
+                <div className="space-y-2">
+                  <Input
+                    placeholder="N° de lot..."
+                    className="h-8 text-xs"
+                    value={lotFilter && !lotFilter.startsWith('__') ? lotFilter : ''}
+                    onChange={(e) => setLotFilter(e.target.value)}
+                  />
+                  <div className="flex flex-col gap-1">
+                    <Button variant={lotFilter === '__any__' ? 'default' : 'ghost'} size="sm" className="h-7 text-xs justify-start" onClick={() => setLotFilter('__any__')}>Avec lot</Button>
+                    <Button variant={lotFilter === '__none__' ? 'default' : 'ghost'} size="sm" className="h-7 text-xs justify-start" onClick={() => setLotFilter('__none__')}>Sans lot</Button>
+                  </div>
+                  {lotFilter && (
+                    <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setLotFilter('')}>Effacer</Button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Filtre N° facture ENEMAT */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={`h-9 px-3 ${factureFilter ? 'border-primary text-primary' : ''}`}>
+                  N° facture {factureFilter && '●'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-2" align="start">
+                <div className="space-y-2">
+                  <Input
+                    placeholder="N° de facture..."
+                    className="h-8 text-xs"
+                    value={factureFilter && !factureFilter.startsWith('__') ? factureFilter : ''}
+                    onChange={(e) => setFactureFilter(e.target.value)}
+                  />
+                  <div className="flex flex-col gap-1">
+                    <Button variant={factureFilter === '__any__' ? 'default' : 'ghost'} size="sm" className="h-7 text-xs justify-start" onClick={() => setFactureFilter('__any__')}>Avec facture</Button>
+                    <Button variant={factureFilter === '__none__' ? 'default' : 'ghost'} size="sm" className="h-7 text-xs justify-start" onClick={() => setFactureFilter('__none__')}>Sans facture</Button>
+                  </div>
+                  {factureFilter && (
+                    <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setFactureFilter('')}>Effacer</Button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
             {/* Par page — inline */}
             <div className="flex items-center gap-1.5 ml-auto">
               <Label className="text-xs text-muted-foreground">Par page</Label>
@@ -1075,6 +1138,8 @@ export default function AdminPaiementsPage() {
                     <TableHead>Commercial</TableHead>
                     <TableHead>Livreur</TableHead>
                     <TableHead>ENEMAT</TableHead>
+                    <TableHead>Lot</TableHead>
+                    <TableHead>N° facture</TableHead>
                     <TableHead>Commercial</TableHead>
                     <TableHead>Livreur</TableHead>
                     <TableHead className="w-10"></TableHead>
@@ -1139,6 +1204,12 @@ export default function AdminPaiementsPage() {
                         </TableCell>
                         <TableCell>
                           <EnematBadge statut={c.statut_enemat} />
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs font-mono">{c.numero_lot_enemat || '-'}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs font-mono">{c.numero_facture_enemat || '-'}</span>
                         </TableCell>
                         <TableCell>
                           <StatusBadge

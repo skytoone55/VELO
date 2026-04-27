@@ -192,38 +192,69 @@ export default function AdminLivraisonsPage() {
     }
   }
 
-  // Export Excel
-  const handleExport = () => {
-    const tenant = getTenantConfig()
-    const today = new Date().toISOString().slice(0, 10)
-    const ENEMAT_LABELS: Record<string, string> = {
-      a_deposer_enemat: 'À déposer',
-      depose_enemat: 'Déposé',
-      apf_enemat: 'APF',
-      paye_enemat: 'Payé',
+  // Export Excel — refetch toutes les livraisons filtrees (max 5000)
+  const [exportLoading, setExportLoading] = useState(false)
+  const handleExport = async () => {
+    if (exportLoading) return
+    setExportLoading(true)
+    try {
+      const tenant = getTenantConfig()
+      const today = new Date().toISOString().slice(0, 10)
+      const ENEMAT_LABELS: Record<string, string> = {
+        a_deposer_enemat: 'À déposer',
+        depose_enemat: 'Déposé',
+        apf_enemat: 'APF',
+        paye_enemat: 'Payé',
+      }
+      const params = new URLSearchParams()
+      params.set('page', '1')
+      params.set('pageSize', '5000')
+      if (searchQuery) params.set('search', searchQuery)
+      if (statutFilter.length > 0) params.set('statut', statutFilter.join(','))
+      if (depotFilter.length > 0) params.set('depot', depotFilter.join(','))
+      if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
+      if (departementFilter.length > 0) params.set('departement', departementFilter.join(','))
+      if (zoneFilter.length > 0) params.set('zone', zoneFilter.join(','))
+      if (controleFilter.length > 0) params.set('controle', controleFilter.join(','))
+      if (enematFilter) params.set('enemat', enematFilter)
+      if (sortBy !== 'created_at' || sortOrder !== 'desc') {
+        params.set('sortBy', sortBy)
+        params.set('sortOrder', sortOrder)
+      }
+
+      const res = await fetch(`/api/livraisons?${params.toString()}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur export')
+      const allLivraisons: LivraisonRow[] = data.livraisons || []
+
+      exportToXlsx(allLivraisons, [
+        { header: 'Raison sociale', accessor: r => r.client?.raison_sociale },
+        { header: 'Réf. Retina', accessor: r => r.client?.reference_retina },
+        { header: 'Contact nom', accessor: r => r.client?.contact_nom },
+        { header: 'Contact prénom', accessor: r => r.client?.contact_prenom },
+        { header: 'Téléphone', accessor: r => r.client?.telephone },
+        { header: 'Email', accessor: r => r.client?.email },
+        { header: 'Commercial', accessor: r => getCommercialName(r.client) },
+        { header: 'ENEMAT', accessor: r => r.client?.in_enemat ? 'Oui' : 'Non' },
+        { header: 'Statut ENEMAT', accessor: r => {
+          const s = (r.client as any)?.statut_enemat
+          return (s && ENEMAT_LABELS[s]) || ''
+        } },
+        { header: 'CQ valide', accessor: r => (r as any).cq_valide ? 'Oui' : 'Non' },
+        { header: 'Adresse', accessor: r => r.adresse_livraison_ligne1 },
+        { header: 'CP', accessor: r => r.adresse_livraison_cp },
+        { header: 'Ville', accessor: r => r.adresse_livraison_ville },
+        { header: 'Dépôt', accessor: r => r.depot?.nom },
+        { header: 'Département', accessor: r => r.client?.departement },
+        { header: 'Nb vélos', accessor: r => r.client?.velo_valide },
+        { header: 'Date', accessor: r => r.creneau_date || r.date_livraison },
+      ], `Export-Livraisons-${tenant.name}-${today}.xlsx`)
+      toast.success(`Export Livraisons : ${allLivraisons.length} lignes`)
+    } catch (e: any) {
+      toast.error(e.message || 'Erreur export')
+    } finally {
+      setExportLoading(false)
     }
-    exportToXlsx(livraisons, [
-      { header: 'Raison sociale', accessor: r => r.client?.raison_sociale },
-      { header: 'Réf. Retina', accessor: r => r.client?.reference_retina },
-      { header: 'Contact nom', accessor: r => r.client?.contact_nom },
-      { header: 'Contact prénom', accessor: r => r.client?.contact_prenom },
-      { header: 'Téléphone', accessor: r => r.client?.telephone },
-      { header: 'Email', accessor: r => r.client?.email },
-      { header: 'Commercial', accessor: r => getCommercialName(r.client) },
-      { header: 'ENEMAT', accessor: r => r.client?.in_enemat ? 'Oui' : 'Non' },
-      { header: 'Statut ENEMAT', accessor: r => {
-        const s = (r.client as any)?.statut_enemat
-        return (s && ENEMAT_LABELS[s]) || ''
-      } },
-      { header: 'CQ valide', accessor: r => (r as any).cq_valide ? 'Oui' : 'Non' },
-      { header: 'Adresse', accessor: r => r.adresse_livraison_ligne1 },
-      { header: 'CP', accessor: r => r.adresse_livraison_cp },
-      { header: 'Ville', accessor: r => r.adresse_livraison_ville },
-      { header: 'Dépôt', accessor: r => r.depot?.nom },
-      { header: 'Département', accessor: r => r.client?.departement },
-      { header: 'Nb vélos', accessor: r => r.client?.velo_valide },
-      { header: 'Date', accessor: r => r.creneau_date || r.date_livraison },
-    ], `Export-Livraisons-${tenant.name}-${today}.xlsx`)
   }
 
   const showBulkMessage = (text: string, isError = false) => {

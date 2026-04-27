@@ -23,6 +23,8 @@ interface ExportBody {
   commercial_apf_envoye?: boolean
   livreur_apf_envoye?: boolean
   search?: string
+  lot?: string
+  facture?: string
   export_mode: ExportMode
 }
 
@@ -54,6 +56,7 @@ export async function POST(request: NextRequest) {
          commercial_assigne, commercial_code, monday_board_id,
          depot_retrait_id, depot_logistique_id, paiement_livreur_id,
          statut_enemat, date_depot_enemat, date_apf_enemat, date_paye_enemat,
+         numero_lot_enemat, numero_facture_enemat,
          commercial_apf_envoye, commercial_apf_envoye_le,
          commercial_paye, commercial_paye_le,
          livreur_apf_envoye, livreur_apf_envoye_le,
@@ -101,6 +104,12 @@ export async function POST(request: NextRequest) {
         query = query.or(`raison_sociale.ilike.%${safe}%,reference_retina.ilike.%${safe}%`)
       }
     }
+    if (body.lot === '__none__') query = query.is('numero_lot_enemat', null)
+    else if (body.lot === '__any__') query = query.not('numero_lot_enemat', 'is', null)
+    else if (body.lot) query = query.ilike('numero_lot_enemat', `%${body.lot}%`)
+    if (body.facture === '__none__') query = query.is('numero_facture_enemat', null)
+    else if (body.facture === '__any__') query = query.not('numero_facture_enemat', 'is', null)
+    else if (body.facture) query = query.ilike('numero_facture_enemat', `%${body.facture}%`)
 
     const { data, error } = await query
 
@@ -133,6 +142,8 @@ export async function POST(request: NextRequest) {
       { header: 'Email', get: r => r.email ?? '' },
       { header: 'Commercial', get: commercialName },
       { header: 'Livreur', get: livreurName },
+      { header: 'Lot', get: r => r.numero_lot_enemat ?? '' },
+      { header: 'N° facture', get: r => r.numero_facture_enemat ?? '' },
     ]
 
     let columns = commonColumns

@@ -55,6 +55,8 @@ interface EnematClient {
   fnuci_ids: string[] | null
   fnuci_declared: boolean | null
   fnuci_declared_at: string | null
+  numero_lot_enemat: string | null
+  numero_facture_enemat: string | null
   depot_nom: string | null
   livraison: {
     mode_livraison: string | null
@@ -131,6 +133,8 @@ export default function AdminEnematPage() {
   const [commercialFilter, setCommercialFilter] = useState<string[]>([])
   const [cqFilter, setCqFilter] = useState<string>('all')
   const [fnuciFilter, setFnuciFilter] = useState<string>('all')
+  const [lotFilter, setLotFilter] = useState<string>('')
+  const [factureFilter, setFactureFilter] = useState<string>('')
   const [fnuciDeclareLoading, setFnuciDeclareLoading] = useState(false)
   const [dateDepotFrom, setDateDepotFrom] = useState('')
   const [dateDepotTo, setDateDepotTo] = useState('')
@@ -219,6 +223,8 @@ export default function AdminEnematPage() {
       if (depotFilter.length > 0) params.set('depot_id', depotFilter[0]) // API supports single depot
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter[0])
       if (fnuciFilter !== 'all') params.set('fnuci', fnuciFilter)
+      if (lotFilter) params.set('lot', lotFilter)
+      if (factureFilter) params.set('facture', factureFilter)
 
       const res = await fetch(`/api/admin/enemat?${params.toString()}`)
       const data = await res.json()
@@ -251,7 +257,7 @@ export default function AdminEnematPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter, fnuciFilter, fetchCounts])
+  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter, fnuciFilter, lotFilter, factureFilter, fetchCounts])
 
   // Debounce search
   const searchTimerRef = useRef<NodeJS.Timeout>(null)
@@ -312,6 +318,8 @@ export default function AdminEnematPage() {
     setDepotFilter([])
     setCommercialFilter([])
     setCqFilter('all')
+    setLotFilter('')
+    setFactureFilter('')
     setDateDepotFrom('')
     setDateDepotTo('')
     setDateApfFrom('')
@@ -323,7 +331,7 @@ export default function AdminEnematPage() {
     setPage(1)
   }
 
-  const hasActiveFilters = searchQuery || statutFilter.length > 0 || depotFilter.length > 0 || commercialFilter.length > 0 || cqFilter !== 'all' || fnuciFilter !== 'all' || dateDepotFrom || dateDepotTo || dateApfFrom || dateApfTo || datePayeFrom || datePayeTo
+  const hasActiveFilters = searchQuery || statutFilter.length > 0 || depotFilter.length > 0 || commercialFilter.length > 0 || cqFilter !== 'all' || fnuciFilter !== 'all' || !!lotFilter || !!factureFilter || dateDepotFrom || dateDepotTo || dateApfFrom || dateApfTo || datePayeFrom || datePayeTo
 
   // ─── Selection ────────────────────────────────────────────────
   const handleToggleSelect = (clientId: string) => {
@@ -528,20 +536,61 @@ export default function AdminEnematPage() {
     return result
   }, [clients, cqFilter, dateDepotFrom, dateDepotTo, dateApfFrom, dateApfTo, datePayeFrom, datePayeTo])
 
-  // ─── Export Excel ───────────────────────────────────────────────
-  const handleExport = () => {
-    const tenant = getTenantConfig()
-    const today = new Date().toISOString().slice(0, 10)
-    exportToXlsx(filteredClients, [
-      { header: 'Raison sociale', accessor: r => r.raison_sociale },
-      { header: 'Réf. Retina', accessor: r => r.reference_retina },
-      { header: 'Nb vélos', accessor: r => r.velo_valide },
-      { header: 'Date contrôle', accessor: r => r.livraison?.cq_valide_at || r.date_controle },
-      { header: 'Date dépôt ENEMAT', accessor: r => r.date_depot_enemat },
-      { header: 'Statut ENEMAT', accessor: r => ENEMAT_LABELS[r.statut_enemat || ''] || r.statut_enemat },
-      { header: 'Date APF', accessor: r => r.date_apf_enemat },
-      { header: 'Date payé', accessor: r => r.date_paye_enemat },
-    ], `Export-ENEMAT-${tenant.name}-${today}.xlsx`)
+  // ─── Export Excel (refetch toutes les lignes filtrees, max 5000) ─────
+  const [exportLoading, setExportLoading] = useState(false)
+  const handleExport = async () => {
+    if (exportLoading) return
+    setExportLoading(true)
+    try {
+      const tenant = getTenantConfig()
+      const today = new Date().toISOString().slice(0, 10)
+      const params = new URLSearchParams()
+      params.set('page', '1')
+      params.set('limit', '5000')
+      if (searchQuery) params.set('search', searchQuery)
+      if (statutFilter.length > 0) params.set('statut_enemat', statutFilter.join(','))
+      if (depotFilter.length > 0) params.set('depot_id', depotFilter[0])
+      if (commercialFilter.length > 0) params.set('commercial', commercialFilter[0])
+      if (fnuciFilter !== 'all') params.set('fnuci', fnuciFilter)
+      if (lotFilter) params.set('lot', lotFilter)
+      if (factureFilter) params.set('facture', factureFilter)
+
+      const res = await fetch(`/api/admin/enemat?${params.toString()}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur export')
+      const allClients: EnematClient[] = data.clients || []
+
+      // Re-applique les filtres locaux (CQ + dates) que l'API ne gere pas
+      const filtered = allClients.filter(c => {
+        if (cqFilter === 'valide' && !(c.livraison?.cq_valide_at || c.date_controle)) return false
+        if (cqFilter === 'non_valide' && (c.livraison?.cq_valide_at || c.date_controle)) return false
+        if (dateDepotFrom && (!c.date_depot_enemat || c.date_depot_enemat < dateDepotFrom)) return false
+        if (dateDepotTo && (!c.date_depot_enemat || c.date_depot_enemat > dateDepotTo)) return false
+        if (dateApfFrom && (!c.date_apf_enemat || c.date_apf_enemat < dateApfFrom)) return false
+        if (dateApfTo && (!c.date_apf_enemat || c.date_apf_enemat > dateApfTo)) return false
+        if (datePayeFrom && (!c.date_paye_enemat || c.date_paye_enemat < datePayeFrom)) return false
+        if (datePayeTo && (!c.date_paye_enemat || c.date_paye_enemat > datePayeTo)) return false
+        return true
+      })
+
+      exportToXlsx(filtered, [
+        { header: 'Raison sociale', accessor: r => r.raison_sociale },
+        { header: 'Réf. Retina', accessor: r => r.reference_retina },
+        { header: 'Nb vélos', accessor: r => r.velo_valide },
+        { header: 'Date contrôle', accessor: r => r.livraison?.cq_valide_at || r.date_controle },
+        { header: 'Date dépôt ENEMAT', accessor: r => r.date_depot_enemat },
+        { header: 'Statut ENEMAT', accessor: r => ENEMAT_LABELS[r.statut_enemat || ''] || r.statut_enemat },
+        { header: 'Date APF', accessor: r => r.date_apf_enemat },
+        { header: 'Date payé', accessor: r => r.date_paye_enemat },
+        { header: 'Lot', accessor: r => r.numero_lot_enemat || '' },
+        { header: 'N° facture', accessor: r => r.numero_facture_enemat || '' },
+      ], `Export-ENEMAT-${tenant.name}-${today}.xlsx`)
+      toast.success(`Export ENEMAT : ${filtered.length} lignes`)
+    } catch (e: any) {
+      toast.error(e.message || 'Erreur export')
+    } finally {
+      setExportLoading(false)
+    }
   }
 
   const totalEnemat = Object.values(counts).reduce((a, b) => a + b, 0)
@@ -717,6 +766,60 @@ export default function AdminEnematPage() {
           </SelectContent>
         </Select>
 
+        {/* Lot filter */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className={`h-8 text-xs px-2 shrink-0 ${lotFilter ? 'border-primary text-primary' : ''}`}>
+              Lot {lotFilter && '●'}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2" align="start">
+            <div className="space-y-2">
+              <Input
+                placeholder="N° de lot..."
+                className="h-8 text-xs"
+                value={lotFilter && !lotFilter.startsWith('__') ? lotFilter : ''}
+                onChange={(e) => { setLotFilter(e.target.value); setPage(1) }}
+              />
+              <div className="flex flex-col gap-1">
+                <Button variant={lotFilter === '__any__' ? 'default' : 'ghost'} size="sm" className="h-7 text-xs justify-start" onClick={() => { setLotFilter('__any__'); setPage(1) }}>Avec lot</Button>
+                <Button variant={lotFilter === '__none__' ? 'default' : 'ghost'} size="sm" className="h-7 text-xs justify-start" onClick={() => { setLotFilter('__none__'); setPage(1) }}>Sans lot</Button>
+              </div>
+              {lotFilter && (
+                <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => { setLotFilter(''); setPage(1) }}>Effacer</Button>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Facture filter */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className={`h-8 text-xs px-2 shrink-0 ${factureFilter ? 'border-primary text-primary' : ''}`}>
+              N° facture {factureFilter && '●'}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2" align="start">
+            <div className="space-y-2">
+              <Input
+                placeholder="N° de facture..."
+                className="h-8 text-xs"
+                value={factureFilter && !factureFilter.startsWith('__') ? factureFilter : ''}
+                onChange={(e) => { setFactureFilter(e.target.value); setPage(1) }}
+              />
+              <div className="flex flex-col gap-1">
+                <Button variant={factureFilter === '__any__' ? 'default' : 'ghost'} size="sm" className="h-7 text-xs justify-start" onClick={() => { setFactureFilter('__any__'); setPage(1) }}>Avec facture</Button>
+                <Button variant={factureFilter === '__none__' ? 'default' : 'ghost'} size="sm" className="h-7 text-xs justify-start" onClick={() => { setFactureFilter('__none__'); setPage(1) }}>Sans facture</Button>
+              </div>
+              {factureFilter && (
+                <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => { setFactureFilter(''); setPage(1) }}>Effacer</Button>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+
         {/* Date filters */}
         <Popover>
           <PopoverTrigger asChild>
@@ -783,8 +886,8 @@ export default function AdminEnematPage() {
         )}
 
         {/* Export Excel */}
-        <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0" onClick={handleExport} disabled={filteredClients.length === 0}>
-          <Download className="h-4 w-4 mr-1" />
+        <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0" onClick={handleExport} disabled={exportLoading}>
+          {exportLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
           Export
         </Button>
       </div>
@@ -826,6 +929,8 @@ export default function AdminEnematPage() {
                     <TableHead className="hidden md:table-cell">Depot ENEMAT</TableHead>
                     <TableHead className="hidden lg:table-cell">APF</TableHead>
                     <TableHead className="hidden lg:table-cell">Paye</TableHead>
+                    <TableHead className="hidden xl:table-cell">Lot</TableHead>
+                    <TableHead className="hidden xl:table-cell">N° facture</TableHead>
                     <SortableHeader label="Statut" column="statut_enemat" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -909,6 +1014,12 @@ export default function AdminEnematPage() {
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <span className="text-sm">{formatDate(client.date_paye_enemat)}</span>
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell">
+                        <span className="text-xs font-mono">{client.numero_lot_enemat || '-'}</span>
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell">
+                        <span className="text-xs font-mono">{client.numero_facture_enemat || '-'}</span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5">

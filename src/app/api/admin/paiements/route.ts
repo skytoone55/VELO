@@ -65,7 +65,9 @@ export async function GET(request: NextRequest) {
     const livreurApfEnvoye = searchParams.get('livreur_apf_envoye')
     const search = searchParams.get('search')
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200)
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 5000)
+    const lotFilter = searchParams.get('lot')
+    const factureFilter = searchParams.get('facture')
     const offset = (page - 1) * limit
 
     const supabase = createAdminClient()
@@ -78,6 +80,7 @@ export async function GET(request: NextRequest) {
          commercial_assigne, commercial_code, monday_board_id,
          depot_retrait_id, depot_logistique_id, paiement_livreur_id,
          statut_enemat, date_depot_enemat, date_apf_enemat, date_paye_enemat,
+         numero_lot_enemat, numero_facture_enemat,
          commercial_apf_envoye, commercial_apf_envoye_le,
          commercial_paye, commercial_paye_le,
          livreur_apf_envoye, livreur_apf_envoye_le,
@@ -137,6 +140,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    if (lotFilter === '__none__') {
+      query = query.is('numero_lot_enemat', null)
+    } else if (lotFilter === '__any__') {
+      query = query.not('numero_lot_enemat', 'is', null)
+    } else if (lotFilter) {
+      query = query.ilike('numero_lot_enemat', `%${lotFilter}%`)
+    }
+
+    if (factureFilter === '__none__') {
+      query = query.is('numero_facture_enemat', null)
+    } else if (factureFilter === '__any__') {
+      query = query.not('numero_facture_enemat', 'is', null)
+    } else if (factureFilter) {
+      query = query.ilike('numero_facture_enemat', `%${factureFilter}%`)
+    }
+
     const { data, error, count } = await query
 
     if (error) {
@@ -185,6 +204,20 @@ export async function GET(request: NextRequest) {
           `raison_sociale.ilike.%${safe}%,reference_retina.ilike.%${safe}%`
         )
       }
+    }
+    if (lotFilter === '__none__') {
+      sumQuery = sumQuery.is('numero_lot_enemat', null)
+    } else if (lotFilter === '__any__') {
+      sumQuery = sumQuery.not('numero_lot_enemat', 'is', null)
+    } else if (lotFilter) {
+      sumQuery = sumQuery.ilike('numero_lot_enemat', `%${lotFilter}%`)
+    }
+    if (factureFilter === '__none__') {
+      sumQuery = sumQuery.is('numero_facture_enemat', null)
+    } else if (factureFilter === '__any__') {
+      sumQuery = sumQuery.not('numero_facture_enemat', 'is', null)
+    } else if (factureFilter) {
+      sumQuery = sumQuery.ilike('numero_facture_enemat', `%${factureFilter}%`)
     }
 
     const { data: sumData } = await sumQuery

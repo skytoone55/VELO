@@ -18,12 +18,14 @@ export async function GET(request: NextRequest) {
     const depotId = searchParams.get('depot_id')
     const commercial = searchParams.get('commercial')
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200)
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 5000)
     const offset = (page - 1) * limit
 
     const supabase = createAdminClient()
 
     const fnuciFilter = searchParams.get('fnuci')
+    const lotFilter = searchParams.get('lot')
+    const factureFilter = searchParams.get('facture')
 
     let query = supabase
       .from('clients')
@@ -31,6 +33,7 @@ export async function GET(request: NextRequest) {
         `id, raison_sociale, reference_retina, telephone, email, commercial_assigne,
          depot_logistique_id, velo_valide,
          statut_enemat, date_depot_enemat, date_apf_enemat, date_paye_enemat, date_entree_enemat, in_enemat,
+         numero_lot_enemat, numero_facture_enemat,
          fnuci_ids, fnuci_declared, fnuci_declared_at,
          livraisons(mode_livraison, creneau_date, date_livraison_effective, cq_valide_at)`,
         { count: 'exact' }
@@ -61,6 +64,22 @@ export async function GET(request: NextRequest) {
       query = query.eq('fnuci_declared', true)
     } else if (fnuciFilter === 'non') {
       query = query.or('fnuci_declared.eq.false,fnuci_declared.is.null')
+    }
+
+    if (lotFilter === '__none__') {
+      query = query.is('numero_lot_enemat', null)
+    } else if (lotFilter === '__any__') {
+      query = query.not('numero_lot_enemat', 'is', null)
+    } else if (lotFilter) {
+      query = query.ilike('numero_lot_enemat', `%${lotFilter}%`)
+    }
+
+    if (factureFilter === '__none__') {
+      query = query.is('numero_facture_enemat', null)
+    } else if (factureFilter === '__any__') {
+      query = query.not('numero_facture_enemat', 'is', null)
+    } else if (factureFilter) {
+      query = query.ilike('numero_facture_enemat', `%${factureFilter}%`)
     }
 
     const { data, error, count } = await query
@@ -122,6 +141,20 @@ export async function GET(request: NextRequest) {
       sumQuery = sumQuery.eq('fnuci_declared', true)
     } else if (fnuciFilter === 'non') {
       sumQuery = sumQuery.or('fnuci_declared.eq.false,fnuci_declared.is.null')
+    }
+    if (lotFilter === '__none__') {
+      sumQuery = sumQuery.is('numero_lot_enemat', null)
+    } else if (lotFilter === '__any__') {
+      sumQuery = sumQuery.not('numero_lot_enemat', 'is', null)
+    } else if (lotFilter) {
+      sumQuery = sumQuery.ilike('numero_lot_enemat', `%${lotFilter}%`)
+    }
+    if (factureFilter === '__none__') {
+      sumQuery = sumQuery.is('numero_facture_enemat', null)
+    } else if (factureFilter === '__any__') {
+      sumQuery = sumQuery.not('numero_facture_enemat', 'is', null)
+    } else if (factureFilter) {
+      sumQuery = sumQuery.ilike('numero_facture_enemat', `%${factureFilter}%`)
     }
 
     const { data: sumData, error: sumError } = await sumQuery

@@ -42,7 +42,7 @@ export const FORM_VALIDATION = {
 // =================================================================
 export const PAGINATION = {
   defaultPageSize: 20,
-  maxPageSize: 500,
+  maxPageSize: 5000,
   minPage: 1,
 } as const
 

@@ -363,8 +363,12 @@ export default function AdminClientsPage() {
     fetchClients(true)
   }
 
-  // Export Excel
-  const handleExportClients = () => {
+  // Export Excel — refetch tous les clients filtres (max 5000)
+  const [exportLoading, setExportLoading] = useState(false)
+  const handleExportClients = async () => {
+    if (exportLoading) return
+    setExportLoading(true)
+    try {
     const tenant = getTenantConfig()
     const today = new Date().toISOString().slice(0, 10)
     const ENEMAT_LABELS: Record<string, string> = {
@@ -381,7 +385,27 @@ export default function AdminClientsPage() {
         .sort()
       return dates[0] || ''
     }
-    exportToXlsx(clients, [
+    const params = new URLSearchParams()
+    params.set('page', '1')
+    params.set('pageSize', '5000')
+    if (debouncedSearch) params.set('search', debouncedSearch)
+    if (statutFilter.length > 0) params.set('statut', statutFilter.join(','))
+    if (departementFilter.length > 0) params.set('departement', departementFilter.join(','))
+    if (nafFilter !== 'all') params.set('naf', nafFilter)
+    if (zoneFilter !== 'all') params.set('zone', zoneFilter)
+    if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
+    if (depotFilter !== 'all') params.set('depot', depotFilter)
+    if (controleFilter !== 'all') params.set('controle', controleFilter)
+    if (enematFilter !== 'all') params.set('enemat', enematFilter)
+    if (sortBy !== 'updated_at' || sortOrder !== 'desc') {
+      params.set('sortBy', sortBy)
+      params.set('sortOrder', sortOrder)
+    }
+    const res = await fetch(`/api/clients?${params.toString()}`)
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Erreur export')
+    const allClients = data.clients || []
+    exportToXlsx(allClients, [
       { header: 'Raison sociale', accessor: r => r.raison_sociale },
       { header: 'Réf. Retina', accessor: r => r.reference_retina },
       { header: 'Contact nom', accessor: r => r.contact_nom },
@@ -402,6 +426,12 @@ export default function AdminClientsPage() {
       { header: 'Vélos devis', accessor: r => r.velo_devis || 0 },
       { header: 'Statut', accessor: r => r.statut_commercial },
     ], `Export-Clients-${tenant.name}-${today}.xlsx`)
+    toast.success(`Export Clients : ${allClients.length} lignes`)
+    } catch (e: any) {
+      toast.error(e?.message || 'Erreur export')
+    } finally {
+      setExportLoading(false)
+    }
   }
 
   // Reset page quand les filtres ou la recherche changent
@@ -980,8 +1010,8 @@ export default function AdminClientsPage() {
         <PinFiltersButton onPin={handlePinFilters} isPinned={isPinned} />
 
         {user?.role !== 'livreur' && (
-          <Button variant="outline" size="sm" onClick={handleExportClients} disabled={clients.length === 0}>
-            <Download className="h-4 w-4 mr-1" />
+          <Button variant="outline" size="sm" onClick={handleExportClients} disabled={exportLoading}>
+            {exportLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
             Export
           </Button>
         )}
