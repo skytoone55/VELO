@@ -496,19 +496,20 @@ export default function MapPage() {
     return counts
   }, [horsZoneByDepot])
 
-  // Compteurs clients/vélos par dépôt — calculés depuis clientsParAgence (réactifs aux filtres)
+  // Compteurs clients/vélos EN ZONE par dépôt (les hors-zone sont comptés séparément via horsZoneByDepot)
   const depotFilteredCounts = useMemo(() => {
     const counts: Record<string, { clients: number; velos: number }> = {}
     depots.forEach(d => { counts[d.id] = { clients: 0, velos: 0 } })
     clientsParAgence.forEach(client => {
-      const depotId = client.depot_retrait_id || client.depot_logistique_id || horsZoneDepotMap[client.id]
+      if (horsZoneClientIds.has(client.id)) return
+      const depotId = client.depot_retrait_id || client.depot_logistique_id
       if (depotId && counts[depotId]) {
         counts[depotId].clients++
         counts[depotId].velos += client.velo_valide || 0
       }
     })
     return counts
-  }, [clientsParAgence, depots, horsZoneDepotMap])
+  }, [clientsParAgence, depots, horsZoneClientIds])
 
   // Clients filtrés pour l'affichage sur la carte (avec filtres visuels supplémentaires)
   // Note : sélectionner un dépôt ne masque plus les autres clients (zoom + slider rayon uniquement)

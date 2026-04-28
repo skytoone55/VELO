@@ -51,8 +51,9 @@ export async function GET(request: NextRequest) {
     const hasControle = controleFilter && controleFilter !== 'all'
     const hasEnemat = enematFilter && enematFilter !== 'all'
 
-    // Note: hasControle et hasEnemat ne sont PAS inclus ici — filtres appliques en etape 2 via jointure inner
-    if (search || hasCommercial || hasDepartement || hasZone) {
+    // Note: hasControle, hasEnemat, hasZone ne sont PAS inclus ici — filtres appliques en etape 2 via jointure inner
+    // (hasZone exclu pour eviter la troncature Supabase REST a 1000 IDs quand >1000 clients matchent)
+    if (search || hasCommercial || hasDepartement) {
       let clientQuery = adminClient
         .from('clients')
         .select('id')
@@ -106,15 +107,6 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      if (hasZone) {
-        const zones = zoneFilter!.split(',').filter(Boolean)
-        if (zones.length === 1) {
-          clientQuery = clientQuery.eq('type_de_zone', zones[0])
-        } else {
-          clientQuery = clientQuery.in('type_de_zone', zones)
-        }
-      }
-
       const { data: matchingClients } = await clientQuery
       clientIds = matchingClients?.map(c => c.id) || []
 
@@ -160,6 +152,13 @@ export async function GET(request: NextRequest) {
     // Filtre ENEMAT via jointure inner (evite liste d'IDs trop longue)
     if (hasEnemat) {
       query = query.eq('client.in_enemat', enematFilter === 'oui')
+    }
+
+    // Filtre Zone via jointure inner (evite la troncature Supabase REST a 1000 IDs)
+    if (hasZone) {
+      const zones = zoneFilter!.split(',').filter(Boolean)
+      if (zones.length === 1) query = query.eq('client.type_de_zone', zones[0])
+      else if (zones.length > 1) query = query.in('client.type_de_zone', zones)
     }
 
     // Depot filter via livraisons.depot_id
@@ -219,7 +218,7 @@ export async function GET(request: NextRequest) {
     // Récupérer tous les client_ids distincts des livraisons filtrées
     let velosQuery = adminClient
       .from('livraisons')
-      .select('cq_valide, cq_en_cours, statut, client:clients!livraisons_client_id_fkey!inner(velo_valide, in_enemat)')
+      .select('cq_valide, cq_en_cours, statut, client:clients!livraisons_client_id_fkey!inner(velo_valide, in_enemat, type_de_zone)')
 
     // Ré-appliquer les mêmes filtres (sans pagination)
     if (statutFilter && statutFilter !== 'all') {
@@ -230,6 +229,11 @@ export async function GET(request: NextRequest) {
     if (clientIds) velosQuery = velosQuery.in('client_id', clientIds)
     if (hasEnemat) {
       velosQuery = velosQuery.eq('client.in_enemat', enematFilter === 'oui')
+    }
+    if (hasZone) {
+      const zones = zoneFilter!.split(',').filter(Boolean)
+      if (zones.length === 1) velosQuery = velosQuery.eq('client.type_de_zone', zones[0])
+      else if (zones.length > 1) velosQuery = velosQuery.in('client.type_de_zone', zones)
     }
     if (depotFilter && depotFilter !== 'all') {
       const depots = depotFilter.split(',').filter(Boolean)

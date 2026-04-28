@@ -283,6 +283,7 @@ export default function AdminPaiementsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [depotFilter, setDepotFilter] = useState<string[]>([])
+  const [zoneFilter, setZoneFilter] = useState<string[]>([])
   const [livreurFilter, setLivreurFilter] = useState<string[]>([])
   const [commercialFilter, setCommercialFilter] = useState<string[]>([])
   const [enematFilter, setEnematFilter] = useState<EnematStatutFiltre>('all')
@@ -330,6 +331,7 @@ export default function AdminPaiementsPage() {
         return []
       }
       if (pinned.depot !== undefined) setDepotFilter(toArr(pinned.depot))
+      if (pinned.zone !== undefined) setZoneFilter(toArr(pinned.zone))
       if (pinned.livreur !== undefined) setLivreurFilter(toArr(pinned.livreur))
       if (pinned.commercial !== undefined) setCommercialFilter(toArr(pinned.commercial))
       if (pinned.enemat) {
@@ -351,6 +353,7 @@ export default function AdminPaiementsPage() {
   const handlePinFilters = () => {
     saveFilters({
       depot: depotFilter,
+      zone: zoneFilter,
       livreur: livreurFilter,
       commercial: commercialFilter,
       enemat: enematFilter,
@@ -407,7 +410,7 @@ export default function AdminPaiementsPage() {
   // Reset page 1 quand filtres changent
   useEffect(() => {
     setCurrentPage(1)
-  }, [debouncedSearch, depotFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, pageSize])
+  }, [debouncedSearch, depotFilter, zoneFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, pageSize])
 
   // ========== Fetch clients ==========
   const fetchClients = async () => {
@@ -418,6 +421,7 @@ export default function AdminPaiementsPage() {
       params.set('limit', String(pageSize))
       if (debouncedSearch) params.set('search', debouncedSearch)
       if (depotFilter.length > 0) params.set('depot_ids', depotFilter.join(','))
+      if (zoneFilter.length > 0) params.set('zone', zoneFilter.join(','))
       if (livreurFilter.length > 0) params.set('livreur_ids', livreurFilter.join(','))
       if (commercialFilter.length > 0) params.set('commercial_codes', commercialFilter.join(','))
       if (enematFilter !== 'all') params.set('statut_enemat', enematFilter)
@@ -451,7 +455,7 @@ export default function AdminPaiementsPage() {
     if (!filtersReady) return
     fetchClients()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, debouncedSearch, depotFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, filtersReady])
+  }, [currentPage, pageSize, debouncedSearch, depotFilter, zoneFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, filtersReady])
 
   // ========== Sélection ==========
   const allSelectedOnPage = clients.length > 0 && clients.every(c => selectedIds.has(c.id))
@@ -606,6 +610,7 @@ export default function AdminPaiementsPage() {
         export_mode: mode,
       }
       if (depotFilter.length > 0) body.depot_ids = depotFilter
+      if (zoneFilter.length > 0) body.zone = zoneFilter.join(',')
       if (livreurFilter.length > 0) body.livreur_ids = livreurFilter
       if (commercialFilter.length > 0) body.commercial_codes = commercialFilter
       if (enematFilter !== 'all') body.statut_enemat = enematFilter
@@ -645,6 +650,7 @@ export default function AdminPaiementsPage() {
   // ========== Reset filtres ==========
   const resetFilters = () => {
     setDepotFilter([])
+    setZoneFilter([])
     setLivreurFilter([])
     setCommercialFilter([])
     setEnematFilter('all')
@@ -656,11 +662,11 @@ export default function AdminPaiementsPage() {
   }
 
   const hasActiveFilters = useMemo(() => {
-    return depotFilter.length > 0 || livreurFilter.length > 0 || commercialFilter.length > 0 ||
+    return depotFilter.length > 0 || zoneFilter.length > 0 || livreurFilter.length > 0 || commercialFilter.length > 0 ||
       enematFilter !== 'all' || commercialPayeFilter !== 'all' || livreurPayeFilter !== 'all' ||
       !!lotFilter || !!factureFilter ||
       searchQuery.length > 0
-  }, [depotFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, searchQuery])
+  }, [depotFilter, zoneFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, searchQuery])
 
   const selectedCount = selectedIds.size
 
@@ -815,6 +821,40 @@ export default function AdminPaiementsPage() {
                 </div>
                 {depotFilter.length > 0 && (
                   <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setDepotFilter([])}>
+                    Effacer
+                  </Button>
+                )}
+              </PopoverContent>
+            </Popover>
+
+            {/* Zone — multi-select */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9 px-3 shrink-0">
+                  Zone {zoneFilter.length > 0 && `(${zoneFilter.length})`}
+                  <ChevronDown className="ml-1.5 h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2" align="start">
+                <div className="max-h-60 overflow-y-auto">
+                  {[{ value: 'dans_la_zone', label: 'En zone' }, { value: 'hors_zone', label: 'Hors zone' }].map(o => (
+                    <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                      <input
+                        type="checkbox"
+                        checked={zoneFilter.includes(o.value)}
+                        onChange={(e) => {
+                          setZoneFilter(prev =>
+                            e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                          )
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      {o.label}
+                    </label>
+                  ))}
+                </div>
+                {zoneFilter.length > 0 && (
+                  <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setZoneFilter([])}>
                     Effacer
                   </Button>
                 )}

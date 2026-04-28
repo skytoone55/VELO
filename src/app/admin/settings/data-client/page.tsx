@@ -333,23 +333,48 @@ export default function DataClientPage() {
     fetchClients(true)
   }
 
-  // Export Excel
-  const handleExportClients = () => {
-    const tenant = getTenantConfig()
-    const today = new Date().toISOString().slice(0, 10)
-    exportToXlsx(clients, [
-      { header: 'Raison sociale', accessor: r => r.raison_sociale },
-      { header: 'Réf. Retina', accessor: r => r.reference_retina },
-      { header: 'Contact nom', accessor: r => r.contact_nom },
-      { header: 'Contact prénom', accessor: r => r.contact_prenom },
-      { header: 'Téléphone', accessor: r => r.telephone },
-      { header: 'Adresse', accessor: r => r.adresse_societe_ligne1 },
-      { header: 'CP', accessor: r => r.adresse_societe_cp },
-      { header: 'Ville', accessor: r => r.adresse_societe_ville },
-      { header: 'Département', accessor: r => r.departement },
-      { header: 'Nb vélos', accessor: r => r.velo_valide || r.velo_confirme || 0 },
-      { header: 'Statut Data', accessor: r => (r as any).statut_data },
-    ], `Export-DataClients-${tenant.name}-${today}.xlsx`)
+  // Export Excel — fetch dedie pageSize=5000 pour exporter TOUS les clients filtres (pas juste la page courante)
+  const [exportLoading, setExportLoading] = useState(false)
+  const handleExportClients = async () => {
+    if (exportLoading) return
+    setExportLoading(true)
+    try {
+      const tenant = getTenantConfig()
+      const today = new Date().toISOString().slice(0, 10)
+      const params = new URLSearchParams()
+      params.set('pageSize', '5000')
+      params.set('page', '1')
+      if (debouncedSearch) params.set('search', debouncedSearch)
+      if (statutFilter.length > 0) params.set('statut', statutFilter.join(','))
+      if (departementFilter.length > 0) params.set('departement', departementFilter.join(','))
+      if (nafFilter !== 'all') params.set('naf', nafFilter)
+      if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
+
+      const res = await fetch(`/api/admin/data-clients?${params.toString()}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur export')
+
+      const allClients: Client[] = data.clients || []
+      exportToXlsx(allClients, [
+        { header: 'Raison sociale', accessor: r => r.raison_sociale },
+        { header: 'Réf. Retina', accessor: r => r.reference_retina },
+        { header: 'Contact nom', accessor: r => r.contact_nom },
+        { header: 'Contact prénom', accessor: r => r.contact_prenom },
+        { header: 'Téléphone', accessor: r => r.telephone },
+        { header: 'Adresse', accessor: r => r.adresse_societe_ligne1 },
+        { header: 'CP', accessor: r => r.adresse_societe_cp },
+        { header: 'Ville', accessor: r => r.adresse_societe_ville },
+        { header: 'Département', accessor: r => r.departement },
+        { header: 'Vélos validés', accessor: r => r.velo_valide || r.velo_confirme || 0 },
+        { header: 'Vélos devis', accessor: r => (r as any).velo_devis || 0 },
+        { header: 'Statut Data', accessor: r => (r as any).statut_data },
+      ], `Export-DataClients-${tenant.name}-${today}.xlsx`)
+      toast.success(`${allClients.length} ligne(s) exportée(s)`)
+    } catch (e: any) {
+      toast.error(e.message || 'Erreur export')
+    } finally {
+      setExportLoading(false)
+    }
   }
 
   // Reset page quand les filtres changent

@@ -84,10 +84,32 @@ export async function GET(request: NextRequest) {
     // Tri + pagination
     query = query.order(safeSortBy, { ascending })
 
-    // Count total pour vélos
-    const countQuery = adminClient
+    // Count total pour vélos — réapplique les mêmes filtres
+    let countQuery = adminClient
       .from('data_clients')
       .select('velo_valide')
+
+    if (search) {
+      countQuery = countQuery.or(
+        `raison_sociale.ilike.%${search}%,siret.ilike.%${search}%,email_beneficiaire.ilike.%${search}%,telephone.ilike.%${search}%,reference_retina.ilike.%${search}%`
+      )
+    }
+    if (statutFilter && statutFilter !== 'all') {
+      countQuery = countQuery.eq('statut_data', statutFilter)
+    }
+    if (departementFilter && departementFilter !== 'all') {
+      const depts = departementFilter.split(',').filter(Boolean)
+      if (depts.length === 1) countQuery = countQuery.eq('departement', depts[0])
+      else if (depts.length > 1) countQuery = countQuery.in('departement', depts)
+    }
+    if (commercialFilter && commercialFilter !== 'all') {
+      countQuery = countQuery.eq('commercial_assigne', commercialFilter)
+    }
+    if (nafFilter && nafFilter !== 'all') {
+      if (nafFilter === 'valide') countQuery = countQuery.eq('validation_naf', 'OUI')
+      else if (nafFilter === 'bloque') countQuery = countQuery.eq('validation_naf', 'NON')
+      else if (nafFilter === 'en_attente') countQuery = countQuery.or('validation_naf.is.null,validation_naf.neq.OUI,validation_naf.neq.NON')
+    }
 
     const startIndex = (page - 1) * pageSize
     query = query.range(startIndex, startIndex + pageSize - 1)

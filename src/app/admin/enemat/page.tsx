@@ -130,6 +130,7 @@ export default function AdminEnematPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statutFilter, setStatutFilter] = useState<string[]>([])
   const [depotFilter, setDepotFilter] = useState<string[]>([])
+  const [zoneFilter, setZoneFilter] = useState<string[]>([])
   const [commercialFilter, setCommercialFilter] = useState<string[]>([])
   const [cqFilter, setCqFilter] = useState<string>('all')
   const [fnuciFilter, setFnuciFilter] = useState<string>('all')
@@ -197,6 +198,7 @@ export default function AdminEnematPage() {
         p.set('page', '1')
         if (searchQuery) p.set('search', searchQuery)
         if (depotFilter.length > 0) p.set('depot_id', depotFilter[0])
+        if (zoneFilter.length > 0) p.set('zone', zoneFilter.join(','))
         if (commercialFilter.length > 0) p.set('commercial', commercialFilter[0])
         if (fnuciFilter !== 'all') p.set('fnuci', fnuciFilter)
         return p.toString()
@@ -210,7 +212,7 @@ export default function AdminEnematPage() {
       })
       setCounts(newCounts)
     } catch {}
-  }, [searchQuery, depotFilter, commercialFilter, fnuciFilter])
+  }, [searchQuery, depotFilter, zoneFilter, commercialFilter, fnuciFilter])
 
   const fetchClients = useCallback(async () => {
     setLoading(true)
@@ -221,6 +223,7 @@ export default function AdminEnematPage() {
       if (searchQuery) params.set('search', searchQuery)
       if (statutFilter.length > 0) params.set('statut_enemat', statutFilter.join(','))
       if (depotFilter.length > 0) params.set('depot_id', depotFilter[0]) // API supports single depot
+      if (zoneFilter.length > 0) params.set('zone', zoneFilter.join(','))
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter[0])
       if (fnuciFilter !== 'all') params.set('fnuci', fnuciFilter)
       if (lotFilter) params.set('lot', lotFilter)
@@ -257,7 +260,7 @@ export default function AdminEnematPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter, fnuciFilter, lotFilter, factureFilter, fetchCounts])
+  }, [page, pageSize, searchQuery, statutFilter, depotFilter, zoneFilter, commercialFilter, fnuciFilter, lotFilter, factureFilter, fetchCounts])
 
   // Debounce search
   const searchTimerRef = useRef<NodeJS.Timeout>(null)
@@ -276,6 +279,7 @@ export default function AdminEnematPage() {
   const prevFilters = useRef({
     statutFilter: statutFilter.join(','),
     depotFilter: depotFilter.join(','),
+    zoneFilter: zoneFilter.join(','),
     commercialFilter: commercialFilter.join(','),
     sortBy,
     sortOrder,
@@ -285,19 +289,21 @@ export default function AdminEnematPage() {
     const cur = {
       statutFilter: statutFilter.join(','),
       depotFilter: depotFilter.join(','),
+      zoneFilter: zoneFilter.join(','),
       commercialFilter: commercialFilter.join(','),
       sortBy,
       sortOrder,
     }
     if (
       prev.statutFilter !== cur.statutFilter || prev.depotFilter !== cur.depotFilter ||
+      prev.zoneFilter !== cur.zoneFilter ||
       prev.commercialFilter !== cur.commercialFilter ||
       prev.sortBy !== cur.sortBy || prev.sortOrder !== cur.sortOrder
     ) {
       setPage(1)
       prevFilters.current = cur
     }
-  }, [statutFilter, depotFilter, commercialFilter, sortBy, sortOrder])
+  }, [statutFilter, depotFilter, zoneFilter, commercialFilter, sortBy, sortOrder])
 
   useEffect(() => {
     fetchClients()
@@ -316,6 +322,7 @@ export default function AdminEnematPage() {
     setSearchQuery('')
     setStatutFilter([])
     setDepotFilter([])
+    setZoneFilter([])
     setCommercialFilter([])
     setCqFilter('all')
     setLotFilter('')
@@ -331,7 +338,7 @@ export default function AdminEnematPage() {
     setPage(1)
   }
 
-  const hasActiveFilters = searchQuery || statutFilter.length > 0 || depotFilter.length > 0 || commercialFilter.length > 0 || cqFilter !== 'all' || fnuciFilter !== 'all' || !!lotFilter || !!factureFilter || dateDepotFrom || dateDepotTo || dateApfFrom || dateApfTo || datePayeFrom || datePayeTo
+  const hasActiveFilters = searchQuery || statutFilter.length > 0 || depotFilter.length > 0 || zoneFilter.length > 0 || commercialFilter.length > 0 || cqFilter !== 'all' || fnuciFilter !== 'all' || !!lotFilter || !!factureFilter || dateDepotFrom || dateDepotTo || dateApfFrom || dateApfTo || datePayeFrom || datePayeTo
 
   // ─── Selection ────────────────────────────────────────────────
   const handleToggleSelect = (clientId: string) => {
@@ -550,6 +557,7 @@ export default function AdminEnematPage() {
       if (searchQuery) params.set('search', searchQuery)
       if (statutFilter.length > 0) params.set('statut_enemat', statutFilter.join(','))
       if (depotFilter.length > 0) params.set('depot_id', depotFilter[0])
+      if (zoneFilter.length > 0) params.set('zone', zoneFilter.join(','))
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter[0])
       if (fnuciFilter !== 'all') params.set('fnuci', fnuciFilter)
       if (lotFilter) params.set('lot', lotFilter)
@@ -703,6 +711,40 @@ export default function AdminEnematPage() {
             </div>
             {depotFilter.length > 0 && (
               <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setDepotFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+
+        {/* Zone multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Zone {zoneFilter.length > 0 && `(${zoneFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {[{ value: 'dans_la_zone', label: 'En zone' }, { value: 'hors_zone', label: 'Hors zone' }].map(o => (
+                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={zoneFilter.includes(o.value)}
+                    onChange={(e) => {
+                      setZoneFilter(prev =>
+                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {zoneFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setZoneFilter([])}>
                 Effacer
               </Button>
             )}

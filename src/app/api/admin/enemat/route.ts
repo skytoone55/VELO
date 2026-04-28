@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     const fnuciFilter = searchParams.get('fnuci')
     const lotFilter = searchParams.get('lot')
     const factureFilter = searchParams.get('facture')
+    const zoneFilter = searchParams.get('zone')
 
     let query = supabase
       .from('clients')
@@ -80,6 +81,12 @@ export async function GET(request: NextRequest) {
       query = query.not('numero_facture_enemat', 'is', null)
     } else if (factureFilter) {
       query = query.ilike('numero_facture_enemat', `%${factureFilter}%`)
+    }
+
+    if (zoneFilter && zoneFilter !== 'all') {
+      const zones = zoneFilter.split(',').filter(Boolean)
+      if (zones.length === 1) query = query.eq('type_de_zone', zones[0])
+      else if (zones.length > 1) query = query.in('type_de_zone', zones)
     }
 
     const { data, error, count } = await query
@@ -155,6 +162,11 @@ export async function GET(request: NextRequest) {
       sumQuery = sumQuery.not('numero_facture_enemat', 'is', null)
     } else if (factureFilter) {
       sumQuery = sumQuery.ilike('numero_facture_enemat', `%${factureFilter}%`)
+    }
+    if (zoneFilter && zoneFilter !== 'all') {
+      const zones = zoneFilter.split(',').filter(Boolean)
+      if (zones.length === 1) sumQuery = sumQuery.eq('type_de_zone', zones[0])
+      else if (zones.length > 1) sumQuery = sumQuery.in('type_de_zone', zones)
     }
 
     const { data: sumData, error: sumError } = await sumQuery

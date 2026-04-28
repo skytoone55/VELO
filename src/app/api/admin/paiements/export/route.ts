@@ -25,6 +25,7 @@ interface ExportBody {
   search?: string
   lot?: string
   facture?: string
+  zone?: string
   export_mode: ExportMode
 }
 
@@ -110,6 +111,12 @@ export async function POST(request: NextRequest) {
     if (body.facture === '__none__') query = query.is('numero_facture_enemat', null)
     else if (body.facture === '__any__') query = query.not('numero_facture_enemat', 'is', null)
     else if (body.facture) query = query.ilike('numero_facture_enemat', `%${body.facture}%`)
+
+    if (body.zone && body.zone !== 'all') {
+      const zones = body.zone.split(',').filter(Boolean)
+      if (zones.length === 1) query = query.eq('type_de_zone', zones[0])
+      else if (zones.length > 1) query = query.in('type_de_zone', zones)
+    }
 
     const { data, error } = await query
 
