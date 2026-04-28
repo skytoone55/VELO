@@ -188,6 +188,45 @@ export async function GET(request: NextRequest) {
     .is('cq_pris_par', null)
     .lt('date_livraison_effective', oneMinAgo)
 
+  // Compteurs filtrés : clients distincts + total vélos validés sur les livraisons filtrées
+  // Réapplique les mêmes filtres que la requête principale (sans pagination)
+  let countQuery = adminClient
+    .from('livraisons')
+    .select('client_id, client:clients!livraisons_client_id_fkey(velo_valide)')
+    .eq('statut', 'livree')
+    .eq('cq_valide', false)
+
+  if (filter === 'non_traites') countQuery = countQuery.eq('cq_en_cours', false)
+  else if (filter === 'en_cours') countQuery = countQuery.eq('cq_en_cours', true)
+  else if (filter === 'sav') countQuery = countQuery.not('reactivated_at', 'is', null)
+
+  if (agentFilter === 'me') countQuery = countQuery.eq('cq_pris_par', auth.id)
+  else if (agentFilter !== 'all') countQuery = countQuery.eq('cq_pris_par', agentFilter)
+
+  if (auth.role === 'agent_secteur' && auth.depot_ids?.length) {
+    countQuery = countQuery.in('depot_id', auth.depot_ids)
+  }
+
+  if (search) {
+    const { data: matchingClients } = await adminClient
+      .from('clients')
+      .select('id')
+      .or(`raison_sociale.ilike.%${search}%,siret.ilike.%${search}%,reference_retina.ilike.%${search}%,telephone.ilike.%${search}%,email.ilike.%${search}%`)
+    const matchingIds = matchingClients?.map(c => c.id) || []
+    if (matchingIds.length > 0) countQuery = countQuery.in('client_id', matchingIds)
+  }
+
+  const { data: countRows } = await countQuery
+  const uniqueClients = new Map<string, number>()
+  for (const row of countRows || []) {
+    const cid = row.client_id as string | null
+    if (!cid) continue
+    const velo = Number((row.client as any)?.velo_valide) || 0
+    if (!uniqueClients.has(cid)) uniqueClients.set(cid, velo)
+  }
+  const clientsFiltered = uniqueClients.size
+  const velosValidesFiltered = [...uniqueClients.values()].reduce((sum, v) => sum + v, 0)
+
   // Fire-and-forget : alerter par email si dossiers > 5 min non pris
   checkAndSendAlerts(adminClient).catch(() => {})
 
@@ -199,6 +238,8 @@ export async function GET(request: NextRequest) {
       en_cours: totalEnCours || 0,
       sav: totalSav || 0,
       total: count || 0,
+      clients_filtered: clientsFiltered,
+      velos_valides_filtered: velosValidesFiltered,
     },
     alerts_count: alertsCount || 0,
     pagination: { page, pageSize, total: count || 0 },

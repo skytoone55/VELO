@@ -36,6 +36,8 @@ import {
   RefreshCw,
   RotateCcw,
   Download,
+  Users,
+  Bike,
 } from 'lucide-react'
 import Link from 'next/link'
 import { CQ_CHECKS, CQ_CHECK_KEYS, type CqCheckKey } from '@/lib/constants'
@@ -91,13 +93,15 @@ interface Stats {
   en_cours: number
   sav: number
   total: number
+  clients_filtered: number
+  velos_valides_filtered: number
 }
 
 export default function ControlePage() {
   const user = useAdminUser()
   const [items, setItems] = useState<ControleItem[]>([])
   const [agents, setAgents] = useState<AgentOption[]>([])
-  const [stats, setStats] = useState<Stats>({ non_traites: 0, en_cours: 0, sav: 0, total: 0 })
+  const [stats, setStats] = useState<Stats>({ non_traites: 0, en_cours: 0, sav: 0, total: 0, clients_filtered: 0, velos_valides_filtered: 0 })
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [agentFilter, setAgentFilter] = useState('all')
@@ -368,7 +372,17 @@ export default function ControlePage() {
       </div>
 
       {/* Stats */}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
+        <div className="flex items-center gap-2 border border-slate-200 bg-slate-50/50 rounded-lg px-4 py-2">
+          <Users className="h-5 w-5 text-slate-500" />
+          <span className="text-sm text-muted-foreground">Clients</span>
+          <span className="text-lg font-bold text-slate-700">{stats.clients_filtered}</span>
+        </div>
+        <div className="flex items-center gap-2 border border-emerald-200 bg-emerald-50/50 rounded-lg px-4 py-2">
+          <Bike className="h-5 w-5 text-emerald-500" />
+          <span className="text-sm text-muted-foreground">Vélos validés</span>
+          <span className="text-lg font-bold text-emerald-700">{stats.velos_valides_filtered}</span>
+        </div>
         <div className="flex items-center gap-2 border border-blue-200 bg-blue-50/50 rounded-lg px-4 py-2">
           <AlertCircle className="h-5 w-5 text-blue-500" />
           <span className="text-sm text-muted-foreground">Non traités</span>

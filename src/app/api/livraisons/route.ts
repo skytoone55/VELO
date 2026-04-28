@@ -219,7 +219,7 @@ export async function GET(request: NextRequest) {
     // Récupérer tous les client_ids distincts des livraisons filtrées
     let velosQuery = adminClient
       .from('livraisons')
-      .select('client:clients!livraisons_client_id_fkey!inner(velo_valide)')
+      .select('cq_valide, cq_en_cours, statut, client:clients!livraisons_client_id_fkey!inner(velo_valide, in_enemat)')
 
     // Ré-appliquer les mêmes filtres (sans pagination)
     if (statutFilter && statutFilter !== 'all') {
@@ -228,10 +228,23 @@ export async function GET(request: NextRequest) {
       else if (statuts.length > 1) velosQuery = velosQuery.in('statut', statuts)
     }
     if (clientIds) velosQuery = velosQuery.in('client_id', clientIds)
+    if (hasEnemat) {
+      velosQuery = velosQuery.eq('client.in_enemat', enematFilter === 'oui')
+    }
     if (depotFilter && depotFilter !== 'all') {
       const depots = depotFilter.split(',').filter(Boolean)
       if (depots.length === 1) velosQuery = velosQuery.eq('depot_id', depots[0])
       else if (depots.length > 1) velosQuery = velosQuery.in('depot_id', depots)
+    }
+    if (hasControle) {
+      const vals = controleFilter!.split(',').filter(Boolean)
+      const conditions: string[] = []
+      if (vals.includes('ok')) conditions.push('cq_valide.eq.true')
+      if (vals.includes('en_cours')) conditions.push('cq_en_cours.eq.true')
+      if (vals.includes('attente')) {
+        conditions.push('and(statut.eq.livree,cq_valide.eq.false,cq_en_cours.eq.false)')
+      }
+      if (conditions.length > 0) velosQuery = velosQuery.or(conditions.join(','))
     }
     if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
       velosQuery = velosQuery.in('depot_id', currentUser.depot_ids)
