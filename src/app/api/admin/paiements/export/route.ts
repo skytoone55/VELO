@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
          livreur_apf_envoye, livreur_apf_envoye_le,
          livreur_paye, livreur_paye_le,
          paiement_notes, velo_valide,
-         depot:depot_logistique_id (id, nom),
+         depot_retrait:depot_retrait_id (id, nom),
+         depot_logistique:depot_logistique_id (id, nom),
          commercial:commercial_code (code, nom, parent_code),
          livreur:paiement_livreur_id (id, nom, prenom, email)`
       )
@@ -81,8 +82,15 @@ export async function POST(request: NextRequest) {
       ? body.commercial_codes
       : (body.commercial_code ? [body.commercial_code] : [])
 
-    if (depotIds.length === 1) query = query.eq('depot_logistique_id', depotIds[0])
-    else if (depotIds.length > 1) query = query.in('depot_logistique_id', depotIds)
+    if (depotIds.length === 1) {
+      query = query.or(`depot_retrait_id.eq.${depotIds[0]},depot_logistique_id.eq.${depotIds[0]}`)
+    } else if (depotIds.length > 1) {
+      const orParts = depotIds.flatMap((id: string) => [
+        `depot_retrait_id.eq.${id}`,
+        `depot_logistique_id.eq.${id}`,
+      ])
+      query = query.or(orParts.join(','))
+    }
     if (livreurIds.length === 1) query = query.eq('paiement_livreur_id', livreurIds[0])
     else if (livreurIds.length > 1) query = query.in('paiement_livreur_id', livreurIds)
     if (commercialCodes.length === 1) query = query.eq('commercial_code', commercialCodes[0])
@@ -127,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     const rows = (data || []) as any[]
 
-    const depotName = (r: any) => (r.depot?.nom ?? '')
+    const depotName = (r: any) => (r.depot_retrait?.nom ?? r.depot_logistique?.nom ?? r.depot?.nom ?? '')
     const commercialName = (r: any) =>
       r.commercial?.nom || r.commercial_assigne || r.commercial_code || ''
     const livreurName = (r: any) =>

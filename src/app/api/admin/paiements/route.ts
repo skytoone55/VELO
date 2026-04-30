@@ -87,7 +87,8 @@ export async function GET(request: NextRequest) {
          livreur_apf_envoye, livreur_apf_envoye_le,
          livreur_paye, livreur_paye_le,
          paiement_notes, velo_valide,
-         depot:depot_logistique_id (id, nom),
+         depot_retrait:depot_retrait_id (id, nom),
+         depot_logistique:depot_logistique_id (id, nom),
          commercial:commercial_code (code, nom, parent_code),
          livreur:paiement_livreur_id (id, nom, prenom, email)`,
         { count: 'exact' }
@@ -97,9 +98,13 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1)
 
     if (depotIds.length === 1) {
-      query = query.eq('depot_logistique_id', depotIds[0])
+      query = query.or(`depot_retrait_id.eq.${depotIds[0]},depot_logistique_id.eq.${depotIds[0]}`)
     } else if (depotIds.length > 1) {
-      query = query.in('depot_logistique_id', depotIds)
+      const orParts = depotIds.flatMap((id: string) => [
+        `depot_retrait_id.eq.${id}`,
+        `depot_logistique_id.eq.${id}`,
+      ])
+      query = query.or(orParts.join(','))
     }
     if (livreurIds.length === 1) {
       query = query.eq('paiement_livreur_id', livreurIds[0])
@@ -171,8 +176,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Injecter le champ virtuel `enemat_paye` (lecture seule)
+    // Cascade `depot` : depot_retrait (PPE+Ecovolt) > depot_logistique (legacy)
     const clients = (data || []).map((c: any) => ({
       ...c,
+      depot: c.depot_retrait ?? c.depot_logistique ?? null,
       enemat_paye: c.statut_enemat === 'paye_enemat',
       enemat_paye_le: c.statut_enemat === 'paye_enemat' ? (c.date_paye_enemat ?? null) : null,
     }))
@@ -183,8 +190,15 @@ export async function GET(request: NextRequest) {
       .select('velo_valide')
       .in('statut_enemat', ['depose_enemat', 'apf_enemat', 'paye_enemat'])
 
-    if (depotIds.length === 1) sumQuery = sumQuery.eq('depot_logistique_id', depotIds[0])
-    else if (depotIds.length > 1) sumQuery = sumQuery.in('depot_logistique_id', depotIds)
+    if (depotIds.length === 1) {
+      sumQuery = sumQuery.or(`depot_retrait_id.eq.${depotIds[0]},depot_logistique_id.eq.${depotIds[0]}`)
+    } else if (depotIds.length > 1) {
+      const orParts = depotIds.flatMap((id: string) => [
+        `depot_retrait_id.eq.${id}`,
+        `depot_logistique_id.eq.${id}`,
+      ])
+      sumQuery = sumQuery.or(orParts.join(','))
+    }
     if (livreurIds.length === 1) sumQuery = sumQuery.eq('paiement_livreur_id', livreurIds[0])
     else if (livreurIds.length > 1) sumQuery = sumQuery.in('paiement_livreur_id', livreurIds)
     if (commercialCodes.length === 1) sumQuery = sumQuery.eq('commercial_code', commercialCodes[0])

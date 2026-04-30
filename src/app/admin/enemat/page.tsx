@@ -47,6 +47,7 @@ interface EnematClient {
   depot_retrait_id: string | null
   velo_valide: number | null
   velo_devis: number
+  statut_commercial: string | null
   statut_enemat: string | null
   date_entree_enemat: string | null
   date_depot_enemat: string | null
@@ -584,9 +585,11 @@ export default function AdminEnematPage() {
       exportToXlsx(filtered, [
         { header: 'Raison sociale', accessor: r => r.raison_sociale },
         { header: 'Réf. Retina', accessor: r => r.reference_retina },
+        { header: 'Dépôt', accessor: r => r.depot?.nom || r.depot_nom || '' },
         { header: 'Nb vélos', accessor: r => r.velo_valide },
         { header: 'Date contrôle', accessor: r => r.livraison?.cq_valide_at || r.date_controle },
         { header: 'Date dépôt ENEMAT', accessor: r => r.date_depot_enemat },
+        { header: 'Statut commercial', accessor: r => r.statut_commercial || '' },
         { header: 'Statut ENEMAT', accessor: r => ENEMAT_LABELS[r.statut_enemat || ''] || r.statut_enemat },
         { header: 'Date APF', accessor: r => r.date_apf_enemat },
         { header: 'Date payé', accessor: r => r.date_paye_enemat },

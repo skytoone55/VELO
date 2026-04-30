@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
       .from('clients')
       .select(
         `id, raison_sociale, reference_retina, telephone, email, commercial_assigne,
-         depot_logistique_id, velo_valide,
+         depot_logistique_id, depot_retrait_id, velo_valide,
+         statut_commercial,
          statut_enemat, date_depot_enemat, date_apf_enemat, date_paye_enemat, date_entree_enemat, in_enemat,
          numero_lot_enemat, numero_facture_enemat,
          fnuci_ids, fnuci_declared, fnuci_declared_at,
@@ -54,7 +55,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (depotId) {
-      query = query.eq('depot_logistique_id', depotId)
+      // Cascade : depot_retrait_id (PPE+Ecovolt) ou depot_logistique_id (legacy)
+      query = query.or(`depot_retrait_id.eq.${depotId},depot_logistique_id.eq.${depotId}`)
     }
 
     if (commercial) {
@@ -96,8 +98,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Récupérer les noms de dépôts
-    const depotIds = [...new Set((data || []).map((r: any) => r.depot_logistique_id).filter(Boolean))]
+    // Récupérer les noms de dépôts (cascade retrait → logistique)
+    const depotIds = [
+      ...new Set(
+        (data || [])
+          .flatMap((r: any) => [r.depot_retrait_id, r.depot_logistique_id])
+          .filter(Boolean)
+      ),
+    ]
     let depotsMap: Record<string, string> = {}
     if (depotIds.length > 0) {
       const { data: depots } = await supabase
@@ -114,13 +122,15 @@ export async function GET(request: NextRequest) {
       const { livraisons, ...client } = row
       const livraisonsArr = Array.isArray(livraisons) ? livraisons : []
       const derniereLivraison = livraisonsArr[0] || null
+      const c = client as any
+      const depotId = c.depot_retrait_id ?? c.depot_logistique_id ?? null
       return {
         ...client,
         mode_livraison: derniereLivraison?.mode_livraison ?? null,
         date_livraison: derniereLivraison?.creneau_date ?? null,
         date_livraison_effective: derniereLivraison?.date_livraison_effective ?? null,
         date_controle: derniereLivraison?.cq_valide_at ?? null,
-        depot_nom: depotsMap[(client as any).depot_logistique_id] ?? null,
+        depot_nom: depotId ? depotsMap[depotId] ?? null : null,
       }
     })
 
@@ -139,7 +149,7 @@ export async function GET(request: NextRequest) {
       )
     }
     if (depotId) {
-      sumQuery = sumQuery.eq('depot_logistique_id', depotId)
+      sumQuery = sumQuery.or(`depot_retrait_id.eq.${depotId},depot_logistique_id.eq.${depotId}`)
     }
     if (commercial) {
       sumQuery = sumQuery.eq('commercial_assigne', commercial)
