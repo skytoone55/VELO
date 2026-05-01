@@ -213,7 +213,7 @@ export default function MapPage() {
 
   // Filtres multi-select
   const [selectedStatuts, setSelectedStatuts] = useState<string[]>([])
-  const [selectedNaf, setSelectedNaf] = useState<string[]>([])
+  const [selectedNaf, setSelectedNaf] = useState<string[]>(['OUI']) // NAF=OUI coché par défaut (les HS ne sont pas concernés)
   const [selectedCommerciaux, setSelectedCommerciaux] = useState<string[]>([])
 
   // Mode simulation
@@ -448,6 +448,8 @@ export default function MapPage() {
   // Clients filtrés par agence + filtres multi-select (pour stats)
   const clientsParAgence = useMemo(() => {
     return clients.filter(client => {
+      // Exclusion permanente des clients HS (aucun intérêt opérationnel)
+      if (client.statut_commercial === 'client_hs') return false
       if (selectedAgence !== 'all' && client.agence !== selectedAgence) {
         return false
       }
@@ -472,7 +474,11 @@ export default function MapPage() {
   // Valeurs uniques pour les filtres multi-select (basées sur TOUS les clients de l'agence, pas les filtrés)
   const uniqueStatuts = useMemo(() => {
     const agenceClients = clients.filter(c => selectedAgence === 'all' || c.agence === selectedAgence)
-    const statuts = new Set(agenceClients.map(c => c.statut_commercial || '').filter(Boolean))
+    const statuts = new Set(
+      agenceClients
+        .map(c => c.statut_commercial || '')
+        .filter(s => s && s !== 'client_hs') // exclure HS du filtre (sans intérêt)
+    )
     return Array.from(statuts).sort()
   }, [clients, selectedAgence])
 
@@ -1491,19 +1497,23 @@ export default function MapPage() {
                   if (!client.latitude || !client.longitude) return null
                   const isHorsZone = horsZoneClientIds.has(client.id)
                   const clientColor = getClientColor(client)
+                  // Signe distinctif clients avec plus de 1 vélo validé : marqueur plus
+                  // gros + bordure noire (la couleur reste celle du dépôt)
+                  const nbVelos = client.velo_valide ?? 0
+                  const isMultiVelos = nbVelos > 1
                   return (
                     <Marker
                       key={`client-${client.id}`}
                       position={{ lat: client.latitude, lng: client.longitude }}
                       icon={{
                         path: google.maps.SymbolPath.CIRCLE,
-                        scale: MARKER_SIZE,
+                        scale: isMultiVelos ? MARKER_SIZE * 1.7 : MARKER_SIZE,
                         fillColor: clientColor,
-                        fillOpacity: 0.85,
-                        strokeColor: '#fff',
-                        strokeWeight: 1,
+                        fillOpacity: 0.9,
+                        strokeColor: isMultiVelos ? '#000' : '#fff',
+                        strokeWeight: isMultiVelos ? 2 : 1,
                       }}
-                      title={client.raison_sociale + (isHorsZone ? ' (hors zone)' : '')}
+                      title={client.raison_sociale + (isMultiVelos ? ` — ${nbVelos} vélos` : '') + (isHorsZone ? ' (hors zone)' : '')}
                       onClick={() => setSelectedMarker({ type: 'client', data: client })}
                     />
                   )
