@@ -1217,16 +1217,11 @@ export default function MapPage() {
                             if (!nearest || km < nearest.distance) nearest = { nom: d.nom, distance: km }
                           }
                           if (!nearest) return null
-                          // Estimation route (Haversine × 1.3) + durée à 60 km/h moyenne
+                          // Estimation route : Haversine × 1.3 + coûts forfaitaires
                           const ROAD_FACTOR = 1.3
-                          const SPEED_KMH = 60
                           const ESSENCE_PER_KM = 0.135
                           const PEAGE_PER_KM = 0.05
                           const distRouteKm = nearest.distance * ROAD_FACTOR
-                          const dureeMin = (distRouteKm / SPEED_KMH) * 60
-                          const h = Math.floor(dureeMin / 60)
-                          const m = Math.round(dureeMin % 60)
-                          const dureeFmt = h > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${m} min`
                           const coutEssence = distRouteKm * ESSENCE_PER_KM
                           const coutPeage = distRouteKm * PEAGE_PER_KM
                           const coutTotal = coutEssence + coutPeage
@@ -1239,8 +1234,6 @@ export default function MapPage() {
                               <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]">
                                 <div>Vol d&apos;oiseau : <strong>{Math.round(nearest.distance * 10) / 10} km</strong></div>
                                 <div>Distance route : <strong>~ {Math.round(distRouteKm)} km</strong></div>
-                                <div>Durée route : <strong>~ {dureeFmt}</strong></div>
-                                <div>Vitesse moy. : 60 km/h</div>
                                 <div>⛽ Essence : <strong>~ {coutEssence.toFixed(2)} €</strong></div>
                                 <div>🛣️ Péage : <strong>~ {coutPeage.toFixed(2)} €</strong></div>
                               </div>
@@ -1249,7 +1242,7 @@ export default function MapPage() {
                                 <span className="text-muted-foreground"> (aller-retour ~ {(coutTotal * 2).toFixed(2)} €)</span>
                               </div>
                               <p className="text-[10px] text-muted-foreground italic">
-                                Distance route = vol d&apos;oiseau × 1.3. Coûts forfaitaires (essence 0.135 €/km, péage 0.05 €/km moyen France).
+                                Distance route = vol d&apos;oiseau × 1.3. Coûts forfaitaires (essence 0,135 €/km, péage 0,05 €/km moyen France).
                               </p>
                             </div>
                           )
