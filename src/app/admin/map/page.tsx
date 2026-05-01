@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, RefreshCw, Eye, Shuffle, Crosshair, Plus } from 'lucide-react'
+import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, RefreshCw, Eye, Shuffle, Crosshair, Plus, Truck } from 'lucide-react'
 import { toast } from 'sonner'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Slider } from '@/components/ui/slider'
@@ -169,6 +169,16 @@ const CLIENT_DEFAULT_COLOR = '#3B82F6'
 
 const MARKER_SIZE = 3
 const DEPOT_MARKER_SIZE = 8
+
+const STATUT_LABELS: Record<string, string> = {
+  controle_valide: 'Contrôle validé',
+  formulaire_envoye: 'Formulaire envoyé',
+  a_livrer: 'À livrer',
+  en_livraison: 'En livraison',
+  livre: 'Livré',
+  client_hs: 'Client HS',
+  non_renseigne: 'Non renseigné',
+}
 // Libraries centralisées dans @/lib/google-maps
 
 // Fonction haversine pour calculer la distance entre deux points GPS
@@ -1121,15 +1131,58 @@ export default function MapPage() {
                           </div>
                           <div className="bg-primary/10 rounded p-2 text-center">
                             <p className="text-lg font-bold">{simulationResult.velosAbsorbed}</p>
-                            <p className="text-xs text-muted-foreground">Vélos</p>
+                            <p className="text-xs text-muted-foreground">Vélos validés</p>
                           </div>
                         </div>
+                        {simulationResult.velosDevisAbsorbed != null && simulationResult.velosDevisAbsorbed !== simulationResult.velosAbsorbed && (
+                          <p className="text-xs text-muted-foreground">
+                            ({simulationResult.velosDevisAbsorbed} vélos en devis au total)
+                          </p>
+                        )}
                         {simulationResult.clientsCurrentlyUnassigned > 0 && (
                           <p className="text-xs text-green-600">
                             dont {simulationResult.clientsCurrentlyUnassigned} actuellement sans dépôt
                           </p>
                         )}
-                        <div className="space-y-1">
+
+                        {/* Breakdown par statut commercial */}
+                        {simulationResult.statutsBreakdown && Object.keys(simulationResult.statutsBreakdown).length > 0 && (
+                          <div className="space-y-1 border-t pt-2">
+                            <p className="text-xs font-medium">Par statut :</p>
+                            {Object.entries(simulationResult.statutsBreakdown as Record<string, { clients: number; velos: number }>)
+                              .sort((a, b) => b[1].clients - a[1].clients)
+                              .map(([statut, stats]) => (
+                                <div key={statut} className="flex justify-between text-xs">
+                                  <span>{STATUT_LABELS[statut] || statut}</span>
+                                  <span>{stats.clients} ({stats.velos} v.)</span>
+                                </div>
+                              ))
+                            }
+                          </div>
+                        )}
+
+                        {/* Breakdown NAF */}
+                        {simulationResult.nafBreakdown && (
+                          <div className="space-y-1 border-t pt-2">
+                            <p className="text-xs font-medium">Validation NAF :</p>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-green-700">OUI éligible</span>
+                              <span>{simulationResult.nafBreakdown.OUI || 0}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-red-700">NON éligible</span>
+                              <span>{simulationResult.nafBreakdown.NON || 0}</span>
+                            </div>
+                            {simulationResult.nafBreakdown.AUTRE > 0 && (
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">Autre / vide</span>
+                                <span>{simulationResult.nafBreakdown.AUTRE}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="space-y-1 border-t pt-2">
                           <p className="text-xs font-medium">Par distance :</p>
                           {simulationResult.clientsByDistance
                             ?.filter((d: any) => d.count > 0)
@@ -1141,19 +1194,36 @@ export default function MapPage() {
                             ))
                           }
                         </div>
-                        <Button
-                          size="sm"
-                          className="w-full mt-2"
-                          onClick={() => {
-                            window.open(
-                              `/admin/depots?lat=${simulationPos.lat}&lng=${simulationPos.lng}&rayon=${simulationRayon}`,
-                              '_blank'
-                            )
-                          }}
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Créer un dépôt ici
-                        </Button>
+
+                        <div className="grid grid-cols-1 gap-2 pt-1">
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            onClick={() => {
+                              window.open(
+                                `/admin/tournees-intelligentes?method=zone&zone_lat=${simulationPos.lat}&zone_lng=${simulationPos.lng}&zone_radius=${simulationRayon}`,
+                                '_blank'
+                              )
+                            }}
+                          >
+                            <Truck className="h-3 w-3 mr-1" />
+                            Lancer tournée intelligente
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                              window.open(
+                                `/admin/depots?lat=${simulationPos.lat}&lng=${simulationPos.lng}&rayon=${simulationRayon}`,
+                                '_blank'
+                              )
+                            }}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Créer un dépôt ici
+                          </Button>
+                        </div>
                       </div>
                     ) : null}
                   </>
@@ -1213,6 +1283,7 @@ export default function MapPage() {
                         strokeColor: depotColor,
                         strokeOpacity: 0.7,
                         strokeWeight: 2,
+                        clickable: false, // laisser passer le clic vers la carte (pour la simulation)
                       }}
                     />
                   )
@@ -1293,6 +1364,7 @@ export default function MapPage() {
                         strokeColor: '#8B5CF6',
                         strokeOpacity: 0.8,
                         strokeWeight: 2,
+                        clickable: false, // laisser passer le clic pour repositionner la simulation
                       }}
                     />
                   </>

@@ -121,9 +121,16 @@ function TourneesIntelligentesContent() {
   const paramCreneauDebut = searchParams.get('creneau_debut')
   const paramCreneauFin = searchParams.get('creneau_fin')
 
+  // Params depuis la carte (mode zone)
+  const fromZone = searchParams.get('method') === 'zone'
+  const paramZoneLat = searchParams.get('zone_lat')
+  const paramZoneLng = searchParams.get('zone_lng')
+  const paramZoneRadius = searchParams.get('zone_radius')
+
   // State wizard
   const [step, setStep] = useState<Step>('config')
   const [isCreneauMode, setIsCreneauMode] = useState(false)
+  const [isZoneMode, setIsZoneMode] = useState(false)
 
   // Contraintes créneau (durée max + capacité max vélos)
   const creneauDureeMinutes = useMemo(() => {
@@ -190,6 +197,15 @@ function TourneesIntelligentesContent() {
     // Mode créneau : pré-remplir mais rester sur la config (l'user ajuste nb vélos + statuts avant de calculer)
     if (paramInclude && paramInclude.length > 0) {
       setIsCreneauMode(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ─── Pré-remplir depuis les params URL (mode zone) ─────────────────
+  useEffect(() => {
+    if (!fromZone) return
+    if (paramZoneLat && paramZoneLng) {
+      setIsZoneMode(true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -262,15 +278,20 @@ function TourneesIntelligentesContent() {
   const fetchCluster = useCallback(async (idx: number) => {
     setError(null)
     setLoading(true)
-    const m = isCreneauMode ? 'creneau' : method
+    const m = isZoneMode ? 'zone' : (isCreneauMode ? 'creneau' : method)
     const params = new URLSearchParams({
       method: m,
       statuts: selectedStatuts.join(','),
       capacite: capacite.toString(),
       cluster: idx.toString(),
     })
-    if (m !== 'creneau' && value) params.set('value', value)
+    if (m !== 'creneau' && m !== 'zone' && value) params.set('value', value)
     if (isCreneauMode && paramInclude) params.set('include', paramInclude)
+    if (isZoneMode && paramZoneLat && paramZoneLng) {
+      params.set('zone_lat', paramZoneLat)
+      params.set('zone_lng', paramZoneLng)
+      if (paramZoneRadius) params.set('zone_radius', paramZoneRadius)
+    }
     // En mode créneau, limiter le budget temps à la durée du créneau
     if (isCreneauMode && creneauDureeMinutes) {
       params.set('budget_minutes', creneauDureeMinutes.toString())
@@ -306,21 +327,21 @@ function TourneesIntelligentesContent() {
       setError('Erreur de connexion')
     }
     setLoading(false)
-  }, [method, value, selectedStatuts, capacite, useDepartureAddress, departureLat, departureLng, isCreneauMode, paramInclude, creneauDureeMinutes, maxTravelMinutes, detectedDepotId, paramDepotId])
+  }, [method, value, selectedStatuts, capacite, useDepartureAddress, departureLat, departureLng, isCreneauMode, paramInclude, creneauDureeMinutes, maxTravelMinutes, detectedDepotId, paramDepotId, isZoneMode, paramZoneLat, paramZoneLng, paramZoneRadius])
 
   const calculate = useCallback(async () => {
     if (selectedStatuts.length === 0) {
       setError('Sélectionnez au moins un statut')
       return
     }
-    // En mode créneau, pas besoin de value (les clients viennent de l'include)
-    if (!isCreneauMode && !value) {
+    // En mode créneau ou zone, pas besoin de value (les clients viennent du include / lat-lng-rayon)
+    if (!isCreneauMode && !isZoneMode && !value) {
       setError('Remplissez tous les champs')
       return
     }
     await fetchCluster(0)
     setStep('proposal')
-  }, [value, selectedStatuts, fetchCluster, isCreneauMode])
+  }, [value, selectedStatuts, fetchCluster, isCreneauMode, isZoneMode])
 
   const loadLivreurs = useCallback(async () => {
     try {
@@ -710,8 +731,34 @@ function TourneesIntelligentesContent() {
             </Card>
           )}
 
-          {/* Bloc 2 : Méthode + Valeur (apparaît après validation du Bloc 1, hors mode créneau) */}
-          {configReady && !isCreneauMode && (
+          {/* Bloc zone : mode "tournée sur zone simulée" depuis la carte */}
+          {configReady && isZoneMode && (
+            <Card>
+              <CardContent className="pt-6 space-y-3">
+                <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  <span>
+                    <strong>Mode zone</strong> — centre <code>{paramZoneLat}, {paramZoneLng}</code>, rayon <strong>{paramZoneRadius || 30} km</strong>.
+                    L&apos;algorithme va calculer la tournée optimale parmi les clients dans cette zone.
+                  </span>
+                </div>
+                <Button
+                  onClick={calculate}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <><Route className="h-4 w-4 mr-1" /> Calculer la tournée</>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Bloc 2 : Méthode + Valeur (apparaît après validation du Bloc 1, hors mode créneau ni zone) */}
+          {configReady && !isCreneauMode && !isZoneMode && (
             <Card>
               <CardContent className="pt-6">
                 <div className="flex flex-wrap items-end gap-4">

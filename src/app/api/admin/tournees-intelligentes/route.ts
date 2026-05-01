@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
+import { calculateHaversineDistance } from '@/lib/geo/utils'
 import {
   findOptimalClients,
   countClusters,
@@ -129,7 +130,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ─── Mode : calculer une tournée ──────────────────────────────
-    const method = searchParams.get('method') as 'departement' | 'cp' | 'client' | 'creneau'
+    const method = searchParams.get('method') as 'departement' | 'cp' | 'client' | 'creneau' | 'zone'
     const value = searchParams.get('value')
     const includeIds = searchParams.get('include')?.split(',').filter(Boolean) ?? []
     const capacite = parseInt(searchParams.get('capacite') ?? '10', 10)
@@ -142,7 +143,7 @@ export async function GET(request: NextRequest) {
     const maxTravelMinutesParam = searchParams.get('max_travel_minutes')
     const maxTravelMinutes = maxTravelMinutesParam ? Math.max(5, parseInt(maxTravelMinutesParam, 10)) : 30
 
-    if (!method || (!value && method !== 'creneau')) {
+    if (!method || (!value && method !== 'creneau' && method !== 'zone')) {
       return NextResponse.json({ error: 'Paramètres method et value requis' }, { status: 400 })
     }
 
@@ -226,6 +227,25 @@ export async function GET(request: NextRequest) {
       }
       anchor = { lat: 0, lng: 0 } // sera recalculé après avec getClientsCentroid des clients du CP
 
+    } else if (method === 'zone') {
+      // Mode "zone" : centre + rayon (depuis la carte de simulation de dépôt)
+      const zoneLat = parseFloat(searchParams.get('zone_lat') || '')
+      const zoneLng = parseFloat(searchParams.get('zone_lng') || '')
+      const zoneRadius = parseFloat(searchParams.get('zone_radius') || '30')
+      if (isNaN(zoneLat) || isNaN(zoneLng)) {
+        return NextResponse.json({ error: 'zone_lat et zone_lng requis pour le mode zone' }, { status: 400 })
+      }
+      anchor = { lat: zoneLat, lng: zoneLng }
+      // Pré-filtre bounding box approximé (1 deg lat ≈ 111 km)
+      const latDelta = zoneRadius / 111
+      const lngDelta = zoneRadius / (111 * Math.cos(zoneLat * Math.PI / 180))
+      query = query
+        .gte('latitude', zoneLat - latDelta)
+        .lte('latitude', zoneLat + latDelta)
+        .gte('longitude', zoneLng - lngDelta)
+        .lte('longitude', zoneLng + lngDelta)
+      // Le filtre Haversine précis (rayon en km) est appliqué après le fetch (cf. plus bas)
+
     } else if (method === 'client') {
       // Chercher le client de référence (sans filtre de statut)
       const { data: refClient, error: refError } = await supabase
@@ -258,6 +278,15 @@ export async function GET(request: NextRequest) {
     }
 
     let eligible = (allClients ?? []) as TourneeClient[]
+
+    // Mode zone : filtre Haversine précis (le pré-filtre SQL est une bounding box approximée)
+    if (method === 'zone') {
+      const zoneRadius = parseFloat(searchParams.get('zone_radius') || '30')
+      eligible = eligible.filter(c => {
+        if (c.latitude == null || c.longitude == null) return false
+        return calculateHaversineDistance(anchor.lat, anchor.lng, c.latitude, c.longitude) <= zoneRadius
+      })
+    }
 
     // Fallback GPS par code postal : récupérer les clients sans coordonnées
     // et leur attribuer le centroïde des clients géolocalisés du même CP

@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     while (true) {
       const { data: clients, error } = await adminClient
         .from('clients')
-        .select('id, latitude, longitude, depot_retrait_id, depot_logistique_id, velo_valide, velo_devis, raison_sociale')
+        .select('id, latitude, longitude, depot_retrait_id, depot_logistique_id, velo_valide, velo_devis, raison_sociale, statut_commercial, validation_naf')
         .not('monday_sync_status', 'eq', 'deleted')
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
@@ -73,6 +73,10 @@ export async function POST(request: NextRequest) {
     let clientsCurrentlyUnassigned = 0
     let totalAbsorbed = 0
     let totalVelos = 0
+    let totalVelosDevis = 0
+    const clientsAbsorbedIds: string[] = []
+    const statutsBreakdown: Record<string, { clients: number; velos: number }> = {}
+    const nafBreakdown: Record<string, number> = { OUI: 0, NON: 0, AUTRE: 0 }
 
     for (const client of allClients) {
       const distance = calculateHaversineDistance(
@@ -93,6 +97,20 @@ export async function POST(request: NextRequest) {
       if (distance <= maxRayon) {
         totalAbsorbed++
         totalVelos += client.velo_valide || 0
+        totalVelosDevis += client.velo_devis || 0
+        clientsAbsorbedIds.push(client.id)
+
+        // Breakdown par statut commercial
+        const statut = client.statut_commercial || 'non_renseigne'
+        if (!statutsBreakdown[statut]) statutsBreakdown[statut] = { clients: 0, velos: 0 }
+        statutsBreakdown[statut].clients++
+        statutsBreakdown[statut].velos += client.velo_valide || 0
+
+        // Breakdown NAF
+        const naf = client.validation_naf
+        if (naf === 'OUI') nafBreakdown.OUI++
+        else if (naf === 'NON') nafBreakdown.NON++
+        else nafBreakdown.AUTRE++
 
         if (distance <= rayonKm) {
           clientsInGratuite++
@@ -117,12 +135,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       clientsAbsorbed: totalAbsorbed,
       velosAbsorbed: totalVelos,
+      velosDevisAbsorbed: totalVelosDevis,
       clientsInGratuite,
       clientsInPayante,
       velosInGratuite,
       velosInPayante,
       clientsCurrentlyUnassigned,
       clientsByDistance,
+      statutsBreakdown,
+      nafBreakdown,
+      clientsAbsorbedIds,
       totalClientsWithCoords: allClients.length,
       rayonKm,
       rayonPayantKm: rayonPayantKm || null,
