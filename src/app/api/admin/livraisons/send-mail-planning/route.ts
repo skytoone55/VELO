@@ -73,10 +73,11 @@ export async function POST(request: NextRequest) {
         }
       })()
 
-      // Formater le créneau
+      // Formater le créneau : si pas de créneau précis, fallback large 08:00 - 20:00
+      // (08h = début minimum journée, 20h = heure maximum dernier créneau)
       const creneauHoraire = livraison.creneau_heure_debut && livraison.creneau_heure_fin
         ? `${livraison.creneau_heure_debut} - ${livraison.creneau_heure_fin}`
-        : 'Créneau à confirmer'
+        : '08:00 - 20:00'
 
       // Nom du réceptionnaire
       const nomReceptionnaire = [

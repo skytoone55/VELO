@@ -119,8 +119,9 @@ export async function POST(request: NextRequest) {
       to: recipientEmail,
       clientName,
       date: livraison.creneau_date,
-      creneauDebut: livraison.creneau_heure_debut || '09:00',
-      creneauFin: livraison.creneau_heure_fin || '18:00',
+      // Fallback large 08:00 - 20:00 (début min journée → max dernier créneau)
+      creneauDebut: livraison.creneau_heure_debut || '08:00',
+      creneauFin: livraison.creneau_heure_fin || '20:00',
       confirmUrl,
       isRetrait,
       depotName: depot?.nom,
