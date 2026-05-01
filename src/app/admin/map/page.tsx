@@ -9,12 +9,11 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, RefreshCw, Eye, Shuffle, Crosshair, Plus, Truck } from 'lucide-react'
+import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, RefreshCw, Eye, Shuffle, Crosshair, Plus, Truck, ChevronUp, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Slider } from '@/components/ui/slider'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ChevronDown } from 'lucide-react'
 import { getTenantId } from '@/lib/tenants'
 
 interface Depot {
@@ -219,6 +218,7 @@ export default function MapPage() {
 
   // Mode simulation
   const [simulationMode, setSimulationMode] = useState(false)
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false)
   const [simulationPos, setSimulationPos] = useState<{ lat: number; lng: number } | null>(null)
   const [simulationRayon, setSimulationRayon] = useState(30)
   const [simulationResult, setSimulationResult] = useState<any | null>(null)
@@ -772,12 +772,24 @@ export default function MapPage() {
         {/* Filtres */}
         <Card className="lg:col-span-1">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Filtres
+            <CardTitle className="text-lg flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filtres
+              </span>
+              <button
+                type="button"
+                onClick={() => setFiltersCollapsed(v => !v)}
+                className="p-1 rounded hover:bg-muted transition-colors"
+                title={filtersCollapsed ? 'Déplier les filtres' : 'Replier les filtres'}
+                aria-label={filtersCollapsed ? 'Déplier les filtres' : 'Replier les filtres'}
+              >
+                {filtersCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </button>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {!filtersCollapsed && (<>
             <div className="space-y-2">
               <Label>Agence</Label>
               <Select value={selectedAgence} onValueChange={setSelectedAgence}>
@@ -1064,6 +1076,7 @@ export default function MapPage() {
             <Button onClick={resetFilters} variant="outline" className="w-full">
               Réinitialiser
             </Button>
+            </>)}
 
             {/* Panneau simulation */}
             {simulationMode && (
