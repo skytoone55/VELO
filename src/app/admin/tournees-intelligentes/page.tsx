@@ -52,6 +52,8 @@ interface TourStats {
   distanceTotaleKm: number
   dureeEstimeeMinutes: number
   dureeFormatted: string
+  retourDepotKm?: number
+  retourDepotMinutes?: number
 }
 
 interface ClientDistance {
@@ -80,8 +82,12 @@ interface Livreur {
 
 const STATUTS_OPTIONS = [
   { value: 'controle_valide', label: 'Contrôle validé' },
+  { value: 'formulaire_envoye', label: 'Formulaire envoyé' },
   { value: 'a_livrer', label: 'À livrer' },
 ]
+
+const TEMPS_MAX_PRESETS = [20, 30, 40]
+const TEMPS_MAX_DEFAULT = 30
 
 const PIN_COLORS = [
   '#2563eb', '#dc2626', '#16a34a', '#ea580c', '#9333ea',
@@ -130,7 +136,8 @@ function TourneesIntelligentesContent() {
 
   // Config — Bloc 1 : Vélos + Statuts
   const [capacite, setCapacite] = useState<number>(10)
-  const [selectedStatuts, setSelectedStatuts] = useState<string[]>(['controle_valide', 'a_livrer'])
+  const [selectedStatuts, setSelectedStatuts] = useState<string[]>(['controle_valide', 'formulaire_envoye', 'a_livrer'])
+  const [maxTravelMinutes, setMaxTravelMinutes] = useState<number>(TEMPS_MAX_DEFAULT)
   const [configReady, setConfigReady] = useState(false)
 
   // Config — Adresse de départ (optionnel)
@@ -268,6 +275,10 @@ function TourneesIntelligentesContent() {
     if (isCreneauMode && creneauDureeMinutes) {
       params.set('budget_minutes', creneauDureeMinutes.toString())
     }
+    // Temps max entre 2 clients (réglage utilisateur)
+    if (maxTravelMinutes && maxTravelMinutes > 0) {
+      params.set('max_travel_minutes', maxTravelMinutes.toString())
+    }
     if (useDepartureAddress && departureLat && departureLng) {
       params.set('anchor_lat', departureLat.toString())
       params.set('anchor_lng', departureLng.toString())
@@ -295,7 +306,7 @@ function TourneesIntelligentesContent() {
       setError('Erreur de connexion')
     }
     setLoading(false)
-  }, [method, value, selectedStatuts, capacite, useDepartureAddress, departureLat, departureLng, isCreneauMode, paramInclude, creneauDureeMinutes])
+  }, [method, value, selectedStatuts, capacite, useDepartureAddress, departureLat, departureLng, isCreneauMode, paramInclude, creneauDureeMinutes, maxTravelMinutes, detectedDepotId, paramDepotId])
 
   const calculate = useCallback(async () => {
     if (selectedStatuts.length === 0) {
@@ -560,6 +571,42 @@ function TourneesIntelligentesContent() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">Temps max entre 2 clients</label>
+                  <div className="flex items-center gap-2 h-10">
+                    {TEMPS_MAX_PRESETS.map(p => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => { if (!configReady) setMaxTravelMinutes(p) }}
+                        disabled={configReady}
+                        className={`px-3 h-9 text-sm rounded border transition-colors ${
+                          maxTravelMinutes === p
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                        } ${configReady ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      >
+                        {p} min
+                      </button>
+                    ))}
+                    <Input
+                      type="number"
+                      min={5}
+                      max={120}
+                      value={TEMPS_MAX_PRESETS.includes(maxTravelMinutes) ? '' : maxTravelMinutes}
+                      placeholder="autre"
+                      onChange={e => {
+                        const raw = e.target.value
+                        if (raw === '') return
+                        const v = parseInt(raw)
+                        if (!isNaN(v) && v >= 5 && v <= 120) setMaxTravelMinutes(v)
+                      }}
+                      disabled={configReady}
+                      className="w-20 h-9"
+                    />
+                  </div>
+                </div>
+
                 {!configReady && (
                   <Button
                     onClick={confirmConfig}
@@ -821,12 +868,19 @@ function TourneesIntelligentesContent() {
       {step === 'proposal' && proposal && (
         <>
           {/* Bandeau récap */}
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-6 gap-2">
             {[
               { icon: <Users className="h-4 w-4 text-blue-600" />, label: 'Clients', val: displayStats?.nbClients ?? 0 },
               { icon: <Bike className="h-4 w-4 text-green-600" />, label: 'Vélos', val: displayStats?.nbVelosTotal ?? 0 },
-              { icon: <Clock className="h-4 w-4 text-orange-600" />, label: 'Durée', val: displayStats?.dureeFormatted ?? '0h00' },
-              { icon: <Navigation className="h-4 w-4 text-purple-600" />, label: 'Distance', val: `${displayStats?.distanceTotaleKm ?? 0} km` },
+              { icon: <Clock className="h-4 w-4 text-orange-600" />, label: 'Durée (incl. retour)', val: displayStats?.dureeFormatted ?? '0h00' },
+              { icon: <Navigation className="h-4 w-4 text-purple-600" />, label: 'Distance (incl. retour)', val: `${displayStats?.distanceTotaleKm ?? 0} km` },
+              {
+                icon: <MapPin className="h-4 w-4 text-amber-600" />,
+                label: 'Retour dépôt',
+                val: displayStats?.retourDepotKm != null
+                  ? `${displayStats.retourDepotKm} km / ${displayStats.retourDepotMinutes ?? 0} min`
+                  : '—',
+              },
               { icon: <MapPin className="h-4 w-4 text-red-600" />, label: 'Éligibles', val: `${proposal.totalEligibles}` },
             ].map(({ icon, label, val }) => (
               <Card key={label}>

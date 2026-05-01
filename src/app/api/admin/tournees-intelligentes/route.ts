@@ -139,6 +139,8 @@ export async function GET(request: NextRequest) {
     const customAnchorLng = searchParams.get('anchor_lng')
     const budgetMinutesParam = searchParams.get('budget_minutes')
     const budgetMinutesOverride = budgetMinutesParam ? parseInt(budgetMinutesParam, 10) : undefined
+    const maxTravelMinutesParam = searchParams.get('max_travel_minutes')
+    const maxTravelMinutes = maxTravelMinutesParam ? Math.max(5, parseInt(maxTravelMinutesParam, 10)) : 30
 
     if (!method || (!value && method !== 'creneau')) {
       return NextResponse.json({ error: 'Paramètres method et value requis' }, { status: 400 })
@@ -344,8 +346,8 @@ export async function GET(request: NextRequest) {
     // En mode "créneau", forcer tous les clients du créneau
     const forcedId = method === 'client' && value ? value : undefined
     const forcedIds = method === 'creneau' ? includeIds : undefined
-    const totalClusters = countClusters(eligible, anchor, capacite, excludeIds, forcedId, forcedIds, budgetMinutesOverride)
-    const proposed = findOptimalClients(eligible, anchor, capacite, excludeIds, clusterIndex, forcedId, forcedIds, budgetMinutesOverride)
+    const totalClusters = countClusters(eligible, anchor, capacite, excludeIds, forcedId, forcedIds, budgetMinutesOverride, maxTravelMinutes)
+    const proposed = findOptimalClients(eligible, anchor, capacite, excludeIds, clusterIndex, forcedId, forcedIds, budgetMinutesOverride, maxTravelMinutes)
     const stats = calculateTourStats(proposed, anchor)
     const distances = calculateInterClientDistances(proposed, anchor)
 

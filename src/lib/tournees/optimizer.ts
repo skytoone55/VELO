@@ -45,20 +45,17 @@ export interface TourneeStats {
   distanceTotaleKm: number
   dureeEstimeeMinutes: number
   dureeFormatted: string
+  retourDepotKm?: number
+  retourDepotMinutes?: number
 }
 
 // ─── Constantes ─────────────────────────────────────────────────────────
 
 const ROAD_FACTOR = 1.3
 const AVERAGE_SPEED_KMH = 30
-const MINUTES_FIRST_BIKE = 20
-const MINUTES_PER_EXTRA_BIKE = 5
-const MAX_TRAVEL_MINUTES = 50 // Max 50 min de trajet entre 2 clients (règle absolue)
-const MAX_MINUTES_PER_VELO = 50 // Budget par défaut : 50 min par vélo
+export const DEFAULT_MAX_TRAVEL_MINUTES = 30 // Trajet max entre 2 clients (paramétrable UI)
+const MAX_BUDGET_MINUTES = 600 // 10h max de tournée (sans le retour final au dépôt)
 const MAX_SIMULATIONS = 10
-
-// Distance max entre 2 clients consécutifs (50 min × 30 km/h = 25 km route, /1.3 ≈ 19 km Haversine)
-const MAX_STEP_KM = (MAX_TRAVEL_MINUTES / 60) * AVERAGE_SPEED_KMH
 
 // ─── Fonctions utilitaires ──────────────────────────────────────────────
 
@@ -66,8 +63,23 @@ export function getClientBikeCount(client: TourneeClient): number {
   return client.velo_valide ?? client.velo_devis ?? 1
 }
 
+/**
+ * Barème temps chez le client selon nombre de vélos :
+ *  1 vélo  → 15 min
+ *  2-3     → 20 min
+ *  4-5     → 25 min
+ *  6+      → 25 + 5 min par tranche de 2 vélos au-dessus de 5
+ *            (6-7 = 30, 8-9 = 35, 10-11 = 40, ...)
+ */
 export function getTimeAtClient(nbVelos: number): number {
-  return MINUTES_FIRST_BIKE + Math.max(0, nbVelos - 1) * MINUTES_PER_EXTRA_BIKE
+  if (nbVelos <= 1) return 15
+  if (nbVelos <= 3) return 20
+  if (nbVelos <= 5) return 25
+  return 25 + Math.ceil((nbVelos - 5) / 2) * 5
+}
+
+function maxStepKmFromMinutes(maxTravelMinutes: number): number {
+  return (maxTravelMinutes / 60) * AVERAGE_SPEED_KMH
 }
 
 export function estimateRoadDistance(
@@ -83,18 +95,22 @@ export function estimateTravelTime(distanceKm: number): number {
 
 /**
  * Calcule la durée totale d'une tournée.
- * Durée = somme(temps chez chaque client) + somme(temps de trajet entre clients)
- * Le trajet anchor→premier client est inclus.
+ * Inclut : trajet anchor→1er client + temps chez chaque client + trajets inter-clients.
+ * Si `includeReturnTrip` est true, ajoute aussi le trajet dernier client→anchor (retour dépôt).
+ *
+ * Note : le retour au dépôt n'est PAS inclus dans la contrainte de budget temps
+ * (règle métier : max 10h sans compter le chemin de retour).
  */
 function computeTourDuration(
   clients: TourneeClient[],
   anchor: { lat: number; lng: number },
+  includeReturnTrip: boolean = false,
 ): number {
   if (clients.length === 0) return 0
 
   let totalMinutes = 0
 
-  // Trajet anchor → premier client
+  // Trajet anchor → premier client (pas de contrainte de distance ici)
   const distToFirst = estimateRoadDistance(anchor.lat, anchor.lng, clients[0].latitude, clients[0].longitude)
   totalMinutes += estimateTravelTime(distToFirst)
 
@@ -112,6 +128,13 @@ function computeTourDuration(
     }
   }
 
+  // Trajet retour : dernier client → anchor (pas de contrainte de distance non plus)
+  if (includeReturnTrip) {
+    const last = clients[clients.length - 1]
+    const distReturn = estimateRoadDistance(last.latitude, last.longitude, anchor.lat, anchor.lng)
+    totalMinutes += estimateTravelTime(distReturn)
+  }
+
   return totalMinutes
 }
 
@@ -124,20 +147,21 @@ export function generateSimulations(
   forcedClientId?: string,
   forcedClientIds?: string[],
   budgetMinutesOverride?: number,
+  maxTravelMinutes: number = DEFAULT_MAX_TRAVEL_MINUTES,
 ): TourneeClient[][] {
   if (clients.length === 0) return []
 
-  const budgetMinutes = budgetMinutesOverride ?? (capaciteVelos * MAX_MINUTES_PER_VELO)
+  const budgetMinutes = budgetMinutesOverride ?? MAX_BUDGET_MINUTES
   const forcedClient = forcedClientId ? clients.find(c => c.id === forcedClientId) : undefined
   const forcedClients = forcedClientIds?.length
     ? clients.filter(c => forcedClientIds.includes(c.id))
     : []
-  const seeds = selectDiverseSeeds(clients, anchor)
+  const seeds = selectDiverseSeeds(clients, anchor, maxTravelMinutes)
   const sims: TourneeClient[][] = []
 
   // Si un client est forcé, l'utiliser comme 1er seed
   if (forcedClient) {
-    const tour = buildProximityTour(clients, forcedClient, anchor, capaciteVelos, budgetMinutes, forcedClientId, forcedClientIds)
+    const tour = buildProximityTour(clients, forcedClient, anchor, capaciteVelos, budgetMinutes, maxTravelMinutes, forcedClientId, forcedClientIds)
     if (tour.length >= 1) sims.push(tour)
   }
 
@@ -149,13 +173,13 @@ export function generateSimulations(
       const d = estimateRoadDistance(anchor.lat, anchor.lng, c.latitude, c.longitude)
       if (d < bestDist) { bestDist = d; best = c }
     }
-    const tour = buildProximityTour(clients, best, anchor, capaciteVelos, budgetMinutes, undefined, forcedClientIds)
+    const tour = buildProximityTour(clients, best, anchor, capaciteVelos, budgetMinutes, maxTravelMinutes, undefined, forcedClientIds)
     if (tour.length >= 1) sims.push(tour)
   }
 
   for (const seed of seeds) {
     if (sims.length >= MAX_SIMULATIONS) break
-    const tour = buildProximityTour(clients, seed, anchor, capaciteVelos, budgetMinutes, forcedClientId, forcedClientIds)
+    const tour = buildProximityTour(clients, seed, anchor, capaciteVelos, budgetMinutes, maxTravelMinutes, forcedClientId, forcedClientIds)
     if (tour.length >= 2 && !isDuplicateTour(tour, sims)) {
       sims.push(tour)
     }
@@ -165,7 +189,7 @@ export function generateSimulations(
   if (sims.length < 3 && clients.length >= 3) {
     for (const c of clients) {
       if (sims.length >= MAX_SIMULATIONS) break
-      const tour = buildProximityTour(clients, c, anchor, capaciteVelos, budgetMinutes, forcedClientId, forcedClientIds)
+      const tour = buildProximityTour(clients, c, anchor, capaciteVelos, budgetMinutes, maxTravelMinutes, forcedClientId, forcedClientIds)
       if (tour.length >= 2 && !isDuplicateTour(tour, sims)) {
         sims.push(tour)
       }
@@ -181,10 +205,12 @@ export function generateSimulations(
 function selectDiverseSeeds(
   clients: TourneeClient[],
   anchor: { lat: number; lng: number },
+  maxTravelMinutes: number = DEFAULT_MAX_TRAVEL_MINUTES,
 ): TourneeClient[] {
   const seeds: TourneeClient[] = []
   const usedIds = new Set<string>()
   const SECTORS = 12
+  const maxStepKm = maxStepKmFromMinutes(maxTravelMinutes)
 
   // 1. Client le plus proche de l'anchor
   let nearest = clients[0]
@@ -225,7 +251,7 @@ function selectDiverseSeeds(
   for (const c of clients) {
     if (usedIds.has(c.id)) continue
     const d = estimateRoadDistance(anchor.lat, anchor.lng, c.latitude, c.longitude)
-    if (d > farthestDist && d <= MAX_STEP_KM * 3) { farthestDist = d; farthest = c }
+    if (d > farthestDist && d <= maxStepKm * 3) { farthestDist = d; farthest = c }
   }
   if (!usedIds.has(farthest.id)) {
     seeds.push(farthest)
@@ -250,9 +276,11 @@ function buildProximityTour(
   anchor: { lat: number; lng: number },
   capaciteVelos: number,
   budgetMinutes: number,
+  maxTravelMinutes: number,
   forcedClientId?: string,
   forcedClientIds?: string[],
 ): TourneeClient[] {
+  const maxStepKm = maxStepKmFromMinutes(maxTravelMinutes)
   const result: TourneeClient[] = [seed]
   const used = new Set<string>([seed.id])
   let totalBikes = getClientBikeCount(seed)
@@ -295,7 +323,7 @@ function buildProximityTour(
       if (totalBikes + bikes > capaciteVelos) continue
 
       const d = estimateRoadDistance(last.latitude, last.longitude, c.latitude, c.longitude)
-      if (d > MAX_STEP_KM) continue // >25km = >50 min de trajet, skip
+      if (d > maxStepKm) continue // > maxTravelMinutes de trajet entre 2 clients, skip
       if (d < bestDist) {
         bestDist = d
         bestClient = c
@@ -344,11 +372,12 @@ export function findOptimalClients(
   forcedClientId?: string,
   forcedClientIds?: string[],
   budgetMinutesOverride?: number,
+  maxTravelMinutes: number = DEFAULT_MAX_TRAVEL_MINUTES,
 ): TourneeClient[] {
   const eligible = clients.filter(c => !excludeIds.includes(c.id))
   if (eligible.length === 0) return []
 
-  const sims = generateSimulations(eligible, anchor, capaciteVelos, forcedClientId, forcedClientIds, budgetMinutesOverride)
+  const sims = generateSimulations(eligible, anchor, capaciteVelos, forcedClientId, forcedClientIds, budgetMinutesOverride, maxTravelMinutes)
   if (sims.length === 0) return []
 
   const idx = simulationIndex % sims.length
@@ -363,9 +392,10 @@ export function countClusters(
   forcedClientId?: string,
   forcedClientIds?: string[],
   budgetMinutesOverride?: number,
+  maxTravelMinutes: number = DEFAULT_MAX_TRAVEL_MINUTES,
 ): number {
   const eligible = clients.filter(c => !excludeIds.includes(c.id))
-  return generateSimulations(eligible, anchor, capaciteVelos, forcedClientId, forcedClientIds, budgetMinutesOverride).length
+  return generateSimulations(eligible, anchor, capaciteVelos, forcedClientId, forcedClientIds, budgetMinutesOverride, maxTravelMinutes).length
 }
 
 // ─── TSP nearest-neighbor ───────────────────────────────────────────────
@@ -426,17 +456,27 @@ export function calculateTourStats(
     }
   }
 
-  const dureeMinutes = computeTourDuration(clients, anchor)
+  // Retour au dépôt (dernier client → anchor) — inclus dans stats affichées
+  const last = clients[clients.length - 1]
+  distanceTotaleKm += estimateRoadDistance(last.latitude, last.longitude, anchor.lat, anchor.lng)
+
+  const dureeMinutes = computeTourDuration(clients, anchor, true)
   const nbVelosTotal = clients.reduce((sum, c) => sum + getClientBikeCount(c), 0)
   const hours = Math.floor(dureeMinutes / 60)
   const mins = Math.round(dureeMinutes % 60)
+
+  // Retour dépôt en valeurs séparées (pour affichage UI)
+  const retourDepotKm = estimateRoadDistance(last.latitude, last.longitude, anchor.lat, anchor.lng)
+  const retourDepotMinutes = estimateTravelTime(retourDepotKm)
 
   return {
     nbClients: clients.length,
     nbVelosTotal,
     distanceTotaleKm: Math.round(distanceTotaleKm * 10) / 10,
     dureeEstimeeMinutes: Math.round(dureeMinutes),
-    dureeFormatted: `${hours}h${mins.toString().padStart(2, '0')}`
+    dureeFormatted: `${hours}h${mins.toString().padStart(2, '0')}`,
+    retourDepotKm: Math.round(retourDepotKm * 10) / 10,
+    retourDepotMinutes: Math.round(retourDepotMinutes),
   }
 }
 
