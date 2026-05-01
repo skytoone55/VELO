@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, RefreshCw, Eye, Shuffle, Crosshair, Plus, Truck, ChevronUp, ChevronDown } from 'lucide-react'
+import { Loader2, Building2, Users, Bike, MapPin, Warehouse, Package, Filter, RefreshCw, Eye, Shuffle, Crosshair, Plus, Truck, ChevronUp, ChevronDown, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Slider } from '@/components/ui/slider'
@@ -1297,6 +1297,46 @@ export default function MapPage() {
                             {simulationResult.clientsEligibles != null && (
                               <span className="ml-1 text-xs opacity-90">({simulationResult.clientsEligibles})</span>
                             )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full"
+                            disabled={!simulationResult.clientsAbsorbed}
+                            onClick={async () => {
+                              try {
+                                const res = await fetch('/api/admin/depots/simulate/export', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    latitude: simulationPos.lat,
+                                    longitude: simulationPos.lng,
+                                    rayonKm: simulationRayon,
+                                    scope: 'absorbed',
+                                  }),
+                                })
+                                if (!res.ok) {
+                                  const err = await res.json().catch(() => ({}))
+                                  toast.error(err.error || 'Erreur export')
+                                  return
+                                }
+                                const blob = await res.blob()
+                                const url = URL.createObjectURL(blob)
+                                const a = document.createElement('a')
+                                a.href = url
+                                a.download = `zone-simulee-${simulationRayon}km-${new Date().toISOString().slice(0, 10)}.xlsx`
+                                document.body.appendChild(a)
+                                a.click()
+                                a.remove()
+                                URL.revokeObjectURL(url)
+                                toast.success(`Export terminé (${simulationResult.clientsAbsorbed} clients)`)
+                              } catch (e: any) {
+                                toast.error(e.message || 'Erreur export')
+                              }
+                            }}
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            Exporter Excel ({simulationResult.clientsAbsorbed})
                           </Button>
                           <Button
                             size="sm"
