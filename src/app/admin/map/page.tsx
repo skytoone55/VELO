@@ -1182,22 +1182,75 @@ export default function MapPage() {
                           </p>
                         )}
 
-                        {/* Distance au dépôt le plus proche */}
+                        {/* Coordonnées GPS du point + bouton copier */}
+                        {simulationPos && (
+                          <div className="rounded border border-slate-200 bg-slate-50 p-2 text-xs flex items-center justify-between gap-2">
+                            <div>
+                              <span className="font-medium">🌐 Coordonnées :</span>{' '}
+                              <code className="text-[11px]">{simulationPos.lat.toFixed(6)}, {simulationPos.lng.toFixed(6)}</code>
+                            </div>
+                            <button
+                              type="button"
+                              className="text-xs underline hover:text-blue-700"
+                              onClick={async () => {
+                                const text = `${simulationPos.lat.toFixed(6)}, ${simulationPos.lng.toFixed(6)}`
+                                try {
+                                  await navigator.clipboard.writeText(text)
+                                  toast.success('Coordonnées copiées')
+                                } catch {
+                                  toast.error('Copie impossible')
+                                }
+                              }}
+                            >
+                              Copier
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Distance vers dépôt le plus proche + estimation trajet */}
                         {(() => {
                           if (!simulationPos || depots.length === 0) return null
                           let nearest: { nom: string; distance: number } | null = null
                           for (const d of depots) {
                             if (d.latitude == null || d.longitude == null) continue
                             const km = haversineDistance(simulationPos.lat, simulationPos.lng, d.latitude, d.longitude)
-                            if (!nearest || km < nearest.distance) {
-                              nearest = { nom: d.nom, distance: km }
-                            }
+                            if (!nearest || km < nearest.distance) nearest = { nom: d.nom, distance: km }
                           }
                           if (!nearest) return null
+                          // Estimation route (Haversine × 1.3) + durée à 60 km/h moyenne
+                          const ROAD_FACTOR = 1.3
+                          const SPEED_KMH = 60
+                          const ESSENCE_PER_KM = 0.135
+                          const PEAGE_PER_KM = 0.05
+                          const distRouteKm = nearest.distance * ROAD_FACTOR
+                          const dureeMin = (distRouteKm / SPEED_KMH) * 60
+                          const h = Math.floor(dureeMin / 60)
+                          const m = Math.round(dureeMin % 60)
+                          const dureeFmt = h > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${m} min`
+                          const coutEssence = distRouteKm * ESSENCE_PER_KM
+                          const coutPeage = distRouteKm * PEAGE_PER_KM
+                          const coutTotal = coutEssence + coutPeage
                           return (
-                            <div className="rounded border border-slate-200 bg-slate-50 p-2 text-xs">
-                              <span className="font-medium">📍 Dépôt le plus proche :</span>{' '}
-                              <strong>{nearest.nom}</strong> à <strong>{Math.round(nearest.distance * 10) / 10} km</strong> (vol d&apos;oiseau)
+                            <div className="rounded border border-slate-200 bg-slate-50 p-2 text-xs space-y-1">
+                              <div>
+                                <span className="font-medium">📍 Dépôt le plus proche :</span>{' '}
+                                <strong>{nearest.nom}</strong>
+                              </div>
+                              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]">
+                                <div>Vol d&apos;oiseau : <strong>{Math.round(nearest.distance * 10) / 10} km</strong></div>
+                                <div>Distance route : <strong>~ {Math.round(distRouteKm)} km</strong></div>
+                                <div>Durée route : <strong>~ {dureeFmt}</strong></div>
+                                <div>Vitesse moy. : 60 km/h</div>
+                                <div>⛽ Essence : <strong>~ {coutEssence.toFixed(2)} €</strong></div>
+                                <div>🛣️ Péage : <strong>~ {coutPeage.toFixed(2)} €</strong></div>
+                              </div>
+                              <div className="pt-1 border-t border-slate-200 text-[11px]">
+                                💰 Coût aller estimé : <strong>~ {coutTotal.toFixed(2)} €</strong>
+                                <span className="text-muted-foreground"> (aller-retour ~ {(coutTotal * 2).toFixed(2)} €)</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground italic">
+                                Distance route = vol d&apos;oiseau × 1.3. Coûts forfaitaires (essence 0.135 €/km, péage 0.05 €/km moyen France).
+                              </p>
                             </div>
                           )
                         })()}
