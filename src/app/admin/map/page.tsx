@@ -1257,8 +1257,13 @@ export default function MapPage() {
                                   })
                                 )
                               } catch {}
+                              // Capacité par défaut = nb total de vélos éligibles dans la zone
+                              // (sinon le défaut de 10 stoppe l'algo bien avant la fin)
+                              const cap = simulationResult.velosEligibles && simulationResult.velosEligibles > 10
+                                ? simulationResult.velosEligibles
+                                : 10
                               window.open(
-                                `/admin/tournees-intelligentes?method=zone&zone_lat=${simulationPos.lat}&zone_lng=${simulationPos.lng}&zone_radius=${simulationRayon}`,
+                                `/admin/tournees-intelligentes?method=zone&zone_lat=${simulationPos.lat}&zone_lng=${simulationPos.lng}&zone_radius=${simulationRayon}&capacite=${cap}`,
                                 '_blank'
                               )
                             }}

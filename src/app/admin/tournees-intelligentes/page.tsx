@@ -207,6 +207,12 @@ function TourneesIntelligentesContent() {
     if (!fromZone) return
     if (paramZoneLat && paramZoneLng) {
       setIsZoneMode(true)
+      // Capacité transmise par la carte (= nb vélos éligibles dans la zone)
+      // pour que l'algo puisse traiter TOUS les clients de la zone par défaut.
+      if (paramCapacite) {
+        const cap = Math.max(1, parseInt(paramCapacite) || 10)
+        setCapacite(cap)
+      }
       // Récupérer la liste exacte d'IDs éligibles transmise par la carte (localStorage)
       // Évite que la page tournée re-filtre la zone "à sa façon" et donne un nb différent.
       try {
@@ -576,13 +582,13 @@ function TourneesIntelligentesContent() {
                   <Input
                     type="number"
                     min={1}
-                    max={isCreneauMode && creneauCapaciteMax ? creneauCapaciteMax : 50}
+                    max={isCreneauMode && creneauCapaciteMax ? creneauCapaciteMax : 500}
                     value={capacite || ''}
                     onChange={e => {
                       const raw = e.target.value
                       if (raw === '') { setCapacite(0); return }
                       let v = parseInt(raw) || 0
-                      const max = isCreneauMode && creneauCapaciteMax ? creneauCapaciteMax : 50
+                      const max = isCreneauMode && creneauCapaciteMax ? creneauCapaciteMax : 500
                       if (v > max) v = max
                       setCapacite(v)
                     }}
