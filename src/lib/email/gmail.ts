@@ -746,7 +746,7 @@ export async function sendFormulaireLivraisonEmail(params: {
 
   return sendEmail({
     to,
-    subject: `Vélo cargo - ${tenant.name} - Choisissez votre créneau de retrait`,
+    subject: `Vélo cargo - Choisissez votre créneau de retrait`,
     html,
   })
 }
@@ -879,8 +879,8 @@ export async function sendMailPlanningEmail(data: {
           <tr>
             <td>
               <div style="text-align: center; margin-bottom: 30px;">
-                <div style="display: inline-block; width: 64px; height: 64px; background-color: #dbeafe; border-radius: 50%; line-height: 64px; font-size: 32px;">
-                  📅
+                <div style="display: inline-block; width: 64px; height: 64px; background-color: #dcfce7; border-radius: 50%; line-height: 64px; font-size: 36px;">
+                  ✓
                 </div>
               </div>
 
@@ -914,13 +914,16 @@ export async function sendMailPlanningEmail(data: {
 
               ${getIdentityReminderHtml(nomReceptionnaire, false)}
 
-              <p style="margin: 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                En cas d'annulation ou de modification, n'hésitez pas à contacter notre service dans les meilleurs délais.
-              </p>
-
-              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
-
-              ${getFullContactSection(tenant)}
+              <div style="margin: 28px 0 8px 0; padding: 18px 20px; background-color: #fff7ed; border-left: 4px solid ${tenant.branding.colors.secondary}; border-radius: 6px;">
+                <p style="margin: 0 0 12px 0; color: #1f2937; font-size: 15px; line-height: 1.6; font-weight: 500;">
+                  En cas d'annulation ou de modification, n'hésitez pas à contacter notre service dans les meilleurs délais :
+                </p>
+                <p style="margin: 0; color: #111827; font-size: 17px; line-height: 1.6; font-weight: 600;">
+                  ✉️ <a href="mailto:${tenant.email}" style="color: ${tenant.branding.colors.secondary}; text-decoration: none;">${tenant.email}</a>
+                  &nbsp;·&nbsp;
+                  📞 <a href="tel:${tenant.phone}" style="color: ${tenant.branding.colors.secondary}; text-decoration: none;">${tenant.phoneFormatted}</a>
+                </p>
+              </div>
             </td>
           </tr>
         </table>
@@ -937,7 +940,7 @@ export async function sendMailPlanningEmail(data: {
   try {
     await sendEmail({
       to,
-      subject: `Vélo cargo - ${tenant.name} - Confirmation de votre rendez-vous de livraison du ${dateLivraison}`,
+      subject: `Vélo cargo - Confirmation de votre rendez-vous de livraison du ${dateLivraison}`,
       html,
     })
     return true
@@ -1076,7 +1079,7 @@ export async function sendConfirmationCreneauEmail({
 
   return sendEmail({
     to,
-    subject: `Vélo cargo - ${tenant.name} - Confirmation de votre ${modeLabel} du ${dateFormatted}`,
+    subject: `Vélo cargo - Confirmation de votre ${modeLabel} du ${dateFormatted}`,
     html,
   })
 }
