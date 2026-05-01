@@ -154,23 +154,21 @@ export async function GET(request: NextRequest) {
     const depotId = searchParams.get('depot_id')
 
     // Construire la requête clients
+    // En mode zone comme dans les autres modes : on applique TOUS les filtres
+    // habituels (statuts, NAF=OUI, dépôt assigné). La zone change uniquement
+    // la base géographique de candidats, pas la logique d'éligibilité.
     let query = supabase
       .from('clients')
       .select(CLIENT_SELECT)
       .not('latitude', 'is', null)
       .not('longitude', 'is', null)
       .in('statut_commercial', statuts)
+      .eq('validation_naf', 'OUI')
 
-    // En mode zone, on prend TOUS les clients géographiquement dans la zone,
-    // peu importe la validation NAF ou l'assignation à un dépôt (la zone est
-    // explicite, c'est la base de la simulation).
-    // Pour les autres modes, on filtre comme avant : NAF=OUI + dépôt assigné.
-    if (method !== 'zone') {
-      query = query.eq('validation_naf', 'OUI')
-      query = query.not('depot_logistique_id', 'is', null)
-    }
+    // Exclure les clients en retrait (sans dépôt logistique) — pas de livraison = pas de tournée
+    query = query.not('depot_logistique_id', 'is', null)
 
-    // Filtre dépôt spécifique si sélectionné (toujours pris en compte si fourni)
+    // Filtre dépôt spécifique si sélectionné
     if (depotId) {
       query = query.eq('depot_logistique_id', depotId)
     }
