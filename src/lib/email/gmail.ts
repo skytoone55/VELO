@@ -746,7 +746,7 @@ export async function sendFormulaireLivraisonEmail(params: {
 
   return sendEmail({
     to,
-    subject: `${tenant.name} - Choisissez votre créneau de retrait`,
+    subject: `Vélo cargo - ${tenant.name} - Choisissez votre créneau de retrait`,
     html,
   })
 }
@@ -937,7 +937,7 @@ export async function sendMailPlanningEmail(data: {
   try {
     await sendEmail({
       to,
-      subject: `${tenant.name} - Confirmation de votre rendez-vous de livraison du ${dateLivraison}`,
+      subject: `Vélo cargo - ${tenant.name} - Confirmation de votre rendez-vous de livraison du ${dateLivraison}`,
       html,
     })
     return true
@@ -1076,7 +1076,7 @@ export async function sendConfirmationCreneauEmail({
 
   return sendEmail({
     to,
-    subject: `${tenant.name} - Confirmation de votre ${modeLabel} du ${dateFormatted}`,
+    subject: `Vélo cargo - ${tenant.name} - Confirmation de votre ${modeLabel} du ${dateFormatted}`,
     html,
   })
 }
