@@ -47,7 +47,14 @@ export interface TourneeStats {
   dureeFormatted: string
   retourDepotKm?: number
   retourDepotMinutes?: number
+  coutEssenceEur?: number
+  coutPeageEur?: number
+  coutTotalEur?: number
 }
+
+// Estimation coût utilitaire diesel France (paramètres ajustables si besoin)
+export const COST_ESSENCE_EUR_PER_KM = 0.135  // 8L/100km × 1.70 €/L
+export const COST_PEAGE_EUR_PER_KM = 0.05     // moyenne forfaitaire (très approximatif)
 
 // ─── Constantes ─────────────────────────────────────────────────────────
 
@@ -384,6 +391,11 @@ export function calculateTourStats(
     : 0
   const retourDepotMinutes = hasDeparturePoint ? estimateTravelTime(retourDepotKm) : 0
 
+  // Estimation coûts (essence + péage) — utilitaire diesel, France approximatif
+  const coutEssenceEur = distanceTotaleKm * COST_ESSENCE_EUR_PER_KM
+  const coutPeageEur = distanceTotaleKm * COST_PEAGE_EUR_PER_KM
+  const coutTotalEur = coutEssenceEur + coutPeageEur
+
   return {
     nbClients: clients.length,
     nbVelosTotal,
@@ -392,6 +404,9 @@ export function calculateTourStats(
     dureeFormatted: `${hours}h${mins.toString().padStart(2, '0')}`,
     retourDepotKm: hasDeparturePoint ? Math.round(retourDepotKm * 10) / 10 : undefined,
     retourDepotMinutes: hasDeparturePoint ? Math.round(retourDepotMinutes) : undefined,
+    coutEssenceEur: Math.round(coutEssenceEur * 100) / 100,
+    coutPeageEur: Math.round(coutPeageEur * 100) / 100,
+    coutTotalEur: Math.round(coutTotalEur * 100) / 100,
   }
 }
 

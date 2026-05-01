@@ -1182,6 +1182,26 @@ export default function MapPage() {
                           </p>
                         )}
 
+                        {/* Distance au dépôt le plus proche */}
+                        {(() => {
+                          if (!simulationPos || depots.length === 0) return null
+                          let nearest: { nom: string; distance: number } | null = null
+                          for (const d of depots) {
+                            if (d.latitude == null || d.longitude == null) continue
+                            const km = haversineDistance(simulationPos.lat, simulationPos.lng, d.latitude, d.longitude)
+                            if (!nearest || km < nearest.distance) {
+                              nearest = { nom: d.nom, distance: km }
+                            }
+                          }
+                          if (!nearest) return null
+                          return (
+                            <div className="rounded border border-slate-200 bg-slate-50 p-2 text-xs">
+                              <span className="font-medium">📍 Dépôt le plus proche :</span>{' '}
+                              <strong>{nearest.nom}</strong> à <strong>{Math.round(nearest.distance * 10) / 10} km</strong> (vol d&apos;oiseau)
+                            </div>
+                          )
+                        })()}
+
                         {/* Breakdown par statut commercial */}
                         {simulationResult.statutsBreakdown && Object.keys(simulationResult.statutsBreakdown).length > 0 && (
                           <div className="space-y-1 border-t pt-2">

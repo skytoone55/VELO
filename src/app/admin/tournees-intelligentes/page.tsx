@@ -54,6 +54,9 @@ interface TourStats {
   dureeFormatted: string
   retourDepotKm?: number
   retourDepotMinutes?: number
+  coutEssenceEur?: number
+  coutPeageEur?: number
+  coutTotalEur?: number
 }
 
 interface ClientDistance {
@@ -948,17 +951,24 @@ function TourneesIntelligentesContent() {
       {step === 'proposal' && proposal && (
         <>
           {/* Bandeau récap */}
-          <div className="grid grid-cols-6 gap-2">
+          <div className="grid grid-cols-7 gap-2">
             {[
               { icon: <Users className="h-4 w-4 text-blue-600" />, label: 'Clients', val: displayStats?.nbClients ?? 0 },
               { icon: <Bike className="h-4 w-4 text-green-600" />, label: 'Vélos', val: displayStats?.nbVelosTotal ?? 0 },
-              { icon: <Clock className="h-4 w-4 text-orange-600" />, label: 'Durée (incl. retour)', val: displayStats?.dureeFormatted ?? '0h00' },
-              { icon: <Navigation className="h-4 w-4 text-purple-600" />, label: 'Distance (incl. retour)', val: `${displayStats?.distanceTotaleKm ?? 0} km` },
+              { icon: <Clock className="h-4 w-4 text-orange-600" />, label: 'Durée', val: displayStats?.dureeFormatted ?? '0h00' },
+              { icon: <Navigation className="h-4 w-4 text-purple-600" />, label: 'Distance', val: `${displayStats?.distanceTotaleKm ?? 0} km` },
               {
                 icon: <MapPin className="h-4 w-4 text-amber-600" />,
                 label: 'Retour dépôt',
                 val: displayStats?.retourDepotKm != null
                   ? `${displayStats.retourDepotKm} km / ${displayStats.retourDepotMinutes ?? 0} min`
+                  : '—',
+              },
+              {
+                icon: <Bike className="h-4 w-4 text-emerald-700" />,
+                label: 'Coût estimé',
+                val: displayStats?.coutTotalEur != null
+                  ? `~ ${displayStats.coutTotalEur.toFixed(2)} €`
                   : '—',
               },
               { icon: <MapPin className="h-4 w-4 text-red-600" />, label: 'Éligibles', val: `${proposal.totalEligibles}` },
