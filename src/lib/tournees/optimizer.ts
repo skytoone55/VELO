@@ -95,24 +95,29 @@ export function estimateTravelTime(distanceKm: number): number {
 
 /**
  * Calcule la durée totale d'une tournée.
- * Inclut : trajet anchor→1er client + temps chez chaque client + trajets inter-clients.
- * Si `includeReturnTrip` est true, ajoute aussi le trajet dernier client→anchor (retour dépôt).
  *
- * Note : le retour au dépôt n'est PAS inclus dans la contrainte de budget temps
- * (règle métier : max 10h sans compter le chemin de retour).
+ * - `hasDeparturePoint` (défaut true) : si true, l'anchor est un vrai point physique
+ *   (dépôt, adresse de départ saisie). On compte donc le trajet anchor→1er client.
+ *   Si false, l'anchor est juste un point de référence virtuel (centroïde de zone /
+ *   département / CP), sans réalité physique → on n'ajoute PAS le trajet anchor→1er.
+ * - `includeReturnTrip` (défaut false) : si true, on ajoute le trajet final
+ *   dernier client→anchor (retour dépôt). N'est applicable que si hasDeparturePoint=true.
  */
 function computeTourDuration(
   clients: TourneeClient[],
   anchor: { lat: number; lng: number },
   includeReturnTrip: boolean = false,
+  hasDeparturePoint: boolean = true,
 ): number {
   if (clients.length === 0) return 0
 
   let totalMinutes = 0
 
-  // Trajet anchor → premier client (pas de contrainte de distance ici)
-  const distToFirst = estimateRoadDistance(anchor.lat, anchor.lng, clients[0].latitude, clients[0].longitude)
-  totalMinutes += estimateTravelTime(distToFirst)
+  // Trajet anchor → premier client : seulement s'il y a un vrai point de départ
+  if (hasDeparturePoint) {
+    const distToFirst = estimateRoadDistance(anchor.lat, anchor.lng, clients[0].latitude, clients[0].longitude)
+    totalMinutes += estimateTravelTime(distToFirst)
+  }
 
   for (let i = 0; i < clients.length; i++) {
     // Temps chez le client
@@ -128,8 +133,8 @@ function computeTourDuration(
     }
   }
 
-  // Trajet retour : dernier client → anchor (pas de contrainte de distance non plus)
-  if (includeReturnTrip) {
+  // Trajet retour : seulement si vrai point de départ ET demandé
+  if (includeReturnTrip && hasDeparturePoint) {
     const last = clients[clients.length - 1]
     const distReturn = estimateRoadDistance(last.latitude, last.longitude, anchor.lat, anchor.lng)
     totalMinutes += estimateTravelTime(distReturn)
@@ -166,6 +171,7 @@ function buildOptimalTour(
   maxTravelMinutes: number,
   forcedClientId?: string,
   forcedClientIds?: string[],
+  hasDeparturePoint: boolean = true,
 ): TourneeClient[] {
   if (allClients.length === 0) return []
 
@@ -178,11 +184,16 @@ function buildOptimalTour(
   let currentLng = anchor.lng
 
   /** Prend un client : update tour, used, totalBikes, totalMinutes, courant.
-   *  Le trajet jusqu'au client est compté ; le temps chez le client aussi. */
+   *  Le trajet jusqu'au client est compté SEULEMENT si on a un vrai point
+   *  de départ ou si on a déjà des clients dans la tournée. */
   const take = (c: TourneeClient) => {
-    const dist = estimateRoadDistance(currentLat, currentLng, c.latitude, c.longitude)
-    const travelMin = estimateTravelTime(dist)
     const stayMin = getTimeAtClient(getClientBikeCount(c))
+    let travelMin = 0
+    // 1er client + pas de point de départ physique → on ne compte pas le trajet
+    if (tour.length > 0 || hasDeparturePoint) {
+      const dist = estimateRoadDistance(currentLat, currentLng, c.latitude, c.longitude)
+      travelMin = estimateTravelTime(dist)
+    }
     tour.push(c)
     used.add(c.id)
     totalBikes += getClientBikeCount(c)
@@ -236,7 +247,8 @@ function buildOptimalTour(
       // Contrainte trajet inter-clients (ne s'applique pas si on n'a pas encore ajouté de client)
       if (tour.length > 0 && dist > maxStepKm) continue
 
-      const travelMin = estimateTravelTime(dist)
+      // Trajet anchor→1er client : compté seulement si point de départ physique
+      const travelMin = (tour.length > 0 || hasDeparturePoint) ? estimateTravelTime(dist) : 0
       const stayMin = getTimeAtClient(bikes)
 
       // Contrainte budget temps (hors retour dépôt — celui-ci est ajouté côté stats)
@@ -274,12 +286,13 @@ export function generateSimulations(
   forcedClientIds?: string[],
   budgetMinutesOverride?: number,
   maxTravelMinutes: number = DEFAULT_MAX_TRAVEL_MINUTES,
+  hasDeparturePoint: boolean = true,
 ): TourneeClient[][] {
   if (clients.length === 0) return []
   const budgetMinutes = budgetMinutesOverride ?? MAX_BUDGET_MINUTES
   const tour = buildOptimalTour(
     clients, anchor, capaciteVelos, budgetMinutes, maxTravelMinutes,
-    forcedClientId, forcedClientIds,
+    forcedClientId, forcedClientIds, hasDeparturePoint,
   )
   return tour.length > 0 ? [tour] : []
 }
@@ -296,6 +309,7 @@ export function findOptimalClients(
   forcedClientIds?: string[],
   budgetMinutesOverride?: number,
   maxTravelMinutes: number = DEFAULT_MAX_TRAVEL_MINUTES,
+  hasDeparturePoint: boolean = true,
 ): TourneeClient[] {
   const eligible = clients.filter(c => !excludeIds.includes(c.id))
   if (eligible.length === 0) return []
@@ -303,7 +317,7 @@ export function findOptimalClients(
   const budgetMinutes = budgetMinutesOverride ?? MAX_BUDGET_MINUTES
   return buildOptimalTour(
     eligible, anchor, capaciteVelos, budgetMinutes, maxTravelMinutes,
-    forcedClientId, forcedClientIds,
+    forcedClientId, forcedClientIds, hasDeparturePoint,
   )
 }
 
@@ -316,10 +330,11 @@ export function countClusters(
   forcedClientIds?: string[],
   budgetMinutesOverride?: number,
   maxTravelMinutes: number = DEFAULT_MAX_TRAVEL_MINUTES,
+  hasDeparturePoint: boolean = true,
 ): number {
   const tour = findOptimalClients(
     clients, anchor, capaciteVelos, excludeIds, 0,
-    forcedClientId, forcedClientIds, budgetMinutesOverride, maxTravelMinutes,
+    forcedClientId, forcedClientIds, budgetMinutesOverride, maxTravelMinutes, hasDeparturePoint,
   )
   return tour.length > 0 ? 1 : 0
 }
@@ -328,7 +343,8 @@ export function countClusters(
 
 export function calculateTourStats(
   clients: TourneeClient[],
-  anchor: { lat: number; lng: number }
+  anchor: { lat: number; lng: number },
+  hasDeparturePoint: boolean = true,
 ): TourneeStats {
   if (clients.length === 0) {
     return { nbClients: 0, nbVelosTotal: 0, distanceTotaleKm: 0, dureeEstimeeMinutes: 0, dureeFormatted: '0h00' }
@@ -336,8 +352,10 @@ export function calculateTourStats(
 
   let distanceTotaleKm = 0
 
-  // Trajet anchor → premier client
-  distanceTotaleKm += estimateRoadDistance(anchor.lat, anchor.lng, clients[0].latitude, clients[0].longitude)
+  // Trajet anchor → premier client (seulement si point de départ physique)
+  if (hasDeparturePoint) {
+    distanceTotaleKm += estimateRoadDistance(anchor.lat, anchor.lng, clients[0].latitude, clients[0].longitude)
+  }
 
   for (let i = 0; i < clients.length; i++) {
     if (i < clients.length - 1) {
@@ -349,17 +367,22 @@ export function calculateTourStats(
   }
 
   // Retour au dépôt (dernier client → anchor) — inclus dans stats affichées
+  // SEULEMENT si on a un vrai point de départ
   const last = clients[clients.length - 1]
-  distanceTotaleKm += estimateRoadDistance(last.latitude, last.longitude, anchor.lat, anchor.lng)
+  if (hasDeparturePoint) {
+    distanceTotaleKm += estimateRoadDistance(last.latitude, last.longitude, anchor.lat, anchor.lng)
+  }
 
-  const dureeMinutes = computeTourDuration(clients, anchor, true)
+  const dureeMinutes = computeTourDuration(clients, anchor, hasDeparturePoint, hasDeparturePoint)
   const nbVelosTotal = clients.reduce((sum, c) => sum + getClientBikeCount(c), 0)
   const hours = Math.floor(dureeMinutes / 60)
   const mins = Math.round(dureeMinutes % 60)
 
-  // Retour dépôt en valeurs séparées (pour affichage UI)
-  const retourDepotKm = estimateRoadDistance(last.latitude, last.longitude, anchor.lat, anchor.lng)
-  const retourDepotMinutes = estimateTravelTime(retourDepotKm)
+  // Retour dépôt en valeurs séparées (pour affichage UI) — uniquement si point de départ
+  const retourDepotKm = hasDeparturePoint
+    ? estimateRoadDistance(last.latitude, last.longitude, anchor.lat, anchor.lng)
+    : 0
+  const retourDepotMinutes = hasDeparturePoint ? estimateTravelTime(retourDepotKm) : 0
 
   return {
     nbClients: clients.length,
@@ -367,17 +390,22 @@ export function calculateTourStats(
     distanceTotaleKm: Math.round(distanceTotaleKm * 10) / 10,
     dureeEstimeeMinutes: Math.round(dureeMinutes),
     dureeFormatted: `${hours}h${mins.toString().padStart(2, '0')}`,
-    retourDepotKm: Math.round(retourDepotKm * 10) / 10,
-    retourDepotMinutes: Math.round(retourDepotMinutes),
+    retourDepotKm: hasDeparturePoint ? Math.round(retourDepotKm * 10) / 10 : undefined,
+    retourDepotMinutes: hasDeparturePoint ? Math.round(retourDepotMinutes) : undefined,
   }
 }
 
 export function calculateInterClientDistances(
   clients: TourneeClient[],
-  anchor: { lat: number; lng: number }
+  anchor: { lat: number; lng: number },
+  hasDeparturePoint: boolean = true,
 ): { distanceFromPrevKm: number; travelMinutesFromPrev: number }[] {
   return clients.map((client, i) => {
     if (i === 0) {
+      // Pas de point de départ physique → on ne calcule pas le 1er trajet
+      if (!hasDeparturePoint) {
+        return { distanceFromPrevKm: 0, travelMinutesFromPrev: 0 }
+      }
       const dist = estimateRoadDistance(anchor.lat, anchor.lng, client.latitude, client.longitude)
       return { distanceFromPrevKm: Math.round(dist * 10) / 10, travelMinutesFromPrev: Math.round(estimateTravelTime(dist)) }
     }

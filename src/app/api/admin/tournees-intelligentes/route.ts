@@ -385,10 +385,15 @@ export async function GET(request: NextRequest) {
     // En mode "créneau", forcer tous les clients du créneau
     const forcedId = method === 'client' && value ? value : undefined
     const forcedIds = method === 'creneau' ? includeIds : undefined
-    const totalClusters = countClusters(eligible, anchor, capacite, excludeIds, forcedId, forcedIds, budgetMinutesOverride, maxTravelMinutes)
-    const proposed = findOptimalClients(eligible, anchor, capacite, excludeIds, clusterIndex, forcedId, forcedIds, budgetMinutesOverride, maxTravelMinutes)
-    const stats = calculateTourStats(proposed, anchor)
-    const distances = calculateInterClientDistances(proposed, anchor)
+    // Point de départ physique : OUI si l'utilisateur a saisi une adresse de départ custom
+    // OU si le mode utilise un client de référence (mode 'client').
+    // NON si c'est juste un centroïde virtuel (département, CP, créneau, zone sans adresse).
+    const hasDeparturePoint = !!(customAnchorLat && customAnchorLng) || method === 'client'
+
+    const totalClusters = countClusters(eligible, anchor, capacite, excludeIds, forcedId, forcedIds, budgetMinutesOverride, maxTravelMinutes, hasDeparturePoint)
+    const proposed = findOptimalClients(eligible, anchor, capacite, excludeIds, clusterIndex, forcedId, forcedIds, budgetMinutesOverride, maxTravelMinutes, hasDeparturePoint)
+    const stats = calculateTourStats(proposed, anchor, hasDeparturePoint)
+    const distances = calculateInterClientDistances(proposed, anchor, hasDeparturePoint)
 
     return NextResponse.json({
       clients: proposed,
