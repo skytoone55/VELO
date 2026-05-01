@@ -16,7 +16,7 @@ import { requireRole, isAuthError } from '@/lib/auth/require-role'
  * - clientsCurrentlyUnassigned : clients actuellement sans dépôt qui seraient couverts
  */
 export async function POST(request: NextRequest) {
-  const auth = await requireRole(['super_admin', 'admin'])
+  const auth = await requireRole(['super_admin', 'admin', 'agent_secteur'])
   if (isAuthError(auth)) return auth
 
   try {
