@@ -78,6 +78,15 @@ export async function POST(request: NextRequest) {
     const statutsBreakdown: Record<string, { clients: number; velos: number }> = {}
     const nafBreakdown: Record<string, number> = { OUI: 0, NON: 0, AUTRE: 0 }
 
+    // Critères "éligible tournée intelligente" : NAF=OUI + dépôt logistique assigné +
+    // statut commercial actif (par défaut : controle_valide / formulaire_envoye / a_livrer)
+    const STATUTS_ELIGIBLES_TOURNEE = new Set(['controle_valide', 'formulaire_envoye', 'a_livrer'])
+    let clientsEligibles = 0
+    let velosEligibles = 0
+    let clientsNonEligibles = 0
+    let velosNonEligibles = 0
+    const clientsEligiblesIds: string[] = []
+
     for (const client of allClients) {
       const distance = calculateHaversineDistance(
         latitude, longitude,
@@ -96,15 +105,30 @@ export async function POST(request: NextRequest) {
       // Dans le rayon total (gratuit + payant)
       if (distance <= maxRayon) {
         totalAbsorbed++
-        totalVelos += client.velo_valide || 0
+        const velosClient = client.velo_valide || 0
+        totalVelos += velosClient
         totalVelosDevis += client.velo_devis || 0
         clientsAbsorbedIds.push(client.id)
+
+        // Éligibilité tournée intelligente
+        const isEligible =
+          client.validation_naf === 'OUI' &&
+          !!client.depot_logistique_id &&
+          STATUTS_ELIGIBLES_TOURNEE.has(client.statut_commercial || '')
+        if (isEligible) {
+          clientsEligibles++
+          velosEligibles += velosClient
+          clientsEligiblesIds.push(client.id)
+        } else {
+          clientsNonEligibles++
+          velosNonEligibles += velosClient
+        }
 
         // Breakdown par statut commercial
         const statut = client.statut_commercial || 'non_renseigne'
         if (!statutsBreakdown[statut]) statutsBreakdown[statut] = { clients: 0, velos: 0 }
         statutsBreakdown[statut].clients++
-        statutsBreakdown[statut].velos += client.velo_valide || 0
+        statutsBreakdown[statut].velos += velosClient
 
         // Breakdown NAF
         const naf = client.validation_naf
@@ -114,10 +138,10 @@ export async function POST(request: NextRequest) {
 
         if (distance <= rayonKm) {
           clientsInGratuite++
-          velosInGratuite += client.velo_valide || 0
+          velosInGratuite += velosClient
         } else {
           clientsInPayante++
-          velosInPayante += client.velo_valide || 0
+          velosInPayante += velosClient
         }
 
         // Client actuellement non assigné
@@ -136,6 +160,11 @@ export async function POST(request: NextRequest) {
       clientsAbsorbed: totalAbsorbed,
       velosAbsorbed: totalVelos,
       velosDevisAbsorbed: totalVelosDevis,
+      clientsEligibles,
+      velosEligibles,
+      clientsNonEligibles,
+      velosNonEligibles,
+      clientsEligiblesIds,
       clientsInGratuite,
       clientsInPayante,
       velosInGratuite,

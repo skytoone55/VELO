@@ -202,10 +202,26 @@ function TourneesIntelligentesContent() {
   }, [])
 
   // ─── Pré-remplir depuis les params URL (mode zone) ─────────────────
+  const [zoneClientIds, setZoneClientIds] = useState<string[] | null>(null)
   useEffect(() => {
     if (!fromZone) return
     if (paramZoneLat && paramZoneLng) {
       setIsZoneMode(true)
+      // Récupérer la liste exacte d'IDs éligibles transmise par la carte (localStorage)
+      // Évite que la page tournée re-filtre la zone "à sa façon" et donne un nb différent.
+      try {
+        const raw = localStorage.getItem('tournee_zone_ids')
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          // Garde-fou : on n'utilise les IDs que s'ils sont récents (<5 min) et même zone
+          const sameZone = String(parsed.lat) === paramZoneLat && String(parsed.lng) === paramZoneLng
+          const fresh = Date.now() - (parsed.ts ?? 0) < 5 * 60 * 1000
+          if (Array.isArray(parsed.ids) && sameZone && fresh) {
+            setZoneClientIds(parsed.ids)
+          }
+          localStorage.removeItem('tournee_zone_ids')
+        }
+      } catch {}
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -291,6 +307,11 @@ function TourneesIntelligentesContent() {
       params.set('zone_lat', paramZoneLat)
       params.set('zone_lng', paramZoneLng)
       if (paramZoneRadius) params.set('zone_radius', paramZoneRadius)
+      // IDs exacts transmis par la carte (filtrés selon les filtres carte) → l'API les utilise
+      // tels quels au lieu de re-filtrer par bounding box + Haversine
+      if (zoneClientIds && zoneClientIds.length > 0) {
+        params.set('include', zoneClientIds.join(','))
+      }
     }
     // En mode créneau, limiter le budget temps à la durée du créneau
     if (isCreneauMode && creneauDureeMinutes) {
@@ -327,7 +348,7 @@ function TourneesIntelligentesContent() {
       setError('Erreur de connexion')
     }
     setLoading(false)
-  }, [method, value, selectedStatuts, capacite, useDepartureAddress, departureLat, departureLng, isCreneauMode, paramInclude, creneauDureeMinutes, maxTravelMinutes, detectedDepotId, paramDepotId, isZoneMode, paramZoneLat, paramZoneLng, paramZoneRadius])
+  }, [method, value, selectedStatuts, capacite, useDepartureAddress, departureLat, departureLng, isCreneauMode, paramInclude, creneauDureeMinutes, maxTravelMinutes, detectedDepotId, paramDepotId, isZoneMode, paramZoneLat, paramZoneLng, paramZoneRadius, zoneClientIds])
 
   const calculate = useCallback(async () => {
     if (selectedStatuts.length === 0) {

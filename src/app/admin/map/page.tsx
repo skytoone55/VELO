@@ -1137,10 +1137,11 @@ export default function MapPage() {
                       </div>
                     ) : simulationResult ? (
                       <div className="space-y-2 text-sm">
+                        {/* Total absorbé (tous clients dans la zone) */}
                         <div className="grid grid-cols-2 gap-2">
                           <div className="bg-primary/10 rounded p-2 text-center">
                             <p className="text-lg font-bold">{simulationResult.clientsAbsorbed}</p>
-                            <p className="text-xs text-muted-foreground">Clients</p>
+                            <p className="text-xs text-muted-foreground">Clients (zone)</p>
                           </div>
                           <div className="bg-primary/10 rounded p-2 text-center">
                             <p className="text-lg font-bold">{simulationResult.velosAbsorbed}</p>
@@ -1152,6 +1153,29 @@ export default function MapPage() {
                             ({simulationResult.velosDevisAbsorbed} vélos en devis au total)
                           </p>
                         )}
+
+                        {/* Éligibilité tournée intelligente (NAF=OUI + dépôt assigné + statut actif) */}
+                        {simulationResult.clientsEligibles != null && (
+                          <div className="rounded border border-emerald-200 bg-emerald-50 p-2 space-y-1">
+                            <p className="text-xs font-semibold text-emerald-800">
+                              Éligibles tournée intelligente
+                            </p>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="text-emerald-700">✓ Éligibles : </span>
+                                <strong>{simulationResult.clientsEligibles}</strong> clients · <strong>{simulationResult.velosEligibles}</strong> vélos
+                              </div>
+                              <div>
+                                <span className="text-amber-700">✗ Non éligibles : </span>
+                                <strong>{simulationResult.clientsNonEligibles}</strong> clients · <strong>{simulationResult.velosNonEligibles}</strong> vélos
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground italic">
+                              Critères : NAF OUI + dépôt logistique assigné + statut Contrôle validé / Formulaire envoyé / À livrer
+                            </p>
+                          </div>
+                        )}
+
                         {simulationResult.clientsCurrentlyUnassigned > 0 && (
                           <p className="text-xs text-green-600">
                             dont {simulationResult.clientsCurrentlyUnassigned} actuellement sans dépôt
@@ -1212,7 +1236,27 @@ export default function MapPage() {
                           <Button
                             size="sm"
                             className="w-full"
+                            disabled={!simulationResult.clientsEligibles}
                             onClick={() => {
+                              // Intersection éligibles tournée ∩ filtres carte (statuts/NAF/commerciaux/etc.)
+                              // pour que la tournée respecte aussi ce que l'utilisateur a coché sur la carte.
+                              try {
+                                const eligibleIds: string[] = Array.isArray(simulationResult.clientsEligiblesIds)
+                                  ? simulationResult.clientsEligiblesIds
+                                  : []
+                                const filteredIdSet = new Set(filteredClients.map(c => c.id))
+                                const finalIds = eligibleIds.filter(id => filteredIdSet.has(id))
+                                localStorage.setItem(
+                                  'tournee_zone_ids',
+                                  JSON.stringify({
+                                    ids: finalIds,
+                                    ts: Date.now(),
+                                    lat: simulationPos.lat,
+                                    lng: simulationPos.lng,
+                                    radius: simulationRayon,
+                                  })
+                                )
+                              } catch {}
                               window.open(
                                 `/admin/tournees-intelligentes?method=zone&zone_lat=${simulationPos.lat}&zone_lng=${simulationPos.lng}&zone_radius=${simulationRayon}`,
                                 '_blank'
@@ -1221,6 +1265,9 @@ export default function MapPage() {
                           >
                             <Truck className="h-3 w-3 mr-1" />
                             Lancer tournée intelligente
+                            {simulationResult.clientsEligibles != null && (
+                              <span className="ml-1 text-xs opacity-90">({simulationResult.clientsEligibles})</span>
+                            )}
                           </Button>
                           <Button
                             size="sm"

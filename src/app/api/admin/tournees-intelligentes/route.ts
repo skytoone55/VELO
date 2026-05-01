@@ -239,15 +239,21 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'zone_lat et zone_lng requis pour le mode zone' }, { status: 400 })
       }
       anchor = { lat: zoneLat, lng: zoneLng }
-      // Pré-filtre bounding box approximé (1 deg lat ≈ 111 km)
-      const latDelta = zoneRadius / 111
-      const lngDelta = zoneRadius / (111 * Math.cos(zoneLat * Math.PI / 180))
-      query = query
-        .gte('latitude', zoneLat - latDelta)
-        .lte('latitude', zoneLat + latDelta)
-        .gte('longitude', zoneLng - lngDelta)
-        .lte('longitude', zoneLng + lngDelta)
-      // Le filtre Haversine précis (rayon en km) est appliqué après le fetch (cf. plus bas)
+
+      if (includeIds.length > 0) {
+        // Liste exacte d'IDs transmise par la carte (clients déjà filtrés selon
+        // les filtres carte). On prend ces IDs tels quels comme base.
+        query = query.in('id', includeIds)
+      } else {
+        // Pas de liste d'IDs : pré-filtre bounding box + filtre Haversine post-fetch
+        const latDelta = zoneRadius / 111
+        const lngDelta = zoneRadius / (111 * Math.cos(zoneLat * Math.PI / 180))
+        query = query
+          .gte('latitude', zoneLat - latDelta)
+          .lte('latitude', zoneLat + latDelta)
+          .gte('longitude', zoneLng - lngDelta)
+          .lte('longitude', zoneLng + lngDelta)
+      }
 
     } else if (method === 'client') {
       // Chercher le client de référence (sans filtre de statut)
@@ -282,8 +288,9 @@ export async function GET(request: NextRequest) {
 
     let eligible = (allClients ?? []) as TourneeClient[]
 
-    // Mode zone : filtre Haversine précis (le pré-filtre SQL est une bounding box approximée)
-    if (method === 'zone') {
+    // Mode zone sans liste d'IDs : filtre Haversine précis (le pré-filtre SQL est
+    // une bounding box approximée). Avec liste d'IDs, le périmètre est déjà exact.
+    if (method === 'zone' && includeIds.length === 0) {
       const zoneRadius = parseFloat(searchParams.get('zone_radius') || '30')
       eligible = eligible.filter(c => {
         if (c.latitude == null || c.longitude == null) return false
