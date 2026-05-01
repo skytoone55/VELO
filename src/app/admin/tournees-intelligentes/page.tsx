@@ -126,6 +126,7 @@ function TourneesIntelligentesContent() {
   const paramZoneLat = searchParams.get('zone_lat')
   const paramZoneLng = searchParams.get('zone_lng')
   const paramZoneRadius = searchParams.get('zone_radius')
+  const paramMaxTravelMinutes = searchParams.get('max_travel_minutes')
 
   // State wizard
   const [step, setStep] = useState<Step>('config')
@@ -212,6 +213,11 @@ function TourneesIntelligentesContent() {
       if (paramCapacite) {
         const cap = Math.max(1, parseInt(paramCapacite) || 10)
         setCapacite(cap)
+      }
+      // Temps max entre 2 clients adapté au rayon zone (sinon NN bloque dans son cluster)
+      if (paramMaxTravelMinutes) {
+        const mtt = Math.max(5, Math.min(120, parseInt(paramMaxTravelMinutes) || 30))
+        setMaxTravelMinutes(mtt)
       }
       // Récupérer la liste exacte d'IDs éligibles transmise par la carte (localStorage)
       // Évite que la page tournée re-filtre la zone "à sa façon" et donne un nb différent.

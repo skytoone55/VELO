@@ -1262,8 +1262,12 @@ export default function MapPage() {
                               const cap = simulationResult.velosEligibles && simulationResult.velosEligibles > 10
                                 ? simulationResult.velosEligibles
                                 : 10
+                              // Temps max entre 2 clients : adapté au rayon zone
+                              // (sinon l'algo NN reste bloqué dans son cluster initial)
+                              const r = simulationRayon
+                              const mtt = r >= 100 ? 120 : r >= 50 ? 90 : r >= 20 ? 60 : 30
                               window.open(
-                                `/admin/tournees-intelligentes?method=zone&zone_lat=${simulationPos.lat}&zone_lng=${simulationPos.lng}&zone_radius=${simulationRayon}&capacite=${cap}`,
+                                `/admin/tournees-intelligentes?method=zone&zone_lat=${simulationPos.lat}&zone_lng=${simulationPos.lng}&zone_radius=${simulationRayon}&capacite=${cap}&max_travel_minutes=${mtt}`,
                                 '_blank'
                               )
                             }}
