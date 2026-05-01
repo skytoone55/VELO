@@ -138,8 +138,134 @@ function computeTourDuration(
   return totalMinutes
 }
 
-// ─── Algorithme principal : simulations multi-seed ──────────────────────
+// ─── Algorithme principal : nearest-neighbor pur depuis le point de départ ─
 
+/**
+ * Construit UNE tournée optimale par nearest-neighbor pur :
+ *  1. Part du point de départ (anchor — dépôt OU client de référence)
+ *  2. Ajoute le client le plus proche du point courant
+ *  3. Depuis ce client, ajoute le plus proche restant
+ *  4. Répète jusqu'à ce qu'aucun candidat ne respecte les contraintes
+ *
+ * Contraintes :
+ *  - Capacité vélos max
+ *  - Temps max entre 2 clients consécutifs (param user, défaut 30 min)
+ *    → ne s'applique PAS au trajet anchor → 1er client (règle métier)
+ *  - Budget temps total ≤ MAX_BUDGET_MINUTES (10h, hors retour dépôt)
+ *
+ * Modes :
+ *  - forcedClientId  : démarre depuis ce client (mode "client de référence")
+ *  - forcedClientIds : tous ces clients sont insérés en priorité par NN entre
+ *                      eux, puis on continue à remplir avec les autres
+ */
+function buildOptimalTour(
+  allClients: TourneeClient[],
+  anchor: { lat: number; lng: number },
+  capaciteVelos: number,
+  budgetMinutes: number,
+  maxTravelMinutes: number,
+  forcedClientId?: string,
+  forcedClientIds?: string[],
+): TourneeClient[] {
+  if (allClients.length === 0) return []
+
+  const maxStepKm = maxStepKmFromMinutes(maxTravelMinutes)
+  const used = new Set<string>()
+  const tour: TourneeClient[] = []
+  let totalBikes = 0
+  let totalMinutes = 0
+  let currentLat = anchor.lat
+  let currentLng = anchor.lng
+
+  /** Prend un client : update tour, used, totalBikes, totalMinutes, courant.
+   *  Le trajet jusqu'au client est compté ; le temps chez le client aussi. */
+  const take = (c: TourneeClient) => {
+    const dist = estimateRoadDistance(currentLat, currentLng, c.latitude, c.longitude)
+    const travelMin = estimateTravelTime(dist)
+    const stayMin = getTimeAtClient(getClientBikeCount(c))
+    tour.push(c)
+    used.add(c.id)
+    totalBikes += getClientBikeCount(c)
+    totalMinutes += travelMin + stayMin
+    currentLat = c.latitude
+    currentLng = c.longitude
+  }
+
+  // ─── 1. Forced clients ──────────────────────────────────────────────
+  // Mode "client de référence" : on commence depuis ce client (pas depuis l'anchor)
+  if (forcedClientId) {
+    const forced = allClients.find(c => c.id === forcedClientId)
+    if (forced && totalBikes + getClientBikeCount(forced) <= capaciteVelos) {
+      take(forced)
+    }
+  }
+
+  // Mode "créneau" : tous les clients du créneau doivent être inclus
+  // On les ordonne entre eux par NN depuis le point courant
+  if (forcedClientIds && forcedClientIds.length > 0) {
+    const remainingForced = forcedClientIds
+      .map(id => allClients.find(c => c.id === id))
+      .filter((c): c is TourneeClient => !!c && !used.has(c.id))
+    while (remainingForced.length > 0) {
+      let bestIdx = -1
+      let bestDist = Infinity
+      for (let i = 0; i < remainingForced.length; i++) {
+        const c = remainingForced[i]
+        if (totalBikes + getClientBikeCount(c) > capaciteVelos) continue
+        const d = estimateRoadDistance(currentLat, currentLng, c.latitude, c.longitude)
+        if (d < bestDist) { bestDist = d; bestIdx = i }
+      }
+      if (bestIdx === -1) break
+      take(remainingForced.splice(bestIdx, 1)[0])
+    }
+  }
+
+  // ─── 2. Remplissage par nearest-neighbor pur ────────────────────────
+  while (totalBikes < capaciteVelos) {
+    let bestClient: TourneeClient | null = null
+    let bestDist = Infinity
+    let bestTravelMin = 0
+    let bestStayMin = 0
+
+    for (const c of allClients) {
+      if (used.has(c.id)) continue
+      const bikes = getClientBikeCount(c)
+      if (totalBikes + bikes > capaciteVelos) continue
+
+      const dist = estimateRoadDistance(currentLat, currentLng, c.latitude, c.longitude)
+      // Contrainte trajet inter-clients (ne s'applique pas si on n'a pas encore ajouté de client)
+      if (tour.length > 0 && dist > maxStepKm) continue
+
+      const travelMin = estimateTravelTime(dist)
+      const stayMin = getTimeAtClient(bikes)
+
+      // Contrainte budget temps (hors retour dépôt — celui-ci est ajouté côté stats)
+      if (totalMinutes + travelMin + stayMin > budgetMinutes) continue
+
+      if (dist < bestDist) {
+        bestDist = dist
+        bestClient = c
+        bestTravelMin = travelMin
+        bestStayMin = stayMin
+      }
+    }
+
+    if (!bestClient) break
+    tour.push(bestClient)
+    used.add(bestClient.id)
+    totalBikes += getClientBikeCount(bestClient)
+    totalMinutes += bestTravelMin + bestStayMin
+    currentLat = bestClient.latitude
+    currentLng = bestClient.longitude
+  }
+
+  return tour
+}
+
+/**
+ * Wrapper conservé pour rétrocompat de l'API existante.
+ * Retourne un tableau d'1 seule simulation (la tournée optimale NN).
+ */
 export function generateSimulations(
   clients: TourneeClient[],
   anchor: { lat: number; lng: number },
@@ -150,215 +276,12 @@ export function generateSimulations(
   maxTravelMinutes: number = DEFAULT_MAX_TRAVEL_MINUTES,
 ): TourneeClient[][] {
   if (clients.length === 0) return []
-
   const budgetMinutes = budgetMinutesOverride ?? MAX_BUDGET_MINUTES
-  const forcedClient = forcedClientId ? clients.find(c => c.id === forcedClientId) : undefined
-  const forcedClients = forcedClientIds?.length
-    ? clients.filter(c => forcedClientIds.includes(c.id))
-    : []
-  const seeds = selectDiverseSeeds(clients, anchor, maxTravelMinutes)
-  const sims: TourneeClient[][] = []
-
-  // Si un client est forcé, l'utiliser comme 1er seed
-  if (forcedClient) {
-    const tour = buildProximityTour(clients, forcedClient, anchor, capaciteVelos, budgetMinutes, maxTravelMinutes, forcedClientId, forcedClientIds)
-    if (tour.length >= 1) sims.push(tour)
-  }
-
-  // Mode créneau : utiliser le client le plus proche de l'anchor parmi les forcés
-  if (forcedClients.length > 0 && !forcedClient) {
-    let best = forcedClients[0]
-    let bestDist = Infinity
-    for (const c of forcedClients) {
-      const d = estimateRoadDistance(anchor.lat, anchor.lng, c.latitude, c.longitude)
-      if (d < bestDist) { bestDist = d; best = c }
-    }
-    const tour = buildProximityTour(clients, best, anchor, capaciteVelos, budgetMinutes, maxTravelMinutes, undefined, forcedClientIds)
-    if (tour.length >= 1) sims.push(tour)
-  }
-
-  for (const seed of seeds) {
-    if (sims.length >= MAX_SIMULATIONS) break
-    const tour = buildProximityTour(clients, seed, anchor, capaciteVelos, budgetMinutes, maxTravelMinutes, forcedClientId, forcedClientIds)
-    if (tour.length >= 2 && !isDuplicateTour(tour, sims)) {
-      sims.push(tour)
-    }
-  }
-
-  // Si peu de simulations, essayer chaque client comme seed
-  if (sims.length < 3 && clients.length >= 3) {
-    for (const c of clients) {
-      if (sims.length >= MAX_SIMULATIONS) break
-      const tour = buildProximityTour(clients, c, anchor, capaciteVelos, budgetMinutes, maxTravelMinutes, forcedClientId, forcedClientIds)
-      if (tour.length >= 2 && !isDuplicateTour(tour, sims)) {
-        sims.push(tour)
-      }
-    }
-  }
-
-  return sims
-}
-
-/**
- * Sélectionne des seeds diversifiés géographiquement.
- */
-function selectDiverseSeeds(
-  clients: TourneeClient[],
-  anchor: { lat: number; lng: number },
-  maxTravelMinutes: number = DEFAULT_MAX_TRAVEL_MINUTES,
-): TourneeClient[] {
-  const seeds: TourneeClient[] = []
-  const usedIds = new Set<string>()
-  const SECTORS = 12
-  const maxStepKm = maxStepKmFromMinutes(maxTravelMinutes)
-
-  // 1. Client le plus proche de l'anchor
-  let nearest = clients[0]
-  let nearestDist = Infinity
-  for (const c of clients) {
-    const d = estimateRoadDistance(anchor.lat, anchor.lng, c.latitude, c.longitude)
-    if (d < nearestDist) { nearestDist = d; nearest = c }
-  }
-  seeds.push(nearest)
-  usedIds.add(nearest.id)
-
-  // 2. Un seed par secteur angulaire
-  for (let s = 0; s < SECTORS; s++) {
-    const targetAngle = (s * 2 * Math.PI) / SECTORS - Math.PI
-    let bestClient: TourneeClient | null = null
-    let bestAngleDiff = Infinity
-
-    for (const c of clients) {
-      if (usedIds.has(c.id)) continue
-      const angle = Math.atan2(c.longitude - anchor.lng, c.latitude - anchor.lat)
-      const diff = Math.abs(angle - targetAngle)
-      const normalizedDiff = diff > Math.PI ? 2 * Math.PI - diff : diff
-      if (normalizedDiff < bestAngleDiff) {
-        bestAngleDiff = normalizedDiff
-        bestClient = c
-      }
-    }
-
-    if (bestClient) {
-      seeds.push(bestClient)
-      usedIds.add(bestClient.id)
-    }
-  }
-
-  // 3. Client le plus éloigné de l'anchor (mais dans un rayon raisonnable)
-  let farthest = clients[0]
-  let farthestDist = 0
-  for (const c of clients) {
-    if (usedIds.has(c.id)) continue
-    const d = estimateRoadDistance(anchor.lat, anchor.lng, c.latitude, c.longitude)
-    if (d > farthestDist && d <= maxStepKm * 3) { farthestDist = d; farthest = c }
-  }
-  if (!usedIds.has(farthest.id)) {
-    seeds.push(farthest)
-  }
-
-  return seeds
-}
-
-/**
- * Construit une tournée par nearest-neighbor depuis un seed.
- *
- * Contraintes strictes :
- * 1. Capacité vélos max
- * 2. Distance max entre 2 clients consécutifs (MAX_STEP_KM ≈ 25km = 50 min)
- * 3. Budget temps total (capaciteVelos × 50 min ou override créneau)
- *
- * S'arrête dès qu'une contrainte est violée.
- */
-function buildProximityTour(
-  allClients: TourneeClient[],
-  seed: TourneeClient,
-  anchor: { lat: number; lng: number },
-  capaciteVelos: number,
-  budgetMinutes: number,
-  maxTravelMinutes: number,
-  forcedClientId?: string,
-  forcedClientIds?: string[],
-): TourneeClient[] {
-  const maxStepKm = maxStepKmFromMinutes(maxTravelMinutes)
-  const result: TourneeClient[] = [seed]
-  const used = new Set<string>([seed.id])
-  let totalBikes = getClientBikeCount(seed)
-
-  // Si un client est forcé et n'est pas le seed, l'ajouter
-  if (forcedClientId && forcedClientId !== seed.id) {
-    const forced = allClients.find(c => c.id === forcedClientId)
-    if (forced && totalBikes + getClientBikeCount(forced) <= capaciteVelos) {
-      result.push(forced)
-      used.add(forced.id)
-      totalBikes += getClientBikeCount(forced)
-    }
-  }
-
-  // Mode créneau : forcer tous les clients du créneau
-  if (forcedClientIds?.length) {
-    for (const fid of forcedClientIds) {
-      if (used.has(fid)) continue
-      const forced = allClients.find(c => c.id === fid)
-      if (!forced) continue
-      const forcedBikes = getClientBikeCount(forced)
-      if (totalBikes + forcedBikes <= capaciteVelos) {
-        result.push(forced)
-        used.add(forced.id)
-        totalBikes += forcedBikes
-      }
-    }
-  }
-
-  // Remplir avec nearest-neighbor en respectant les contraintes
-  while (totalBikes < capaciteVelos) {
-    const last = result[result.length - 1]
-
-    let bestClient: TourneeClient | null = null
-    let bestDist = Infinity
-
-    for (const c of allClients) {
-      if (used.has(c.id)) continue
-      const bikes = getClientBikeCount(c)
-      if (totalBikes + bikes > capaciteVelos) continue
-
-      const d = estimateRoadDistance(last.latitude, last.longitude, c.latitude, c.longitude)
-      if (d > maxStepKm) continue // > maxTravelMinutes de trajet entre 2 clients, skip
-      if (d < bestDist) {
-        bestDist = d
-        bestClient = c
-      }
-    }
-
-    if (!bestClient) break
-
-    // Vérifier que l'ajout ne dépasse pas le budget temps
-    const candidateTour = [...result, bestClient]
-    const sorted = nearestNeighborSort(candidateTour, anchor)
-    const duration = computeTourDuration(sorted, anchor)
-    if (duration > budgetMinutes) break
-
-    result.push(bestClient)
-    used.add(bestClient.id)
-    totalBikes += getClientBikeCount(bestClient)
-  }
-
-  // Optimiser l'ordre de visite
-  return nearestNeighborSort(result, anchor)
-}
-
-/**
- * Détecte si une tournée est quasi-identique à une existante
- * (> 80% de clients en commun).
- */
-function isDuplicateTour(tour: TourneeClient[], existing: TourneeClient[][]): boolean {
-  const ids = new Set(tour.map(c => c.id))
-  return existing.some(sim => {
-    const simIds = new Set(sim.map(c => c.id))
-    let overlap = 0
-    for (const id of ids) { if (simIds.has(id)) overlap++ }
-    return overlap / Math.max(ids.size, simIds.size) > 0.8
-  })
+  const tour = buildOptimalTour(
+    clients, anchor, capaciteVelos, budgetMinutes, maxTravelMinutes,
+    forcedClientId, forcedClientIds,
+  )
+  return tour.length > 0 ? [tour] : []
 }
 
 // ─── Fonctions de compatibilité (appelées par l'API) ────────────────────
@@ -368,7 +291,7 @@ export function findOptimalClients(
   anchor: { lat: number; lng: number },
   capaciteVelos: number,
   excludeIds: string[] = [],
-  simulationIndex: number = 0,
+  _simulationIndex: number = 0, // conservé pour rétrocompat API, non utilisé (1 seule sim)
   forcedClientId?: string,
   forcedClientIds?: string[],
   budgetMinutesOverride?: number,
@@ -377,11 +300,11 @@ export function findOptimalClients(
   const eligible = clients.filter(c => !excludeIds.includes(c.id))
   if (eligible.length === 0) return []
 
-  const sims = generateSimulations(eligible, anchor, capaciteVelos, forcedClientId, forcedClientIds, budgetMinutesOverride, maxTravelMinutes)
-  if (sims.length === 0) return []
-
-  const idx = simulationIndex % sims.length
-  return sims[idx]
+  const budgetMinutes = budgetMinutesOverride ?? MAX_BUDGET_MINUTES
+  return buildOptimalTour(
+    eligible, anchor, capaciteVelos, budgetMinutes, maxTravelMinutes,
+    forcedClientId, forcedClientIds,
+  )
 }
 
 export function countClusters(
@@ -394,42 +317,11 @@ export function countClusters(
   budgetMinutesOverride?: number,
   maxTravelMinutes: number = DEFAULT_MAX_TRAVEL_MINUTES,
 ): number {
-  const eligible = clients.filter(c => !excludeIds.includes(c.id))
-  return generateSimulations(eligible, anchor, capaciteVelos, forcedClientId, forcedClientIds, budgetMinutesOverride, maxTravelMinutes).length
-}
-
-// ─── TSP nearest-neighbor ───────────────────────────────────────────────
-
-function nearestNeighborSort(
-  clients: TourneeClient[],
-  start: { lat: number; lng: number }
-): TourneeClient[] {
-  if (clients.length <= 1) return clients
-
-  const result: TourneeClient[] = []
-  const remaining = [...clients]
-  let currentLat = start.lat
-  let currentLng = start.lng
-
-  while (remaining.length > 0) {
-    let nearestIdx = 0
-    let nearestDist = Infinity
-
-    for (let i = 0; i < remaining.length; i++) {
-      const dist = estimateRoadDistance(currentLat, currentLng, remaining[i].latitude, remaining[i].longitude)
-      if (dist < nearestDist) {
-        nearestDist = dist
-        nearestIdx = i
-      }
-    }
-
-    const nearest = remaining.splice(nearestIdx, 1)[0]
-    result.push(nearest)
-    currentLat = nearest.latitude
-    currentLng = nearest.longitude
-  }
-
-  return result
+  const tour = findOptimalClients(
+    clients, anchor, capaciteVelos, excludeIds, 0,
+    forcedClientId, forcedClientIds, budgetMinutesOverride, maxTravelMinutes,
+  )
+  return tour.length > 0 ? 1 : 0
 }
 
 // ─── Stats et distances ─────────────────────────────────────────────────

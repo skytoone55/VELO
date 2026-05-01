@@ -64,25 +64,64 @@ console.log(`  Stats : ${stats.dureeFormatted} / ${stats.distanceTotaleKm} km / 
 check('retourDepotKm défini (>0)', true, stats.retourDepotKm != null && stats.retourDepotKm > 0)
 check('retourDepotMinutes défini (>0)', true, stats.retourDepotMinutes != null && stats.retourDepotMinutes > 0)
 
-// Test contrainte maxTravelMinutes
-console.log('\n=== 4. Contrainte maxTravelMinutes ===')
+// Test contrainte maxTravelMinutes (nouveau algo NN pur)
+console.log('\n=== 4. Contrainte maxTravelMinutes (algo NN pur depuis anchor) ===')
+// Avec 10 min, le 1er client (A à 1.1 km / ~3 min) passe car pas de contrainte sur 1er trajet
+// Mais B est à ~6.5 km / ~13 min de A → > 10 min → s'arrête à A
 const tourSerre = findOptimalClients(clients, anchor, 10, [], 0, undefined, undefined, undefined, 10)
-console.log(`  maxTravelMinutes=10 (serré) → ${tourSerre.length} client(s) — algo rejette tournées <2 clients`)
-check('maxTravelMinutes=10 trop serré → 0 client (filtre length>=2)', 0, tourSerre.length)
+console.log(`  maxTravelMinutes=10 (serré) → ordre: ${tourSerre.map(c => c.id).join(' → ')}`)
+check('maxTravelMinutes=10 → 1 seul client (le plus proche, A)', 1, tourSerre.length)
+check('maxTravelMinutes=10 → c\'est bien A (le plus proche de l\'anchor)', 'A', tourSerre[0]?.id)
 
 // Avec 30 min (default), tout passe
 const tourLarge = findOptimalClients(clients, anchor, 10, [], 0, undefined, undefined, undefined, 30)
 check('Avec maxTravelMinutes=30, 4 clients', 4, tourLarge.length)
+check('Ordre A→B→C→D (NN depuis anchor)', 'A→B→C→D', tourLarge.map(c => c.id).join('→'))
 
-// Avec client forcé (mode "client" du UI), contrainte serrée → 1 client (le forcé)
-const tourForced = findOptimalClients(clients, anchor, 10, [], 0, 'A', undefined, undefined, 10)
-check('Mode client forcé + maxTravelMinutes=10 → 1 client', 1, tourForced.length)
+// Mode client forcé : démarre depuis B, pas A. NN depuis B.
+const tourForced = findOptimalClients(clients, anchor, 10, [], 0, 'B', undefined, undefined, 30)
+console.log(`  Mode client forcé B → ordre: ${tourForced.map(c => c.id).join(' → ')}`)
+check('Forced=B, capacité 10 → contient B', true, tourForced.some(c => c.id === 'B'))
+check('Forced=B, B est en 1er', 'B', tourForced[0]?.id)
 
-console.log('\n=== 5. countClusters propage maxTravelMinutes ===')
+console.log('\n=== 5. countClusters retourne 0 ou 1 (1 simulation unique) ===')
 const nClusters30 = countClusters(clients, anchor, 10, [], undefined, undefined, undefined, 30)
 const nClusters10 = countClusters(clients, anchor, 10, [], undefined, undefined, undefined, 10)
 console.log(`  clusters @30min = ${nClusters30}, @10min = ${nClusters10}`)
-check('clusters @10min ≤ @30min (contrainte serre les options)', true, nClusters10 <= nClusters30)
+check('clusters @30min = 1 (au moins 1 client trouvé)', 1, nClusters30)
+check('clusters @10min = 1 (le 1er trajet ignore la contrainte)', 1, nClusters10)
+
+console.log('\n=== 6. Compacité — l\'algo prend les proches en priorité (le bug que John signalait) ===')
+// Mock : 3 clients très proches du dépôt + 1 client lointain
+// Le NN doit prendre les 3 proches d'abord, pas sauter au lointain
+const anchorParis = { lat: 48.86, lng: 2.35 }
+const clientsCompact = [
+  { id: 'P1', raison_sociale: 'P1', latitude: 48.87, longitude: 2.36, departement: '75',
+    adresse_livraison_ville: null, adresse_livraison_ligne1: null, adresse_livraison_cp: null,
+    velo_devis: 1, velo_valide: 1, statut_commercial: 'a_livrer', telephone: null, email: null, depot_logistique_id: null },
+  { id: 'P2', raison_sociale: 'P2', latitude: 48.88, longitude: 2.36, departement: '75',
+    adresse_livraison_ville: null, adresse_livraison_ligne1: null, adresse_livraison_cp: null,
+    velo_devis: 1, velo_valide: 1, statut_commercial: 'a_livrer', telephone: null, email: null, depot_logistique_id: null },
+  { id: 'P3', raison_sociale: 'P3', latitude: 48.89, longitude: 2.36, departement: '75',
+    adresse_livraison_ville: null, adresse_livraison_ligne1: null, adresse_livraison_cp: null,
+    velo_devis: 1, velo_valide: 1, statut_commercial: 'a_livrer', telephone: null, email: null, depot_logistique_id: null },
+  { id: 'LOIN', raison_sociale: 'LOIN', latitude: 48.95, longitude: 2.50, departement: '75',
+    adresse_livraison_ville: null, adresse_livraison_ligne1: null, adresse_livraison_cp: null,
+    velo_devis: 1, velo_valide: 1, statut_commercial: 'a_livrer', telephone: null, email: null, depot_logistique_id: null },
+]
+const tourCompact = findOptimalClients(clientsCompact, anchorParis, 10, [], 0, undefined, undefined, undefined, 30)
+console.log(`  Ordre tournée compact : ${tourCompact.map(c => c.id).join(' → ')}`)
+check('Démarre par P1 (le plus proche du dépôt)', 'P1', tourCompact[0]?.id)
+check('P2 en 2ᵉ (plus proche de P1)', 'P2', tourCompact[1]?.id)
+check('P3 en 3ᵉ (plus proche de P2)', 'P3', tourCompact[2]?.id)
+// LOIN doit être EXCLU car > 30 min trajet depuis P3 — c'est exactement le bug que John signalait
+check('LOIN exclu : algo respecte la contrainte 30 min', false, tourCompact.some(c => c.id === 'LOIN'))
+
+// Avec maxTravelMinutes=60, LOIN devrait passer en dernier (et seulement après les proches)
+const tourLarge2 = findOptimalClients(clientsCompact, anchorParis, 10, [], 0, undefined, undefined, undefined, 60)
+console.log(`  Avec maxTravelMinutes=60 → ${tourLarge2.map(c => c.id).join(' → ')}`)
+check('Avec 60 min, LOIN inclus mais en DERNIER', 'LOIN', tourLarge2[tourLarge2.length - 1]?.id)
+check('Avec 60 min, P1 toujours en 1er (compacité préservée)', 'P1', tourLarge2[0]?.id)
 
 console.log(`\n=== Résultat : ${pass} pass / ${fail} fail ===`)
 process.exit(fail > 0 ? 1 : 0)
