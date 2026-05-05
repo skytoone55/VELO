@@ -481,7 +481,7 @@ export async function POST(request: NextRequest) {
     // sont annulées au passage pour ne pas créer de doublon.
     const { data: existingLivraisons } = await supabase
       .from('livraisons')
-      .select('id, client_id, tournee_id')
+      .select('id, client_id, tournee_id, creneau_date')
       .in('client_id', clients.map(c => c.id))
       .in('statut', ['programmee', 'en_livraison', 'a_livrer'])
 
@@ -502,11 +502,22 @@ export async function POST(request: NextRequest) {
       aliveTourneeIds = new Set((aliveTournees ?? []).map(t => t.id))
     }
 
+    // Une livraison ne bloque que si elle a une tournée vivante ET un créneau
+    // aujourd'hui ou futur (les créneaux passés sont des résidus historiques)
+    const today = new Date().toISOString().slice(0, 10)
     const blockingLivraisons = (existingLivraisons ?? []).filter(
-      l => l.tournee_id != null && aliveTourneeIds.has(l.tournee_id)
+      l =>
+        l.tournee_id != null &&
+        aliveTourneeIds.has(l.tournee_id) &&
+        l.creneau_date != null &&
+        l.creneau_date >= today
     )
     const orphanLivraisons = (existingLivraisons ?? []).filter(
-      l => l.tournee_id == null || !aliveTourneeIds.has(l.tournee_id as string)
+      l =>
+        l.tournee_id == null ||
+        !aliveTourneeIds.has(l.tournee_id as string) ||
+        l.creneau_date == null ||
+        l.creneau_date < today
     )
 
     const existingClientIds = new Set(blockingLivraisons.map(l => l.client_id))
