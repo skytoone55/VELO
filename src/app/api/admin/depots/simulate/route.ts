@@ -111,9 +111,10 @@ export async function POST(request: NextRequest) {
         clientsAbsorbedIds.push(client.id)
 
         // Éligibilité tournée intelligente
+        // Cascade depot_logistique_id ?? depot_retrait_id (doctrine multi-tenant Velo)
         const isEligible =
           client.validation_naf === 'OUI' &&
-          !!client.depot_logistique_id &&
+          !!(client.depot_logistique_id || client.depot_retrait_id) &&
           STATUTS_ELIGIBLES_TOURNEE.has(client.statut_commercial || '')
         if (isEligible) {
           clientsEligibles++
