@@ -464,22 +464,45 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier les livraisons actives (en cours) pour éviter les doublons.
-    // On ne bloque QUE les clients ayant une livraison réellement attachée à une tournée
-    // (tournee_id non-NULL). Les livraisons orphelines (statut a_livrer mais sans tournée,
-    // ex: résidu d'un bulk reset agenda) sont annulées au passage pour pas créer de doublon.
+    // On ne bloque QUE les clients ayant une livraison reellement attachée à une tournée
+    // qui existe encore (tournee_id non-NULL ET la tournée existe en base).
+    // Les livraisons orphelines (sans tournée OU avec tournée fantôme = FK orpheline)
+    // sont annulées au passage pour ne pas créer de doublon.
     const { data: existingLivraisons } = await supabase
       .from('livraisons')
       .select('id, client_id, tournee_id')
       .in('client_id', clients.map(c => c.id))
       .in('statut', ['programmee', 'en_livraison', 'a_livrer'])
 
-    const blockingLivraisons = (existingLivraisons ?? []).filter(l => l.tournee_id != null)
-    const orphanLivraisons = (existingLivraisons ?? []).filter(l => l.tournee_id == null)
+    // Vérifier quelles tournees référencées existent encore (filtrer les FK fantômes)
+    const referencedTourneeIds = [
+      ...new Set(
+        (existingLivraisons ?? [])
+          .map(l => l.tournee_id)
+          .filter((id): id is string => id != null)
+      ),
+    ]
+    let aliveTourneeIds = new Set<string>()
+    if (referencedTourneeIds.length > 0) {
+      const { data: aliveTournees } = await supabase
+        .from('tournees')
+        .select('id')
+        .in('id', referencedTourneeIds)
+      aliveTourneeIds = new Set((aliveTournees ?? []).map(t => t.id))
+    }
+
+    const blockingLivraisons = (existingLivraisons ?? []).filter(
+      l => l.tournee_id != null && aliveTourneeIds.has(l.tournee_id)
+    )
+    const orphanLivraisons = (existingLivraisons ?? []).filter(
+      l => l.tournee_id == null || !aliveTourneeIds.has(l.tournee_id as string)
+    )
 
     const existingClientIds = new Set(blockingLivraisons.map(l => l.client_id))
     const newClients = clients.filter(c => !existingClientIds.has(c.id))
 
     // Annuler les livraisons orphelines des nouveaux clients pour éviter doublons à l'INSERT
+    // (couvre les 2 cas : tournee_id NULL + tournee_id pointant vers tournée supprimée)
     const orphanIdsToCancel = orphanLivraisons
       .filter(l => !existingClientIds.has(l.client_id))
       .map(l => l.id)
