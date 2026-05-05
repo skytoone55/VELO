@@ -463,17 +463,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Aucun client trouvé (${client_ids.length} IDs envoyés). Vérifiez que les clients existent.` }, { status: 400 })
     }
 
-    // Vérifier les livraisons actives (en cours) pour éviter les doublons
-    // On ne bloque QUE les clients ayant une livraison en cours (programmee, en_livraison, a_livrer)
-    // Les clients déjà livrés ou annulés peuvent être re-planifiés
+    // Vérifier les livraisons actives (en cours) pour éviter les doublons.
+    // On ne bloque QUE les clients ayant une livraison réellement attachée à une tournée
+    // (tournee_id non-NULL). Les livraisons orphelines (statut a_livrer mais sans tournée,
+    // ex: résidu d'un bulk reset agenda) sont annulées au passage pour pas créer de doublon.
     const { data: existingLivraisons } = await supabase
       .from('livraisons')
-      .select('client_id')
+      .select('id, client_id, tournee_id')
       .in('client_id', clients.map(c => c.id))
       .in('statut', ['programmee', 'en_livraison', 'a_livrer'])
 
-    const existingClientIds = new Set((existingLivraisons ?? []).map(l => l.client_id))
+    const blockingLivraisons = (existingLivraisons ?? []).filter(l => l.tournee_id != null)
+    const orphanLivraisons = (existingLivraisons ?? []).filter(l => l.tournee_id == null)
+
+    const existingClientIds = new Set(blockingLivraisons.map(l => l.client_id))
     const newClients = clients.filter(c => !existingClientIds.has(c.id))
+
+    // Annuler les livraisons orphelines des nouveaux clients pour éviter doublons à l'INSERT
+    const orphanIdsToCancel = orphanLivraisons
+      .filter(l => !existingClientIds.has(l.client_id))
+      .map(l => l.id)
+    if (orphanIdsToCancel.length > 0) {
+      await supabase
+        .from('livraisons')
+        .update({ statut: 'annulee', updated_at: new Date().toISOString() })
+        .in('id', orphanIdsToCancel)
+    }
 
     // Bypass automatique : seuls les NOUVEAUX clients (sans livraison existante) passent à "en_livraison"
     const clientsToBypass = newClients.filter(
