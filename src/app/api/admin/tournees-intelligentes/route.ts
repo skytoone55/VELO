@@ -448,7 +448,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Récupérer les infos clients pour les livraisons
-    const { data: clients, error: clientsQueryError } = await supabase
+    const { data: clientsRaw, error: clientsQueryError } = await supabase
       .from('clients')
       .select('id, velo_devis, velo_valide, statut_commercial, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville')
       .in('id', client_ids)
@@ -458,10 +458,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Erreur récupération clients: ${clientsQueryError.message}` }, { status: 500 })
     }
 
-    if (!clients || clients.length === 0) {
+    if (!clientsRaw || clientsRaw.length === 0) {
       console.error('Aucun client trouvé pour les IDs:', client_ids)
       return NextResponse.json({ error: `Aucun client trouvé (${client_ids.length} IDs envoyés). Vérifiez que les clients existent.` }, { status: 400 })
     }
+
+    // IMPORTANT : Supabase .in() ne respecte pas l'ordre du tableau passé.
+    // On réordonne explicitement selon l'ordre fourni par l'optimizer NN
+    // pour conserver la séquence optimisée dans la tournée.
+    type ClientRow = (typeof clientsRaw)[number]
+    const clientsById = new Map<string, ClientRow>(
+      clientsRaw.map((c: ClientRow) => [c.id, c])
+    )
+    const clients: ClientRow[] = (client_ids as string[])
+      .map((id) => clientsById.get(id))
+      .filter((c): c is ClientRow => c != null)
 
     // Vérifier les livraisons actives (en cours) pour éviter les doublons.
     // On ne bloque QUE les clients ayant une livraison reellement attachée à une tournée
@@ -529,9 +540,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Créer les livraisons (avec créneau si fourni) — seulement pour les nouveaux clients
-    const livraisons = newClients.map(c => ({
+    // tournee_position = index dans newClients (déjà ordonné selon l'optimizer NN
+    // car newClients dérive de clients qui a été réordonné selon client_ids).
+    const livraisons = newClients.map((c, idx) => ({
       client_id: c.id,
       tournee_id: tournee.id,
+      tournee_position: idx,
       creneau_date: date,
       statut: 'en_livraison',
       mode_livraison: 'domicile',

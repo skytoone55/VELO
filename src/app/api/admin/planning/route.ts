@@ -67,12 +67,14 @@ export async function GET(request: Request) {
         complement_adresse,
         heure_precise,
         livreur_id,
+        tournee_position,
         created_at
       `)
       .eq('depot_id', depotId)
       .gte('creneau_date', startDate)
       .lte('creneau_date', endDate)
       .order('creneau_date', { ascending: true })
+      .order('tournee_position', { ascending: true, nullsFirst: false })
       .order('creneau_heure_debut', { ascending: true })
 
     if (livraisonsError) {

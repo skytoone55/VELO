@@ -78,6 +78,7 @@ interface PlanningLivraison {
   complement_adresse: string | null
   heure_precise: string | null
   livreur_id: string | null
+  tournee_position: number | null
   created_at: string
   client: PlanningClient | null
 }
@@ -1969,7 +1970,16 @@ function DayView({
           ) : (
             <div className="space-y-2">
               {[...livraisons]
-                .sort((a, b) => (a.creneau_heure_debut || '99:99').localeCompare(b.creneau_heure_debut || '99:99'))
+                .sort((a, b) => {
+                  // Priorité : ordre de la tournée optimisée (tournee_position) si défini,
+                  // sinon fallback sur creneau_heure_debut.
+                  const ap = a.tournee_position
+                  const bp = b.tournee_position
+                  if (ap != null && bp != null) return ap - bp
+                  if (ap != null) return -1
+                  if (bp != null) return 1
+                  return (a.creneau_heure_debut || '99:99').localeCompare(b.creneau_heure_debut || '99:99')
+                })
                 .map((livraison) => (
                   <LivraisonCard
                     key={livraison.id}

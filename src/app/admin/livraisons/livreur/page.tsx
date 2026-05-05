@@ -29,6 +29,7 @@ interface LivraisonClient {
   adresse_livraison_ligne1: string | null
   adresse_livraison_cp: string | null
   adresse_livraison_ville: string | null
+  tournee_position: number | null
   client: {
     id: string
     raison_sociale: string
@@ -157,13 +158,14 @@ export default function LivreurDashboardPage() {
         .select(`
           id, client_id, statut, creneau_date, creneau_heure_debut, creneau_heure_fin,
           depot_id, notes_internes, adresse_livraison_ligne1, adresse_livraison_cp,
-          adresse_livraison_ville,
+          adresse_livraison_ville, tournee_position,
           client:clients!client_id (
             id, raison_sociale, telephone, velo_devis, velo_valide,
             latitude, longitude, statut_commercial
           )
         `)
         .in('creneau_date', [today, tomorrow])
+        .order('tournee_position', { ascending: true, nullsFirst: false })
         .order('creneau_heure_debut', { ascending: true })
 
       // Filter by livreur assignment or depot
@@ -192,16 +194,30 @@ export default function LivreurDashboardPage() {
       setTodayLivraisons(
         livraisons
           .filter((l) => l.creneau_date === today)
-          .sort((a, b) =>
-            (a.creneau_heure_debut ?? '').localeCompare(b.creneau_heure_debut ?? '')
-          )
+          .sort((a, b) => {
+            // Priorité : ordre de la tournée optimisée si disponible,
+            // sinon fallback sur creneau_heure_debut.
+            const ap = a.tournee_position
+            const bp = b.tournee_position
+            if (ap != null && bp != null) return ap - bp
+            if (ap != null) return -1
+            if (bp != null) return 1
+            return (a.creneau_heure_debut ?? '').localeCompare(b.creneau_heure_debut ?? '')
+          })
       )
       setTomorrowLivraisons(
         livraisons
           .filter((l) => l.creneau_date === tomorrow)
-          .sort((a, b) =>
-            (a.creneau_heure_debut ?? '').localeCompare(b.creneau_heure_debut ?? '')
-          )
+          .sort((a, b) => {
+            // Priorité : ordre de la tournée optimisée si disponible,
+            // sinon fallback sur creneau_heure_debut.
+            const ap = a.tournee_position
+            const bp = b.tournee_position
+            if (ap != null && bp != null) return ap - bp
+            if (ap != null) return -1
+            if (bp != null) return 1
+            return (a.creneau_heure_debut ?? '').localeCompare(b.creneau_heure_debut ?? '')
+          })
       )
     } finally {
       setLoading(false)
