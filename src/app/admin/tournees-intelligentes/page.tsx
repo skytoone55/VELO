@@ -586,19 +586,18 @@ function TourneesIntelligentesContent() {
               <div className="flex flex-wrap items-end gap-4">
                 <div>
                   <label className="text-xs font-medium text-gray-500 mb-1 block">
-                    Nb vélos {isCreneauMode && creneauCapaciteMax ? `(max ${creneauCapaciteMax})` : '(capacité camion)'}
+                    Nb vélos (capacité camion)
                   </label>
                   <Input
                     type="number"
                     min={1}
-                    max={isCreneauMode && creneauCapaciteMax ? creneauCapaciteMax : 500}
+                    max={500}
                     value={capacite || ''}
                     onChange={e => {
                       const raw = e.target.value
                       if (raw === '') { setCapacite(0); return }
                       let v = parseInt(raw) || 0
-                      const max = isCreneauMode && creneauCapaciteMax ? creneauCapaciteMax : 500
-                      if (v > max) v = max
+                      if (v > 500) v = 500
                       setCapacite(v)
                     }}
                     onBlur={() => { if (!capacite || capacite < 1) setCapacite(1) }}
