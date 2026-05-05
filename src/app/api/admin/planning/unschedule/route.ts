@@ -30,15 +30,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Livraison introuvable' }, { status: 404 })
     }
 
-    // Reset livraison
+    // Reset livraison (incluant tournee_id et date_programmation pour que la
+    // livraison soit considérée comme libre lors d'une future tournée intelligente)
     const { error: updateLivErr } = await adminClient
       .from('livraisons')
       .update({
+        tournee_id: null,
+        date_programmation: null,
         creneau_date: null,
         creneau_heure_debut: null,
         creneau_heure_fin: null,
         statut: 'a_livrer',
         livreur_id: null,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', livraisonId)
 
