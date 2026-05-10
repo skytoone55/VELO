@@ -133,6 +133,7 @@ export default function AdminEnematPage() {
   const [depotFilter, setDepotFilter] = useState<string[]>([])
   const [zoneFilter, setZoneFilter] = useState<string[]>([])
   const [commercialFilter, setCommercialFilter] = useState<string[]>([])
+  const [livreurFilter, setLivreurFilter] = useState<string[]>([])
   const [cqFilter, setCqFilter] = useState<string>('all')
   const [fnuciFilter, setFnuciFilter] = useState<string>('all')
   const [lotFilter, setLotFilter] = useState<string>('')
@@ -167,6 +168,7 @@ export default function AdminEnematPage() {
   // Filter options
   const [depotOptions, setDepotOptions] = useState<{ value: string; label: string }[]>([])
   const [commercialOptions, setCommercialOptions] = useState<{ value: string; label: string }[]>([])
+  const [livreurOptions, setLivreurOptions] = useState<{ value: string; label: string }[]>([])
 
   // Load filter options
   useEffect(() => {
@@ -185,6 +187,16 @@ export default function AdminEnematPage() {
         }
       }).catch(() => {})
     }
+
+    fetch('/api/admin/livreurs').then(r => r.json()).then(data => {
+      const livreurs: { id: string; nom: string; prenom: string }[] = data.livreurs || []
+      const sorted = [...livreurs].sort((a, b) => {
+        const an = `${a.nom} ${a.prenom}`.trim().toLowerCase()
+        const bn = `${b.nom} ${b.prenom}`.trim().toLowerCase()
+        return an.localeCompare(bn)
+      })
+      setLivreurOptions(sorted.map(u => ({ value: u.id, label: `${u.nom} ${u.prenom}`.trim() || u.id })))
+    }).catch(() => {})
   }, [])
 
   const fetchCounts = useCallback(async () => {
@@ -201,6 +213,7 @@ export default function AdminEnematPage() {
         if (depotFilter.length > 0) p.set('depot_id', depotFilter[0])
         if (zoneFilter.length > 0) p.set('zone', zoneFilter.join(','))
         if (commercialFilter.length > 0) p.set('commercial', commercialFilter[0])
+        if (livreurFilter.length > 0) p.set('livreur', livreurFilter.join(','))
         if (fnuciFilter !== 'all') p.set('fnuci', fnuciFilter)
         return p.toString()
       }
@@ -213,7 +226,7 @@ export default function AdminEnematPage() {
       })
       setCounts(newCounts)
     } catch {}
-  }, [searchQuery, depotFilter, zoneFilter, commercialFilter, fnuciFilter])
+  }, [searchQuery, depotFilter, zoneFilter, commercialFilter, livreurFilter, fnuciFilter])
 
   const fetchClients = useCallback(async () => {
     setLoading(true)
@@ -226,6 +239,7 @@ export default function AdminEnematPage() {
       if (depotFilter.length > 0) params.set('depot_id', depotFilter[0]) // API supports single depot
       if (zoneFilter.length > 0) params.set('zone', zoneFilter.join(','))
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter[0])
+      if (livreurFilter.length > 0) params.set('livreur', livreurFilter.join(','))
       if (fnuciFilter !== 'all') params.set('fnuci', fnuciFilter)
       if (lotFilter) params.set('lot', lotFilter)
       if (factureFilter) params.set('facture', factureFilter)
@@ -261,7 +275,7 @@ export default function AdminEnematPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, searchQuery, statutFilter, depotFilter, zoneFilter, commercialFilter, fnuciFilter, lotFilter, factureFilter, fetchCounts])
+  }, [page, pageSize, searchQuery, statutFilter, depotFilter, zoneFilter, commercialFilter, livreurFilter, fnuciFilter, lotFilter, factureFilter, fetchCounts])
 
   // Debounce search
   const searchTimerRef = useRef<NodeJS.Timeout>(null)
@@ -282,6 +296,7 @@ export default function AdminEnematPage() {
     depotFilter: depotFilter.join(','),
     zoneFilter: zoneFilter.join(','),
     commercialFilter: commercialFilter.join(','),
+    livreurFilter: livreurFilter.join(','),
     sortBy,
     sortOrder,
   })
@@ -292,6 +307,7 @@ export default function AdminEnematPage() {
       depotFilter: depotFilter.join(','),
       zoneFilter: zoneFilter.join(','),
       commercialFilter: commercialFilter.join(','),
+      livreurFilter: livreurFilter.join(','),
       sortBy,
       sortOrder,
     }
@@ -299,12 +315,13 @@ export default function AdminEnematPage() {
       prev.statutFilter !== cur.statutFilter || prev.depotFilter !== cur.depotFilter ||
       prev.zoneFilter !== cur.zoneFilter ||
       prev.commercialFilter !== cur.commercialFilter ||
+      prev.livreurFilter !== cur.livreurFilter ||
       prev.sortBy !== cur.sortBy || prev.sortOrder !== cur.sortOrder
     ) {
       setPage(1)
       prevFilters.current = cur
     }
-  }, [statutFilter, depotFilter, zoneFilter, commercialFilter, sortBy, sortOrder])
+  }, [statutFilter, depotFilter, zoneFilter, commercialFilter, livreurFilter, sortBy, sortOrder])
 
   useEffect(() => {
     fetchClients()
@@ -325,6 +342,7 @@ export default function AdminEnematPage() {
     setDepotFilter([])
     setZoneFilter([])
     setCommercialFilter([])
+    setLivreurFilter([])
     setCqFilter('all')
     setLotFilter('')
     setFactureFilter('')
@@ -339,7 +357,7 @@ export default function AdminEnematPage() {
     setPage(1)
   }
 
-  const hasActiveFilters = searchQuery || statutFilter.length > 0 || depotFilter.length > 0 || zoneFilter.length > 0 || commercialFilter.length > 0 || cqFilter !== 'all' || fnuciFilter !== 'all' || !!lotFilter || !!factureFilter || dateDepotFrom || dateDepotTo || dateApfFrom || dateApfTo || datePayeFrom || datePayeTo
+  const hasActiveFilters = searchQuery || statutFilter.length > 0 || depotFilter.length > 0 || zoneFilter.length > 0 || commercialFilter.length > 0 || livreurFilter.length > 0 || cqFilter !== 'all' || fnuciFilter !== 'all' || !!lotFilter || !!factureFilter || dateDepotFrom || dateDepotTo || dateApfFrom || dateApfTo || datePayeFrom || datePayeTo
 
   // ─── Selection ────────────────────────────────────────────────
   const handleToggleSelect = (clientId: string) => {
@@ -560,6 +578,7 @@ export default function AdminEnematPage() {
       if (depotFilter.length > 0) params.set('depot_id', depotFilter[0])
       if (zoneFilter.length > 0) params.set('zone', zoneFilter.join(','))
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter[0])
+      if (livreurFilter.length > 0) params.set('livreur', livreurFilter.join(','))
       if (fnuciFilter !== 'all') params.set('fnuci', fnuciFilter)
       if (lotFilter) params.set('lot', lotFilter)
       if (factureFilter) params.set('facture', factureFilter)
@@ -782,6 +801,40 @@ export default function AdminEnematPage() {
             </div>
             {commercialFilter.length > 0 && (
               <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setCommercialFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+
+        {/* Livreur multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Livreur {livreurFilter.length > 0 && `(${livreurFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {livreurOptions.map(o => (
+                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={livreurFilter.includes(o.value)}
+                    onChange={(e) => {
+                      setLivreurFilter(prev =>
+                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {livreurFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setLivreurFilter([])}>
                 Effacer
               </Button>
             )}

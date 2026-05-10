@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
     const depotFilter = searchParams.get('depot')
     const controleFilter = searchParams.get('controle')
     const enematFilter = searchParams.get('enemat')
+    const livreurFilter = searchParams.get('livreur')
 
     // Tri serveur
     const sortByParam = searchParams.get('sortBy') || 'updated_at'
@@ -169,6 +170,26 @@ export async function GET(request: NextRequest) {
       query = query.eq('in_enemat', enematFilter === 'oui')
     }
 
+    // Filtre par livreur (via livraisons.livreur_id → client_id)
+    if (livreurFilter && livreurFilter !== 'all') {
+      const livreurs = livreurFilter.split(',').filter(Boolean)
+      if (livreurs.length > 0) {
+        const { data: livLivreur } = await adminClient
+          .from('livraisons')
+          .select('client_id')
+          .in('livreur_id', livreurs)
+        const livreurClientIds = [...new Set((livLivreur || []).map(l => l.client_id).filter(Boolean) as string[])]
+        if (livreurClientIds.length === 0) {
+          return NextResponse.json({
+            clients: [],
+            pagination: { page, pageSize, totalPages: 0, totalFiltered: 0, totalClients: 0, startIndex: 0, endIndex: 0, velosValidesFiltered: 0 },
+            source: 'supabase',
+          })
+        }
+        query = query.in('id', livreurClientIds)
+      }
+    }
+
     // Filtre par contrôle qualité (via livraisons)
     // ok = client a une livraison cq_valide | en_cours = cq_en_cours | attente = livree mais pas commencé
     if (controleFilter && controleFilter !== 'all') {
@@ -276,6 +297,19 @@ export async function GET(request: NextRequest) {
     // Restreindre aux dépôts de l'agent (même filtre que la query principale)
     if (authResult.role === 'agent_secteur' && authResult.depot_ids?.length) {
       velosQuery = velosQuery.or(`depot_retrait_id.in.(${authResult.depot_ids.join(',')}),depot_logistique_id.in.(${authResult.depot_ids.join(',')})`)
+    }
+    if (livreurFilter && livreurFilter !== 'all') {
+      const livreurs = livreurFilter.split(',').filter(Boolean)
+      if (livreurs.length > 0) {
+        const { data: livLivreur2 } = await adminClient
+          .from('livraisons')
+          .select('client_id')
+          .in('livreur_id', livreurs)
+        const livreurClientIds2 = [...new Set((livLivreur2 || []).map(l => l.client_id).filter(Boolean) as string[])]
+        if (livreurClientIds2.length > 0) {
+          velosQuery = velosQuery.in('id', livreurClientIds2)
+        }
+      }
     }
     if (controleFilter && controleFilter !== 'all') {
       // Réutilise la même logique que le filtre principal (ok/en_cours/attente)

@@ -27,6 +27,23 @@ export async function GET(request: NextRequest) {
     const lotFilter = searchParams.get('lot')
     const factureFilter = searchParams.get('facture')
     const zoneFilter = searchParams.get('zone')
+    const livreurFilter = searchParams.get('livreur')
+
+    // Filtre livreur : sous-select sur livraisons pour récupérer les client_id
+    let livreurClientIds: string[] | null = null
+    if (livreurFilter && livreurFilter !== 'all') {
+      const livreurs = livreurFilter.split(',').filter(Boolean)
+      if (livreurs.length > 0) {
+        const { data: livLivreur } = await supabase
+          .from('livraisons')
+          .select('client_id')
+          .in('livreur_id', livreurs)
+        livreurClientIds = [...new Set((livLivreur || []).map((l: { client_id: string | null }) => l.client_id).filter(Boolean) as string[])]
+        if (livreurClientIds.length === 0) {
+          return NextResponse.json({ clients: [], total: 0, page, limit, velosValidesFiltered: 0 })
+        }
+      }
+    }
 
     let query = supabase
       .from('clients')
@@ -89,6 +106,10 @@ export async function GET(request: NextRequest) {
       const zones = zoneFilter.split(',').filter(Boolean)
       if (zones.length === 1) query = query.eq('type_de_zone', zones[0])
       else if (zones.length > 1) query = query.in('type_de_zone', zones)
+    }
+
+    if (livreurClientIds) {
+      query = query.in('id', livreurClientIds)
     }
 
     const { data, error, count } = await query
@@ -177,6 +198,10 @@ export async function GET(request: NextRequest) {
       const zones = zoneFilter.split(',').filter(Boolean)
       if (zones.length === 1) sumQuery = sumQuery.eq('type_de_zone', zones[0])
       else if (zones.length > 1) sumQuery = sumQuery.in('type_de_zone', zones)
+    }
+
+    if (livreurClientIds) {
+      sumQuery = sumQuery.in('id', livreurClientIds)
     }
 
     const { data: sumData, error: sumError } = await sumQuery

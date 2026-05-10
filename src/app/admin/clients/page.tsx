@@ -144,12 +144,14 @@ export default function AdminClientsPage() {
   const [departementFilter, setDepartementFilter] = useState<string[]>([])
   const [zoneFilter, setZoneFilter] = useState('all')
   const [commercialFilter, setCommercialFilter] = useState<string[]>([])
+  const [livreurFilter, setLivreurFilter] = useState<string[]>([])
   const [depotFilter, setDepotFilter] = useState('all')
   const [controleFilter, setControleFilter] = useState('all')
   const [enematFilter, setEnematFilter] = useState('all')
   const [sortBy, setSortBy] = useState('updated_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
+  const [livreurOptions, setLivreurOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Livreur' }])
   const [dynamicDeptOptions, setDynamicDeptOptions] = useState<{value: string; label: string}[] | null>(null)
   const [depots, setDepots] = useState<DepotWithCoords[]>([])
   const tenantId = getTenantId()
@@ -212,6 +214,7 @@ export default function AdminClientsPage() {
       if (pinned.naf) setNafFilter(pinned.naf)
       if (pinned.zone) setZoneFilter(pinned.zone)
       if (pinned.commercial) setCommercialFilter(Array.isArray(pinned.commercial) ? pinned.commercial : pinned.commercial === 'all' ? [] : [pinned.commercial])
+      if (pinned.livreur) setLivreurFilter(Array.isArray(pinned.livreur) ? pinned.livreur : [])
       if (pinned.depot) setDepotFilter(pinned.depot)
       if (pinned.controle) setControleFilter(pinned.controle)
       if (pinned.enemat) setEnematFilter(pinned.enemat)
@@ -227,6 +230,7 @@ export default function AdminClientsPage() {
       naf: nafFilter,
       zone: zoneFilter,
       commercial: commercialFilter,
+      livreur: livreurFilter,
       depot: depotFilter,
       controle: controleFilter,
       enemat: enematFilter,
@@ -263,6 +267,25 @@ export default function AdminClientsPage() {
         })
         .catch(() => {})
     }
+  }, [])
+
+  // Load livreur options
+  useEffect(() => {
+    fetch('/api/admin/livreurs')
+      .then(res => res.json())
+      .then(data => {
+        const livreurs: { id: string; nom: string; prenom: string }[] = data.livreurs || []
+        const sorted = [...livreurs].sort((a, b) => {
+          const an = `${a.nom} ${a.prenom}`.trim().toLowerCase()
+          const bn = `${b.nom} ${b.prenom}`.trim().toLowerCase()
+          return an.localeCompare(bn)
+        })
+        setLivreurOptions([
+          { value: 'all', label: 'Livreur' },
+          ...sorted.map(u => ({ value: u.id, label: `${u.nom} ${u.prenom}`.trim() || u.id })),
+        ])
+      })
+      .catch(() => {})
   }, [])
 
   // Load dynamic department options
@@ -326,6 +349,7 @@ export default function AdminClientsPage() {
       if (nafFilter !== 'all') params.set('naf', nafFilter)
       if (zoneFilter !== 'all') params.set('zone', zoneFilter)
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
+      if (livreurFilter.length > 0) params.set('livreur', livreurFilter.join(','))
       if (depotFilter !== 'all') params.set('depot', depotFilter)
       if (controleFilter !== 'all') params.set('controle', controleFilter)
       if (enematFilter !== 'all') params.set('enemat', enematFilter)
@@ -394,6 +418,7 @@ export default function AdminClientsPage() {
     if (nafFilter !== 'all') params.set('naf', nafFilter)
     if (zoneFilter !== 'all') params.set('zone', zoneFilter)
     if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
+    if (livreurFilter.length > 0) params.set('livreur', livreurFilter.join(','))
     if (depotFilter !== 'all') params.set('depot', depotFilter)
     if (controleFilter !== 'all') params.set('controle', controleFilter)
     if (enematFilter !== 'all') params.set('enemat', enematFilter)
@@ -443,6 +468,7 @@ export default function AdminClientsPage() {
     naf: nafFilter,
     zone: zoneFilter,
     commercial: commercialFilter.join(','),
+    livreur: livreurFilter.join(','),
     depot: depotFilter,
     controle: controleFilter,
     sortBy,
@@ -459,6 +485,7 @@ export default function AdminClientsPage() {
       naf: nafFilter,
       zone: zoneFilter,
       commercial: commercialFilter.join(','),
+      livreur: livreurFilter.join(','),
       depot: depotFilter,
       controle: controleFilter,
       sortBy,
@@ -468,20 +495,21 @@ export default function AdminClientsPage() {
       prev.search !== cur.search || prev.statut !== cur.statut ||
       prev.dept !== cur.dept || prev.pageSize !== cur.pageSize ||
       prev.naf !== cur.naf || prev.zone !== cur.zone ||
-      prev.commercial !== cur.commercial || prev.depot !== cur.depot ||
+      prev.commercial !== cur.commercial || prev.livreur !== cur.livreur ||
+      prev.depot !== cur.depot ||
       prev.controle !== cur.controle ||
       prev.sortBy !== cur.sortBy || prev.sortOrder !== cur.sortOrder
     ) {
       setCurrentPage(1)
       prevFilters.current = cur
     }
-  }, [debouncedSearch, statutFilter, departementFilter, pageSize, nafFilter, zoneFilter, commercialFilter, depotFilter, controleFilter, enematFilter, sortBy, sortOrder])
+  }, [debouncedSearch, statutFilter, departementFilter, pageSize, nafFilter, zoneFilter, commercialFilter, livreurFilter, depotFilter, controleFilter, enematFilter, sortBy, sortOrder])
 
   // Charger les clients quand les paramètres changent (attendre que les filtres figés soient chargés)
   useEffect(() => {
     if (!filtersReady) return
     fetchClients(false, currentPage, pageSize)
-  }, [currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter, commercialFilter, depotFilter, controleFilter, enematFilter, sortBy, sortOrder, filtersReady])
+  }, [currentPage, pageSize, debouncedSearch, statutFilter, departementFilter, nafFilter, zoneFilter, commercialFilter, livreurFilter, depotFilter, controleFilter, enematFilter, sortBy, sortOrder, filtersReady])
 
   const handleSendForm = async (client: Client) => {
     setSendingEmail(true)
@@ -968,6 +996,39 @@ export default function AdminClientsPage() {
             </div>
             {commercialFilter.length > 0 && (
               <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setCommercialFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+        {/* Livreur multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Livreur {livreurFilter.length > 0 && `(${livreurFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {livreurOptions.filter(o => o.value !== 'all').map(o => (
+                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={livreurFilter.includes(o.value)}
+                    onChange={(e) => {
+                      setLivreurFilter(prev =>
+                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {livreurFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setLivreurFilter([])}>
                 Effacer
               </Button>
             )}

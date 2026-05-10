@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
     const zoneFilter = searchParams.get('zone')
     const controleFilter = searchParams.get('controle')
     const enematFilter = searchParams.get('enemat')
+    const livreurFilter = searchParams.get('livreur')
 
     const sortByParam = searchParams.get('sortBy') || 'created_at'
     const sortOrderParam = searchParams.get('sortOrder') || 'desc'
@@ -171,6 +172,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Livreur filter via livraisons.livreur_id
+    if (livreurFilter && livreurFilter !== 'all') {
+      const livreurs = livreurFilter.split(',').filter(Boolean)
+      if (livreurs.length === 1) {
+        query = query.eq('livreur_id', livreurs[0])
+      } else if (livreurs.length > 1) {
+        query = query.in('livreur_id', livreurs)
+      }
+    }
+
     // Controle qualite filter
     // ok = cq_valide true | en_cours = cq_en_cours true (partiellement checké) | attente = livree + pas commencé
     if (hasControle) {
@@ -239,6 +250,11 @@ export async function GET(request: NextRequest) {
       const depots = depotFilter.split(',').filter(Boolean)
       if (depots.length === 1) velosQuery = velosQuery.eq('depot_id', depots[0])
       else if (depots.length > 1) velosQuery = velosQuery.in('depot_id', depots)
+    }
+    if (livreurFilter && livreurFilter !== 'all') {
+      const livreurs = livreurFilter.split(',').filter(Boolean)
+      if (livreurs.length === 1) velosQuery = velosQuery.eq('livreur_id', livreurs[0])
+      else if (livreurs.length > 1) velosQuery = velosQuery.in('livreur_id', livreurs)
     }
     if (hasControle) {
       const vals = controleFilter!.split(',').filter(Boolean)

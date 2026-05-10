@@ -147,6 +147,7 @@ export default function AdminLivraisonsPage() {
   const [statutFilter, setStatutFilter] = useState<string[]>([])
   const [depotFilter, setDepotFilter] = useState<string[]>([])
   const [commercialFilter, setCommercialFilter] = useState<string[]>([])
+  const [livreurFilter, setLivreurFilter] = useState<string[]>([])
   const [departementFilter, setDepartementFilter] = useState<string[]>([])
   const [zoneFilter, setZoneFilter] = useState<string[]>([])
   const [controleFilter, setControleFilter] = useState<string[]>([])
@@ -213,6 +214,7 @@ export default function AdminLivraisonsPage() {
       if (statutFilter.length > 0) params.set('statut', statutFilter.join(','))
       if (depotFilter.length > 0) params.set('depot', depotFilter.join(','))
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
+      if (livreurFilter.length > 0) params.set('livreur', livreurFilter.join(','))
       if (departementFilter.length > 0) params.set('departement', departementFilter.join(','))
       if (zoneFilter.length > 0) params.set('zone', zoneFilter.join(','))
       if (controleFilter.length > 0) params.set('controle', controleFilter.join(','))
@@ -235,6 +237,7 @@ export default function AdminLivraisonsPage() {
         { header: 'Téléphone', accessor: r => r.client?.telephone },
         { header: 'Email', accessor: r => r.client?.email },
         { header: 'Commercial', accessor: r => getCommercialName(r.client) },
+        { header: 'Livreur', accessor: r => (r as any).livreur_id ? (livreurOptions.find(o => o.value === (r as any).livreur_id)?.label || '') : '' },
         { header: 'ENEMAT', accessor: r => r.client?.in_enemat ? 'Oui' : 'Non' },
         { header: 'Statut ENEMAT', accessor: r => {
           const s = (r.client as any)?.statut_enemat
@@ -278,6 +281,7 @@ export default function AdminLivraisonsPage() {
       if (pinned.statut) setStatutFilter(pinned.statut)
       if (pinned.depot) setDepotFilter(pinned.depot)
       if (pinned.commercial) setCommercialFilter(pinned.commercial)
+      if (pinned.livreur) setLivreurFilter(pinned.livreur)
       if (pinned.departement) setDepartementFilter(Array.isArray(pinned.departement) ? pinned.departement : [pinned.departement])
       if (pinned.zone) setZoneFilter(pinned.zone)
       if (pinned.controle) setControleFilter(pinned.controle)
@@ -292,6 +296,7 @@ export default function AdminLivraisonsPage() {
       statut: statutFilter,
       depot: depotFilter,
       commercial: commercialFilter,
+      livreur: livreurFilter,
       departement: departementFilter,
       zone: zoneFilter,
       controle: controleFilter,
@@ -303,6 +308,7 @@ export default function AdminLivraisonsPage() {
 
   const [depotOptions, setDepotOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Dépôt' }])
   const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
+  const [livreurOptions, setLivreurOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Livreur' }])
   const [deptOptions, setDeptOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Départements' }])
 
   // Load filter options
@@ -331,6 +337,20 @@ export default function AdminLivraisonsPage() {
       }).catch(() => {})
     }
 
+    // Livreurs
+    fetch('/api/admin/livreurs').then(r => r.json()).then(data => {
+      const livreurs: { id: string; nom: string; prenom: string }[] = data.livreurs || []
+      const sorted = [...livreurs].sort((a, b) => {
+        const an = `${a.nom} ${a.prenom}`.trim().toLowerCase()
+        const bn = `${b.nom} ${b.prenom}`.trim().toLowerCase()
+        return an.localeCompare(bn)
+      })
+      setLivreurOptions([
+        { value: 'all', label: 'Livreur' },
+        ...sorted.map(u => ({ value: u.id, label: `${u.nom} ${u.prenom}`.trim() || u.id })),
+      ])
+    }).catch(() => {})
+
     // Departements
     const staticDept = getStaticDepartementOptions()
     if (staticDept) {
@@ -354,6 +374,7 @@ export default function AdminLivraisonsPage() {
       if (statutFilter.length > 0) params.set('statut', statutFilter.join(','))
       if (depotFilter.length > 0) params.set('depot', depotFilter.join(','))
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
+      if (livreurFilter.length > 0) params.set('livreur', livreurFilter.join(','))
       if (departementFilter.length > 0) params.set('departement', departementFilter.join(','))
       if (zoneFilter.length > 0) params.set('zone', zoneFilter.join(','))
       if (controleFilter.length > 0) params.set('controle', controleFilter.join(','))
@@ -377,7 +398,7 @@ export default function AdminLivraisonsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter, departementFilter, zoneFilter, controleFilter, enematFilter, sortBy, sortOrder])
+  }, [page, pageSize, searchQuery, statutFilter, depotFilter, commercialFilter, livreurFilter, departementFilter, zoneFilter, controleFilter, enematFilter, sortBy, sortOrder])
 
   // Debounce search
   const searchTimerRef = useRef<NodeJS.Timeout>(null)
@@ -397,6 +418,7 @@ export default function AdminLivraisonsPage() {
     statutFilter: statutFilter.join(','),
     depotFilter: depotFilter.join(','),
     commercialFilter: commercialFilter.join(','),
+    livreurFilter: livreurFilter.join(','),
     departementFilter: departementFilter.join(','),
     zoneFilter: zoneFilter.join(','),
     controleFilter: controleFilter.join(','),
@@ -409,6 +431,7 @@ export default function AdminLivraisonsPage() {
       statutFilter: statutFilter.join(','),
       depotFilter: depotFilter.join(','),
       commercialFilter: commercialFilter.join(','),
+      livreurFilter: livreurFilter.join(','),
       departementFilter: departementFilter.join(','),
       zoneFilter: zoneFilter.join(','),
       controleFilter: controleFilter.join(','),
@@ -417,14 +440,15 @@ export default function AdminLivraisonsPage() {
     }
     if (
       prev.statutFilter !== cur.statutFilter || prev.depotFilter !== cur.depotFilter ||
-      prev.commercialFilter !== cur.commercialFilter || prev.departementFilter !== cur.departementFilter ||
+      prev.commercialFilter !== cur.commercialFilter || prev.livreurFilter !== cur.livreurFilter ||
+      prev.departementFilter !== cur.departementFilter ||
       prev.zoneFilter !== cur.zoneFilter || prev.controleFilter !== cur.controleFilter ||
       prev.sortBy !== cur.sortBy || prev.sortOrder !== cur.sortOrder
     ) {
       setPage(1)
       prevFilters.current = cur
     }
-  }, [statutFilter, depotFilter, commercialFilter, departementFilter, zoneFilter, controleFilter, sortBy, sortOrder])
+  }, [statutFilter, depotFilter, commercialFilter, livreurFilter, departementFilter, zoneFilter, controleFilter, sortBy, sortOrder])
 
   useEffect(() => {
     if (!filtersReady) return
@@ -445,6 +469,7 @@ export default function AdminLivraisonsPage() {
     setStatutFilter([])
     setDepotFilter([])
     setCommercialFilter([])
+    setLivreurFilter([])
     setDepartementFilter([])
     setZoneFilter([])
     setControleFilter([])
@@ -455,7 +480,7 @@ export default function AdminLivraisonsPage() {
   }
 
   const hasActiveFilters = searchQuery || statutFilter.length > 0 || depotFilter.length > 0 ||
-    commercialFilter.length > 0 || departementFilter.length > 0 || zoneFilter.length > 0 || controleFilter.length > 0 || !!enematFilter
+    commercialFilter.length > 0 || livreurFilter.length > 0 || departementFilter.length > 0 || zoneFilter.length > 0 || controleFilter.length > 0 || !!enematFilter
 
   const handleToggleSelect = (livraisonId: string) => {
     const newSelected = new Set(selectedLivraisons)
@@ -722,6 +747,39 @@ export default function AdminLivraisonsPage() {
             )}
           </PopoverContent>
         </Popover>
+        {/* Livreur multi-select */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Livreur {livreurFilter.length > 0 && `(${livreurFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {livreurOptions.filter(o => o.value !== 'all').map(o => (
+                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={livreurFilter.includes(o.value)}
+                    onChange={(e) => {
+                      setLivreurFilter(prev =>
+                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {livreurFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setLivreurFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
         {/* Département multi-select */}
         <Popover>
           <PopoverTrigger asChild>
@@ -881,6 +939,7 @@ export default function AdminLivraisonsPage() {
                   <SortableHeader label="Réf. Retina" column="reference_retina" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
                   <SortableHeader label="Tél." column="telephone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
                   <SortableHeader label="Commercial" column="commercial" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
+                  <TableHead className="hidden lg:table-cell">Livreur</TableHead>
                   <SortableHeader label="Dép." column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="Zone" column="zone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="Dépôt" column="depot" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
@@ -938,6 +997,9 @@ export default function AdminLivraisonsPage() {
                       <Badge variant="outline" className="text-xs font-normal">
                         {liv.client ? getCommercialName(liv.client) : '-'}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm">
+                      {(liv as any).livreur_id ? (livreurOptions.find(o => o.value === (liv as any).livreur_id)?.label || '-') : '-'}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm">
                       {getDepartementLabel(liv.client?.departement, liv.client?.adresse_societe_cp)}
