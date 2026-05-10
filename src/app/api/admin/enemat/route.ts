@@ -72,12 +72,20 @@ export async function GET(request: NextRequest) {
     }
 
     if (depotId) {
-      // Cascade : depot_retrait_id (PPE+Ecovolt) ou depot_logistique_id (legacy)
-      query = query.or(`depot_retrait_id.eq.${depotId},depot_logistique_id.eq.${depotId}`)
+      const depots = depotId.split(',').filter(Boolean)
+      if (depots.length === 1) {
+        const d = depots[0]
+        query = query.or(`depot_retrait_id.eq.${d},depot_logistique_id.eq.${d}`)
+      } else if (depots.length > 1) {
+        const conds = depots.flatMap(d => [`depot_retrait_id.eq.${d}`, `depot_logistique_id.eq.${d}`]).join(',')
+        query = query.or(conds)
+      }
     }
 
     if (commercial) {
-      query = query.eq('commercial_assigne', commercial)
+      const commerciaux = commercial.split(',').filter(Boolean)
+      if (commerciaux.length === 1) query = query.eq('commercial_assigne', commerciaux[0])
+      else if (commerciaux.length > 1) query = query.in('commercial_assigne', commerciaux)
     }
 
     if (fnuciFilter === 'oui') {
@@ -170,10 +178,19 @@ export async function GET(request: NextRequest) {
       )
     }
     if (depotId) {
-      sumQuery = sumQuery.or(`depot_retrait_id.eq.${depotId},depot_logistique_id.eq.${depotId}`)
+      const depots = depotId.split(',').filter(Boolean)
+      if (depots.length === 1) {
+        const d = depots[0]
+        sumQuery = sumQuery.or(`depot_retrait_id.eq.${d},depot_logistique_id.eq.${d}`)
+      } else if (depots.length > 1) {
+        const conds = depots.flatMap(d => [`depot_retrait_id.eq.${d}`, `depot_logistique_id.eq.${d}`]).join(',')
+        sumQuery = sumQuery.or(conds)
+      }
     }
     if (commercial) {
-      sumQuery = sumQuery.eq('commercial_assigne', commercial)
+      const commerciaux = commercial.split(',').filter(Boolean)
+      if (commerciaux.length === 1) sumQuery = sumQuery.eq('commercial_assigne', commerciaux[0])
+      else if (commerciaux.length > 1) sumQuery = sumQuery.in('commercial_assigne', commerciaux)
     }
     if (fnuciFilter === 'oui') {
       sumQuery = sumQuery.eq('fnuci_declared', true)
