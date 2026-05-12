@@ -29,6 +29,23 @@ export async function GET(request: NextRequest) {
     const factureFilter = searchParams.get('facture')
     const zoneFilter = searchParams.get('zone')
     const livreurFilter = searchParams.get('livreur')
+    const dateDepotFrom = searchParams.get('date_depot_from') || undefined
+    const dateDepotTo = searchParams.get('date_depot_to') || undefined
+    const dateApfFrom = searchParams.get('date_apf_from') || undefined
+    const dateApfTo = searchParams.get('date_apf_to') || undefined
+    const datePayeFrom = searchParams.get('date_paye_from') || undefined
+    const datePayeTo = searchParams.get('date_paye_to') || undefined
+
+    // Helper : applique les bornes date sur un query builder Supabase
+    const applyDateFilters = (q: any): any => {
+      if (dateDepotFrom) q = q.gte('date_depot_enemat', dateDepotFrom)
+      if (dateDepotTo) q = q.lte('date_depot_enemat', dateDepotTo)
+      if (dateApfFrom) q = q.gte('date_apf_enemat', dateApfFrom)
+      if (dateApfTo) q = q.lte('date_apf_enemat', dateApfTo)
+      if (datePayeFrom) q = q.gte('date_paye_enemat', datePayeFrom)
+      if (datePayeTo) q = q.lte('date_paye_enemat', datePayeTo)
+      return q
+    }
 
     // Filtre livreur : sous-select sur livraisons pour récupérer les client_id
     let livreurClientIds: string[] | null = null
@@ -120,6 +137,8 @@ export async function GET(request: NextRequest) {
     if (livreurClientIds) {
       query = query.in('id', livreurClientIds)
     }
+
+    query = applyDateFilters(query)
 
     const { data, error, count } = await query
 
@@ -221,6 +240,8 @@ export async function GET(request: NextRequest) {
     if (livreurClientIds) {
       sumQuery = sumQuery.in('id', livreurClientIds)
     }
+
+    sumQuery = applyDateFilters(sumQuery)
 
     const { data: sumData, error: sumError } = await sumQuery
     if (sumError) {

@@ -215,6 +215,12 @@ export default function AdminEnematPage() {
         if (commercialFilter.length > 0) p.set('commercial', commercialFilter.join(','))
         if (livreurFilter.length > 0) p.set('livreur', livreurFilter.join(','))
         if (fnuciFilter !== 'all') p.set('fnuci', fnuciFilter)
+        if (dateDepotFrom) p.set('date_depot_from', dateDepotFrom)
+        if (dateDepotTo) p.set('date_depot_to', dateDepotTo)
+        if (dateApfFrom) p.set('date_apf_from', dateApfFrom)
+        if (dateApfTo) p.set('date_apf_to', dateApfTo)
+        if (datePayeFrom) p.set('date_paye_from', datePayeFrom)
+        if (datePayeTo) p.set('date_paye_to', datePayeTo)
         return p.toString()
       }
       const results = await Promise.all(
@@ -226,7 +232,7 @@ export default function AdminEnematPage() {
       })
       setCounts(newCounts)
     } catch {}
-  }, [searchQuery, depotFilter, zoneFilter, commercialFilter, livreurFilter, fnuciFilter])
+  }, [searchQuery, depotFilter, zoneFilter, commercialFilter, livreurFilter, fnuciFilter, dateDepotFrom, dateDepotTo, dateApfFrom, dateApfTo, datePayeFrom, datePayeTo])
 
   const fetchClients = useCallback(async () => {
     setLoading(true)
@@ -243,6 +249,12 @@ export default function AdminEnematPage() {
       if (fnuciFilter !== 'all') params.set('fnuci', fnuciFilter)
       if (lotFilter) params.set('lot', lotFilter)
       if (factureFilter) params.set('facture', factureFilter)
+      if (dateDepotFrom) params.set('date_depot_from', dateDepotFrom)
+      if (dateDepotTo) params.set('date_depot_to', dateDepotTo)
+      if (dateApfFrom) params.set('date_apf_from', dateApfFrom)
+      if (dateApfTo) params.set('date_apf_to', dateApfTo)
+      if (datePayeFrom) params.set('date_paye_from', datePayeFrom)
+      if (datePayeTo) params.set('date_paye_to', datePayeTo)
 
       const res = await fetch(`/api/admin/enemat?${params.toString()}`)
       const data = await res.json()
@@ -275,7 +287,7 @@ export default function AdminEnematPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, searchQuery, statutFilter, depotFilter, zoneFilter, commercialFilter, livreurFilter, fnuciFilter, lotFilter, factureFilter, fetchCounts])
+  }, [page, pageSize, searchQuery, statutFilter, depotFilter, zoneFilter, commercialFilter, livreurFilter, fnuciFilter, lotFilter, factureFilter, dateDepotFrom, dateDepotTo, dateApfFrom, dateApfTo, datePayeFrom, datePayeTo, fetchCounts])
 
   // Debounce search
   const searchTimerRef = useRef<NodeJS.Timeout>(null)
@@ -297,6 +309,12 @@ export default function AdminEnematPage() {
     zoneFilter: zoneFilter.join(','),
     commercialFilter: commercialFilter.join(','),
     livreurFilter: livreurFilter.join(','),
+    dateDepotFrom,
+    dateDepotTo,
+    dateApfFrom,
+    dateApfTo,
+    datePayeFrom,
+    datePayeTo,
     sortBy,
     sortOrder,
   })
@@ -308,6 +326,12 @@ export default function AdminEnematPage() {
       zoneFilter: zoneFilter.join(','),
       commercialFilter: commercialFilter.join(','),
       livreurFilter: livreurFilter.join(','),
+      dateDepotFrom,
+      dateDepotTo,
+      dateApfFrom,
+      dateApfTo,
+      datePayeFrom,
+      datePayeTo,
       sortBy,
       sortOrder,
     }
@@ -316,12 +340,15 @@ export default function AdminEnematPage() {
       prev.zoneFilter !== cur.zoneFilter ||
       prev.commercialFilter !== cur.commercialFilter ||
       prev.livreurFilter !== cur.livreurFilter ||
+      prev.dateDepotFrom !== cur.dateDepotFrom || prev.dateDepotTo !== cur.dateDepotTo ||
+      prev.dateApfFrom !== cur.dateApfFrom || prev.dateApfTo !== cur.dateApfTo ||
+      prev.datePayeFrom !== cur.datePayeFrom || prev.datePayeTo !== cur.datePayeTo ||
       prev.sortBy !== cur.sortBy || prev.sortOrder !== cur.sortOrder
     ) {
       setPage(1)
       prevFilters.current = cur
     }
-  }, [statutFilter, depotFilter, zoneFilter, commercialFilter, livreurFilter, sortBy, sortOrder])
+  }, [statutFilter, depotFilter, zoneFilter, commercialFilter, livreurFilter, dateDepotFrom, dateDepotTo, dateApfFrom, dateApfTo, datePayeFrom, datePayeTo, sortBy, sortOrder])
 
   useEffect(() => {
     fetchClients()
@@ -582,6 +609,12 @@ export default function AdminEnematPage() {
       if (fnuciFilter !== 'all') params.set('fnuci', fnuciFilter)
       if (lotFilter) params.set('lot', lotFilter)
       if (factureFilter) params.set('facture', factureFilter)
+      if (dateDepotFrom) params.set('date_depot_from', dateDepotFrom)
+      if (dateDepotTo) params.set('date_depot_to', dateDepotTo)
+      if (dateApfFrom) params.set('date_apf_from', dateApfFrom)
+      if (dateApfTo) params.set('date_apf_to', dateApfTo)
+      if (datePayeFrom) params.set('date_paye_from', datePayeFrom)
+      if (datePayeTo) params.set('date_paye_to', datePayeTo)
 
       const res = await fetch(`/api/admin/enemat?${params.toString()}`)
       const data = await res.json()
