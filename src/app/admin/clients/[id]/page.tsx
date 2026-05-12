@@ -62,6 +62,7 @@ import { Client, Livraison, Depot } from '@/lib/types/database'
 import { PROCESS_STATUTS, STATUT_COLORS, STATUT_TRANSITIONS, type ProcessStatut } from '@/lib/constants'
 import { getCommercialName } from '@/lib/tenants/commercial'
 import { createClient } from '@/lib/supabase/client'
+import { getDerniereLivraisonValide } from '@/lib/livraisons/helpers'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 
@@ -684,8 +685,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     )
   }
 
-  // Récupérer infos de livraison
-  const livraison = livraisons[0]
+  // Récupérer infos de livraison (dernière livrée valide, fallback livraisons[0])
+  const livraison = getDerniereLivraisonValide(livraisons) ?? livraisons[0] ?? null
   const modeLivraison = livraison?.mode_livraison || (client.depot_retrait_id ? 'retrait' : 'domicile')
   const LIVRAISON_STATUTS = ['formulaire_valide', 'a_livrer', 'en_livraison', 'retrait_planifie', 'livre', 'controle_valide', 'probleme_livraison', 'a_relivrer']
   const backUrl = LIVRAISON_STATUTS.includes(client.statut_commercial || '') ? '/admin/livraisons' : '/admin/clients'

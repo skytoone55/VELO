@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireRole, isAuthError, type AuthenticatedUser } from '@/lib/auth/require-role'
+import { getDerniereLivraisonValide } from '@/lib/livraisons/helpers'
 
 /**
  * GET /api/admin/enemat
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
          statut_enemat, date_depot_enemat, date_apf_enemat, date_paye_enemat, date_entree_enemat, in_enemat,
          numero_lot_enemat, numero_facture_enemat,
          fnuci_ids, fnuci_declared, fnuci_declared_at,
-         livraisons(mode_livraison, creneau_date, date_livraison_effective, cq_valide_at)`,
+         livraisons(mode_livraison, creneau_date, date_livraison_effective, cq_valide_at, statut, created_at)`,
         { count: 'exact' }
       )
       .eq('in_enemat', true)
@@ -150,7 +151,7 @@ export async function GET(request: NextRequest) {
     const clients = (data || []).map((row: Record<string, unknown>) => {
       const { livraisons, ...client } = row
       const livraisonsArr = Array.isArray(livraisons) ? livraisons : []
-      const derniereLivraison = livraisonsArr[0] || null
+      const derniereLivraison = getDerniereLivraisonValide(livraisonsArr) ?? livraisonsArr[0] ?? null
       const c = client as any
       const depotId = c.depot_retrait_id ?? c.depot_logistique_id ?? null
       return {
