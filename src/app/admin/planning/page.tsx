@@ -254,8 +254,9 @@ function PlanningContent() {
   const [placementResults, setPlacementResults] = useState<PlanningClient[]>([])
   const [placementLoading, setPlacementLoading] = useState(false)
   const [removingLivraisonId, setRemovingLivraisonId] = useState<string | null>(null)
-  const [sendingMailPlanning, setSendingMailPlanning] = useState(false)
+  const [sendingMailByKey, setSendingMailByKey] = useState<Record<string, boolean>>({})
   const [mailPlanningMessage, setMailPlanningMessage] = useState<{ text: string; isError: boolean } | null>(null)
+  const [bulkReschedulingDate, setBulkReschedulingDate] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false)
   const [selectedCreneau, setSelectedCreneau] = useState<SelectedCreneau | null>(null)
@@ -618,9 +619,9 @@ function PlanningContent() {
     }
   }
 
-  const handleSendMailPlanning = async (livraisonIds: string[]) => {
+  const handleSendMailPlanning = async (key: string, livraisonIds: string[]) => {
     if (livraisonIds.length === 0) return
-    setSendingMailPlanning(true)
+    setSendingMailByKey(prev => ({ ...prev, [key]: true }))
     setMailPlanningMessage(null)
     try {
       const res = await fetch('/api/admin/livraisons/send-mail-planning', {
@@ -640,7 +641,43 @@ function PlanningContent() {
       setMailPlanningMessage({ text: 'Erreur envoi mail planning', isError: true })
       setTimeout(() => setMailPlanningMessage(null), 5000)
     } finally {
-      setSendingMailPlanning(false)
+      setSendingMailByKey(prev => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+    }
+  }
+
+  const handleBulkReschedule = async (date: string, expectedCount: number) => {
+    if (expectedCount === 0) return
+    const ok = window.confirm(
+      `Remettre ${expectedCount} client${expectedCount > 1 ? 's' : ''} non livré${expectedCount > 1 ? 's' : ''} du ${date} en 'à livrer' ?`
+    )
+    if (!ok) return
+    setBulkReschedulingDate(date)
+    try {
+      const res = await fetch('/api/admin/planning/bulk-reschedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, depot_id: selectedDepotId || undefined }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur bulk reschedule')
+      setMailPlanningMessage({
+        text: `${data.count_basculés ?? 0} livraison${(data.count_basculés ?? 0) > 1 ? 's' : ''} remise${(data.count_basculés ?? 0) > 1 ? 's' : ''} en 'à livrer'`,
+        isError: false,
+      })
+      setTimeout(() => setMailPlanningMessage(null), 5000)
+      loadPlanningData()
+    } catch (err) {
+      setMailPlanningMessage({
+        text: err instanceof Error ? err.message : 'Erreur bulk reschedule',
+        isError: true,
+      })
+      setTimeout(() => setMailPlanningMessage(null), 5000)
+    } finally {
+      setBulkReschedulingDate(null)
     }
   }
 
@@ -1043,7 +1080,9 @@ function PlanningContent() {
                   }
                   selectedCreneau={selectedCreneau}
                   onSendMailPlanning={handleSendMailPlanning}
-                  sendingMailPlanning={sendingMailPlanning}
+                  sendingMailByKey={sendingMailByKey}
+                  onBulkReschedule={handleBulkReschedule}
+                  bulkReschedulingDate={bulkReschedulingDate}
                   onUpdateLivraison={(id, data) => {
                     setLivraisons(prev => prev.map(l => l.id === id ? { ...l, ...data } : l))
                   }}
@@ -1078,7 +1117,9 @@ function PlanningContent() {
                   }
                   selectedCreneau={selectedCreneau}
                   onSendMailPlanning={handleSendMailPlanning}
-                  sendingMailPlanning={sendingMailPlanning}
+                  sendingMailByKey={sendingMailByKey}
+                  onBulkReschedule={handleBulkReschedule}
+                  bulkReschedulingDate={bulkReschedulingDate}
                 />
               ) : (
                 /* Week view */
@@ -1100,7 +1141,9 @@ function PlanningContent() {
                   }
                   selectedCreneau={selectedCreneau}
                   onSendMailPlanning={handleSendMailPlanning}
-                  sendingMailPlanning={sendingMailPlanning}
+                  sendingMailByKey={sendingMailByKey}
+                  onBulkReschedule={handleBulkReschedule}
+                  bulkReschedulingDate={bulkReschedulingDate}
                 />
               )}
             </CardContent>
@@ -1154,10 +1197,13 @@ function PlanningContent() {
                         size="sm"
                         variant="outline"
                         className="flex-1 text-xs bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 shadow-sm"
-                        onClick={() => handleSendMailPlanning(creneauLivraisons.map(l => l.id))}
-                        disabled={sendingMailPlanning}
+                        onClick={() => {
+                          const k = `creneau_${selectedCreneau.date}_${selectedCreneau.heure_debut}`
+                          handleSendMailPlanning(k, creneauLivraisons.map(l => l.id))
+                        }}
+                        disabled={!!sendingMailByKey[`creneau_${selectedCreneau.date}_${selectedCreneau.heure_debut}`]}
                       >
-                        {sendingMailPlanning ? (
+                        {sendingMailByKey[`creneau_${selectedCreneau.date}_${selectedCreneau.heure_debut}`] ? (
                           <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                         ) : (
                           <Mail className="h-3.5 w-3.5 mr-1" />
@@ -1737,7 +1783,9 @@ function DayView({
   onSelectCreneau,
   selectedCreneau,
   onSendMailPlanning,
-  sendingMailPlanning,
+  sendingMailByKey,
+  onBulkReschedule,
+  bulkReschedulingDate,
   onUpdateLivraison,
 }: {
   day: Date
@@ -1753,8 +1801,10 @@ function DayView({
   removingLivraisonId: string | null
   onSelectCreneau: (date: string, heure_debut: string, heure_fin: string, capacite: number) => void
   selectedCreneau: SelectedCreneau | null
-  onSendMailPlanning?: (livraisonIds: string[]) => void
-  sendingMailPlanning?: boolean
+  onSendMailPlanning?: (key: string, livraisonIds: string[]) => void
+  sendingMailByKey?: Record<string, boolean>
+  onBulkReschedule?: (date: string, expectedCount: number) => void
+  bulkReschedulingDate?: string | null
   onUpdateLivraison?: (id: string, data: Partial<PlanningLivraison>) => void
 }) {
   if (!isOpen) {
@@ -1785,28 +1835,57 @@ function DayView({
 
   const hasCreneaux = creneaux.length > 0
   const dateStr = formatDate(day)
+  const todayStr = formatDate(new Date())
+  const isPastDay = dateStr < todayStr
+  const nonLivresCount = livraisons.filter(l => l.statut !== 'livree' && l.statut !== 'annulee').length
 
   return (
     <div className="space-y-4">
-      {/* Mail planning button for the day */}
-      {livraisons.length > 0 && onSendMailPlanning && (
-        <div className="flex justify-end">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onSendMailPlanning(livraisons.map(l => l.id))}
-            disabled={sendingMailPlanning}
-            className="text-xs"
-          >
-            {sendingMailPlanning ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <Mail className="h-3.5 w-3.5 mr-1.5" />
-            )}
-            Mail planning ({livraisons.length} client{livraisons.length > 1 ? 's' : ''})
-          </Button>
+      {/* Day action buttons (Mail + Bulk reschedule) */}
+      {(livraisons.length > 0 && onSendMailPlanning) || (isPastDay && nonLivresCount > 0 && onBulkReschedule) ? (
+        <div className="flex justify-end gap-2">
+          {isPastDay && nonLivresCount > 0 && onBulkReschedule && (() => {
+            const isBulking = bulkReschedulingDate === dateStr
+            return (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onBulkReschedule(dateStr, nonLivresCount)}
+                disabled={isBulking}
+                className="text-xs bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                title="Remettre les clients non livrés en 'à livrer'"
+              >
+                {isBulking ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Remettre {nonLivresCount} non livré{nonLivresCount > 1 ? 's' : ''}
+              </Button>
+            )
+          })()}
+          {livraisons.length > 0 && onSendMailPlanning && (() => {
+            const dayKey = `day_${dateStr}`
+            const isSending = !!sendingMailByKey?.[dayKey]
+            return (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onSendMailPlanning(dayKey, livraisons.map(l => l.id))}
+                disabled={isSending}
+                className="text-xs"
+              >
+                {isSending ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Mail className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Mail planning ({livraisons.length} client{livraisons.length > 1 ? 's' : ''})
+              </Button>
+            )
+          })()}
         </div>
-      )}
+      ) : null}
 
       {hasCreneaux ? (
         /* Créneau blocks */
@@ -2031,7 +2110,9 @@ function WeekView({
   onSelectCreneau,
   selectedCreneau,
   onSendMailPlanning,
-  sendingMailPlanning,
+  sendingMailByKey,
+  onBulkReschedule,
+  bulkReschedulingDate,
 }: {
   weekDays: Date[]
   today: Date
@@ -2047,8 +2128,10 @@ function WeekView({
   removingLivraisonId: string | null
   onSelectCreneau: (date: string, heure_debut: string, heure_fin: string, capacite: number) => void
   selectedCreneau: SelectedCreneau | null
-  onSendMailPlanning?: (livraisonIds: string[]) => void
-  sendingMailPlanning?: boolean
+  onSendMailPlanning?: (key: string, livraisonIds: string[]) => void
+  sendingMailByKey?: Record<string, boolean>
+  onBulkReschedule?: (date: string, expectedCount: number) => void
+  bulkReschedulingDate?: string | null
 }) {
   const hasCreneaux = creneaux.length > 0
   const numDays = weekDays.length
@@ -2094,23 +2177,51 @@ function WeekView({
             </button>
 
             {/* Mail planning button per day */}
-            {open && dayLivraisons.length > 0 && onSendMailPlanning && (
-              <div className="px-1 py-1 border-b bg-gray-50 flex justify-center">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onSendMailPlanning(dayLivraisons.map(l => l.id)) }}
-                  disabled={sendingMailPlanning}
-                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-0.5 rounded transition-colors disabled:opacity-50"
-                  title={`Envoyer mail planning à ${dayLivraisons.length} client(s)`}
-                >
-                  {sendingMailPlanning ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Mail className="h-3 w-3" />
-                  )}
-                  <span>{dayLivraisons.length}</span>
-                </button>
-              </div>
-            )}
+            {open && dayLivraisons.length > 0 && onSendMailPlanning && (() => {
+              const calKey = `calendar_${dateStr}`
+              const isSending = !!sendingMailByKey?.[calKey]
+              return (
+                <div className="px-1 py-1 border-b bg-gray-50 flex justify-center">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onSendMailPlanning(calKey, dayLivraisons.map(l => l.id)) }}
+                    disabled={isSending}
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-0.5 rounded transition-colors disabled:opacity-50"
+                    title={`Envoyer mail planning à ${dayLivraisons.length} client(s)`}
+                  >
+                    {isSending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Mail className="h-3 w-3" />
+                    )}
+                    <span>{dayLivraisons.length}</span>
+                  </button>
+                </div>
+              )
+            })()}
+
+            {/* Bulk reschedule button — past days only, non-delivered count > 0 */}
+            {open && onBulkReschedule && dateStr < formatDate(today) && (() => {
+              const nonLivres = dayLivraisons.filter(l => l.statut !== 'livree' && l.statut !== 'annulee')
+              if (nonLivres.length === 0) return null
+              const isBulking = bulkReschedulingDate === dateStr
+              return (
+                <div className="px-1 py-1 border-b bg-amber-50/50 flex justify-center">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onBulkReschedule(dateStr, nonLivres.length) }}
+                    disabled={isBulking}
+                    className="flex items-center gap-1 text-[10px] text-amber-700 hover:text-amber-900 hover:bg-amber-100 px-2 py-0.5 rounded transition-colors disabled:opacity-50"
+                    title={`Remettre ${nonLivres.length} client(s) non livré(s) en 'à livrer'`}
+                  >
+                    {isBulking ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <ArrowRight className="h-3 w-3" />
+                    )}
+                    <span>Remettre {nonLivres.length}</span>
+                  </button>
+                </div>
+              )
+            })()}
 
             {!open ? (
               <div className="flex-1 flex items-center justify-center text-gray-400 text-xs">
@@ -2252,6 +2363,7 @@ function WeekView({
                         creneaux.flatMap((c) => getLivraisonsForCreneau(c).map((l) => l.id))
                       )
                       const unassigned = dayLivraisons.filter((l) => !assignedIds.has(l.id))
+                      const velosHors = unassigned.reduce((s, l) => s + (l.client?.velo_valide || l.client?.velo_devis || 0), 0)
                       const isHorsSelected = selectedCreneau?.date === dateStr && selectedCreneau?.heure_debut === '_hors_creneau'
                       return unassigned.length > 0 ? (
                         <div
@@ -2264,7 +2376,7 @@ function WeekView({
                         >
                           <div className="flex items-center gap-1 mb-0.5">
                             <Bike className="h-3 w-3 text-amber-600" />
-                            <span className="text-[10px] font-medium text-amber-700">{unassigned.length} hors créneau</span>
+                            <span className="text-[10px] font-medium text-amber-700">{unassigned.length} clients / {velosHors} vélos hors créneau</span>
                           </div>
                           {unassigned.map((l) => {
                             const client = l.client
