@@ -16,8 +16,11 @@ import {
 import {
   Loader2, ChevronLeft, ChevronRight, Calendar, Truck,
   MapPin, Bike, Clock, Search, Eye, X, Trash2, Mail,
-  Phone, Info, Pencil, Check, Users, Route, ArrowRight,
+  Phone, Info, Pencil, Check, Users, Route, ArrowRight, Move, CalendarDays,
 } from 'lucide-react'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog'
 import { DELIVERY_STATUS } from '@/lib/constants'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -193,6 +196,39 @@ function getLastOfMonth(d: Date): Date {
 }
 
 // ---------------------------------------------------------------------------
+// Créneau helpers — "Journée entière" = 00:00 → 23:59
+// ---------------------------------------------------------------------------
+
+function isJourneeEntiere(c: { heure_debut: string }): boolean {
+  return c.heure_debut.slice(0, 5) === '00:00'
+}
+
+/** Sort créneaux so the "Journée entière" slot (00:00) appears first. */
+function sortCreneaux<T extends { heure_debut: string }>(list: T[]): T[] {
+  return [...list].sort((a, b) => {
+    const ja = isJourneeEntiere(a)
+    const jb = isJourneeEntiere(b)
+    if (ja && !jb) return -1
+    if (!ja && jb) return 1
+    return a.heure_debut.localeCompare(b.heure_debut)
+  })
+}
+
+/**
+ * Couleur du compteur de vélos d'un créneau selon le taux d'occupation.
+ * <80% = vert, 80-100% = orange, >100% = rouge.
+ * Pas applicable à "Journée entière" (pas de capacité).
+ */
+function creneauCapacityColor(slotVelos: number, capacite: number): string {
+  if (capacite <= 0) return 'text-gray-600'
+  const ratio = slotVelos / capacite
+  if (ratio > 1) return 'text-red-600 font-bold'
+  if (ratio >= 0.8) return 'text-orange-600 font-semibold'
+  return 'text-green-600'
+}
+
+
+// ---------------------------------------------------------------------------
 // Statut colors
 // ---------------------------------------------------------------------------
 
@@ -260,6 +296,13 @@ function PlanningContent() {
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false)
   const [selectedCreneau, setSelectedCreneau] = useState<SelectedCreneau | null>(null)
+  const [moveDialogLivraison, setMoveDialogLivraison] = useState<PlanningLivraison | null>(null)
+  const [moveDate, setMoveDate] = useState<string>('')
+  const [moveLivreurId, setMoveLivreurId] = useState<string>('')
+  const [moveCreneauKey, setMoveCreneauKey] = useState<string>('')
+  const [moveSubmitting, setMoveSubmitting] = useState(false)
+  const [allLivreurs, setAllLivreurs] = useState<LivreurOption[]>([])
+  const [draggingLivraisonId, setDraggingLivraisonId] = useState<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement>(null)
   const initialUrlApplied = useRef(false)
 
@@ -681,6 +724,188 @@ function PlanningContent() {
     }
   }
 
+  // Load full livreurs list (RBAC applied server-side) for the move dialog
+  useEffect(() => {
+    let cancelled = false
+    async function loadAllLivreurs() {
+      try {
+        const res = await fetch('/api/admin/livreurs')
+        if (!res.ok) return
+        const json = await res.json()
+        if (cancelled) return
+        let list: LivreurOption[] = json.livreurs || []
+        if (adminUser.role === 'livreur') {
+          list = list.filter(l => l.id === adminUser.id)
+        }
+        setAllLivreurs(list)
+      } catch {
+        /* silent */
+      }
+    }
+    loadAllLivreurs()
+    return () => { cancelled = true }
+  }, [adminUser.id, adminUser.role])
+
+  const openMoveDialog = (livraison: PlanningLivraison) => {
+    setMoveDialogLivraison(livraison)
+    setMoveDate(livraison.creneau_date || formatDate(new Date()))
+    setMoveLivreurId(
+      adminUser.role === 'livreur'
+        ? adminUser.id
+        : (livraison.livreur_id || selectedLivreurId || '')
+    )
+    if (livraison.creneau_heure_debut && livraison.creneau_heure_fin) {
+      setMoveCreneauKey(`${livraison.creneau_heure_debut.slice(0, 5)}|${livraison.creneau_heure_fin.slice(0, 5)}`)
+    } else {
+      setMoveCreneauKey('_hors_creneau')
+    }
+  }
+
+  const closeMoveDialog = () => {
+    setMoveDialogLivraison(null)
+    setMoveSubmitting(false)
+  }
+
+  // Compute available créneaux for the chosen (date, livreur). Source = depot config + existing livraisons.
+  const moveDialogCreneaux = useMemo<CreneauConfig[]>(() => {
+    if (!moveDate) return []
+    const fromDepot = depot?.creneaux || []
+    if (fromDepot.length > 0) return sortCreneaux(fromDepot)
+    // Fallback : extraire les créneaux distincts utilisés ce jour-là pour ce livreur
+    const seen = new Map<string, CreneauConfig>()
+    for (const l of livraisons) {
+      if (l.creneau_date !== moveDate) continue
+      if (moveLivreurId && l.livreur_id !== moveLivreurId) continue
+      if (!l.creneau_heure_debut) continue
+      const key = `${l.creneau_heure_debut.slice(0, 5)}|${(l.creneau_heure_fin || '').slice(0, 5)}`
+      if (!seen.has(key)) {
+        seen.set(key, {
+          heure_debut: l.creneau_heure_debut.slice(0, 5),
+          heure_fin: (l.creneau_heure_fin || '').slice(0, 5),
+          capacite_velos: 0,
+        })
+      }
+    }
+    return sortCreneaux(Array.from(seen.values()))
+  }, [moveDate, moveLivreurId, depot, livraisons])
+
+  const performMove = useCallback(async (params: {
+    livraisonId: string
+    newDate: string
+    newLivreurId: string | null
+    newCreneau: { heure_debut: string; heure_fin: string } | null
+  }): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/admin/planning/move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          livraison_id: params.livraisonId,
+          new_date: params.newDate,
+          new_livreur_id: params.newLivreurId,
+          new_creneau: params.newCreneau,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setMailPlanningMessage({ text: data.error || 'Erreur déplacement', isError: true })
+        setTimeout(() => setMailPlanningMessage(null), 5000)
+        return false
+      }
+      setMailPlanningMessage({ text: 'Client déplacé', isError: false })
+      setTimeout(() => setMailPlanningMessage(null), 3000)
+      loadPlanningData()
+      return true
+    } catch (err) {
+      setMailPlanningMessage({
+        text: err instanceof Error ? err.message : 'Erreur déplacement',
+        isError: true,
+      })
+      setTimeout(() => setMailPlanningMessage(null), 5000)
+      return false
+    }
+  }, [loadPlanningData])
+
+  const submitMoveDialog = async () => {
+    if (!moveDialogLivraison || !moveDate) return
+    let newCreneau: { heure_debut: string; heure_fin: string } | null = null
+    if (moveCreneauKey && moveCreneauKey !== '_hors_creneau') {
+      const [hd, hf] = moveCreneauKey.split('|')
+      if (hd && hf) newCreneau = { heure_debut: hd, heure_fin: hf }
+    }
+    // Capacity check (soft warning) — si John annule, on n'envoie rien et le client reste à sa place
+    if (!checkCapacityAndConfirm({
+      livraisonId: moveDialogLivraison.id,
+      targetDate: moveDate,
+      targetCreneau: newCreneau,
+    })) return
+    setMoveSubmitting(true)
+    const ok = await performMove({
+      livraisonId: moveDialogLivraison.id,
+      newDate: moveDate,
+      newLivreurId: moveLivreurId || null,
+      newCreneau,
+    })
+    setMoveSubmitting(false)
+    if (ok) closeMoveDialog()
+  }
+
+  /**
+   * Vérifie la capacité d'un créneau cible et demande confirmation si dépassement.
+   * Retourne true si l'opération doit continuer (créneau ok OU John confirme le dépassement),
+   * false si John annule. Journée entière (00:00) = jamais de check.
+   */
+  const checkCapacityAndConfirm = useCallback((params: {
+    livraisonId: string
+    targetDate: string
+    targetCreneau: { heure_debut: string; heure_fin: string } | null
+  }): boolean => {
+    // Hors créneau ou Journée entière : pas de check
+    if (!params.targetCreneau) return true
+    if (params.targetCreneau.heure_debut.slice(0, 5) === '00:00') return true
+    // Trouver capacite_velos du créneau cible dans la config dépôt
+    const cren = (depot?.creneaux || []).find(c =>
+      c.heure_debut.slice(0, 5) === params.targetCreneau!.heure_debut.slice(0, 5)
+    )
+    if (!cren || cren.capacite_velos <= 0) return true // pas de capacité définie = pas de check
+    // Compter vélos actuels (exclure la livraison déplacée)
+    const slotVelos = livraisons
+      .filter(l =>
+        l.creneau_date === params.targetDate &&
+        l.creneau_heure_debut?.slice(0, 5) === params.targetCreneau!.heure_debut.slice(0, 5) &&
+        l.id !== params.livraisonId
+      )
+      .reduce((sum, l) => sum + (l.client?.velo_valide || l.client?.velo_devis || 0), 0)
+    // Nombre de vélos de la livraison déplacée
+    const moved = livraisons.find(l => l.id === params.livraisonId)
+    const movedVelos = moved?.client?.velo_valide || moved?.client?.velo_devis || 0
+    const projected = slotVelos + movedVelos
+    if (projected <= cren.capacite_velos) return true
+    // Dépassement → confirmation
+    return window.confirm(
+      `Créneau plein : ce créneau est déjà à ${slotVelos}/${cren.capacite_velos} vélos. ` +
+      `Ajouter ${movedVelos} vélo${movedVelos > 1 ? 's' : ''} dépasserait la capacité (${projected}/${cren.capacite_velos}). ` +
+      `Déplacer quand même ?`
+    )
+  }, [depot, livraisons])
+
+  // Drop handler used by WeekView/DayView : intra-livreur déplacement
+  const handleDropOnSlot = useCallback(async (params: {
+    livraisonId: string
+    targetDate: string
+    targetCreneau: { heure_debut: string; heure_fin: string } | null
+  }) => {
+    setDraggingLivraisonId(null)
+    // Capacity check (soft warning) — si John annule, drop ignoré, client reste à sa place
+    if (!checkCapacityAndConfirm(params)) return
+    await performMove({
+      livraisonId: params.livraisonId,
+      newDate: params.targetDate,
+      newLivreurId: null, // null = garder livreur actuel
+      newCreneau: params.targetCreneau,
+    })
+  }, [performMove, checkCapacityAndConfirm])
+
   // Check if a day is open for the selected depot
   function isDayOpen(day: Date): boolean {
     if (!depot?.jours_ouverture || depot.jours_ouverture.length === 0) return true
@@ -1068,7 +1293,7 @@ function PlanningContent() {
                   livraisons={getLivraisonsForDay(selectedDate)}
                   velosDay={getVelosForDay(selectedDate)}
                   capaciteJour={depot?.capacite_velos_jour || 0}
-                  creneaux={depot?.creneaux || []}
+                  creneaux={sortCreneaux(depot?.creneaux || [])}
                   isOpen={isDayOpen(selectedDate)}
                   isToday={isSameDay(selectedDate, today)}
                   canAddClient={!!selectedLivreurId && selectedLivreurId !== '_all'}
@@ -1086,6 +1311,10 @@ function PlanningContent() {
                   onUpdateLivraison={(id, data) => {
                     setLivraisons(prev => prev.map(l => l.id === id ? { ...l, ...data } : l))
                   }}
+                  onMoveLivraison={openMoveDialog}
+                  draggingLivraisonId={draggingLivraisonId}
+                  onDragStartLivraison={setDraggingLivraisonId}
+                  onDropOnSlot={handleDropOnSlot}
                 />
               ) : viewMode === 'mois' ? (
                 <MonthView
@@ -1102,7 +1331,7 @@ function PlanningContent() {
                 <WeekView
                   weekDays={threeDays}
                   today={today}
-                  creneaux={depot?.creneaux || []}
+                  creneaux={sortCreneaux(depot?.creneaux || [])}
                   capaciteJour={depot?.capacite_velos_jour || 0}
                   getLivraisonsForDay={getLivraisonsForDay}
                   getVelosForDay={getVelosForDay}
@@ -1120,13 +1349,20 @@ function PlanningContent() {
                   sendingMailByKey={sendingMailByKey}
                   onBulkReschedule={handleBulkReschedule}
                   bulkReschedulingDate={bulkReschedulingDate}
+                  onUpdateLivraison={(id, data) => {
+                    setLivraisons(prev => prev.map(l => l.id === id ? { ...l, ...data } : l))
+                  }}
+                  onMoveLivraison={openMoveDialog}
+                  draggingLivraisonId={draggingLivraisonId}
+                  onDragStartLivraison={setDraggingLivraisonId}
+                  onDropOnSlot={handleDropOnSlot}
                 />
               ) : (
                 /* Week view */
                 <WeekView
                   weekDays={weekDays}
                   today={today}
-                  creneaux={depot?.creneaux || []}
+                  creneaux={sortCreneaux(depot?.creneaux || [])}
                   capaciteJour={depot?.capacite_velos_jour || 0}
                   getLivraisonsForDay={getLivraisonsForDay}
                   getVelosForDay={getVelosForDay}
@@ -1144,6 +1380,13 @@ function PlanningContent() {
                   sendingMailByKey={sendingMailByKey}
                   onBulkReschedule={handleBulkReschedule}
                   bulkReschedulingDate={bulkReschedulingDate}
+                  onUpdateLivraison={(id, data) => {
+                    setLivraisons(prev => prev.map(l => l.id === id ? { ...l, ...data } : l))
+                  }}
+                  onMoveLivraison={openMoveDialog}
+                  draggingLivraisonId={draggingLivraisonId}
+                  onDragStartLivraison={setDraggingLivraisonId}
+                  onDropOnSlot={handleDropOnSlot}
                 />
               )}
             </CardContent>
@@ -1465,6 +1708,83 @@ function PlanningContent() {
           </div>
         </div>
       )}
+
+      {/* Modale "Déplacer vers..." */}
+      <Dialog open={!!moveDialogLivraison} onOpenChange={(o) => { if (!o) closeMoveDialog() }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Déplacer vers…</DialogTitle>
+          </DialogHeader>
+          {moveDialogLivraison && (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                Client : <span className="font-medium text-foreground">{moveDialogLivraison.client?.raison_sociale || '—'}</span>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-700">Date</label>
+                <input
+                  type="date"
+                  value={moveDate}
+                  onChange={(e) => setMoveDate(e.target.value)}
+                  min={formatDate(new Date())}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-700">Livreur</label>
+                <select
+                  value={moveLivreurId}
+                  onChange={(e) => setMoveLivreurId(e.target.value)}
+                  disabled={adminUser.role === 'livreur'}
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white disabled:bg-gray-100"
+                >
+                  <option value="">— Garder le livreur actuel —</option>
+                  {allLivreurs.map(l => (
+                    <option key={l.id} value={l.id}>{l.prenom} {l.nom}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-700">Créneau</label>
+                <select
+                  value={moveCreneauKey}
+                  onChange={(e) => setMoveCreneauKey(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                >
+                  <option value="_hors_creneau">Hors créneau</option>
+                  {moveDialogCreneaux.map(c => {
+                    const key = `${c.heure_debut.slice(0, 5)}|${c.heure_fin.slice(0, 5)}`
+                    // Compte vélos actuels sur ce créneau ce jour-là, en excluant la livraison en cours de déplacement
+                    const slotVelosCount = livraisons
+                      .filter(l =>
+                        l.creneau_date === moveDate &&
+                        l.creneau_heure_debut?.slice(0, 5) === c.heure_debut.slice(0, 5) &&
+                        l.id !== moveDialogLivraison?.id
+                      )
+                      .reduce((sum, l) => sum + (l.client?.velo_valide || l.client?.velo_devis || 0), 0)
+                    const isJournee = isJourneeEntiere(c)
+                    const label = isJournee
+                      ? `Journée entière (${slotVelosCount} vélo${slotVelosCount > 1 ? 's' : ''})`
+                      : `${c.heure_debut.slice(0, 5)} – ${c.heure_fin.slice(0, 5)} (${slotVelosCount}/${c.capacite_velos})`
+                    return (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    )
+                  })}
+                </select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={closeMoveDialog} disabled={moveSubmitting}>Annuler</Button>
+            <Button onClick={submitMoveDialog} disabled={moveSubmitting || !moveDate}>
+              {moveSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Déplacer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -1493,13 +1813,15 @@ function MoveToCreneauButton({ livraisonId, creneauDebut, creneauFin, onMoved }:
       }
     } finally { setMoving(false) }
   }
+  const journee = creneauDebut.slice(0, 5) === '00:00'
   return (
     <button
       onClick={move}
       disabled={moving}
-      className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 transition-colors disabled:opacity-50"
+      title={journee ? 'Déplacer vers Journée entière' : `Déplacer vers ${creneauDebut.slice(0, 5)}`}
+      className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 transition-colors disabled:opacity-50 inline-flex items-center gap-0.5"
     >
-      {moving ? '...' : `${creneauDebut.slice(0, 5)}`}
+      {moving ? '...' : journee ? <CalendarDays className="h-3 w-3" /> : creneauDebut.slice(0, 5)}
     </button>
   )
 }
@@ -1512,12 +1834,22 @@ function LivraisonCard({
   onRemove,
   removing,
   onUpdate,
+  onMove,
+  draggable,
+  isDragging,
+  onDragStart,
+  onDragEnd,
 }: {
   livraison: PlanningLivraison
   expanded?: boolean
   onRemove?: (id: string) => void
   removing?: boolean
   onUpdate?: (id: string, data: Partial<PlanningLivraison>) => void
+  onMove?: (livraison: PlanningLivraison) => void
+  draggable?: boolean
+  isDragging?: boolean
+  onDragStart?: (id: string) => void
+  onDragEnd?: () => void
 }) {
   const clientName = livraison.client?.raison_sociale || 'Client inconnu'
   const nbVelos = livraison.client?.velo_valide || livraison.client?.velo_devis || 0
@@ -1556,11 +1888,30 @@ function LivraisonCard({
     } finally { setSavingPrefs(false) }
   }
 
+  const dragHandlers = draggable
+    ? {
+        draggable: true,
+        onDragStart: (e: React.DragEvent) => {
+          e.dataTransfer.setData('text/livraison-id', livraison.id)
+          e.dataTransfer.effectAllowed = 'move'
+          onDragStart?.(livraison.id)
+        },
+        onDragEnd: () => onDragEnd?.(),
+      }
+    : {}
+
   if (expanded) {
     return (
-      <div className="relative group">
+      <div
+        className={`relative group ${isDragging ? 'opacity-40' : ''}`}
+        {...dragHandlers}
+      >
         <div className="border rounded-lg p-3 hover:bg-gray-50 transition-colors space-y-2">
-          <Link href={livraison.client_id ? `/admin/clients/${livraison.client_id}` : '#'}>
+          <Link
+            href={livraison.client_id ? `/admin/clients/${livraison.client_id}` : '#'}
+            draggable={false}
+            onDragStart={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between gap-2 cursor-pointer">
               <span className="text-sm font-semibold flex-1">{clientName}</span>
               <Badge
@@ -1648,29 +1999,48 @@ function LivraisonCard({
             <p className="text-xs text-gray-400 italic line-clamp-2">{livraison.notes_admin}</p>
           )}
         </div>
-        {onRemove && (
-          <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(livraison.id) }}
-            disabled={removing}
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 rounded-full bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center text-xs font-bold leading-none"
-            title="Retirer du planning"
-          >
-            {removing ? '…' : '×'}
-          </button>
-        )}
+        <div className="absolute top-2 right-2 flex items-center gap-1">
+          {onMove && (
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMove(livraison) }}
+              className="w-5 h-5 rounded-full bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+              title="Déplacer vers une autre date / livreur / créneau"
+            >
+              <Move className="h-3 w-3" />
+            </button>
+          )}
+          {onRemove && (
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(livraison.id) }}
+              disabled={removing}
+              className="w-5 h-5 rounded-full bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center text-xs font-bold leading-none opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Retirer du planning"
+            >
+              {removing ? '…' : '×'}
+            </button>
+          )}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="relative group">
+    <div
+      className={`relative group ${isDragging ? 'opacity-40' : ''}`}
+      {...dragHandlers}
+    >
       <Link
         href={livraison.client_id ? `/admin/clients/${livraison.client_id}` : '#'}
         className="block"
+        draggable={false}
+        onDragStart={(e) => e.stopPropagation()}
       >
-        <div className="border rounded p-1 hover:bg-gray-50 transition-colors cursor-pointer">
-          <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
+        <div className="border rounded p-1 hover:bg-gray-50 transition-colors cursor-pointer space-y-0.5">
+          <div className="flex items-center gap-1 text-[11px] font-medium text-gray-800 leading-tight">
             <div className={`w-2 h-2 rounded-full shrink-0 ${getStatutColor(livraison.statut).split(' ')[0].replace('text-', 'bg-')}`} />
+            <span className="truncate flex-1" title={clientName}>{clientName}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
             <Bike className="h-2.5 w-2.5" />
             <span>{nbVelos}</span>
             {heureDebut && (
@@ -1679,16 +2049,28 @@ function LivraisonCard({
           </div>
         </div>
       </Link>
-      {onRemove && (
-        <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(livraison.id) }}
-          disabled={removing}
-          className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity w-4 h-4 rounded-full bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center text-[10px] font-bold leading-none"
-          title="Retirer du planning"
-        >
-          {removing ? '…' : '×'}
-        </button>
-      )}
+      <div className="mt-0.5 flex items-center gap-1">
+        {onMove && (
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMove(livraison) }}
+            className="flex-1 inline-flex items-center justify-center gap-1 rounded px-1 py-0.5 text-[10px] bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 transition-colors"
+            title="Déplacer vers une autre date"
+          >
+            <Move className="h-2.5 w-2.5" />
+            <span>Déplacer</span>
+          </button>
+        )}
+        {onRemove && (
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(livraison.id) }}
+            disabled={removing}
+            className="w-4 h-4 shrink-0 rounded-full bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center text-[10px] font-bold leading-none"
+            title="Retirer du planning"
+          >
+            {removing ? '…' : '×'}
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -1787,6 +2169,10 @@ function DayView({
   onBulkReschedule,
   bulkReschedulingDate,
   onUpdateLivraison,
+  onMoveLivraison,
+  draggingLivraisonId,
+  onDragStartLivraison,
+  onDropOnSlot,
 }: {
   day: Date
   livraisons: PlanningLivraison[]
@@ -1806,6 +2192,10 @@ function DayView({
   onBulkReschedule?: (date: string, expectedCount: number) => void
   bulkReschedulingDate?: string | null
   onUpdateLivraison?: (id: string, data: Partial<PlanningLivraison>) => void
+  onMoveLivraison?: (livraison: PlanningLivraison) => void
+  draggingLivraisonId?: string | null
+  onDragStartLivraison?: (id: string | null) => void
+  onDropOnSlot?: (params: { livraisonId: string; targetDate: string; targetCreneau: { heure_debut: string; heure_fin: string } | null }) => void
 }) {
   if (!isOpen) {
     return (
@@ -1898,17 +2288,26 @@ function DayView({
             const isSelected =
               selectedCreneau?.date === dateStr &&
               selectedCreneau?.heure_debut === c.heure_debut.slice(0, 5)
+            const isDropTarget = !!draggingLivraisonId
 
             return (
               <div
                 key={c.heure_debut}
                 onClick={() => onSelectCreneau(dateStr, c.heure_debut.slice(0, 5), c.heure_fin.slice(0, 5), c.capacite_velos)}
+                onDragOver={isDropTarget ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' } : undefined}
+                onDrop={isDropTarget ? (e) => {
+                  e.preventDefault()
+                  const id = e.dataTransfer.getData('text/livraison-id')
+                  if (id) onDropOnSlot?.({ livraisonId: id, targetDate: dateStr, targetCreneau: { heure_debut: c.heure_debut.slice(0, 5), heure_fin: c.heure_fin.slice(0, 5) } })
+                } : undefined}
                 className={`border-2 rounded-xl overflow-hidden cursor-pointer transition-all ${
                   isSelected
                     ? 'border-blue-500 ring-2 ring-blue-200'
-                    : isFull
-                      ? 'border-red-200 bg-red-50/30 hover:border-red-300'
-                      : 'border-blue-100 bg-blue-50/20 hover:border-blue-300'
+                    : isDropTarget
+                      ? 'border-blue-400 border-dashed bg-blue-50/60'
+                      : isFull
+                        ? 'border-red-200 bg-red-50/30 hover:border-red-300'
+                        : 'border-blue-100 bg-blue-50/20 hover:border-blue-300'
                 }`}
               >
                 {/* Créneau header */}
@@ -1917,26 +2316,40 @@ function DayView({
                 }`}>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5">
-                      <Clock className="h-4 w-4 text-gray-500" />
+                      {isJourneeEntiere(c) ? (
+                        <CalendarDays className="h-4 w-4 text-gray-500" />
+                      ) : (
+                        <Clock className="h-4 w-4 text-gray-500" />
+                      )}
                       <span className="text-sm font-semibold text-gray-700">
-                        {c.heure_debut.slice(0, 5)} – {c.heure_fin.slice(0, 5)}
+                        {isJourneeEntiere(c)
+                          ? 'Journée entière'
+                          : `${c.heure_debut.slice(0, 5)} – ${c.heure_fin.slice(0, 5)}`}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Bike className="h-4 w-4 text-gray-500" />
-                      <span className={`text-sm font-medium ${isFull ? 'text-red-600' : 'text-gray-600'}`}>
-                        {slotVelos}/{c.capacite_velos} vélos
-                      </span>
+                      {isJourneeEntiere(c) ? (
+                        <span className="text-sm font-medium text-gray-600">
+                          {slotVelos} vélo{slotVelos > 1 ? 's' : ''}
+                        </span>
+                      ) : (
+                        <span className={`text-sm ${creneauCapacityColor(slotVelos, c.capacite_velos)}`}>
+                          {slotVelos}/{c.capacite_velos} vélos
+                        </span>
+                      )}
                     </div>
-                    {/* Mini fill bar */}
-                    <div className="w-20 bg-gray-200 rounded-full h-1.5">
-                      <div
-                        className={`h-1.5 rounded-full ${
-                          slotRatio > 0.9 ? 'bg-red-500' : slotRatio > 0.7 ? 'bg-amber-500' : 'bg-green-500'
-                        }`}
-                        style={{ width: `${Math.min(100, slotRatio * 100)}%` }}
-                      />
-                    </div>
+                    {/* Mini fill bar — masquée pour Journée entière (pas de capacité) */}
+                    {!isJourneeEntiere(c) && (
+                      <div className="w-20 bg-gray-200 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full ${
+                            slotRatio > 1 ? 'bg-red-500' : slotRatio >= 0.8 ? 'bg-orange-500' : 'bg-green-500'
+                          }`}
+                          style={{ width: `${Math.min(100, slotRatio * 100)}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5">
                     {slotLivraisons.length > 0 && (
@@ -1982,6 +2395,11 @@ function DayView({
                         onRemove={onRemoveLivraison}
                         removing={removingLivraisonId === livraison.id}
                         onUpdate={onUpdateLivraison}
+                        onMove={onMoveLivraison}
+                        draggable={!!onDropOnSlot}
+                        isDragging={draggingLivraisonId === livraison.id}
+                        onDragStart={onDragStartLivraison}
+                        onDragEnd={() => onDragStartLivraison?.(null)}
                       />
                     ))
                   )}
@@ -1992,7 +2410,15 @@ function DayView({
 
           {/* Unassigned livraisons */}
           {unassigned.length > 0 && (
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <div
+              className="border border-gray-200 rounded-xl overflow-hidden"
+              onDragOver={draggingLivraisonId ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' } : undefined}
+              onDrop={draggingLivraisonId ? (e) => {
+                e.preventDefault()
+                const id = e.dataTransfer.getData('text/livraison-id')
+                if (id) onDropOnSlot?.({ livraisonId: id, targetDate: dateStr, targetCreneau: null })
+              } : undefined}
+            >
               <div className="px-4 py-2 bg-gray-50 border-b flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-600">Autres (sans créneau) — {unassigned.length}</span>
                 <button
@@ -2017,6 +2443,11 @@ function DayView({
                       onRemove={onRemoveLivraison}
                       removing={removingLivraisonId === livraison.id}
                       onUpdate={onUpdateLivraison}
+                      onMove={onMoveLivraison}
+                      draggable={!!onDropOnSlot}
+                      isDragging={draggingLivraisonId === livraison.id}
+                      onDragStart={onDragStartLivraison}
+                      onDragEnd={() => onDragStartLivraison?.(null)}
                     />
                     {creneaux.length > 0 && (
                       <div className="flex items-center gap-1 mt-1 ml-2">
@@ -2067,6 +2498,11 @@ function DayView({
                     onRemove={onRemoveLivraison}
                     removing={removingLivraisonId === livraison.id}
                     onUpdate={onUpdateLivraison}
+                    onMove={onMoveLivraison}
+                    draggable={!!onDropOnSlot}
+                    isDragging={draggingLivraisonId === livraison.id}
+                    onDragStart={onDragStartLivraison}
+                    onDragEnd={() => onDragStartLivraison?.(null)}
                   />
                 ))
               }
@@ -2113,6 +2549,11 @@ function WeekView({
   sendingMailByKey,
   onBulkReschedule,
   bulkReschedulingDate,
+  onUpdateLivraison,
+  onMoveLivraison,
+  draggingLivraisonId,
+  onDragStartLivraison,
+  onDropOnSlot,
 }: {
   weekDays: Date[]
   today: Date
@@ -2132,6 +2573,11 @@ function WeekView({
   sendingMailByKey?: Record<string, boolean>
   onBulkReschedule?: (date: string, expectedCount: number) => void
   bulkReschedulingDate?: string | null
+  onUpdateLivraison?: (id: string, data: Partial<PlanningLivraison>) => void
+  onMoveLivraison?: (livraison: PlanningLivraison) => void
+  draggingLivraisonId?: string | null
+  onDragStartLivraison?: (id: string | null) => void
+  onDropOnSlot?: (params: { livraisonId: string; targetDate: string; targetCreneau: { heure_debut: string; heure_fin: string } | null }) => void
 }) {
   const hasCreneaux = creneaux.length > 0
   const numDays = weekDays.length
@@ -2155,13 +2601,21 @@ function WeekView({
             return l.creneau_heure_debut.slice(0, 5) === c.heure_debut.slice(0, 5)
           })
 
+        const isDayDropTarget = !!draggingLivraisonId && open
         return (
           <div
             key={formatDate(day)}
+            onDragOver={isDayDropTarget ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' } : undefined}
+            onDrop={isDayDropTarget ? (e) => {
+              e.preventDefault()
+              const id = e.dataTransfer.getData('text/livraison-id')
+              if (id) onDropOnSlot?.({ livraisonId: id, targetDate: dateStr, targetCreneau: null })
+            } : undefined}
             className={`
               border rounded-lg overflow-hidden flex flex-col min-h-[400px]
               ${isToday ? 'border-blue-500 border-2' : 'border-gray-200'}
               ${!open ? 'bg-gray-50' : 'bg-white'}
+              ${isDayDropTarget ? 'ring-2 ring-blue-300' : ''}
             `}
           >
             {/* Day header — clicking navigates */}
@@ -2266,26 +2720,43 @@ function WeekView({
                         selectedCreneau?.date === dateStr &&
                         selectedCreneau?.heure_debut === c.heure_debut.slice(0, 5)
 
+                      const isCrenDropTarget = !!draggingLivraisonId
                       return (
                         <div
                           key={c.heure_debut}
                           onClick={() => onSelectCreneau(dateStr, c.heure_debut.slice(0, 5), c.heure_fin.slice(0, 5), c.capacite_velos)}
+                          onDragOver={isCrenDropTarget ? (e) => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move' } : undefined}
+                          onDrop={isCrenDropTarget ? (e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            const id = e.dataTransfer.getData('text/livraison-id')
+                            if (id) onDropOnSlot?.({ livraisonId: id, targetDate: dateStr, targetCreneau: { heure_debut: c.heure_debut.slice(0, 5), heure_fin: c.heure_fin.slice(0, 5) } })
+                          } : undefined}
                           className={`rounded-lg border overflow-hidden cursor-pointer transition-all ${
                             isSelected
                               ? 'border-blue-500 ring-1 ring-blue-300 bg-blue-50/40'
-                              : isFull
-                                ? 'border-red-200 bg-red-50/40 hover:border-red-300'
-                                : slotRatio > 0
-                                  ? 'border-blue-200 bg-blue-50/40 hover:border-blue-300'
-                                  : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
+                              : isCrenDropTarget
+                                ? 'border-blue-400 border-dashed bg-blue-50/60'
+                                : isFull
+                                  ? 'border-red-200 bg-red-50/40 hover:border-red-300'
+                                  : slotRatio > 0
+                                    ? 'border-blue-200 bg-blue-50/40 hover:border-blue-300'
+                                    : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
                           }`}
                         >
                           {/* Créneau enrichi */}
                           <div className="px-2 py-1.5">
                             {/* Header: heures + bouton + */}
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-[11px] font-semibold text-gray-700">
-                                {c.heure_debut.slice(0, 5)} – {c.heure_fin.slice(0, 5)}
+                              <span className="text-[11px] font-semibold text-gray-700 inline-flex items-center gap-1">
+                                {isJourneeEntiere(c) ? (
+                                  <>
+                                    <CalendarDays className="h-3 w-3" />
+                                    Journée entière
+                                  </>
+                                ) : (
+                                  <>{c.heure_debut.slice(0, 5)} – {c.heure_fin.slice(0, 5)}</>
+                                )}
                               </span>
                               <div className="flex items-center gap-1">
                                 {slotLivraisons.length > 0 && (
@@ -2309,7 +2780,7 @@ function WeekView({
                                       ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                                       : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
                                   }`}
-                                  title={!canAddClient ? 'Sélectionnez un livreur pour planifier' : `Ajouter dans ${c.heure_debut.slice(0, 5)}-${c.heure_fin.slice(0, 5)}`}
+                                  title={!canAddClient ? 'Sélectionnez un livreur pour planifier' : `Ajouter dans ${isJourneeEntiere(c) ? 'Journée entière' : `${c.heure_debut.slice(0, 5)}-${c.heure_fin.slice(0, 5)}`}`}
                                 >
                                   +
                                 </button>
@@ -2331,14 +2802,21 @@ function WeekView({
                                   </div>
                                   <div className="flex items-center gap-1.5 text-[10px] text-gray-600">
                                     <Bike className="h-3 w-3" />
-                                    <span className={isFull ? 'text-red-600 font-bold' : ''}>{slotVelos}/{c.capacite_velos} vélos</span>
+                                    {isJourneeEntiere(c) ? (
+                                      <span>{slotVelos} vélo{slotVelos > 1 ? 's' : ''}</span>
+                                    ) : (
+                                      <span className={creneauCapacityColor(slotVelos, c.capacite_velos)}>
+                                        {slotVelos}/{c.capacite_velos} vélos
+                                      </span>
+                                    )}
                                   </div>
-                                  {/* Barre de progression */}
+                                  {/* Barre de progression — masquée pour Journée entière */}
+                                  {!isJourneeEntiere(c) && (
                                   <div className="flex items-center gap-1.5">
                                     <div className="flex-1 bg-gray-200 rounded-full h-1.5">
                                       <div
                                         className={`h-1.5 rounded-full transition-all ${
-                                          slotRatio > 0.9 ? 'bg-red-500' : slotRatio > 0.7 ? 'bg-amber-500' : 'bg-green-500'
+                                          slotRatio > 1 ? 'bg-red-500' : slotRatio >= 0.8 ? 'bg-orange-500' : 'bg-green-500'
                                         }`}
                                         style={{ width: `${Math.min(100, slotRatio * 100)}%` }}
                                       />
@@ -2349,15 +2827,38 @@ function WeekView({
                                       </span>
                                     )}
                                   </div>
+                                  )}
                                 </div>
                               )
                             })()}
+                            {/* Cards clients du créneau (compact, draggable, bouton Déplacer) */}
+                            {slotLivraisons.length > 0 && (
+                              <div
+                                className="mt-1.5 space-y-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {slotLivraisons.map((livraison) => (
+                                  <LivraisonCard
+                                    key={livraison.id}
+                                    livraison={livraison}
+                                    onRemove={onRemoveLivraison}
+                                    removing={removingLivraisonId === livraison.id}
+                                    onUpdate={onUpdateLivraison}
+                                    onMove={onMoveLivraison}
+                                    draggable={!!onDropOnSlot}
+                                    isDragging={draggingLivraisonId === livraison.id}
+                                    onDragStart={onDragStartLivraison}
+                                    onDragEnd={() => onDragStartLivraison?.(null)}
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       )
                     })}
 
-                    {/* Livraisons non assignées — liste détaillée */}
+                    {/* Livraisons non assignées — cards compactes draggables */}
                     {(() => {
                       const assignedIds = new Set(
                         creneaux.flatMap((c) => getLivraisonsForCreneau(c).map((l) => l.id))
@@ -2365,27 +2866,45 @@ function WeekView({
                       const unassigned = dayLivraisons.filter((l) => !assignedIds.has(l.id))
                       const velosHors = unassigned.reduce((s, l) => s + (l.client?.velo_valide || l.client?.velo_devis || 0), 0)
                       const isHorsSelected = selectedCreneau?.date === dateStr && selectedCreneau?.heure_debut === '_hors_creneau'
+                      const isUnassignedDropTarget = !!draggingLivraisonId
                       return unassigned.length > 0 ? (
                         <div
                           onClick={() => onSelectCreneau(dateStr, '_hors_creneau', '', 0)}
+                          onDragOver={isUnassignedDropTarget ? (e) => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move' } : undefined}
+                          onDrop={isUnassignedDropTarget ? (e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            const id = e.dataTransfer.getData('text/livraison-id')
+                            if (id) onDropOnSlot?.({ livraisonId: id, targetDate: dateStr, targetCreneau: null })
+                          } : undefined}
                           className={`rounded-lg border overflow-hidden cursor-pointer transition-all ${
                             isHorsSelected
                               ? 'border-amber-500 ring-1 ring-amber-300 bg-amber-50'
-                              : 'border-amber-200 bg-amber-50/50 hover:border-amber-300'
-                          } px-1.5 py-1 space-y-0.5`}
+                              : isUnassignedDropTarget
+                                ? 'border-blue-400 border-dashed bg-blue-50/60'
+                                : 'border-amber-200 bg-amber-50/50 hover:border-amber-300'
+                          } px-1.5 py-1 space-y-1`}
                         >
-                          <div className="flex items-center gap-1 mb-0.5">
+                          <div className="flex items-center gap-1">
                             <Bike className="h-3 w-3 text-amber-600" />
                             <span className="text-[10px] font-medium text-amber-700">{unassigned.length} clients / {velosHors} vélos hors créneau</span>
                           </div>
-                          {unassigned.map((l) => {
-                            const client = l.client
-                            return (
-                              <div key={l.id} className="text-[10px] text-amber-800 truncate pl-4" title={client?.raison_sociale || ''}>
-                                {client?.raison_sociale || 'Client'}
-                              </div>
-                            )
-                          })}
+                          <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
+                            {unassigned.map((l) => (
+                              <LivraisonCard
+                                key={l.id}
+                                livraison={l}
+                                onRemove={onRemoveLivraison}
+                                removing={removingLivraisonId === l.id}
+                                onUpdate={onUpdateLivraison}
+                                onMove={onMoveLivraison}
+                                draggable={!!onDropOnSlot}
+                                isDragging={draggingLivraisonId === l.id}
+                                onDragStart={onDragStartLivraison}
+                                onDragEnd={() => onDragStartLivraison?.(null)}
+                              />
+                            ))}
+                          </div>
                         </div>
                       ) : null
                     })()}
@@ -2404,6 +2923,11 @@ function WeekView({
                           livraison={livraison}
                           onRemove={onRemoveLivraison}
                           removing={removingLivraisonId === livraison.id}
+                          onMove={onMoveLivraison}
+                          draggable={!!onDropOnSlot}
+                          isDragging={draggingLivraisonId === livraison.id}
+                          onDragStart={onDragStartLivraison}
+                          onDragEnd={() => onDragStartLivraison?.(null)}
                         />
                       ))
                     )}
