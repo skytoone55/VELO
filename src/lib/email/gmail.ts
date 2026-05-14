@@ -919,9 +919,9 @@ export async function sendMailPlanningEmail(data: {
                   En cas d'annulation ou de modification, n'hésitez pas à contacter notre service dans les meilleurs délais :
                 </p>
                 <p style="margin: 0; color: #111827; font-size: 17px; line-height: 1.6; font-weight: 600;">
-                  ✉️ <a href="mailto:${tenant.email}" style="color: ${tenant.branding.colors.secondary}; text-decoration: none;">${tenant.email}</a>
+                  ✉️ <a href="mailto:${tenant.email}" style="color: ${tenant.branding.colors.secondary}; text-decoration: none; white-space: nowrap;">${tenant.email}</a>
                   &nbsp;·&nbsp;
-                  📞 <a href="tel:${tenant.phone}" style="color: ${tenant.branding.colors.secondary}; text-decoration: none;">${tenant.phoneFormatted}</a>
+                  📞 <a href="tel:${tenant.phone}" style="color: ${tenant.branding.colors.secondary}; text-decoration: none; white-space: nowrap;">${tenant.phoneFormatted.replace(/ /g, '\u00A0')}</a>
                 </p>
               </div>
             </td>
