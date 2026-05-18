@@ -35,10 +35,15 @@ export async function GET(request: NextRequest) {
     const sortByParam = searchParams.get('sortBy') || 'created_at'
     const sortOrderParam = searchParams.get('sortOrder') || 'desc'
     const SORTABLE_COLUMNS = [
-      'created_at', 'updated_at', 'statut', 'mode_livraison', 'date_programmation', 'creneau_date',
+      'created_at', 'updated_at', 'statut', 'mode_livraison', 'date_programmation',
+      'creneau_date', 'date_livraison_effective',
     ]
     const safeSortBy = SORTABLE_COLUMNS.includes(sortByParam) ? sortByParam : 'created_at'
     const ascending = sortOrderParam === 'asc'
+    // Quand on trie par "Date prévue", on veut une chronologie pertinente :
+    // date_livraison_effective (si livrée) > creneau_date (si planifié) > created_at.
+    // Les colonnes secondaires servent de fallback quand la primaire est NULL.
+    const isDateSort = safeSortBy === 'creneau_date'
 
     const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
     const adminClient = createAdminClient()
@@ -136,6 +141,13 @@ export async function GET(request: NextRequest) {
         depot:depots(id, nom)
       `, { count: 'exact' })
 
+    // Masquer les annulées sauf si l'utilisateur les demande explicitement.
+    // Raison : une livraison annulée = ancienne version remplacée par une nouvelle,
+    // pas une vraie annulation business. Elles polluent la vue par défaut.
+    const explicitAnnulee = statutFilter
+      ? statutFilter.split(',').filter(Boolean).includes('annulee')
+      : false
+
     if (statutFilter && statutFilter !== 'all') {
       const statuts = statutFilter.split(',').filter(Boolean)
       if (statuts.length === 1) {
@@ -143,6 +155,8 @@ export async function GET(request: NextRequest) {
       } else if (statuts.length > 1) {
         query = query.in('statut', statuts)
       }
+    } else if (!explicitAnnulee) {
+      query = query.neq('statut', 'annulee')
     }
 
     // Apply search filter (client IDs from step 1)
@@ -211,9 +225,15 @@ export async function GET(request: NextRequest) {
 
     // Pagination + tri
     const startIndex = (page - 1) * pageSize
-    query = query
-      .order(safeSortBy, { ascending })
-      .range(startIndex, startIndex + pageSize - 1)
+    if (isDateSort) {
+      query = query
+        .order('date_livraison_effective', { ascending, nullsFirst: ascending })
+        .order('creneau_date', { ascending, nullsFirst: ascending })
+        .order('created_at', { ascending })
+    } else {
+      query = query.order(safeSortBy, { ascending })
+    }
+    query = query.range(startIndex, startIndex + pageSize - 1)
 
     const { data, error, count } = await query
 
@@ -236,6 +256,8 @@ export async function GET(request: NextRequest) {
       const statuts = statutFilter.split(',').filter(Boolean)
       if (statuts.length === 1) velosQuery = velosQuery.eq('statut', statuts[0])
       else if (statuts.length > 1) velosQuery = velosQuery.in('statut', statuts)
+    } else if (!explicitAnnulee) {
+      velosQuery = velosQuery.neq('statut', 'annulee')
     }
     if (clientIds) velosQuery = velosQuery.in('client_id', clientIds)
     if (hasEnemat) {
