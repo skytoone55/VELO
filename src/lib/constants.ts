@@ -215,6 +215,30 @@ export const CQ_CHECKS = {
 export type CqCheckKey = keyof typeof CQ_CHECKS
 export const CQ_CHECK_KEYS = Object.keys(CQ_CHECKS) as CqCheckKey[]
 
+// Catégories (tags) posées manuellement sur un dossier pendant le contrôle qualité.
+// Transitoires : visibles tant que le dossier est dans la file de contrôle.
+export const CQ_CATEGORIES = {
+  radie: 'Radié',
+  naf: 'NAF',
+  mail_client_recu: 'Mail client reçu',
+  mail_enemat_sav: 'Mail enemat SAV',
+  client_nrp: 'Client NRP',
+  autre: 'Autre',
+} as const
+
+export type CqCategorie = keyof typeof CQ_CATEGORIES
+export const CQ_CATEGORIE_KEYS = Object.keys(CQ_CATEGORIES) as CqCategorie[]
+
+// Couleurs par catégorie CQ (pour les badges)
+export const CQ_CATEGORIE_COLORS: Record<CqCategorie, string> = {
+  radie: 'bg-red-100 text-red-800',
+  naf: 'bg-blue-100 text-blue-800',
+  mail_client_recu: 'bg-green-100 text-green-800',
+  mail_enemat_sav: 'bg-purple-100 text-purple-800',
+  client_nrp: 'bg-orange-100 text-orange-800',
+  autre: 'bg-slate-100 text-slate-800',
+}
+
 // =================================================================
 // STATUTS ENEMAT (module suivi post-livraison)
 // =================================================================

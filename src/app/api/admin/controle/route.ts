@@ -12,9 +12,12 @@ export async function GET(request: NextRequest) {
   const adminClient = createAdminClient()
   const { searchParams } = new URL(request.url)
 
-  const filter = searchParams.get('filter') || 'all' // all | non_traites | en_cours
+  const filter = searchParams.get('filter') || 'all' // all | non_traites | en_cours | sav | premier_controle
   const search = searchParams.get('search') || ''
   const agentFilter = searchParams.get('agent') || 'all' // all | me | <user_id>
+  // Filtre par catégorie (tags) — CSV, ex. "radie,naf"
+  const categories = (searchParams.get('categorie') || '')
+    .split(',').map(s => s.trim()).filter(Boolean)
   const { page, pageSize } = validatePagination(
     searchParams.get('page') || '1',
     searchParams.get('pageSize') || '50'
@@ -29,7 +32,7 @@ export async function GET(request: NextRequest) {
       cq_piece_identite, cq_photo_enemat, cq_signature_installateur,
       cq_signature_client, cq_fnuci, cq_velo,
       cq_valide, cq_valide_par, cq_valide_at, cq_en_cours, cq_commentaire,
-      cq_pris_par, cq_pris_at, reactivated_at,
+      cq_categorie, cq_pris_par, cq_pris_at, reactivated_at,
       client:clients!livraisons_client_id_fkey(id, raison_sociale, contact_nom, contact_prenom, telephone, reference_retina, commercial_assigne, depot_logistique_id, depot_retrait_id, velo_valide, fnuci_ids, in_enemat),
       depot:depots!livraisons_depot_id_fkey(id, nom)
     `, { count: 'exact' })
@@ -43,6 +46,13 @@ export async function GET(request: NextRequest) {
     query = query.eq('cq_en_cours', true)
   } else if (filter === 'sav') {
     query = query.not('reactivated_at', 'is', null)
+  } else if (filter === 'premier_controle') {
+    query = query.is('reactivated_at', null)
+  }
+
+  // Filtre par catégorie (tags)
+  if (categories.length > 0) {
+    query = query.in('cq_categorie', categories)
   }
 
   // Filtre par agent (verrouillage)
@@ -68,7 +78,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         items: [],
         agents: [],
-        stats: { non_traites: 0, en_cours: 0, total: 0 },
+        stats: { non_traites: 0, en_cours: 0, sav: 0, premier_controle: 0, total: 0, clients_filtered: 0, velos_valides_filtered: 0 },
         pagination: { page, pageSize, total: 0 },
       })
     }
@@ -178,6 +188,13 @@ export async function GET(request: NextRequest) {
     .eq('cq_valide', false)
     .not('reactivated_at', 'is', null)
 
+  const { count: totalPremierControle } = await adminClient
+    .from('livraisons')
+    .select('id', { count: 'exact', head: true })
+    .eq('statut', 'livree')
+    .eq('cq_valide', false)
+    .is('reactivated_at', null)
+
   // Compteur d'alertes : dossiers non pris depuis > 1 min
   const oneMinAgo = new Date(Date.now() - 60 * 1000).toISOString()
   const { count: alertsCount } = await adminClient
@@ -199,6 +216,9 @@ export async function GET(request: NextRequest) {
   if (filter === 'non_traites') countQuery = countQuery.eq('cq_en_cours', false)
   else if (filter === 'en_cours') countQuery = countQuery.eq('cq_en_cours', true)
   else if (filter === 'sav') countQuery = countQuery.not('reactivated_at', 'is', null)
+  else if (filter === 'premier_controle') countQuery = countQuery.is('reactivated_at', null)
+
+  if (categories.length > 0) countQuery = countQuery.in('cq_categorie', categories)
 
   if (agentFilter === 'me') countQuery = countQuery.eq('cq_pris_par', auth.id)
   else if (agentFilter !== 'all') countQuery = countQuery.eq('cq_pris_par', agentFilter)
@@ -237,6 +257,7 @@ export async function GET(request: NextRequest) {
       non_traites: totalNonTraites || 0,
       en_cours: totalEnCours || 0,
       sav: totalSav || 0,
+      premier_controle: totalPremierControle || 0,
       total: count || 0,
       clients_filtered: clientsFiltered,
       velos_valides_filtered: velosValidesFiltered,

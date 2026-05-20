@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { CQ_CHECK_KEYS, type CqCheckKey } from '@/lib/constants'
+import { CQ_CHECK_KEYS, CQ_CATEGORIE_KEYS, type CqCheckKey, type CqCategorie } from '@/lib/constants'
 
 export async function PATCH(
   request: NextRequest,
@@ -12,7 +12,7 @@ export async function PATCH(
 
   const { livraisonId } = await params
   const body = await request.json()
-  const { field, value, commentaire } = body as { field?: string; value?: boolean; commentaire?: string }
+  const { field, value, commentaire, categorie } = body as { field?: string; value?: boolean; commentaire?: string; categorie?: string | null }
 
   const adminClient = createAdminClient()
 
@@ -50,6 +50,24 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     return NextResponse.json({ success: true, cq_commentaire: commentaire || null })
+  }
+
+  // Mode catégorie seule (tag CQ)
+  if (categorie !== undefined && !field) {
+    const cat = categorie || null
+    if (cat !== null && !CQ_CATEGORIE_KEYS.includes(cat as CqCategorie)) {
+      return NextResponse.json({ error: `Catégorie invalide: ${categorie}` }, { status: 400 })
+    }
+    const { error } = await adminClient
+      .from('livraisons')
+      .update({ cq_categorie: cat, updated_at: new Date().toISOString() })
+      .eq('id', livraisonId)
+      .eq('statut', 'livree')
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    return NextResponse.json({ success: true, cq_categorie: cat })
   }
 
   // Mode check : validate field name

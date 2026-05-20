@@ -21,6 +21,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Badge } from '@/components/ui/badge'
+import {
   Loader2,
   Search,
   ClipboardCheck,
@@ -38,9 +44,15 @@ import {
   Download,
   Users,
   Bike,
+  ChevronDown,
+  Tag,
+  ListChecks,
 } from 'lucide-react'
 import Link from 'next/link'
-import { CQ_CHECKS, CQ_CHECK_KEYS, type CqCheckKey } from '@/lib/constants'
+import {
+  CQ_CHECKS, CQ_CHECK_KEYS, CQ_CATEGORIES, CQ_CATEGORIE_KEYS, CQ_CATEGORIE_COLORS,
+  type CqCheckKey, type CqCategorie,
+} from '@/lib/constants'
 import { exportToXlsx } from '@/lib/export-xlsx'
 import { getTenantConfig } from '@/lib/tenants'
 import { useAdminUser } from '@/components/admin/admin-user-provider'
@@ -63,6 +75,7 @@ interface ControleItem {
   cq_valide: boolean
   cq_en_cours: boolean
   cq_commentaire: string | null
+  cq_categorie: string | null
   cq_pris_par: string | null
   cq_pris_at: string | null
   cq_pris_par_nom: string | null
@@ -92,6 +105,7 @@ interface Stats {
   non_traites: number
   en_cours: number
   sav: number
+  premier_controle: number
   total: number
   clients_filtered: number
   velos_valides_filtered: number
@@ -101,10 +115,11 @@ export default function ControlePage() {
   const user = useAdminUser()
   const [items, setItems] = useState<ControleItem[]>([])
   const [agents, setAgents] = useState<AgentOption[]>([])
-  const [stats, setStats] = useState<Stats>({ non_traites: 0, en_cours: 0, sav: 0, total: 0, clients_filtered: 0, velos_valides_filtered: 0 })
+  const [stats, setStats] = useState<Stats>({ non_traites: 0, en_cours: 0, sav: 0, premier_controle: 0, total: 0, clients_filtered: 0, velos_valides_filtered: 0 })
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [agentFilter, setAgentFilter] = useState('all')
+  const [categorieFilter, setCategorieFilter] = useState<string[]>([])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(50)
@@ -131,6 +146,7 @@ export default function ControlePage() {
       setIsPinned(true)
       if (pinned.filter) setFilter(pinned.filter)
       if (pinned.agentFilter) setAgentFilter(pinned.agentFilter)
+      if (Array.isArray(pinned.categorieFilter)) setCategorieFilter(pinned.categorieFilter)
       if (pinned.pageSize) setPageSize(pinned.pageSize)
     }
     setFiltersReady(true)
@@ -140,6 +156,7 @@ export default function ControlePage() {
     saveFilters({
       filter,
       agentFilter,
+      categorieFilter,
       pageSize,
     })
     setIsPinned(true)
@@ -156,12 +173,13 @@ export default function ControlePage() {
         page: String(page),
         pageSize: String(pageSize),
       })
+      if (categorieFilter.length > 0) params.set('categorie', categorieFilter.join(','))
       const res = await fetch(`/api/admin/controle?${params}`)
       if (!res.ok) throw new Error('Erreur chargement')
       const data = await res.json()
       setItems(data.items || [])
       setAgents(data.agents || [])
-      setStats(data.stats || { non_traites: 0, en_cours: 0, sav: 0, total: 0 })
+      setStats(data.stats || { non_traites: 0, en_cours: 0, sav: 0, premier_controle: 0, total: 0, clients_filtered: 0, velos_valides_filtered: 0 })
       setTotal(data.pagination?.total || 0)
       setAlertsCount(data.alerts_count || 0)
     } catch (err) {
@@ -169,10 +187,10 @@ export default function ControlePage() {
     } finally {
       setLoading(false)
     }
-  }, [filter, agentFilter, search, page, pageSize])
+  }, [filter, agentFilter, categorieFilter, search, page, pageSize])
 
   useEffect(() => { if (filtersReady) fetchData() }, [fetchData, filtersReady])
-  useEffect(() => { setPage(1) }, [filter, agentFilter, search])
+  useEffect(() => { setPage(1) }, [filter, agentFilter, categorieFilter, search])
 
   // --- Lock / Unlock ---
   const handleLock = async (livraisonId: string, action: 'lock' | 'unlock') => {
@@ -314,6 +332,34 @@ export default function ControlePage() {
     }
   }
 
+  // --- Catégorie (tag CQ) ---
+  const handleSaveCategorie = async (livraisonId: string, value: string) => {
+    const categorie = value === '__none__' ? null : value
+    const previous = items.find(i => i.id === livraisonId)?.cq_categorie ?? null
+    setItems(prev => prev.map(item =>
+      item.id === livraisonId ? { ...item, cq_categorie: categorie } : item
+    ))
+    try {
+      const res = await fetch(`/api/admin/controle/${livraisonId}/check`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categorie }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        toast.error(err.error || 'Erreur catégorie')
+        setItems(prev => prev.map(item =>
+          item.id === livraisonId ? { ...item, cq_categorie: previous } : item
+        ))
+      }
+    } catch {
+      toast.error('Erreur réseau')
+      setItems(prev => prev.map(item =>
+        item.id === livraisonId ? { ...item, cq_categorie: previous } : item
+      ))
+    }
+  }
+
   const getCheckedCount = (item: ControleItem) =>
     CQ_CHECK_KEYS.filter(key => item[key]).length
 
@@ -343,6 +389,7 @@ export default function ControlePage() {
         accessor: (r: ControleItem) => r[key] ? 'OUI' : 'NON',
       })),
       { header: 'Commentaire', accessor: r => r.cq_commentaire || '' },
+      { header: 'Catégorie', accessor: r => r.cq_categorie ? (CQ_CATEGORIES[r.cq_categorie as CqCategorie] || r.cq_categorie) : '' },
       { header: 'Contrôle validé', accessor: r => r.cq_valide ? 'OUI' : 'NON' },
     ], `Export-Controle-${tenant.name}-${today}.xlsx`)
   }
@@ -393,6 +440,11 @@ export default function ControlePage() {
           <span className="text-sm text-muted-foreground">En cours</span>
           <span className="text-lg font-bold text-amber-700">{stats.en_cours}</span>
         </div>
+        <div className="flex items-center gap-2 border border-teal-200 bg-teal-50/50 rounded-lg px-4 py-2">
+          <ListChecks className="h-5 w-5 text-teal-500" />
+          <span className="text-sm text-muted-foreground">Premier contrôle</span>
+          <span className="text-lg font-bold text-teal-700">{stats.premier_controle}</span>
+        </div>
         {stats.sav > 0 && (
           <div className="flex items-center gap-2 border border-purple-200 bg-purple-50/50 rounded-lg px-4 py-2">
             <RotateCcw className="h-5 w-5 text-purple-500" />
@@ -412,6 +464,7 @@ export default function ControlePage() {
             <SelectItem value="all">Tous ({stats.non_traites + stats.en_cours})</SelectItem>
             <SelectItem value="non_traites">Non traités ({stats.non_traites})</SelectItem>
             <SelectItem value="en_cours">En cours ({stats.en_cours})</SelectItem>
+            <SelectItem value="premier_controle">Premier contrôle ({stats.premier_controle})</SelectItem>
             {stats.sav > 0 && (
               <SelectItem value="sav">SAV ({stats.sav})</SelectItem>
             )}
@@ -433,6 +486,44 @@ export default function ControlePage() {
             ))}
           </SelectContent>
         </Select>
+
+        {/* Filtre catégorie (tags) — multi-sélection */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="justify-between gap-2 min-w-[170px]">
+              <span className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                Catégorie{categorieFilter.length > 0 ? ` (${categorieFilter.length})` : ''}
+              </span>
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2" align="start">
+            <div className="space-y-0.5">
+              {CQ_CATEGORIE_KEYS.map(key => (
+                <label key={key} className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={categorieFilter.includes(key)}
+                    onChange={e => {
+                      setCategorieFilter(prev =>
+                        e.target.checked ? [...prev, key] : prev.filter(v => v !== key)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  <span className={`inline-block w-2.5 h-2.5 rounded-full ${CQ_CATEGORIE_COLORS[key].split(' ')[0]}`} />
+                  {CQ_CATEGORIES[key]}
+                </label>
+              ))}
+            </div>
+            {categorieFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setCategorieFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
 
         <div className="relative flex-1 min-w-[200px] max-w-[400px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -503,6 +594,7 @@ export default function ControlePage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-center min-w-[70px]">Pris par</TableHead>
+                    <TableHead className="min-w-[150px]">Catégorie</TableHead>
                     <TableHead>Date livraison</TableHead>
                     <TableHead className="min-w-[180px]">Société</TableHead>
                     <TableHead>Nom / Prénom</TableHead>
@@ -520,7 +612,7 @@ export default function ControlePage() {
                         <span className="text-xs leading-tight block">{CQ_CHECKS[key].shortLine2}</span>
                       </TableHead>
                     ))}
-                    <TableHead className="min-w-[200px]">Commentaire</TableHead>
+                    <TableHead className="w-[260px]">Commentaire</TableHead>
                     <TableHead className="text-center">Valider</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -575,6 +667,27 @@ export default function ControlePage() {
                               Prendre
                             </button>
                           )}
+                        </TableCell>
+
+                        {/* Catégorie (tag CQ) */}
+                        <TableCell>
+                          <Select
+                            value={item.cq_categorie || '__none__'}
+                            onValueChange={v => handleSaveCategorie(item.id, v)}
+                            disabled={!editable}
+                          >
+                            <SelectTrigger
+                              className={`h-7 text-xs w-[140px] ${item.cq_categorie ? `${CQ_CATEGORIE_COLORS[item.cq_categorie as CqCategorie]} border-transparent font-medium` : ''}`}
+                            >
+                              <SelectValue placeholder="—" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">—</SelectItem>
+                              {CQ_CATEGORIE_KEYS.map(key => (
+                                <SelectItem key={key} value={key}>{CQ_CATEGORIES[key]}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
 
                         {/* Date livraison + heure */}
@@ -691,7 +804,7 @@ export default function ControlePage() {
                         ))}
 
                         {/* Commentaire */}
-                        <TableCell>
+                        <TableCell className="max-w-[260px] align-top">
                           {editingComment === item.id ? (
                             <div className="flex items-center gap-1">
                               <Input
@@ -722,7 +835,7 @@ export default function ControlePage() {
                                 setEditingComment(item.id)
                                 setCommentDraft(item.cq_commentaire || '')
                               }}
-                              className={`text-xs text-left w-full min-h-[28px] px-1 py-0.5 rounded transition-colors ${editable ? 'hover:bg-muted cursor-pointer' : 'cursor-not-allowed'}`}
+                              className={`text-xs text-left w-full min-h-[28px] px-1 py-0.5 rounded transition-colors whitespace-pre-wrap break-words ${editable ? 'hover:bg-muted cursor-pointer' : 'cursor-not-allowed'}`}
                               title={editable ? 'Cliquer pour modifier' : 'Dossier pris par un autre agent'}
                             >
                               {item.cq_commentaire ? (
