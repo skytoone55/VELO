@@ -58,6 +58,10 @@ import { getTenantConfig } from '@/lib/tenants'
 import { useAdminUser } from '@/components/admin/admin-user-provider'
 import { toast } from 'sonner'
 import { usePinnedFilters, PinFiltersButton } from '@/components/admin/pin-filters'
+import { getTenantId } from '@/lib/tenants'
+import { useCommerciaux } from '@/lib/tenants/use-commerciaux'
+import { CommercialFilter } from '@/components/admin/commercial-filter'
+import { CommercialCell } from '@/components/admin/commercial-cell'
 
 interface ControleItem {
   id: string
@@ -88,6 +92,8 @@ interface ControleItem {
     telephone: string | null
     reference_retina: string | null
     commercial_assigne: string | null
+    commercial_code: string | null
+    commercial: { code: string; nom: string; parent_code: string | null } | null
     velo_valide: number | null
     fnuci_ids: string[] | null
   } | null
@@ -120,6 +126,9 @@ export default function ControlePage() {
   const [filter, setFilter] = useState('all')
   const [agentFilter, setAgentFilter] = useState('all')
   const [categorieFilter, setCategorieFilter] = useState<string[]>([])
+  const [commercialFilter, setCommercialFilter] = useState<string[]>([])
+  const tenantId = getTenantId()
+  const { parents: commerciauxParents } = useCommerciaux(tenantId)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(50)
@@ -147,6 +156,7 @@ export default function ControlePage() {
       if (pinned.filter) setFilter(pinned.filter)
       if (pinned.agentFilter) setAgentFilter(pinned.agentFilter)
       if (Array.isArray(pinned.categorieFilter)) setCategorieFilter(pinned.categorieFilter)
+      if (Array.isArray(pinned.commercialFilter)) setCommercialFilter(pinned.commercialFilter)
       if (pinned.pageSize) setPageSize(pinned.pageSize)
     }
     setFiltersReady(true)
@@ -157,6 +167,7 @@ export default function ControlePage() {
       filter,
       agentFilter,
       categorieFilter,
+      commercialFilter,
       pageSize,
     })
     setIsPinned(true)
@@ -174,6 +185,7 @@ export default function ControlePage() {
         pageSize: String(pageSize),
       })
       if (categorieFilter.length > 0) params.set('categorie', categorieFilter.join(','))
+      if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
       const res = await fetch(`/api/admin/controle?${params}`)
       if (!res.ok) throw new Error('Erreur chargement')
       const data = await res.json()
@@ -187,10 +199,10 @@ export default function ControlePage() {
     } finally {
       setLoading(false)
     }
-  }, [filter, agentFilter, categorieFilter, search, page, pageSize])
+  }, [filter, agentFilter, categorieFilter, commercialFilter, search, page, pageSize])
 
   useEffect(() => { if (filtersReady) fetchData() }, [fetchData, filtersReady])
-  useEffect(() => { setPage(1) }, [filter, agentFilter, categorieFilter, search])
+  useEffect(() => { setPage(1) }, [filter, agentFilter, categorieFilter, commercialFilter, search])
 
   // --- Lock / Unlock ---
   const handleLock = async (livraisonId: string, action: 'lock' | 'unlock') => {
@@ -525,6 +537,13 @@ export default function ControlePage() {
           </PopoverContent>
         </Popover>
 
+        {/* Filtre commercial hiérarchique */}
+        <CommercialFilter
+          options={commerciauxParents}
+          value={commercialFilter}
+          onChange={setCommercialFilter}
+        />
+
         <div className="relative flex-1 min-w-[200px] max-w-[400px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -600,6 +619,7 @@ export default function ControlePage() {
                     <TableHead>Nom / Prénom</TableHead>
                     <TableHead>Téléphone</TableHead>
                     <TableHead>Réf. Retina</TableHead>
+                    <TableHead className="min-w-[140px]">Commercial</TableHead>
                     <TableHead>Dépôt</TableHead>
                     <TableHead>Livreur</TableHead>
                     <TableHead className="text-center">Vélos</TableHead>
@@ -753,6 +773,9 @@ export default function ControlePage() {
                               )}
                             </button>
                           ) : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {item.client ? <CommercialCell client={item.client} /> : '—'}
                         </TableCell>
                         <TableCell>{item.depot?.nom || '—'}</TableCell>
                         <TableCell>

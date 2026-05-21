@@ -3,7 +3,8 @@ import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validatePagination } from '@/lib/constants'
 import { sendEmail } from '@/lib/email/gmail'
-import { getTenantConfig } from '@/lib/tenants'
+import { getTenantConfig, getTenantId } from '@/lib/tenants'
+import { expandCommercialCodes } from '@/lib/tenants/commercial'
 
 export async function GET(request: NextRequest) {
   const auth = await requireRole(['super_admin', 'admin'])
@@ -17,6 +18,9 @@ export async function GET(request: NextRequest) {
   const agentFilter = searchParams.get('agent') || 'all' // all | me | <user_id>
   // Filtre par catégorie (tags) — CSV, ex. "radie,naf"
   const categories = (searchParams.get('categorie') || '')
+    .split(',').map(s => s.trim()).filter(Boolean)
+  // Filtre commercial — CSV de codes (masters ou sous-commerciaux)
+  const commercialCodes = (searchParams.get('commercial') || '')
     .split(',').map(s => s.trim()).filter(Boolean)
   const { page, pageSize } = validatePagination(
     searchParams.get('page') || '1',
@@ -33,7 +37,7 @@ export async function GET(request: NextRequest) {
       cq_signature_client, cq_fnuci, cq_velo,
       cq_valide, cq_valide_par, cq_valide_at, cq_en_cours, cq_commentaire,
       cq_categorie, cq_pris_par, cq_pris_at, reactivated_at,
-      client:clients!livraisons_client_id_fkey(id, raison_sociale, contact_nom, contact_prenom, telephone, reference_retina, commercial_assigne, depot_logistique_id, depot_retrait_id, velo_valide, fnuci_ids, in_enemat),
+      client:clients!livraisons_client_id_fkey(id, raison_sociale, contact_nom, contact_prenom, telephone, reference_retina, commercial_assigne, commercial_code, commercial:commercial_code(code, nom, parent_code), depot_logistique_id, depot_retrait_id, velo_valide, fnuci_ids, in_enemat),
       depot:depots!livraisons_depot_id_fkey(id, nom)
     `, { count: 'exact' })
     .eq('statut', 'livree')
@@ -83,6 +87,27 @@ export async function GET(request: NextRequest) {
       })
     }
     query = query.in('client_id', matchingIds)
+  }
+
+  // Filtre commercial — expansion master→sous-commerciaux puis pre-fetch des client IDs
+  if (commercialCodes.length > 0) {
+    const expanded = await expandCommercialCodes(adminClient as any, getTenantId(), commercialCodes)
+    if (expanded) {
+      const { data: comClients } = await adminClient
+        .from('clients')
+        .select('id')
+        .in('commercial_code', expanded)
+      const comIds = comClients?.map(c => c.id) || []
+      if (comIds.length === 0) {
+        return NextResponse.json({
+          items: [],
+          agents: [],
+          stats: { non_traites: 0, en_cours: 0, sav: 0, premier_controle: 0, total: 0, clients_filtered: 0, velos_valides_filtered: 0 },
+          pagination: { page, pageSize, total: 0 },
+        })
+      }
+      query = query.in('client_id', comIds)
+    }
   }
 
   // Pagination + order
