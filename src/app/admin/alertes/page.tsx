@@ -616,8 +616,8 @@ export default function ControlePage() {
                     <TableHead className="text-center min-w-[70px]">Pris par</TableHead>
                     <TableHead className="min-w-[150px]">Catégorie</TableHead>
                     <TableHead>Date livraison</TableHead>
-                    <TableHead className="w-[190px]">Société</TableHead>
-                    <TableHead className="w-[140px]">Nom / Prénom</TableHead>
+                    <TableHead className="w-[260px]">Société</TableHead>
+                    <TableHead className="w-[110px]">Nom / Prénom</TableHead>
                     <TableHead className="w-[120px]">Téléphone</TableHead>
                     <TableHead className="w-[110px]">Réf. Retina</TableHead>
                     <TableHead className="min-w-[140px]">Commercial</TableHead>
@@ -727,7 +727,7 @@ export default function ControlePage() {
                           })()}
                         </TableCell>
 
-                        <TableCell className="font-medium max-w-[190px]">
+                        <TableCell className="font-medium max-w-[260px]">
                           <div className="flex items-center gap-1.5 min-w-0">
                             {item.reactivated_at && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 shrink-0">
