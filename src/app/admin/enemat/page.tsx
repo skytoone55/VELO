@@ -199,6 +199,42 @@ export default function AdminEnematPage() {
     }).catch(() => {})
   }, [])
 
+  // ─── Garde-fou Radix : libere `pointer-events` bloque sur <body> ───
+  // Bug Radix connu : a la fermeture d'un Select/Popover/Dialog, le style
+  // `pointer-events: none` reste parfois colle sur <body>. La page devient
+  // alors non cliquable a la souris (clavier OK, reload debloque).
+  // On surveille les mutations de style de <body> + un filet periodique,
+  // et on leve le blocage des qu'aucun overlay Radix n'est reellement ouvert.
+  useEffect(() => {
+    const body = document.body
+
+    const overlayOuvert = () =>
+      document.querySelector(
+        '[data-radix-popper-content-wrapper],[role="dialog"][data-state="open"],[data-state="open"][role="menu"]'
+      ) != null
+
+    const liberer = () => {
+      if (body.style.pointerEvents === 'none' && !overlayOuvert()) {
+        body.style.removeProperty('pointer-events')
+      }
+    }
+
+    // Apres une mutation de style : un cycle de rendu pour laisser Radix
+    // demonter ses portals avant de juger si un overlay est encore ouvert.
+    const observer = new MutationObserver(() => {
+      requestAnimationFrame(liberer)
+    })
+    observer.observe(body, { attributes: true, attributeFilter: ['style'] })
+
+    // Filet de securite : si la mutation de close n'a pas lieu, on rattrape.
+    const interval = window.setInterval(liberer, 1000)
+
+    return () => {
+      observer.disconnect()
+      window.clearInterval(interval)
+    }
+  }, [])
+
   const fetchCounts = useCallback(async () => {
     try {
       // Fetch each statut count — use 4 parallel requests with limit=1 to get count
