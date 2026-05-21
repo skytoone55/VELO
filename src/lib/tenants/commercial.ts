@@ -99,6 +99,61 @@ export async function getCommerciauxFromDB(
   return (data || []) as CommercialRow[]
 }
 
+/**
+ * Étend un tableau de codes commerciaux en remplaçant chaque maître (parent_code null)
+ * par ses codes enfants dans la table `commerciaux`.
+ *
+ * Exemple : ['enr', 'amr-brice-kbidi'] → ['enr-christophe-plessier', …, 'amr-brice-kbidi']
+ *
+ * Garde-fou : si le résultat final est vide, la fonction retourne null pour éviter
+ * d'appliquer un `.in([])` qui renverrait zéro résultat même sans filtre voulu.
+ *
+ * @param supabase Client Supabase admin (server-side uniquement)
+ * @param tenant   Identifiant tenant
+ * @param codes    Codes sélectionnés (peuvent être des parents ou des enfants)
+ * @returns        Tableau de codes feuilles, ou null si le résultat est vide
+ */
+export async function expandCommercialCodes(
+  supabase: {
+    from: (table: string) => any
+  },
+  tenant: string,
+  codes: string[]
+): Promise<string[] | null> {
+  if (!codes.length) return null
+
+  // Charger tous les commerciaux du tenant une seule fois
+  const { data, error } = await (supabase
+    .from('commerciaux')
+    .select('code, parent_code')
+    .eq('tenant', tenant)
+    .eq('actif', true) as any)
+
+  if (error || !data) return codes.length ? codes : null
+
+  const rows: { code: string; parent_code: string | null }[] = data
+
+  // Identifier les parents (parent_code === null)
+  const parentCodes = new Set(rows.filter(r => r.parent_code === null).map(r => r.code))
+
+  const expanded: string[] = []
+  for (const code of codes) {
+    if (parentCodes.has(code)) {
+      // Remplacer le maître par tous ses enfants
+      const children = rows.filter(r => r.parent_code === code).map(r => r.code)
+      expanded.push(...children)
+    } else {
+      expanded.push(code)
+    }
+  }
+
+  // Dédupliquer
+  const unique = [...new Set(expanded)]
+
+  // Garde-fou : résultat vide → null (pas de filtre appliqué)
+  return unique.length > 0 ? unique : null
+}
+
 // Ecovolt : labels lisibles pour les départements DOM-TOM
 export const ECOVOLT_DEPARTEMENT_LABELS: Record<string, string> = {
   '974': 'La Réunion',
@@ -149,7 +204,7 @@ export function getStaticDepartementOptions(): { value: string; label: string }[
 
 /**
  * Options statiques du filtre commercial (PPE uniquement).
- * Pour Ecovolt, retourne null → charger dynamiquement depuis /api/clients/commercials.
+ * Pour Ecovolt, retourne null → charger dynamiquement depuis /api/admin/commerciaux?tenant=.
  */
 export function getStaticCommercialOptions(): { value: string; label: string }[] | null {
   const tenant = getTenantId()

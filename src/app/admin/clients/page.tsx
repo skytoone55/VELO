@@ -58,7 +58,10 @@ import { toast } from 'sonner'
 import { getTenantId, getTenantConfig } from '@/lib/tenants'
 import { exportToXlsx } from '@/lib/export-xlsx'
 import { PROCESS_STATUTS, STATUT_COLORS, type ProcessStatut } from '@/lib/constants'
-import { getCommercialName, getDepartementLabel, getStaticDepartementOptions, getStaticCommercialOptions } from '@/lib/tenants/commercial'
+import { getDepartementLabel, getStaticDepartementOptions } from '@/lib/tenants/commercial'
+import { useCommerciaux } from '@/lib/tenants/use-commerciaux'
+import { CommercialFilter } from '@/components/admin/commercial-filter'
+import { CommercialCell } from '@/components/admin/commercial-cell'
 import { getSimpleZoneStatus, type DepotWithCoords } from '@/lib/geo/utils'
 
 // Options filtre NAF (ENEMAT)
@@ -150,11 +153,11 @@ export default function AdminClientsPage() {
   const [enematFilter, setEnematFilter] = useState('all')
   const [sortBy, setSortBy] = useState('updated_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
   const [livreurOptions, setLivreurOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Livreur' }])
   const [dynamicDeptOptions, setDynamicDeptOptions] = useState<{value: string; label: string}[] | null>(null)
   const [depots, setDepots] = useState<DepotWithCoords[]>([])
   const tenantId = getTenantId()
+  const { parents: commerciauxParents } = useCommerciaux(tenantId)
 
   // Pagination côté serveur
   const [currentPage, setCurrentPage] = useState(1)
@@ -249,25 +252,6 @@ export default function AdminClientsPage() {
     setStatutOptions([{ value: 'all', label: 'Statut' }, ...options])
   }, [])
 
-  // Load commercial options
-  useEffect(() => {
-    const staticOpts = getStaticCommercialOptions()
-    if (staticOpts) {
-      setCommercialOptions([{ value: 'all', label: 'Commercial' }, ...staticOpts])
-    } else {
-      fetch('/api/clients/commercials')
-        .then(res => res.json())
-        .then((emails: string[]) => {
-          if (Array.isArray(emails)) {
-            setCommercialOptions([
-              { value: 'all', label: 'Commercial' },
-              ...emails.map(e => ({ value: e, label: e }))
-            ])
-          }
-        })
-        .catch(() => {})
-    }
-  }, [])
 
   // Load livreur options
   useEffect(() => {
@@ -437,7 +421,7 @@ export default function AdminClientsPage() {
       { header: 'Contact prénom', accessor: r => r.contact_prenom },
       { header: 'Téléphone', accessor: r => r.telephone },
       { header: 'Email', accessor: r => r.email },
-      { header: 'Commercial', accessor: r => getCommercialName(r) },
+      { header: 'Commercial', accessor: r => (r as any).commercial?.nom || r.commercial_code || r.commercial_assigne || '' },
       { header: 'Date livraison', accessor: r => firstDeliveredDate(r) },
       { header: 'ENEMAT', accessor: r => r.in_enemat ? 'Oui' : 'Non' },
       { header: 'Statut ENEMAT', accessor: r => (r.statut_enemat && ENEMAT_LABELS[r.statut_enemat]) || '' },
@@ -969,38 +953,12 @@ export default function AdminClientsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
-              Commercial {commercialFilter.length > 0 && `(${commercialFilter.length})`}
-              <ChevronDown className="ml-1 h-3 w-3" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-52 p-2" align="start">
-            <div className="max-h-60 overflow-y-auto">
-              {commercialOptions.filter(o => o.value !== 'all').map(o => (
-                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
-                  <input
-                    type="checkbox"
-                    checked={commercialFilter.includes(o.value)}
-                    onChange={(e) => {
-                      setCommercialFilter(prev =>
-                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
-                      )
-                    }}
-                    className="rounded border-gray-300"
-                  />
-                  {o.label}
-                </label>
-              ))}
-            </div>
-            {commercialFilter.length > 0 && (
-              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setCommercialFilter([])}>
-                Effacer
-              </Button>
-            )}
-          </PopoverContent>
-        </Popover>
+        <CommercialFilter
+          options={commerciauxParents}
+          value={commercialFilter}
+          onChange={setCommercialFilter}
+          className="h-8 text-xs px-2"
+        />
         {/* Livreur multi-select */}
         <Popover>
           <PopoverTrigger asChild>
@@ -1195,9 +1153,7 @@ export default function AdminClientsPage() {
                       )}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      <Badge variant="outline" className="text-xs font-normal">
-                        {getCommercialName(client)}
-                      </Badge>
+                      <CommercialCell client={client} />
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {client.departement ? (

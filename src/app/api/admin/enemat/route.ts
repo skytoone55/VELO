@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireRole, isAuthError, type AuthenticatedUser } from '@/lib/auth/require-role'
 import { getDerniereLivraisonValide } from '@/lib/livraisons/helpers'
+import { expandCommercialCodes } from '@/lib/tenants/commercial'
 
 /**
  * GET /api/admin/enemat
@@ -66,12 +67,13 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('clients')
       .select(
-        `id, raison_sociale, reference_retina, telephone, email, commercial_assigne,
+        `id, raison_sociale, reference_retina, telephone, email, commercial_assigne, commercial_code,
          depot_logistique_id, depot_retrait_id, velo_valide,
          statut_commercial,
          statut_enemat, date_depot_enemat, date_apf_enemat, date_paye_enemat, date_entree_enemat, in_enemat,
          numero_lot_enemat, numero_facture_enemat,
          fnuci_ids, fnuci_declared, fnuci_declared_at,
+         commercial:commercial_code(code, nom, parent_code),
          livraisons(mode_livraison, creneau_date, date_livraison_effective, cq_valide_at, statut, created_at)`,
         { count: 'exact' }
       )
@@ -102,8 +104,12 @@ export async function GET(request: NextRequest) {
 
     if (commercial) {
       const commerciaux = commercial.split(',').filter(Boolean)
-      if (commerciaux.length === 1) query = query.eq('commercial_assigne', commerciaux[0])
-      else if (commerciaux.length > 1) query = query.in('commercial_assigne', commerciaux)
+      const tenant = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
+      const expandedCodes = await expandCommercialCodes(supabase as any, tenant, commerciaux)
+      if (expandedCodes !== null) {
+        if (expandedCodes.length === 1) query = query.eq('commercial_code', expandedCodes[0])
+        else query = query.in('commercial_code', expandedCodes)
+      }
     }
 
     if (fnuciFilter === 'oui') {

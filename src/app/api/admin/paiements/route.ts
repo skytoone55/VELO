@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
+import { expandCommercialCodes } from '@/lib/tenants/commercial'
 
 /**
  * GET /api/admin/paiements
@@ -111,10 +112,17 @@ export async function GET(request: NextRequest) {
     } else if (livreurIds.length > 1) {
       query = query.in('paiement_livreur_id', livreurIds)
     }
-    if (commercialCodes.length === 1) {
-      query = query.eq('commercial_code', commercialCodes[0])
-    } else if (commercialCodes.length > 1) {
-      query = query.in('commercial_code', commercialCodes)
+    // Expansion master→enfants : un code parent (ex. 'enr') est remplacé par ses enfants
+    if (commercialCodes.length > 0) {
+      const tenant = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
+      const expandedCodes = await expandCommercialCodes(supabase as any, tenant, commercialCodes)
+      if (expandedCodes !== null) {
+        if (expandedCodes.length === 1) {
+          query = query.eq('commercial_code', expandedCodes[0])
+        } else {
+          query = query.in('commercial_code', expandedCodes)
+        }
+      }
     }
     // Filtre ENEMAT : `statut_enemat` (nouveau, prioritaire) ou `enemat_paye` (legacy)
     if (statutEnematFiltre) {

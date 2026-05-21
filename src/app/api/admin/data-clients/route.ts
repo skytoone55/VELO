@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { validatePagination } from '@/lib/constants'
+import { expandCommercialCodes } from '@/lib/tenants/commercial'
 
 /**
  * GET /api/admin/data-clients — Liste les data_clients avec filtres et pagination
@@ -71,8 +72,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Filtre commercial : via commercial_code (avec expansion master→enfants)
+    // Fallback sur commercial_assigne si commercial_code n'existe pas encore (avant backfill)
+    let expandedCommercials: string[] | null = null
     if (commercialFilter && commercialFilter !== 'all') {
-      query = query.eq('commercial_assigne', commercialFilter)
+      const commercials = commercialFilter.split(',').filter(Boolean)
+      const tenant = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
+      expandedCommercials = await expandCommercialCodes(adminClient as any, tenant, commercials)
+      if (expandedCommercials !== null) {
+        if (expandedCommercials.length === 1) query = query.eq('commercial_code', expandedCommercials[0])
+        else query = query.in('commercial_code', expandedCommercials)
+      }
     }
 
     if (nafFilter && nafFilter !== 'all') {
@@ -102,8 +112,9 @@ export async function GET(request: NextRequest) {
       if (depts.length === 1) countQuery = countQuery.eq('departement', depts[0])
       else if (depts.length > 1) countQuery = countQuery.in('departement', depts)
     }
-    if (commercialFilter && commercialFilter !== 'all') {
-      countQuery = countQuery.eq('commercial_assigne', commercialFilter)
+    if (expandedCommercials !== null) {
+      if (expandedCommercials.length === 1) countQuery = countQuery.eq('commercial_code', expandedCommercials[0])
+      else countQuery = countQuery.in('commercial_code', expandedCommercials)
     }
     if (nafFilter && nafFilter !== 'all') {
       if (nafFilter === 'valide') countQuery = countQuery.eq('validation_naf', 'OUI')

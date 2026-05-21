@@ -25,13 +25,12 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { getTenantConfig } from '@/lib/tenants'
+import { getTenantId, getTenantConfig } from '@/lib/tenants'
 import { exportToXlsx } from '@/lib/export-xlsx'
 import { useAdminUser } from '@/components/admin/admin-user-provider'
-import {
-  getCommercialName,
-  getStaticCommercialOptions,
-} from '@/lib/tenants/commercial'
+import { useCommerciaux } from '@/lib/tenants/use-commerciaux'
+import { CommercialFilter } from '@/components/admin/commercial-filter'
+import { CommercialCell } from '@/components/admin/commercial-cell'
 import Link from 'next/link'
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -42,7 +41,9 @@ interface EnematClient {
   telephone: string | null
   email: string | null
   commercial_assigne: string | null
+  commercial_code: string | null
   monday_board_id: string | null
+  commercial: { code: string; nom: string; parent_code: string | null } | null
   depot_logistique_id: string | null
   depot_retrait_id: string | null
   velo_valide: number | null
@@ -125,6 +126,8 @@ function SortableHeader({ label, column, currentSort, currentOrder, onSort, clas
 // ─── Main page ───────────────────────────────────────────────────
 export default function AdminEnematPage() {
   const adminUser = useAdminUser()
+  const tenantId = getTenantId()
+  const { parents: commerciauxParents } = useCommerciaux(tenantId)
 
   const [clients, setClients] = useState<EnematClient[]>([])
   const [loading, setLoading] = useState(true)
@@ -167,7 +170,6 @@ export default function AdminEnematPage() {
 
   // Filter options
   const [depotOptions, setDepotOptions] = useState<{ value: string; label: string }[]>([])
-  const [commercialOptions, setCommercialOptions] = useState<{ value: string; label: string }[]>([])
   const [livreurOptions, setLivreurOptions] = useState<{ value: string; label: string }[]>([])
 
   // Load filter options
@@ -176,17 +178,6 @@ export default function AdminEnematPage() {
       const depots: { id: string; nom: string }[] = Array.isArray(data) ? data : data.depots || []
       setDepotOptions(depots.map(d => ({ value: d.id, label: d.nom })))
     }).catch(() => {})
-
-    const staticCom = getStaticCommercialOptions()
-    if (staticCom) {
-      setCommercialOptions(staticCom)
-    } else {
-      fetch('/api/clients/commercials').then(r => r.json()).then((emails: string[]) => {
-        if (Array.isArray(emails)) {
-          setCommercialOptions(emails.map(e => ({ value: e, label: e })))
-        }
-      }).catch(() => {})
-    }
 
     fetch('/api/admin/livreurs').then(r => r.json()).then(data => {
       const livreurs: { id: string; nom: string; prenom: string }[] = data.livreurs || []
@@ -842,39 +833,13 @@ export default function AdminEnematPage() {
           </PopoverContent>
         </Popover>
 
-        {/* Commercial multi-select */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
-              Commercial {commercialFilter.length > 0 && `(${commercialFilter.length})`}
-              <ChevronDown className="ml-1 h-3 w-3" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-52 p-2" align="start">
-            <div className="max-h-60 overflow-y-auto">
-              {commercialOptions.map(o => (
-                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
-                  <input
-                    type="checkbox"
-                    checked={commercialFilter.includes(o.value)}
-                    onChange={(e) => {
-                      setCommercialFilter(prev =>
-                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
-                      )
-                    }}
-                    className="rounded border-gray-300"
-                  />
-                  {o.label}
-                </label>
-              ))}
-            </div>
-            {commercialFilter.length > 0 && (
-              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setCommercialFilter([])}>
-                Effacer
-              </Button>
-            )}
-          </PopoverContent>
-        </Popover>
+        {/* Filtre commercial hiérarchique */}
+        <CommercialFilter
+          options={commerciauxParents}
+          value={commercialFilter}
+          onChange={setCommercialFilter}
+          className="h-8 text-xs px-2"
+        />
 
         {/* Livreur multi-select */}
         <Popover>
@@ -1134,9 +1099,7 @@ export default function AdminEnematPage() {
                         ) : <span className="text-sm text-muted-foreground">-</span>}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <Badge variant="outline" className="text-xs font-normal">
-                          {getCommercialName(client)}
-                        </Badge>
+                        <CommercialCell client={client} />
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <span className="text-sm">{client.depot?.nom || client.depot_nom || '-'}</span>

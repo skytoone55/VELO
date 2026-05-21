@@ -70,8 +70,10 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { getCommercialName } from '@/lib/tenants/commercial'
 import { getTenantId } from '@/lib/tenants'
+import { useCommerciaux } from '@/lib/tenants/use-commerciaux'
+import { CommercialFilter } from '@/components/admin/commercial-filter'
+import { CommercialCell } from '@/components/admin/commercial-cell'
 
 // =====================================================
 // Types
@@ -127,14 +129,6 @@ interface LivreurOption {
   prenom: string
   depot_id?: string | null
   depot_ids?: string[] | null
-}
-
-interface CommercialOption {
-  id: string
-  code: string
-  nom: string
-  parent_code: string | null
-  enfants?: CommercialOption[]
 }
 
 interface Pagination {
@@ -260,6 +254,7 @@ export default function AdminPaiementsPage() {
   const user = useAdminUser()
   const router = useRouter()
   const tenantId = getTenantId()
+  const { parents: commerciauxParents } = useCommerciaux(tenantId)
 
   // Garde-fou acces super_admin (double de admin-nav + layout, defense en profondeur)
   useEffect(() => {
@@ -277,7 +272,6 @@ export default function AdminPaiementsPage() {
   // Lookups
   const [depots, setDepots] = useState<DepotOption[]>([])
   const [livreurs, setLivreurs] = useState<LivreurOption[]>([])
-  const [commerciaux, setCommerciaux] = useState<CommercialOption[]>([])
 
   // Filtres
   const [searchQuery, setSearchQuery] = useState('')
@@ -375,17 +369,6 @@ export default function AdminPaiementsPage() {
       .catch(() => {})
   }, [])
 
-  // ========== Load commerciaux ==========
-  useEffect(() => {
-    fetch(`/api/admin/commerciaux?tenant=${tenantId}`)
-      .then(r => r.json())
-      .then(d => {
-        if (Array.isArray(d?.parents)) {
-          setCommerciaux(d.parents)
-        }
-      })
-      .catch(() => {})
-  }, [tenantId])
 
   // ========== Load livreurs (users_profile) + depots associes ==========
   useEffect(() => {
@@ -895,56 +878,12 @@ export default function AdminPaiementsPage() {
               </PopoverContent>
             </Popover>
 
-            {/* Commercial — multi-select hierarchique */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 px-3 shrink-0">
-                  Commercial {commercialFilter.length > 0 && `(${commercialFilter.length})`}
-                  <ChevronDown className="ml-1.5 h-3.5 w-3.5" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 p-2" align="start">
-                <div className="max-h-72 overflow-y-auto">
-                  {commerciaux.map(parent => (
-                    <div key={parent.id}>
-                      <label className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded font-medium">
-                        <input
-                          type="checkbox"
-                          checked={commercialFilter.includes(parent.code)}
-                          onChange={(e) => {
-                            setCommercialFilter(prev =>
-                              e.target.checked ? [...prev, parent.code] : prev.filter(v => v !== parent.code)
-                            )
-                          }}
-                          className="rounded border-gray-300"
-                        />
-                        {parent.nom}
-                      </label>
-                      {(parent.enfants || []).map(child => (
-                        <label key={child.id} className="flex items-center gap-2 pl-6 pr-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
-                          <input
-                            type="checkbox"
-                            checked={commercialFilter.includes(child.code)}
-                            onChange={(e) => {
-                              setCommercialFilter(prev =>
-                                e.target.checked ? [...prev, child.code] : prev.filter(v => v !== child.code)
-                              )
-                            }}
-                            className="rounded border-gray-300"
-                          />
-                          ↳ {child.nom}
-                        </label>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-                {commercialFilter.length > 0 && (
-                  <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setCommercialFilter([])}>
-                    Effacer
-                  </Button>
-                )}
-              </PopoverContent>
-            </Popover>
+            {/* Filtre commercial hiérarchique */}
+            <CommercialFilter
+              options={commerciauxParents}
+              value={commercialFilter}
+              onChange={setCommercialFilter}
+            />
 
             {/* Filtre ENEMAT : statut complet (miroir du module ENEMAT, lecture seule) */}
             <Select value={enematFilter} onValueChange={(v) => setEnematFilter(v as EnematStatutFiltre)}>
@@ -1187,15 +1126,7 @@ export default function AdminPaiementsPage() {
                 </TableHeader>
                 <TableBody>
                   {clients.map(c => {
-                    const commercialLabel = getCommercialName({
-                      monday_board_id: c.monday_board_id,
-                      commercial_assigne: c.commercial_assigne,
-                      commercial_code: c.commercial_code,
-                      email: c.email,
-                    })
-                    // Sous-commercial : toujours visible si commercial_code est un enfant
-                    // (parent_code non null). Independant du filtre courant.
-                    const sousCommercialNom = c.commercial?.parent_code ? c.commercial?.nom : null
+                    // Sous-commercial géré par CommercialCell
                     const livreurLabel = c.livreur
                       ? `${c.livreur.prenom ?? ''} ${c.livreur.nom ?? ''}`.trim()
                       : ''
@@ -1225,14 +1156,7 @@ export default function AdminPaiementsPage() {
                         <TableCell>{c.depot?.nom || '-'}</TableCell>
                         <TableCell>{formatDate(c.date_depot_enemat)}</TableCell>
                         <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium text-sm">{commercialLabel}</span>
-                            {sousCommercialNom && (
-                              <span className="text-xs text-muted-foreground">
-                                ↳ {sousCommercialNom}
-                              </span>
-                            )}
-                          </div>
+                          <CommercialCell client={c} />
                         </TableCell>
                         <TableCell>
                           {/* Plus de bouton "Attribuer" ici — action via dropdown "..." */}
@@ -1451,7 +1375,7 @@ export default function AdminPaiementsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">— Retirer l&apos;attribution —</SelectItem>
-                {commerciaux.map(parent => (
+                {commerciauxParents.map(parent => (
                   <div key={parent.id}>
                     <SelectItem value={parent.code}>{parent.nom}</SelectItem>
                     {(parent.enfants || []).map(child => (

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validatePagination } from '@/lib/constants'
 import { requireRole, isAuthError, type AuthenticatedUser } from '@/lib/auth/require-role'
+import { expandCommercialCodes } from '@/lib/tenants/commercial'
 
 /**
  * GET /api/livraisons
@@ -98,17 +99,12 @@ export async function GET(request: NextRequest) {
 
       if (hasCommercial) {
         const commercials = commercialFilter!.split(',').filter(Boolean)
-        if (tenantId === 'ppe') {
-          if (commercials.length === 1) {
-            clientQuery = clientQuery.eq('monday_board_id', commercials[0])
+        const expandedCodes = await expandCommercialCodes(adminClient as any, tenantId, commercials)
+        if (expandedCodes !== null) {
+          if (expandedCodes.length === 1) {
+            clientQuery = clientQuery.eq('commercial_code', expandedCodes[0])
           } else {
-            clientQuery = clientQuery.in('monday_board_id', commercials)
-          }
-        } else {
-          if (commercials.length === 1) {
-            clientQuery = clientQuery.eq('commercial_assigne', commercials[0])
-          } else {
-            clientQuery = clientQuery.in('commercial_assigne', commercials)
+            clientQuery = clientQuery.in('commercial_code', expandedCodes)
           }
         }
       }
@@ -133,10 +129,11 @@ export async function GET(request: NextRequest) {
         client:clients!livraisons_client_id_fkey!inner(
           id, raison_sociale, siret, email, email_beneficiaire, telephone,
           contact_nom, contact_prenom,
-          departement, adresse_societe_cp, commercial_assigne, monday_board_id,
+          departement, adresse_societe_cp, commercial_assigne, commercial_code, monday_board_id,
           statut_commercial, validation_naf, type_de_zone, velo_devis, velo_valide, agence,
           reference_retina, depot_retrait_id, depot_logistique_id, monday_item_id,
-          in_enemat, statut_enemat, numero_lot_enemat, numero_facture_enemat
+          in_enemat, statut_enemat, numero_lot_enemat, numero_facture_enemat,
+          commercial:commercial_code(code, nom, parent_code)
         ),
         depot:depots(id, nom)
       `, { count: 'exact' })

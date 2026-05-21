@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validatePagination } from '@/lib/constants'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
+import { expandCommercialCodes } from '@/lib/tenants/commercial'
 
 /**
  * API pour lire les clients depuis SUPABASE (cache local)
@@ -73,9 +74,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Construire la requête de base
+    // La jointure commercial:commercial_code(code,nom,parent_code) alimente CommercialCell
     let query = adminClient
       .from('clients')
-      .select('*', { count: 'exact' })
+      .select('*, commercial:commercial_code(code, nom, parent_code)', { count: 'exact' })
       .not('monday_sync_status', 'eq', 'deleted') // Exclure les supprimés
 
     // Restreindre aux dépôts de l'agent
@@ -147,16 +149,14 @@ export async function GET(request: NextRequest) {
       query = query.eq('type_de_zone', zoneFilter)
     }
 
-    // Filtre par commercial (tenant-aware, multi-select)
+    // Filtre par commercial (via commercial_code + expansion master→enfants)
     if (commercialFilter && commercialFilter !== 'all') {
       const commercials = commercialFilter.split(',').filter(Boolean)
-      const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
-      if (tenantId === 'ppe') {
-        if (commercials.length === 1) query = query.eq('monday_board_id', commercials[0])
-        else if (commercials.length > 1) query = query.in('monday_board_id', commercials)
-      } else {
-        if (commercials.length === 1) query = query.eq('email', commercials[0])
-        else if (commercials.length > 1) query = query.in('email', commercials)
+      const tenant = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
+      const expandedCodes = await expandCommercialCodes(adminClient as any, tenant, commercials)
+      if (expandedCodes !== null) {
+        if (expandedCodes.length === 1) query = query.eq('commercial_code', expandedCodes[0])
+        else query = query.in('commercial_code', expandedCodes)
       }
     }
 

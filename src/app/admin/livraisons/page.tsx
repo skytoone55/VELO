@@ -33,10 +33,10 @@ import { getTenantId, getTenantConfig } from '@/lib/tenants'
 import { exportToXlsx } from '@/lib/export-xlsx'
 import { useAdminUser } from '@/components/admin/admin-user-provider'
 import { usePinnedFilters, PinFiltersButton } from '@/components/admin/pin-filters'
-import {
-  getCommercialName, getDepartementLabel,
-  getStaticDepartementOptions, getStaticCommercialOptions,
-} from '@/lib/tenants/commercial'
+import { getDepartementLabel, getStaticDepartementOptions } from '@/lib/tenants/commercial'
+import { useCommerciaux } from '@/lib/tenants/use-commerciaux'
+import { CommercialFilter } from '@/components/admin/commercial-filter'
+import { CommercialCell } from '@/components/admin/commercial-cell'
 
 interface LivraisonRow {
   id: string
@@ -140,6 +140,7 @@ function SortableHeader({ label, column, currentSort, currentOrder, onSort, clas
 
 export default function AdminLivraisonsPage() {
   const tenantId = getTenantId()
+  const { parents: commerciauxParents } = useCommerciaux(tenantId)
   const adminUser = useAdminUser()
   const [livraisons, setLivraisons] = useState<LivraisonRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -236,7 +237,7 @@ export default function AdminLivraisonsPage() {
         { header: 'Contact prénom', accessor: r => r.client?.contact_prenom },
         { header: 'Téléphone', accessor: r => r.client?.telephone },
         { header: 'Email', accessor: r => r.client?.email },
-        { header: 'Commercial', accessor: r => getCommercialName(r.client) },
+        { header: 'Commercial', accessor: r => (r.client as any)?.commercial?.nom || r.client?.commercial_code || r.client?.commercial_assigne || '' },
         { header: 'Livreur', accessor: r => (r as any).livreur_id ? (livreurOptions.find(o => o.value === (r as any).livreur_id)?.label || '') : '' },
         { header: 'ENEMAT', accessor: r => r.client?.in_enemat ? 'Oui' : 'Non' },
         { header: 'Statut ENEMAT', accessor: r => {
@@ -307,7 +308,6 @@ export default function AdminLivraisonsPage() {
   }
 
   const [depotOptions, setDepotOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Dépôt' }])
-  const [commercialOptions, setCommercialOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Commercial' }])
   const [livreurOptions, setLivreurOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Livreur' }])
   const [deptOptions, setDeptOptions] = useState<{value: string; label: string}[]>([{ value: 'all', label: 'Départements' }])
 
@@ -324,18 +324,6 @@ export default function AdminLivraisonsPage() {
         ...depots.map((d) => ({ value: d.id, label: d.nom }))
       ])
     }).catch(() => {})
-
-    // Commercials
-    const staticCom = getStaticCommercialOptions()
-    if (staticCom) {
-      setCommercialOptions([{ value: 'all', label: 'Commercial' }, ...staticCom])
-    } else {
-      fetch('/api/clients/commercials').then(r => r.json()).then((emails: string[]) => {
-        if (Array.isArray(emails)) {
-          setCommercialOptions([{ value: 'all', label: 'Commercial' }, ...emails.map(e => ({ value: e, label: e }))])
-        }
-      }).catch(() => {})
-    }
 
     // Livreurs
     fetch('/api/admin/livreurs').then(r => r.json()).then(data => {
@@ -714,39 +702,13 @@ export default function AdminLivraisonsPage() {
             )}
           </PopoverContent>
         </Popover>
-        {/* Commercial multi-select */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
-              Commercial {commercialFilter.length > 0 && `(${commercialFilter.length})`}
-              <ChevronDown className="ml-1 h-3 w-3" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-52 p-2" align="start">
-            <div className="max-h-60 overflow-y-auto">
-              {commercialOptions.filter(o => o.value !== 'all').map(o => (
-                <label key={o.value} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
-                  <input
-                    type="checkbox"
-                    checked={commercialFilter.includes(o.value)}
-                    onChange={(e) => {
-                      setCommercialFilter(prev =>
-                        e.target.checked ? [...prev, o.value] : prev.filter(v => v !== o.value)
-                      )
-                    }}
-                    className="rounded border-gray-300"
-                  />
-                  {o.label}
-                </label>
-              ))}
-            </div>
-            {commercialFilter.length > 0 && (
-              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setCommercialFilter([])}>
-                Effacer
-              </Button>
-            )}
-          </PopoverContent>
-        </Popover>
+        {/* Filtre commercial hiérarchique */}
+        <CommercialFilter
+          options={commerciauxParents}
+          value={commercialFilter}
+          onChange={setCommercialFilter}
+          className="h-8 text-xs px-2"
+        />
         {/* Livreur multi-select */}
         <Popover>
           <PopoverTrigger asChild>
@@ -994,9 +956,7 @@ export default function AdminLivraisonsPage() {
                       ) : <span className="text-sm text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      <Badge variant="outline" className="text-xs font-normal">
-                        {liv.client ? getCommercialName(liv.client) : '-'}
-                      </Badge>
+                      {liv.client ? <CommercialCell client={liv.client} /> : <span className="text-sm text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-sm">
                       {(liv as any).livreur_id ? (livreurOptions.find(o => o.value === (liv as any).livreur_id)?.label || '-') : '-'}
