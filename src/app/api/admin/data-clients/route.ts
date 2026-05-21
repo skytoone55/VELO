@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     let query = adminClient
       .from('data_clients')
-      .select('*', { count: 'exact' })
+      .select('*, commercial:commercial_code(code, nom, parent_code)', { count: 'exact' })
 
     // Recherche texte
     if (search) {

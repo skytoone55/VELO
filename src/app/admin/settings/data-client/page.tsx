@@ -340,6 +340,7 @@ export default function DataClientPage() {
       exportToXlsx(allClients, [
         { header: 'Raison sociale', accessor: r => r.raison_sociale },
         { header: 'Réf. Retina', accessor: r => r.reference_retina },
+        { header: 'Commercial', accessor: r => (r as any).commercial?.nom || (r as any).commercial_code || (r as any).commercial_assigne || '' },
         { header: 'Contact nom', accessor: r => r.contact_nom },
         { header: 'Contact prénom', accessor: r => r.contact_prenom },
         { header: 'Téléphone', accessor: r => r.telephone },

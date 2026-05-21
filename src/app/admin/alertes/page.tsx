@@ -392,6 +392,7 @@ export default function ControlePage() {
       { header: 'Prénom', accessor: r => r.client?.contact_prenom || '' },
       { header: 'Téléphone', accessor: r => r.client?.telephone || '' },
       { header: 'Réf. Retina', accessor: r => r.client?.reference_retina || '' },
+      { header: 'Commercial', accessor: r => r.client?.commercial?.nom || r.client?.commercial_assigne || '' },
       { header: 'Dépôt', accessor: r => r.depot?.nom || '' },
       { header: 'Livreur', accessor: r => r.livreur ? `${r.livreur.prenom} ${r.livreur.nom}` : '' },
       { header: 'Nb vélos', accessor: r => r.client?.velo_valide || 0 },
@@ -615,10 +616,10 @@ export default function ControlePage() {
                     <TableHead className="text-center min-w-[70px]">Pris par</TableHead>
                     <TableHead className="min-w-[150px]">Catégorie</TableHead>
                     <TableHead>Date livraison</TableHead>
-                    <TableHead className="min-w-[180px]">Société</TableHead>
-                    <TableHead>Nom / Prénom</TableHead>
-                    <TableHead>Téléphone</TableHead>
-                    <TableHead>Réf. Retina</TableHead>
+                    <TableHead className="w-[190px]">Société</TableHead>
+                    <TableHead className="w-[140px]">Nom / Prénom</TableHead>
+                    <TableHead className="w-[120px]">Téléphone</TableHead>
+                    <TableHead className="w-[110px]">Réf. Retina</TableHead>
                     <TableHead className="min-w-[140px]">Commercial</TableHead>
                     <TableHead>Dépôt</TableHead>
                     <TableHead>Livreur</TableHead>
@@ -726,20 +727,21 @@ export default function ControlePage() {
                           })()}
                         </TableCell>
 
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-1.5">
+                        <TableCell className="font-medium max-w-[190px]">
+                          <div className="flex items-center gap-1.5 min-w-0">
                             {item.reactivated_at && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 shrink-0">
                                 SAV
                               </span>
                             )}
                             {item.client ? (
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 min-w-0">
                                 <a
                                   href={`/admin/clients/${item.client.id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline"
+                                  className="text-blue-600 hover:underline truncate"
+                                  title={item.client.raison_sociale}
                                 >
                                   {item.client.raison_sociale}
                                 </a>

@@ -664,6 +664,7 @@ export default function AdminEnematPage() {
       exportToXlsx(filtered, [
         { header: 'Raison sociale', accessor: r => r.raison_sociale },
         { header: 'Réf. Retina', accessor: r => r.reference_retina },
+        { header: 'Commercial', accessor: r => r.commercial?.nom || r.commercial_code || r.commercial_assigne || '' },
         { header: 'Dépôt', accessor: r => r.depot?.nom || r.depot_nom || '' },
         { header: 'Nb vélos', accessor: r => r.velo_valide },
         { header: 'Date contrôle', accessor: r => r.livraison?.cq_valide_at || r.date_controle },
