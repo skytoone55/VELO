@@ -73,10 +73,18 @@ export async function POST(request: NextRequest) {
         }
       })()
 
-      // Formater le créneau : si pas de créneau précis, fallback large 08:00 - 20:00
-      // (08h = début minimum journée, 20h = heure maximum dernier créneau)
+      // Formater le créneau :
+      // - "Journée entière" en base (00:00-23:59) -> affiché 08:00-19:00 pour le client
+      // - créneau précis -> tel quel (HH:MM)
+      // - rien -> fallback large 08:00-20:00
+      const trimSec = (h: string) => h.replace(/:\d\d$/, '')
+      const isJourneeEntiere = (debut: string, fin: string) =>
+        (debut === '00:00:00' || debut === '00:00')
+        && (fin === '23:59:00' || fin === '23:59')
       const creneauHoraire = livraison.creneau_heure_debut && livraison.creneau_heure_fin
-        ? `${livraison.creneau_heure_debut} - ${livraison.creneau_heure_fin}`
+        ? (isJourneeEntiere(livraison.creneau_heure_debut, livraison.creneau_heure_fin)
+            ? '08:00 - 19:00'
+            : `${trimSec(livraison.creneau_heure_debut)} - ${trimSec(livraison.creneau_heure_fin)}`)
         : '08:00 - 20:00'
 
       // Nom du réceptionnaire
