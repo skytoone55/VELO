@@ -3,6 +3,10 @@ import { requireRole, isAuthError } from '@/lib/auth/require-role'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendMailPlanningEmail } from '@/lib/email/gmail'
 
+// Envoi SMTP sequentiel : 12 livraisons x ~3s = ~36s.
+// Le default Vercel (15s) coupait apres le 1er mail.
+export const maxDuration = 60
+
 export async function POST(request: NextRequest) {
   const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
   if (isAuthError(authResult)) return authResult
