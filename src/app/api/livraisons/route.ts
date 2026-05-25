@@ -23,6 +23,9 @@ export async function GET(request: NextRequest) {
       searchParams.get('page') || '1',
       searchParams.get('pageSize') || '20'
     )
+    // Mode export : pageSize tres eleve (>=1000) => on saute count exact + agregats velos
+    // pour eviter le timeout Postgres (>60s sur grosse jointure inner + count exact + 2e query).
+    const isExport = pageSize >= 1000
 
     const statutFilter = searchParams.get('statut')
     const depotFilter = searchParams.get('depot')
@@ -122,9 +125,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Etape 2 : requete livraisons
-    let query = adminClient
-      .from('livraisons')
-      .select(`
+    // Mode export : SELECT allege (uniquement colonnes utiles a l'Excel) + pas de count
+    // pour eviter le statement timeout Postgres (8s) sur grosse jointure + serialisation JSON.
+    const exportSelect = `
+        id, statut, creneau_date, creneau_heure_debut, creneau_heure_fin,
+        date_livraison, date_livraison_effective,
+        adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville,
+        depot_id, livreur_id, cq_valide, client_id, created_at,
+        client:clients!livraisons_client_id_fkey!inner(
+          id, raison_sociale, reference_retina, telephone, email, email_beneficiaire,
+          contact_nom, contact_prenom, departement, adresse_societe_cp,
+          commercial_assigne, commercial_code, in_enemat, statut_enemat,
+          velo_valide, type_de_zone, validation_naf, agence
+        ),
+        depot:depots(id, nom)
+      `
+    const fullSelect = `
         *,
         client:clients!livraisons_client_id_fkey!inner(
           id, raison_sociale, siret, email, email_beneficiaire, telephone,
@@ -136,7 +152,10 @@ export async function GET(request: NextRequest) {
           commercial:commercial_code(code, nom, parent_code)
         ),
         depot:depots(id, nom)
-      `, { count: 'exact' })
+      `
+    let query = isExport
+      ? adminClient.from('livraisons').select(exportSelect)
+      : adminClient.from('livraisons').select(fullSelect, { count: 'exact' })
 
     // Masquer les annulées sauf si l'utilisateur les demande explicitement.
     // Raison : une livraison annulée = ancienne version remplacée par une nouvelle,
@@ -243,58 +262,61 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(totalFiltered / pageSize)
 
     // Calculer le total des vélos validés sur TOUS les résultats filtrés (pas juste la page)
-    // Récupérer tous les client_ids distincts des livraisons filtrées
-    let velosQuery = adminClient
-      .from('livraisons')
-      .select('cq_valide, cq_en_cours, statut, client:clients!livraisons_client_id_fkey!inner(velo_valide, in_enemat, type_de_zone)')
+    // Skip en mode export pour eviter le timeout (le total n'apparait pas dans le fichier Excel)
+    let velosValidesFiltered = 0
+    if (!isExport) {
+      let velosQuery = adminClient
+        .from('livraisons')
+        .select('cq_valide, cq_en_cours, statut, client:clients!livraisons_client_id_fkey!inner(velo_valide, in_enemat, type_de_zone)')
 
-    // Ré-appliquer les mêmes filtres (sans pagination)
-    if (statutFilter && statutFilter !== 'all') {
-      const statuts = statutFilter.split(',').filter(Boolean)
-      if (statuts.length === 1) velosQuery = velosQuery.eq('statut', statuts[0])
-      else if (statuts.length > 1) velosQuery = velosQuery.in('statut', statuts)
-    } else if (!explicitAnnulee) {
-      velosQuery = velosQuery.neq('statut', 'annulee')
-    }
-    if (clientIds) velosQuery = velosQuery.in('client_id', clientIds)
-    if (hasEnemat) {
-      velosQuery = velosQuery.eq('client.in_enemat', enematFilter === 'oui')
-    }
-    if (hasZone) {
-      const zones = zoneFilter!.split(',').filter(Boolean)
-      if (zones.length === 1) velosQuery = velosQuery.eq('client.type_de_zone', zones[0])
-      else if (zones.length > 1) velosQuery = velosQuery.in('client.type_de_zone', zones)
-    }
-    if (depotFilter && depotFilter !== 'all') {
-      const depots = depotFilter.split(',').filter(Boolean)
-      if (depots.length === 1) velosQuery = velosQuery.eq('depot_id', depots[0])
-      else if (depots.length > 1) velosQuery = velosQuery.in('depot_id', depots)
-    }
-    if (livreurFilter && livreurFilter !== 'all') {
-      const livreurs = livreurFilter.split(',').filter(Boolean)
-      if (livreurs.length === 1) velosQuery = velosQuery.eq('livreur_id', livreurs[0])
-      else if (livreurs.length > 1) velosQuery = velosQuery.in('livreur_id', livreurs)
-    }
-    if (hasControle) {
-      const vals = controleFilter!.split(',').filter(Boolean)
-      const conditions: string[] = []
-      if (vals.includes('ok')) conditions.push('cq_valide.eq.true')
-      if (vals.includes('en_cours')) conditions.push('cq_en_cours.eq.true')
-      if (vals.includes('attente')) {
-        conditions.push('and(statut.eq.livree,cq_valide.eq.false,cq_en_cours.eq.false)')
+      // Ré-appliquer les mêmes filtres (sans pagination)
+      if (statutFilter && statutFilter !== 'all') {
+        const statuts = statutFilter.split(',').filter(Boolean)
+        if (statuts.length === 1) velosQuery = velosQuery.eq('statut', statuts[0])
+        else if (statuts.length > 1) velosQuery = velosQuery.in('statut', statuts)
+      } else if (!explicitAnnulee) {
+        velosQuery = velosQuery.neq('statut', 'annulee')
       }
-      if (conditions.length > 0) velosQuery = velosQuery.or(conditions.join(','))
-    }
-    if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
-      velosQuery = velosQuery.in('depot_id', currentUser.depot_ids)
-    } else if (currentUser.role === 'livreur') {
-      velosQuery = velosQuery.eq('livreur_id', currentUser.id)
-    }
+      if (clientIds) velosQuery = velosQuery.in('client_id', clientIds)
+      if (hasEnemat) {
+        velosQuery = velosQuery.eq('client.in_enemat', enematFilter === 'oui')
+      }
+      if (hasZone) {
+        const zones = zoneFilter!.split(',').filter(Boolean)
+        if (zones.length === 1) velosQuery = velosQuery.eq('client.type_de_zone', zones[0])
+        else if (zones.length > 1) velosQuery = velosQuery.in('client.type_de_zone', zones)
+      }
+      if (depotFilter && depotFilter !== 'all') {
+        const depots = depotFilter.split(',').filter(Boolean)
+        if (depots.length === 1) velosQuery = velosQuery.eq('depot_id', depots[0])
+        else if (depots.length > 1) velosQuery = velosQuery.in('depot_id', depots)
+      }
+      if (livreurFilter && livreurFilter !== 'all') {
+        const livreurs = livreurFilter.split(',').filter(Boolean)
+        if (livreurs.length === 1) velosQuery = velosQuery.eq('livreur_id', livreurs[0])
+        else if (livreurs.length > 1) velosQuery = velosQuery.in('livreur_id', livreurs)
+      }
+      if (hasControle) {
+        const vals = controleFilter!.split(',').filter(Boolean)
+        const conditions: string[] = []
+        if (vals.includes('ok')) conditions.push('cq_valide.eq.true')
+        if (vals.includes('en_cours')) conditions.push('cq_en_cours.eq.true')
+        if (vals.includes('attente')) {
+          conditions.push('and(statut.eq.livree,cq_valide.eq.false,cq_en_cours.eq.false)')
+        }
+        if (conditions.length > 0) velosQuery = velosQuery.or(conditions.join(','))
+      }
+      if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
+        velosQuery = velosQuery.in('depot_id', currentUser.depot_ids)
+      } else if (currentUser.role === 'livreur') {
+        velosQuery = velosQuery.eq('livreur_id', currentUser.id)
+      }
 
-    const { data: velosData } = await velosQuery
-    const velosValidesFiltered = (velosData || []).reduce((sum: number, liv: any) => {
-      return sum + (Number(liv.client?.velo_valide) || 0)
-    }, 0)
+      const { data: velosData } = await velosQuery
+      velosValidesFiltered = (velosData || []).reduce((sum: number, liv: any) => {
+        return sum + (Number(liv.client?.velo_valide) || 0)
+      }, 0)
+    }
 
     return NextResponse.json({
       livraisons: data || [],
