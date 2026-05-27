@@ -1055,7 +1055,6 @@ export default function AdminClientsPage() {
             <div className="px-4 py-2 border-b flex items-center justify-between text-xs text-muted-foreground">
               <span>
                 <span className="font-medium text-foreground">{totalFiltered}</span> client{totalFiltered > 1 ? 's' : ''}
-                {pagination && totalFiltered !== pagination.totalClients && ` / ${pagination.totalClients}`}
                 {' · '}
                 <span className="font-medium text-blue-600">{pagination?.velosValidesFiltered ?? 0}</span> vélos validés
               </span>
@@ -1077,7 +1076,7 @@ export default function AdminClientsPage() {
                   <SortableHeader label="Ref. Retina" column="reference_retina" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
                   <SortableHeader label="Email client" column="email_beneficiaire" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
                   <SortableHeader label="Téléphone" column="telephone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden xl:table-cell" />
-                  <SortableHeader label="Commercial" column="monday_board_id" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
+                  <SortableHeader label="Commercial" column="commercial_code" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
                   <SortableHeader label="Dép." column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="Velos" column="velo_devis" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="NAF" column="validation_naf" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />

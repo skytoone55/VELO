@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
       'raison_sociale', 'email', 'email_beneficiaire', 'departement',
       'velo_devis', 'statut_commercial', 'validation_naf', 'telephone',
       'updated_at', 'created_at', 'monday_board_id', 'type_de_zone',
+      'commercial_code',
     ]
     const safeSortBy = SORTABLE_COLUMNS.includes(sortByParam) ? sortByParam : 'updated_at'
     const ascending = sortOrderParam === 'asc'
@@ -279,13 +280,11 @@ export async function GET(request: NextRequest) {
     }
     if (commercialFilter && commercialFilter !== 'all') {
       const commercials = commercialFilter.split(',').filter(Boolean)
-      const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
-      if (tenantId === 'ppe') {
-        if (commercials.length === 1) velosQuery = velosQuery.eq('monday_board_id', commercials[0])
-        else if (commercials.length > 1) velosQuery = velosQuery.in('monday_board_id', commercials)
-      } else {
-        if (commercials.length === 1) velosQuery = velosQuery.eq('email', commercials[0])
-        else if (commercials.length > 1) velosQuery = velosQuery.in('email', commercials)
+      const tenant = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
+      const expandedCodes = await expandCommercialCodes(adminClient as any, tenant, commercials)
+      if (expandedCodes !== null) {
+        if (expandedCodes.length === 1) velosQuery = velosQuery.eq('commercial_code', expandedCodes[0])
+        else velosQuery = velosQuery.in('commercial_code', expandedCodes)
       }
     }
     if (depotFilter && depotFilter !== 'all') {

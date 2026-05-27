@@ -52,7 +52,9 @@ export async function GET(request: NextRequest) {
     const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
     const adminClient = createAdminClient()
 
-    // Etape 1 : si filtres sur champs client, recuperer les IDs matching
+    // Etape 1 : pre-fetch des client IDs pour search + departement
+    // (pour commercial, on filtre directement via la jointure inner client.commercial_code en etape 2,
+    // pour eviter une URL Supabase REST trop longue quand un master matche 1000+ clients ex: ATHOME)
     let clientIds: string[] | null = null
 
     const hasCommercial = commercialFilter && commercialFilter !== 'all'
@@ -61,9 +63,14 @@ export async function GET(request: NextRequest) {
     const hasControle = controleFilter && controleFilter !== 'all'
     const hasEnemat = enematFilter && enematFilter !== 'all'
 
-    // Note: hasControle, hasEnemat, hasZone ne sont PAS inclus ici — filtres appliques en etape 2 via jointure inner
-    // (hasZone exclu pour eviter la troncature Supabase REST a 1000 IDs quand >1000 clients matchent)
-    if (search || hasCommercial || hasDepartement) {
+    // Pre-expand les codes commerciaux une fois (utilise en etape 2 sur query + velosQuery)
+    let expandedCommercialCodes: string[] | null = null
+    if (hasCommercial) {
+      const commercials = commercialFilter!.split(',').filter(Boolean)
+      expandedCommercialCodes = await expandCommercialCodes(adminClient as any, tenantId, commercials)
+    }
+
+    if (search || hasDepartement) {
       let clientQuery = adminClient
         .from('clients')
         .select('id')
@@ -97,18 +104,6 @@ export async function GET(request: NextRequest) {
           clientQuery = clientQuery.or(
             normalDepts.flatMap(d => [`departement.eq.${d}`, `adresse_societe_cp.ilike.${d}%`]).join(',')
           )
-        }
-      }
-
-      if (hasCommercial) {
-        const commercials = commercialFilter!.split(',').filter(Boolean)
-        const expandedCodes = await expandCommercialCodes(adminClient as any, tenantId, commercials)
-        if (expandedCodes !== null) {
-          if (expandedCodes.length === 1) {
-            clientQuery = clientQuery.eq('commercial_code', expandedCodes[0])
-          } else {
-            clientQuery = clientQuery.in('commercial_code', expandedCodes)
-          }
         }
       }
 
@@ -190,6 +185,12 @@ export async function GET(request: NextRequest) {
       const zones = zoneFilter!.split(',').filter(Boolean)
       if (zones.length === 1) query = query.eq('client.type_de_zone', zones[0])
       else if (zones.length > 1) query = query.in('client.type_de_zone', zones)
+    }
+
+    // Filtre Commercial via jointure inner (evite URL trop longue quand un master matche 1000+ clients)
+    if (hasCommercial && expandedCommercialCodes) {
+      if (expandedCommercialCodes.length === 1) query = query.eq('client.commercial_code', expandedCommercialCodes[0])
+      else query = query.in('client.commercial_code', expandedCommercialCodes)
     }
 
     // Depot filter via livraisons.depot_id
@@ -285,6 +286,10 @@ export async function GET(request: NextRequest) {
         const zones = zoneFilter!.split(',').filter(Boolean)
         if (zones.length === 1) velosQuery = velosQuery.eq('client.type_de_zone', zones[0])
         else if (zones.length > 1) velosQuery = velosQuery.in('client.type_de_zone', zones)
+      }
+      if (hasCommercial && expandedCommercialCodes) {
+        if (expandedCommercialCodes.length === 1) velosQuery = velosQuery.eq('client.commercial_code', expandedCommercialCodes[0])
+        else velosQuery = velosQuery.in('client.commercial_code', expandedCommercialCodes)
       }
       if (depotFilter && depotFilter !== 'all') {
         const depots = depotFilter.split(',').filter(Boolean)

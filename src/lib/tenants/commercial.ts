@@ -100,10 +100,16 @@ export async function getCommerciauxFromDB(
 }
 
 /**
- * Étend un tableau de codes commerciaux en remplaçant chaque maître (parent_code null)
- * par ses codes enfants dans la table `commerciaux`.
+ * Étend un tableau de codes commerciaux en incluant, pour chaque maître (parent_code null),
+ * le code parent lui-même ET ses codes enfants dans la table `commerciaux`.
  *
- * Exemple : ['enr', 'amr-brice-kbidi'] → ['enr-christophe-plessier', …, 'amr-brice-kbidi']
+ * Pourquoi inclure le parent : certains clients sont rattachés directement au code parent
+ * (ex: `commercial_code = "dizien"`) et pas à un sous-commercial. Si on retournait
+ * uniquement les enfants, ces clients seraient exclus du filtre. Et pour les parents
+ * sans enfants (ATHOME, ALEX...), on retournerait un tableau vide → null → filtre ignoré.
+ *
+ * Exemple : ['dizien', 'amr-brice-kbidi']
+ *   → ['dizien', 'dizien-didier', 'dizien-linda', ..., 'amr-brice-kbidi']
  *
  * Garde-fou : si le résultat final est vide, la fonction retourne null pour éviter
  * d'appliquer un `.in([])` qui renverrait zéro résultat même sans filtre voulu.
@@ -111,7 +117,7 @@ export async function getCommerciauxFromDB(
  * @param supabase Client Supabase admin (server-side uniquement)
  * @param tenant   Identifiant tenant
  * @param codes    Codes sélectionnés (peuvent être des parents ou des enfants)
- * @returns        Tableau de codes feuilles, ou null si le résultat est vide
+ * @returns        Tableau de codes (parents + enfants), ou null si vide
  */
 export async function expandCommercialCodes(
   supabase: {
@@ -138,12 +144,11 @@ export async function expandCommercialCodes(
 
   const expanded: string[] = []
   for (const code of codes) {
+    expanded.push(code)
     if (parentCodes.has(code)) {
-      // Remplacer le maître par tous ses enfants
+      // Inclure aussi les enfants du parent
       const children = rows.filter(r => r.parent_code === code).map(r => r.code)
       expanded.push(...children)
-    } else {
-      expanded.push(code)
     }
   }
 
