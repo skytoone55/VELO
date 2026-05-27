@@ -67,6 +67,11 @@ CRM et gestion commerciale pour velos-cargos electriques. Deux entites : PPE Ene
 └── supabase/
 ```
 
+## Workflows obligatoires
+- **Tournée velo PPE depuis Excel** : voir `docs/WORKFLOW-TOURNEE-PPE.md`
+  → À lire AUTOMATIQUEMENT quand John dépose un fichier Excel de tournée (zone, premier client, jour).
+  Contient toutes les règles : algo nearest-neighbour, CTE SQL push, contraintes UNIQUE, doctrine vélos.
+
 ## Environnement
 - **Supabase** : irpnllwlxivlylclfjwd — MCP `supabase-mz`
 - **Vercel** : velo (compte principal)
