@@ -148,7 +148,7 @@ export default function AdminClientsPage() {
   const [zoneFilter, setZoneFilter] = useState('all')
   const [commercialFilter, setCommercialFilter] = useState<string[]>([])
   const [livreurFilter, setLivreurFilter] = useState<string[]>([])
-  const [depotFilter, setDepotFilter] = useState('all')
+  const [depotFilter, setDepotFilter] = useState<string[]>([])
   const [controleFilter, setControleFilter] = useState('all')
   const [enematFilter, setEnematFilter] = useState('all')
   const [sortBy, setSortBy] = useState('updated_at')
@@ -218,7 +218,7 @@ export default function AdminClientsPage() {
       if (pinned.zone) setZoneFilter(pinned.zone)
       if (pinned.commercial) setCommercialFilter(Array.isArray(pinned.commercial) ? pinned.commercial : pinned.commercial === 'all' ? [] : [pinned.commercial])
       if (pinned.livreur) setLivreurFilter(Array.isArray(pinned.livreur) ? pinned.livreur : [])
-      if (pinned.depot) setDepotFilter(pinned.depot)
+      if (pinned.depot) setDepotFilter(Array.isArray(pinned.depot) ? pinned.depot : pinned.depot === 'all' ? [] : [pinned.depot])
       if (pinned.controle) setControleFilter(pinned.controle)
       if (pinned.enemat) setEnematFilter(pinned.enemat)
       if (pinned.pageSize) setPageSize(pinned.pageSize)
@@ -334,7 +334,7 @@ export default function AdminClientsPage() {
       if (zoneFilter !== 'all') params.set('zone', zoneFilter)
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
       if (livreurFilter.length > 0) params.set('livreur', livreurFilter.join(','))
-      if (depotFilter !== 'all') params.set('depot', depotFilter)
+      if (depotFilter.length > 0) params.set('depot', depotFilter.join(','))
       if (controleFilter !== 'all') params.set('controle', controleFilter)
       if (enematFilter !== 'all') params.set('enemat', enematFilter)
       if (sortBy !== 'updated_at' || sortOrder !== 'desc') {
@@ -403,7 +403,7 @@ export default function AdminClientsPage() {
     if (zoneFilter !== 'all') params.set('zone', zoneFilter)
     if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
     if (livreurFilter.length > 0) params.set('livreur', livreurFilter.join(','))
-    if (depotFilter !== 'all') params.set('depot', depotFilter)
+    if (depotFilter.length > 0) params.set('depot', depotFilter.join(','))
     if (controleFilter !== 'all') params.set('controle', controleFilter)
     if (enematFilter !== 'all') params.set('enemat', enematFilter)
     if (sortBy !== 'updated_at' || sortOrder !== 'desc') {
@@ -453,7 +453,7 @@ export default function AdminClientsPage() {
     zone: zoneFilter,
     commercial: commercialFilter.join(','),
     livreur: livreurFilter.join(','),
-    depot: depotFilter,
+    depot: depotFilter.join(','),
     controle: controleFilter,
     sortBy,
     sortOrder,
@@ -470,7 +470,7 @@ export default function AdminClientsPage() {
       zone: zoneFilter,
       commercial: commercialFilter.join(','),
       livreur: livreurFilter.join(','),
-      depot: depotFilter,
+      depot: depotFilter.join(','),
       controle: controleFilter,
       sortBy,
       sortOrder,
@@ -942,17 +942,39 @@ export default function AdminClientsPage() {
             <SelectItem value="hors_zone">Hors zone</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={depotFilter} onValueChange={setDepotFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-[70px] text-xs px-2 shrink-0">
-            <SelectValue placeholder="Dépôt" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Dépôt</SelectItem>
-            {depots.map((d) => (
-              <SelectItem key={d.id} value={d.id}>{d.nom}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Dépôt multi-select (aligné sur la page Livraisons) */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0">
+              Dépôt {depotFilter.length > 0 && `(${depotFilter.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2" align="start">
+            <div className="max-h-60 overflow-y-auto">
+              {depots.map((d) => (
+                <label key={d.id} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-muted rounded">
+                  <input
+                    type="checkbox"
+                    checked={depotFilter.includes(d.id)}
+                    onChange={(e) => {
+                      setDepotFilter(prev =>
+                        e.target.checked ? [...prev, d.id] : prev.filter(v => v !== d.id)
+                      )
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  {d.nom}
+                </label>
+              ))}
+            </div>
+            {depotFilter.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setDepotFilter([])}>
+                Effacer
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
         <CommercialFilter
           options={commerciauxParents}
           value={commercialFilter}

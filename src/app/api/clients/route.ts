@@ -183,7 +183,10 @@ export async function GET(request: NextRequest) {
 
     // Filtre par dépôt (retrait OU logistique)
     if (depotFilter && depotFilter !== 'all') {
-      query = query.or(`depot_retrait_id.eq.${depotFilter},depot_logistique_id.eq.${depotFilter}`)
+      const depotIds = depotFilter.split(',').filter(Boolean)
+      if (depotIds.length > 0) {
+        query = query.or(`depot_retrait_id.in.(${depotIds.join(',')}),depot_logistique_id.in.(${depotIds.join(',')})`)
+      }
     }
 
     // Filtre ENEMAT
@@ -304,7 +307,10 @@ export async function GET(request: NextRequest) {
       }
     }
     if (depotFilter && depotFilter !== 'all') {
-      velosQuery = velosQuery.or(`depot_retrait_id.eq.${depotFilter},depot_logistique_id.eq.${depotFilter}`)
+      const depotIdsVelos = depotFilter.split(',').filter(Boolean)
+      if (depotIdsVelos.length > 0) {
+        velosQuery = velosQuery.or(`depot_retrait_id.in.(${depotIdsVelos.join(',')}),depot_logistique_id.in.(${depotIdsVelos.join(',')})`)
+      }
     }
     if (enematFilter && enematFilter !== 'all') {
       velosQuery = velosQuery.eq('in_enemat', enematFilter === 'oui')
