@@ -10,8 +10,10 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import {
   Loader2, RefreshCw, CheckCircle, XCircle, Clock, Copy, FileText, Camera, ExternalLink, ArrowLeft,
+  ChevronLeft, ChevronRight, Search, X,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -61,24 +63,38 @@ export default function WebhooksPage() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
+  const [pageSize, setPageSize] = useState(100)
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [refInput, setRefInput] = useState('')
+  const [refFilter, setRefFilter] = useState('')
 
   const fetchLogs = useCallback(async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({ limit: '100' })
+      const params = new URLSearchParams({
+        limit: String(pageSize),
+        offset: String(page * pageSize),
+      })
       if (statusFilter !== 'all') params.set('status', statusFilter)
+      if (refFilter) params.set('ref', refFilter)
       const res = await fetch(`/api/admin/webhooks?${params}`)
       const data = await res.json()
       setLogs(data.logs || [])
+      setTotal(data.total || 0)
       setStats(data.stats || { total: 0, success: 0, error: 0, pending: 0, duplicate: 0 })
     } catch {
       console.error('Erreur chargement logs webhook')
     } finally {
       setLoading(false)
     }
-  }, [statusFilter])
+  }, [statusFilter, pageSize, page, refFilter])
 
   useEffect(() => { fetchLogs() }, [fetchLogs])
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const applyRefSearch = () => { setPage(0); setRefFilter(refInput.trim()) }
+  const clearRefSearch = () => { setRefInput(''); setPage(0); setRefFilter('') }
 
   return (
     <div className="space-y-4">
@@ -116,9 +132,9 @@ export default function WebhooksPage() {
         ))}
       </div>
 
-      {/* Filtre */}
-      <div className="flex items-center gap-2">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+      {/* Filtres */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Select value={statusFilter} onValueChange={(v) => { setPage(0); setStatusFilter(v) }}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Statut" />
           </SelectTrigger>
@@ -130,7 +146,68 @@ export default function WebhooksPage() {
             <SelectItem value="duplicate">Doublons</SelectItem>
           </SelectContent>
         </Select>
-        <span className="text-sm text-muted-foreground">{logs.length} resultat(s)</span>
+
+        {/* Recherche par ref Retina */}
+        <div className="flex items-center gap-1">
+          <div className="relative">
+            <Input
+              value={refInput}
+              onChange={(e) => setRefInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') applyRefSearch() }}
+              placeholder="Ref Retina…"
+              className="w-[180px] pr-7"
+            />
+            {refInput && (
+              <button
+                type="button"
+                onClick={clearRefSearch}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Button variant="outline" size="sm" onClick={applyRefSearch}>
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Taille de page */}
+        <Select value={String(pageSize)} onValueChange={(v) => { setPage(0); setPageSize(Number(v)) }}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue placeholder="Par page" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="100">100 / page</SelectItem>
+            <SelectItem value="200">200 / page</SelectItem>
+            <SelectItem value="500">500 / page</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <span className="text-sm text-muted-foreground">
+          {total} resultat(s){refFilter ? ` pour « ${refFilter} »` : ''}
+        </span>
+
+        {/* Pagination */}
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="outline" size="sm"
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            disabled={page === 0 || loading}
+          >
+            <ChevronLeft className="h-4 w-4" /> Precedent
+          </Button>
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            Page {page + 1} / {totalPages}
+          </span>
+          <Button
+            variant="outline" size="sm"
+            onClick={() => setPage(p => p + 1)}
+            disabled={(page + 1) * pageSize >= total || loading}
+          >
+            Suivant <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
