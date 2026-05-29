@@ -23,6 +23,26 @@ import { expandCommercialCodes } from '@/lib/tenants/commercial'
  * GET /api/clients?departement=xxx - Filtre par département
  */
 
+// Récupère TOUTES les livraisons (contourne la limite Supabase de 1000 lignes par requête)
+// Utilisé pour calculer les catégories de contrôle qualité (ok / en_cours / attente).
+// Sans cette pagination, le filtre CQ ne voyait que les 1000 premières livraisons.
+async function fetchAllCqLivraisons(adminClient: any) {
+  const all: any[] = []
+  const PAGE = 1000
+  let from = 0
+  while (true) {
+    const { data, error } = await adminClient
+      .from('livraisons')
+      .select('client_id, cq_valide, cq_en_cours, statut')
+      .range(from, from + PAGE - 1)
+    if (error || !data || data.length === 0) break
+    all.push(...data)
+    if (data.length < PAGE) break
+    from += PAGE
+  }
+  return all
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Clients accessible by super_admin, admin, agent_secteur
@@ -195,11 +215,7 @@ export async function GET(request: NextRequest) {
     // ok = client a une livraison cq_valide | en_cours = cq_en_cours | attente = livree mais pas commencé
     if (controleFilter && controleFilter !== 'all') {
       // Requête unique pour récupérer les 3 catégories
-      const { data: allCqLivraisons } = await adminClient
-        .from('livraisons')
-        .select('client_id, cq_valide, cq_en_cours, statut')
-
-      const livraisons = allCqLivraisons || []
+      const livraisons = await fetchAllCqLivraisons(adminClient)
       const okIds = [...new Set(livraisons.filter(l => l.cq_valide === true).map(l => l.client_id).filter(Boolean))]
       const enCoursIds = [...new Set(livraisons.filter(l => l.cq_en_cours === true && !l.cq_valide).map(l => l.client_id).filter(Boolean))]
       const attenteIds = [...new Set(livraisons.filter(l => l.statut === 'livree' && !l.cq_valide && !l.cq_en_cours).map(l => l.client_id).filter(Boolean))]
@@ -312,10 +328,7 @@ export async function GET(request: NextRequest) {
     }
     if (controleFilter && controleFilter !== 'all') {
       // Réutilise la même logique que le filtre principal (ok/en_cours/attente)
-      const { data: cqLiv2 } = await adminClient
-        .from('livraisons')
-        .select('client_id, cq_valide, cq_en_cours, statut')
-      const liv2 = cqLiv2 || []
+      const liv2 = await fetchAllCqLivraisons(adminClient)
       let veloTargetIds: string[] = []
       if (controleFilter === 'ok') veloTargetIds = [...new Set(liv2.filter(l => l.cq_valide === true).map(l => l.client_id).filter(Boolean))]
       else if (controleFilter === 'en_cours') veloTargetIds = [...new Set(liv2.filter(l => l.cq_en_cours === true && !l.cq_valide).map(l => l.client_id).filter(Boolean))]

@@ -214,9 +214,15 @@ export async function GET(request: NextRequest) {
       }
     }
     if (commercial) {
+      // Aligner sur la requete principale : expansion master->enfants + commercial_code
+      // (et NON commercial_assigne en exact match, qui renvoyait 0 vélos sous filtre commercial)
       const commerciaux = commercial.split(',').filter(Boolean)
-      if (commerciaux.length === 1) sumQuery = sumQuery.eq('commercial_assigne', commerciaux[0])
-      else if (commerciaux.length > 1) sumQuery = sumQuery.in('commercial_assigne', commerciaux)
+      const tenant = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
+      const expandedCodes = await expandCommercialCodes(supabase as any, tenant, commerciaux)
+      if (expandedCodes !== null) {
+        if (expandedCodes.length === 1) sumQuery = sumQuery.eq('commercial_code', expandedCodes[0])
+        else sumQuery = sumQuery.in('commercial_code', expandedCodes)
+      }
     }
     if (fnuciFilter === 'oui') {
       sumQuery = sumQuery.eq('fnuci_declared', true)
