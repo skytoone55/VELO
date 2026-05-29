@@ -266,6 +266,7 @@ export async function POST(request: NextRequest) {
             monday_board_id: dc.monday_board_id,
             monday_item_id: dc.monday_item_id,
             commercial_assigne: dc.commercial_assigne,
+            commercial_code: dc.commercial_code,
             code_ape: dc.code_ape,
             validation_naf: dc.validation_naf,
             statut_commercial: 'controle_valide',
