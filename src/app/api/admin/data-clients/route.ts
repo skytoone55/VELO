@@ -6,11 +6,11 @@ import { expandCommercialCodes } from '@/lib/tenants/commercial'
 
 /**
  * GET /api/admin/data-clients — Liste les data_clients avec filtres et pagination
- * Acces: super_admin, admin uniquement
+ * Acces lecture: tous les utilisateurs internes (super_admin, admin, agent_secteur, livreur)
  */
 export async function GET(request: NextRequest) {
   try {
-    const authResult = await requireRole(['super_admin', 'admin'])
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
     if (isAuthError(authResult)) return authResult
 
     const { searchParams } = new URL(request.url)

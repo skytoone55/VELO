@@ -138,7 +138,7 @@ const adminNavItems: NavItem[] = [
         href: '/admin/settings/data-client',
         label: 'Data Client',
         icon: Database,
-        roles: ['super_admin', 'admin'],
+        roles: ['super_admin', 'admin', 'agent_secteur', 'livreur'],
       },
       {
         href: '/admin/settings/fnuci',

@@ -100,7 +100,9 @@ export async function POST(
         commercial_assigne: client.commercial_assigne,
         code_ape: client.code_ape,
         validation_naf: client.validation_naf,
-        statut_data: 'retour_client',
+        // Report du statut : un client HS reste HS dans Data Client (definitivement mort),
+        // les autres arrivent en retour_client (susceptibles de revenir).
+        statut_data: client.statut_commercial === 'client_hs' ? 'HS' : 'retour_client',
         motif_retour: comment.trim(),
         retour_par: authResult.id,
         retour_at: now,

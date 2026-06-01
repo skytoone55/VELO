@@ -4,13 +4,14 @@ import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
  * GET /api/admin/data-clients/[id] — Detail d'un data_client
+ * Acces lecture: tous les utilisateurs internes (super_admin, admin, agent_secteur, livreur)
  */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authResult = await requireRole(['super_admin', 'admin'])
+    const authResult = await requireRole(['super_admin', 'admin', 'agent_secteur', 'livreur'])
     if (isAuthError(authResult)) return authResult
 
     const { id } = await params

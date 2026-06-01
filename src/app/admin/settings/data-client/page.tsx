@@ -200,8 +200,8 @@ export default function DataClientPage() {
   const pinnedLoaded = useRef(false)
   const [filtersReady, setFiltersReady] = useState(false)
 
-  // Role check — super_admin et admin uniquement
-  const isAuthorized = user?.role === 'super_admin' || user?.role === 'admin'
+  // Role check — lecture ouverte a tous les utilisateurs internes (les clients finaux sont deja exclus par le layout admin)
+  const isAuthorized = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'agent_secteur' || user?.role === 'livreur'
 
   useEffect(() => {
     if (pinnedLoaded.current) return
