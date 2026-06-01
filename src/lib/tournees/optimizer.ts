@@ -89,6 +89,176 @@ function maxStepKmFromMinutes(maxTravelMinutes: number): number {
   return (maxTravelMinutes / 60) * AVERAGE_SPEED_KMH
 }
 
+/** Distance Haversine brute (sans facteur route) — suffit pour comparer/ordonner. */
+function rawDist(
+  aLat: number, aLng: number, bLat: number, bLng: number,
+): number {
+  return calculateHaversineDistance(aLat, aLng, bLat, bLng)
+}
+
+/**
+ * Choisit le PREMIER client de la séquence selon la règle métier de John :
+ *  - CAS 1 (point de départ physique) : le client le PLUS LOIN du point de départ.
+ *    La tournée finit alors naturellement près du départ.
+ *  - CAS 2 (pas de départ physique) : le client en EXTRÉMITÉ, c'est-à-dire le plus
+ *    éloigné du barycentre de tous les candidats (point « au bord », pas au milieu).
+ */
+function pickStartClient(
+  candidates: TourneeClient[],
+  anchor: { lat: number; lng: number },
+  hasDeparturePoint: boolean,
+): TourneeClient | null {
+  if (candidates.length === 0) return null
+  const reference = hasDeparturePoint
+    ? anchor
+    : (() => {
+        const sumLat = candidates.reduce((s, c) => s + c.latitude, 0)
+        const sumLng = candidates.reduce((s, c) => s + c.longitude, 0)
+        return { lat: sumLat / candidates.length, lng: sumLng / candidates.length }
+      })()
+  let best: TourneeClient | null = null
+  let bestDist = -1
+  for (const c of candidates) {
+    const d = rawDist(reference.lat, reference.lng, c.latitude, c.longitude)
+    if (d > bestDist) { bestDist = d; best = c }
+  }
+  return best
+}
+
+const segDist = (a: TourneeClient, b: TourneeClient) =>
+  rawDist(a.latitude, a.longitude, b.latitude, b.longitude)
+
+/**
+ * Recherche locale combinant 2-opt et Or-opt, exécutés EN ALTERNANCE
+ * jusqu'à convergence (plus aucune amélioration), avec une borne d'itérations.
+ *
+ *  - 2-opt : inverse un sous-segment [i..k] pour décroiser le parcours.
+ *  - Or-opt : déplace un segment consécutif de longueur 1, 2 ou 3 vers sa
+ *    meilleure position ailleurs dans le parcours. C'est lui qui regroupe un
+ *    cluster entier (ex. les 4 clients Le Havre) au bon endroit — chose que le
+ *    2-opt seul ne sait pas faire quand le NN a « coincé » le cluster.
+ *
+ * `fixFirst` = true : l'index 0 (1er client = extrémité choisie par pickStartClient)
+ *   est FIGÉ ; le reste est librement réordonné. Utilisé pour le parcours ouvert (CAS 2)
+ *   et pour le pré-arrangement de la boucle (CAS 1, réorienté ensuite).
+ *
+ * `closedAnchor` : si fourni, on optimise la BOUCLE fermée (CAS 1, dépôt = anchor) ;
+ *   sinon le parcours OUVERT (CAS 2). La métrique est Haversine pure (le facteur
+ *   route ×1.3 est monotone et n'affecte pas l'ordre optimal).
+ */
+function localSearchImprove(
+  tour: TourneeClient[],
+  closedAnchor: { lat: number; lng: number } | null,
+  fixFirst: boolean,
+  maxIterations: number = 1000,
+): TourneeClient[] {
+  const n = tour.length
+  if (n < 3) return tour.slice()
+  const route = tour.slice()
+  const firstMovable = fixFirst ? 1 : 0
+
+  // Distance d'un point d'ancrage virtuel (avant route[0] ou après route[n-1])
+  // en mode boucle fermée ; renvoie 0 en mode ouvert (pas d'arête extérieure).
+  const anchorDist = (c: TourneeClient): number =>
+    closedAnchor ? rawDist(closedAnchor.lat, closedAnchor.lng, c.latitude, c.longitude) : 0
+
+  // ── 2-opt : inverse [i..k]. En mode ouvert, i>=1 si fixFirst (arête a=route[i-1]).
+  //    En mode fermé, on autorise i=firstMovable avec un voisin gauche = anchor.
+  const twoOptPass = (): boolean => {
+    let improved = false
+    const lo0 = closedAnchor ? firstMovable : Math.max(firstMovable, 1)
+    for (let i = lo0; i < n - 1; i++) {
+      for (let k = i + 1; k < n; k++) {
+        // voisin gauche de i
+        const aDist = (c: TourneeClient) =>
+          i === 0 ? anchorDist(c) : segDist(route[i - 1], c)
+        // voisin droit de k
+        const dRight = k + 1 < n ? route[k + 1] : null
+        const dDist = (c: TourneeClient) =>
+          dRight ? segDist(c, dRight) : anchorDist(c)
+        const b = route[i], c = route[k]
+        const before = aDist(b) + dDist(c)
+        const after = aDist(c) + dDist(b)
+        if (after + 1e-9 < before) {
+          let l = i, h = k
+          while (l < h) { const t = route[l]; route[l] = route[h]; route[h] = t; l++; h-- }
+          improved = true
+        }
+      }
+    }
+    return improved
+  }
+
+  // ── Or-opt : retire le segment [s..s+L-1] et le réinsère ailleurs (meilleure place).
+  const orOptPass = (): boolean => {
+    let improved = false
+    for (let L = 1; L <= 3; L++) {
+      for (let s = firstMovable; s + L - 1 < n; s++) {
+        const segStart = s, segEnd = s + L - 1
+        const seg = route.slice(segStart, segEnd + 1)
+
+        // voisins actuels du segment
+        const prev = segStart === 0 ? null : route[segStart - 1]
+        const next = segEnd + 1 < n ? route[segEnd + 1] : null
+        const prevDist = prev ? segDist(prev, seg[0]) : anchorDist(seg[0])
+        const nextDist = next ? segDist(seg[L - 1], next) : anchorDist(seg[L - 1])
+        const bridge = prev && next ? segDist(prev, next)
+          : prev ? anchorDist(prev)
+          : next ? anchorDist(next)
+          : 0
+        const removalGain = prevDist + nextDist - bridge
+
+        // route privée du segment
+        const rest = route.slice(0, segStart).concat(route.slice(segEnd + 1))
+        const m = rest.length
+
+        let bestDelta = -1e-9 // exige une amélioration stricte
+        let bestPos = -1
+        let bestRev = false
+        // positions d'insertion : entre rest[p-1] et rest[p], pour p de 0..m
+        for (let p = 0; p <= m; p++) {
+          // interdit de déplacer dans la zone figée (avant firstMovable)
+          if (p < firstMovable) continue
+          const left = p === 0 ? null : rest[p - 1]
+          const right = p < m ? rest[p] : null
+          const gapBase = left && right ? segDist(left, right)
+            : left ? anchorDist(left)
+            : right ? anchorDist(right)
+            : 0
+          for (const rev of [false, true]) {
+            if (L === 1 && rev) continue
+            const head = rev ? seg[L - 1] : seg[0]
+            const tail = rev ? seg[0] : seg[L - 1]
+            const addCost = (left ? segDist(left, head) : anchorDist(head))
+              + (right ? segDist(tail, right) : anchorDist(tail))
+              - gapBase
+            const delta = removalGain - addCost
+            if (delta > bestDelta) { bestDelta = delta; bestPos = p; bestRev = rev }
+          }
+        }
+
+        if (bestPos >= 0 && bestDelta > 1e-9) {
+          const insSeg = bestRev ? seg.slice().reverse() : seg
+          rest.splice(bestPos, 0, ...insSeg)
+          for (let q = 0; q < n; q++) route[q] = rest[q]
+          improved = true
+        }
+      }
+    }
+    return improved
+  }
+
+  let iter = 0
+  let improvedAny = true
+  while (improvedAny && iter < maxIterations) {
+    improvedAny = false
+    iter++
+    if (twoOptPass()) improvedAny = true
+    if (orOptPass()) improvedAny = true
+  }
+  return route
+}
+
 export function estimateRoadDistance(
   lat1: number, lon1: number,
   lat2: number, lon2: number
@@ -238,6 +408,22 @@ function buildOptimalTour(
     }
   }
 
+  // ─── 1bis. Choix du PREMIER client (si aucun forçage n'a déjà amorcé) ──
+  // Règle métier John :
+  //  - CAS 1 (départ physique) : démarrer par le client le PLUS LOIN du départ,
+  //    pour que la tournée se termine naturellement près du départ.
+  //  - CAS 2 (pas de départ) : démarrer par un client en extrémité (le plus loin
+  //    du barycentre), pour ne pas amorcer au milieu et zigzaguer.
+  // Sans ce choix, le remplissage NN ci-dessous prendrait le client le plus proche
+  // de l'anchor → départ au centre → zigzag.
+  if (tour.length === 0) {
+    const startCandidates = allClients.filter(
+      c => !used.has(c.id) && totalBikes + getClientBikeCount(c) <= capaciteVelos,
+    )
+    const start = pickStartClient(startCandidates, anchor, hasDeparturePoint)
+    if (start) take(start)
+  }
+
   // ─── 2. Remplissage par nearest-neighbor pur ────────────────────────
   while (totalBikes < capaciteVelos) {
     let bestClient: TourneeClient | null = null
@@ -278,7 +464,67 @@ function buildOptimalTour(
     currentLng = bestClient.longitude
   }
 
-  return tour
+  // ─── 3. Recherche locale 2-opt + Or-opt jusqu'à convergence ─────────
+  // L'Or-opt déplace des clusters entiers (segments de 1 à 3 clients) vers leur
+  // meilleure position : c'est lui qui évite qu'un cluster reste « échoué » loin
+  // (ex. Le Havre coincé en bout de tournée par le NN). 2-opt décroise.
+  // Aucun client n'est ajouté ni retiré → contraintes capacité/forçage préservées.
+  if (tour.length < 3) return tour
+
+  if (hasDeparturePoint) {
+    // CAS 1 — départ physique (dépôt) : on minimise la BOUCLE fermée
+    // anchor→…→anchor. Le 1er client n'est PAS figé pendant l'optim (la boucle
+    // sera réorientée après). Puis règle métier : démarrer par le client le plus
+    // loin du dépôt, finir près du dépôt.
+    const optimized = localSearchImprove(tour, anchor, /*fixFirst*/ false)
+    return orientLoopFromAnchor(optimized, anchor)
+  }
+
+  // CAS 2 — pas de départ physique : on minimise le PARCOURS OUVERT.
+  // Le 1er client (extrémité choisie par pickStartClient) reste FIGÉ ; le reste
+  // (y compris le dernier) est librement réordonné.
+  return localSearchImprove(tour, null, /*fixFirst*/ true)
+}
+
+/**
+ * Réoriente une boucle fermée (ordre cyclique déjà optimisé) en une séquence
+ * linéaire respectant la règle métier : démarrer par le client le PLUS LOIN du
+ * dépôt et terminer par un client PROCHE du dépôt. On choisit, parmi les n points
+ * de départ possibles et les 2 sens de parcours, l'orientation qui maximise la
+ * distance dépôt→1er tout en gardant la même boucle (donc même distance totale).
+ *
+ * En pratique : le 1er client = le plus loin du dépôt ; le sens est choisi pour
+ * que le voisin de boucle le plus proche du dépôt soit placé en fin de séquence.
+ */
+function orientLoopFromAnchor(
+  loop: TourneeClient[],
+  anchor: { lat: number; lng: number },
+): TourneeClient[] {
+  const n = loop.length
+  if (n < 2) return loop.slice()
+
+  // Index du client le plus loin du dépôt → devient le 1er.
+  let farIdx = 0
+  let farDist = -1
+  for (let i = 0; i < n; i++) {
+    const d = rawDist(anchor.lat, anchor.lng, loop[i].latitude, loop[i].longitude)
+    if (d > farDist) { farDist = d; farIdx = i }
+  }
+
+  // Deux séquences linéaires possibles à partir de farIdx (sens horaire / antihoraire),
+  // en gardant l'ordre cyclique intact (la distance de boucle est inchangée).
+  const forward: TourneeClient[] = []
+  for (let k = 0; k < n; k++) forward.push(loop[(farIdx + k) % n])
+  const backward: TourneeClient[] = []
+  for (let k = 0; k < n; k++) backward.push(loop[(farIdx - k + n) % n])
+
+  // On choisit le sens dont le DERNIER client est le plus proche du dépôt
+  // (retour au dépôt le plus court → règle métier « finit près du départ »).
+  const lastDist = (seq: TourneeClient[]) => {
+    const last = seq[seq.length - 1]
+    return rawDist(anchor.lat, anchor.lng, last.latitude, last.longitude)
+  }
+  return lastDist(forward) <= lastDist(backward) ? forward : backward
 }
 
 /**

@@ -4,13 +4,40 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateHaversineDistance } from '@/lib/geo/utils'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
+type LatLng = { lat: number; lng: number }
+
+/** Test ray-casting even-odd (x = lng, y = lat), aucune dépendance externe. */
+function pointInPolygon(lat: number, lng: number, polygon: LatLng[]): boolean {
+  if (!Array.isArray(polygon) || polygon.length < 3) return false
+  let inside = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].lng, yi = polygon[i].lat
+    const xj = polygon[j].lng, yj = polygon[j].lat
+    const intersect =
+      (yi > lat) !== (yj > lat) &&
+      lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi
+    if (intersect) inside = !inside
+  }
+  return inside
+}
+
+/** Centroïde simple (moyenne des sommets) — référence de distance en mode zone. */
+function polygonCentroid(polygon: LatLng[]): LatLng {
+  const n = polygon.length
+  let lat = 0, lng = 0
+  for (const p of polygon) { lat += p.lat; lng += p.lng }
+  return { lat: lat / n, lng: lng / n }
+}
+
 /**
  * POST /api/admin/depots/simulate/export
  *
- * Exporte en XLSX la liste des clients dans le rayon d'une zone simulée.
- * Body : { latitude, longitude, rayonKm, scope?: 'absorbed' | 'eligibles' }
+ * Exporte en XLSX la liste des clients d'une zone simulée.
+ * Body (mode rayon) : { latitude, longitude, rayonKm, scope?: 'absorbed' | 'eligibles' }
+ * Body (mode zone)  : { polygon: [{lat,lng}, ...], scope? }  (≥ 3 points)
  *
- * - 'absorbed' (défaut) : tous les clients dans le rayon
+ * Mêmes colonnes / même format dans les deux modes (parité avec l'export rayon).
+ * - 'absorbed' (défaut) : tous les clients dans la zone
  * - 'eligibles' : seulement ceux qui passent les critères tournée
  *   (NAF=OUI + dépôt logistique assigné + statut Contrôle validé / Formulaire envoyé / À livrer)
  */
@@ -20,11 +47,17 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { latitude, longitude, rayonKm = 30, scope = 'absorbed' } = body
+    const { latitude, longitude, rayonKm = 30, scope = 'absorbed', polygon } = body
 
-    if (!latitude || !longitude) {
-      return NextResponse.json({ error: 'latitude et longitude requis' }, { status: 400 })
+    const isPolygonMode = Array.isArray(polygon) && polygon.length >= 3
+
+    if (!isPolygonMode && (!latitude || !longitude)) {
+      return NextResponse.json({ error: 'latitude et longitude requis (ou un polygone d\'au moins 3 points)' }, { status: 400 })
     }
+
+    const refPoint: LatLng = isPolygonMode
+      ? polygonCentroid(polygon as LatLng[])
+      : { lat: latitude, lng: longitude }
 
     const supabase = createAdminClient()
 
@@ -47,12 +80,15 @@ export async function POST(request: NextRequest) {
       page++
     }
 
-    // Filtre Haversine (rayon)
+    // Filtre : polygone (point-in-polygon) OU rayon (Haversine). Distance vs réf (centre ou centroïde).
     const STATUTS_ELIGIBLES = new Set(['controle_valide', 'formulaire_envoye', 'a_livrer'])
     const inZone: any[] = []
     for (const c of allClients) {
-      const d = calculateHaversineDistance(latitude, longitude, c.latitude, c.longitude)
-      if (d > rayonKm) continue
+      const d = calculateHaversineDistance(refPoint.lat, refPoint.lng, c.latitude, c.longitude)
+      const inSelection = isPolygonMode
+        ? pointInPolygon(c.latitude, c.longitude, polygon as LatLng[])
+        : d <= rayonKm
+      if (!inSelection) continue
       const isEligible =
         c.validation_naf === 'OUI' &&
         !!c.depot_logistique_id &&
@@ -62,7 +98,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (inZone.length === 0) {
-      return NextResponse.json({ error: `Aucun client trouvé (scope=${scope}, rayon=${rayonKm} km)` }, { status: 404 })
+      const where = isPolygonMode ? 'zone personnalisée' : `rayon=${rayonKm} km`
+      return NextResponse.json({ error: `Aucun client trouvé (scope=${scope}, ${where})` }, { status: 404 })
     }
 
     // Récupérer les noms des dépôts pour résoudre depot_logistique_id / depot_retrait_id
@@ -114,11 +151,14 @@ export async function POST(request: NextRequest) {
       return { wch: Math.min(maxLen + 2, 40) }
     })
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, `Zone ${rayonKm}km`)
+    const sheetName = isPolygonMode ? 'Zone personnalisee' : `Zone ${rayonKm}km`
+    XLSX.utils.book_append_sheet(wb, ws, sheetName)
     const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
 
     const today = new Date().toISOString().slice(0, 10)
-    const filename = `zone-simulee-${scope}-${rayonKm}km-${today}.xlsx`
+    const filename = isPolygonMode
+      ? `zone-simulee-${scope}-polygone-${today}.xlsx`
+      : `zone-simulee-${scope}-${rayonKm}km-${today}.xlsx`
 
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,

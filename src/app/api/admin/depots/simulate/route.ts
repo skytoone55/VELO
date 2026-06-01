@@ -3,16 +3,48 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateHaversineDistance } from '@/lib/geo/utils'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
+type LatLng = { lat: number; lng: number }
+
+/**
+ * Test ray-casting : le point (lat,lng) est-il à l'intérieur du polygone ?
+ * Algorithme even-odd standard, aucune dépendance externe.
+ * On travaille dans le repère (x = lng, y = lat).
+ */
+function pointInPolygon(lat: number, lng: number, polygon: LatLng[]): boolean {
+  if (!Array.isArray(polygon) || polygon.length < 3) return false
+  let inside = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].lng, yi = polygon[i].lat
+    const xj = polygon[j].lng, yj = polygon[j].lat
+    const intersect =
+      (yi > lat) !== (yj > lat) &&
+      lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi
+    if (intersect) inside = !inside
+  }
+  return inside
+}
+
+/** Centroïde simple (moyenne des sommets) — référence pour la distance en mode zone. */
+function polygonCentroid(polygon: LatLng[]): LatLng {
+  const n = polygon.length
+  let lat = 0, lng = 0
+  for (const p of polygon) { lat += p.lat; lng += p.lng }
+  return { lat: lat / n, lng: lng / n }
+}
+
 /**
  * API de simulation de placement de dépôt
  *
  * POST /api/admin/depots/simulate
- * Body: { latitude, longitude, rayonKm, rayonPayantKm? }
+ * Body (mode rayon)   : { latitude, longitude, rayonKm, rayonPayantKm? }
+ * Body (mode zone)    : { polygon: [{lat,lng}, ...] }  (≥ 3 points)
+ *
+ * Le format de réponse est IDENTIQUE dans les deux modes (parité de résultat).
  *
  * Retourne :
- * - clientsAbsorbed : nombre de clients dans le rayon
+ * - clientsAbsorbed : nombre de clients dans la zone (rayon ou polygone)
  * - velosAbsorbed : nombre de vélos dans la zone
- * - clientsByDistance : distribution par tranche de distance
+ * - clientsByDistance : distribution par tranche de distance (vs centre ou centroïde)
  * - clientsCurrentlyUnassigned : clients actuellement sans dépôt qui seraient couverts
  */
 export async function POST(request: NextRequest) {
@@ -21,14 +53,22 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { latitude, longitude, rayonKm = 30, rayonPayantKm } = body
+    const { latitude, longitude, rayonKm = 30, rayonPayantKm, polygon } = body
 
-    if (!latitude || !longitude) {
+    const isPolygonMode = Array.isArray(polygon) && polygon.length >= 3
+
+    if (!isPolygonMode && (!latitude || !longitude)) {
       return NextResponse.json(
-        { error: 'latitude et longitude requis' },
+        { error: 'latitude et longitude requis (ou un polygone d\'au moins 3 points)' },
         { status: 400 }
       )
     }
+
+    // En mode zone, on utilise le centroïde du polygone comme référence de distance
+    // (pour alimenter le breakdown "Par distance" sans casser le panneau existant).
+    const refPoint: LatLng = isPolygonMode
+      ? polygonCentroid(polygon as LatLng[])
+      : { lat: latitude, lng: longitude }
 
     const adminClient = createAdminClient()
 
@@ -89,7 +129,7 @@ export async function POST(request: NextRequest) {
 
     for (const client of allClients) {
       const distance = calculateHaversineDistance(
-        latitude, longitude,
+        refPoint.lat, refPoint.lng,
         client.latitude, client.longitude
       )
 
@@ -102,8 +142,13 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Dans le rayon total (gratuit + payant)
-      if (distance <= maxRayon) {
+      // Sélection : polygone (point-in-polygon) OU rayon (Haversine)
+      const inSelection = isPolygonMode
+        ? pointInPolygon(client.latitude, client.longitude, polygon as LatLng[])
+        : distance <= maxRayon
+
+      // Dans la zone (gratuit + payant en mode rayon, ou polygone)
+      if (inSelection) {
         totalAbsorbed++
         const velosClient = client.velo_valide || 0
         totalVelos += velosClient
@@ -152,9 +197,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Ne garder que les tranches pertinentes (non vides ou dans le rayon)
+    // Ne garder que les tranches pertinentes.
+    // Mode rayon : non vides OU dans le rayon. Mode zone : non vides seulement.
     const clientsByDistance = distanceRanges.filter(r =>
-      r.count > 0 || r.max <= maxRayon
+      r.count > 0 || (!isPolygonMode && r.max <= maxRayon)
     ).map(({ range, count, velos }) => ({ range, count, velos }))
 
     return NextResponse.json({
@@ -176,8 +222,10 @@ export async function POST(request: NextRequest) {
       nafBreakdown,
       clientsAbsorbedIds,
       totalClientsWithCoords: allClients.length,
-      rayonKm,
-      rayonPayantKm: rayonPayantKm || null,
+      rayonKm: isPolygonMode ? null : rayonKm,
+      rayonPayantKm: isPolygonMode ? null : (rayonPayantKm || null),
+      mode: isPolygonMode ? 'polygon' : 'rayon',
+      polygonPointCount: isPolygonMode ? (polygon as LatLng[]).length : null,
     })
   } catch (error: any) {
     console.error('Erreur simulation dépôt:', error)

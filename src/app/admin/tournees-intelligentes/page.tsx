@@ -15,13 +15,17 @@ import {
   Loader2, ArrowLeft, ArrowRight, MapPin, Bike, Clock, Route,
   X, Check, Users, Trash2, RotateCcw, Calendar, Truck, Navigation,
   Home, Package, ChevronLeft, ChevronRight, Pencil,
+  ChevronUp, ChevronDown, GripVertical,
 } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 
 const TourneeMap = dynamic(() => import('./tournee-map'), { ssr: false })
-import { getClientBikeCount, getTimeAtClient } from '@/lib/tournees/optimizer'
+import {
+  getClientBikeCount, getTimeAtClient,
+  estimateRoadDistance, estimateTravelTime,
+} from '@/lib/tournees/optimizer'
 import { PROCESS_STATUTS, STATUT_COLORS, type ProcessStatut } from '@/lib/constants'
 
 // ─── Types ──────────────────────────────────────────────────────────────
@@ -172,6 +176,10 @@ function TourneesIntelligentesContent() {
   // Proposal
   const [proposal, setProposal] = useState<Proposal | null>(null)
   const [removedClientIds, setRemovedClientIds] = useState<string[]>([])
+  // Ordre manuel (réordonnancement par l'utilisateur). null = ordre proposé par l'algo.
+  const [manualOrderIds, setManualOrderIds] = useState<string[] | null>(null)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -358,6 +366,7 @@ function TourneesIntelligentesContent() {
       setDetectedDepotId(topDepot ? topDepot[0] : null)
 
       setRemovedClientIds([])
+      setManualOrderIds(null)
       setProposal(data)
     } catch {
       setError('Erreur de connexion')
@@ -456,6 +465,7 @@ function TourneesIntelligentesContent() {
     setConfigReady(false)
     setProposal(null)
     setRemovedClientIds([])
+    setManualOrderIds(null)
     setError(null)
     setCreated(null)
     setSelectedLivreur('')
@@ -487,16 +497,95 @@ function TourneesIntelligentesContent() {
     return depotJoursOuverture.includes(dayName)
   }, [depotJoursOuverture, selectedDate])
 
-  // Clients visibles = proposal clients - retirés manuellement
+  // Clients visibles = proposal clients - retirés manuellement, dans l'ordre courant
+  // (ordre manuel après réorganisation si défini, sinon ordre proposé par l'algo).
   const visibleClients = useMemo(() => {
     if (!proposal) return []
-    return proposal.clients.filter(c => !removedClientIds.includes(c.id))
-  }, [proposal, removedClientIds])
+    const base = proposal.clients.filter(c => !removedClientIds.includes(c.id))
+    if (!manualOrderIds) return base
+    const byId = new Map(base.map(c => [c.id, c]))
+    const ordered: ProposedClient[] = []
+    for (const id of manualOrderIds) {
+      const c = byId.get(id)
+      if (c) { ordered.push(c); byId.delete(id) }
+    }
+    // Sécurité : tout client non listé (ajout tardif) reste à la fin
+    for (const c of byId.values()) ordered.push(c)
+    return ordered
+  }, [proposal, removedClientIds, manualOrderIds])
 
-  // Stats recalculées en local quand on retire un client
+  // ─── Réordonnancement manuel ────────────────────────────────────────
+  // Règle : on dépose un client en position k → le DÉBUT (0..k inclus) est FIGÉ ;
+  // la SUITE est recalculée en plus-proche-voisin (Haversine) en repartant du client k.
+  // 100% local (vol d'oiseau), aucun appel réseau.
+  const applyReorder = useCallback((clients: ProposedClient[], k: number) => {
+    if (clients.length === 0) return clients
+    const kk = Math.max(0, Math.min(k, clients.length - 1))
+    const prefix = clients.slice(0, kk + 1)
+    const pool = clients.slice(kk + 1)
+    const suffix: ProposedClient[] = []
+    let current = prefix[prefix.length - 1]
+    const remaining = [...pool]
+    while (remaining.length > 0) {
+      let bestIdx = 0
+      let bestD = Infinity
+      for (let i = 0; i < remaining.length; i++) {
+        const d = estimateRoadDistance(
+          current.latitude, current.longitude,
+          remaining[i].latitude, remaining[i].longitude,
+        )
+        if (d < bestD) { bestD = d; bestIdx = i }
+      }
+      const next = remaining.splice(bestIdx, 1)[0]
+      suffix.push(next)
+      current = next
+    }
+    return [...prefix, ...suffix]
+  }, [])
+
+  // Déplace un client de la position `from` vers la position `to`, fige le préfixe
+  // jusqu'à `to` inclus, puis recalcule la suite en NN depuis ce client.
+  const moveClient = useCallback((from: number, to: number) => {
+    const list = visibleClients
+    if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return
+    const arr = [...list]
+    const [moved] = arr.splice(from, 1)
+    arr.splice(to, 0, moved)
+    const recomputed = applyReorder(arr, to)
+    setManualOrderIds(recomputed.map(c => c.id))
+  }, [visibleClients, applyReorder])
+
+  // Distances/temps par segment recalculés EN LOCAL pour l'ordre courant.
+  // Index = position visible (segment depuis le client précédent → client i).
+  // Pour i=0 : si point de départ défini, segment départ → 1er client.
+  const segmentDistances = useMemo(() => {
+    const clients = visibleClients
+    const anchorPt = useDepartureAddress && departureLat != null && departureLng != null
+      ? { lat: departureLat, lng: departureLng }
+      : null
+    return clients.map((c, i) => {
+      if (i === 0) {
+        if (!anchorPt) return { distanceFromPrevKm: 0, travelMinutesFromPrev: 0 }
+        const km = estimateRoadDistance(anchorPt.lat, anchorPt.lng, c.latitude, c.longitude)
+        return {
+          distanceFromPrevKm: Math.round(km * 10) / 10,
+          travelMinutesFromPrev: Math.round(estimateTravelTime(km)),
+        }
+      }
+      const prev = clients[i - 1]
+      const km = estimateRoadDistance(prev.latitude, prev.longitude, c.latitude, c.longitude)
+      return {
+        distanceFromPrevKm: Math.round(km * 10) / 10,
+        travelMinutesFromPrev: Math.round(estimateTravelTime(km)),
+      }
+    })
+  }, [visibleClients, useDepartureAddress, departureLat, departureLng])
+
+  // Stats recalculées en local quand on retire OU réordonne un client.
+  // Tant qu'on n'a ni retiré ni réorganisé, on garde les stats serveur (incluent retour dépôt / coûts).
   const displayStats = useMemo(() => {
     if (!proposal) return null
-    if (removedClientIds.length === 0) return proposal.stats
+    if (removedClientIds.length === 0 && !manualOrderIds) return proposal.stats
     const clients = visibleClients
     if (clients.length === 0) return { nbClients: 0, nbVelosTotal: 0, distanceTotaleKm: 0, dureeEstimeeMinutes: 0, dureeFormatted: '0h00' }
     let nbVelosTotal = 0
@@ -507,11 +596,13 @@ function TourneesIntelligentesContent() {
       nbVelosTotal += bikes
       dureeMinutes += getTimeAtClient(bikes)
       if (i < clients.length - 1) {
-        const d = Math.sqrt(Math.pow(clients[i].latitude - clients[i+1].latitude, 2) + Math.pow(clients[i].longitude - clients[i+1].longitude, 2)) * 111 * 1.3
-        distanceKm += d
+        distanceKm += estimateRoadDistance(
+          clients[i].latitude, clients[i].longitude,
+          clients[i + 1].latitude, clients[i + 1].longitude,
+        )
       }
     }
-    dureeMinutes += (distanceKm / 30) * 60
+    dureeMinutes += estimateTravelTime(distanceKm)
     const hours = Math.floor(dureeMinutes / 60)
     const mins = Math.round(dureeMinutes % 60)
     return {
@@ -521,7 +612,7 @@ function TourneesIntelligentesContent() {
       dureeEstimeeMinutes: Math.round(dureeMinutes),
       dureeFormatted: `${hours}h${mins.toString().padStart(2, '0')}`,
     }
-  }, [proposal, removedClientIds, visibleClients])
+  }, [proposal, removedClientIds, manualOrderIds, visibleClients])
 
   // ─── Rendu ──────────────────────────────────────────────────────────
 
@@ -1000,9 +1091,9 @@ function TourneesIntelligentesContent() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardContent className="p-0 overflow-hidden rounded-lg">
-                {proposal.clients.length > 0 ? (
+                {visibleClients.length > 0 ? (
                   <TourneeMap
-                    clients={proposal.clients}
+                    clients={visibleClients}
                     center={mapCenter}
                     anchorPoint={useDepartureAddress && departureLat && departureLng ? { lat: departureLat, lng: departureLng } : null}
                   />
@@ -1036,12 +1127,17 @@ function TourneesIntelligentesContent() {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
+                <p className="px-3 pb-1.5 text-[10px] text-gray-400">
+                  Glissez une ligne (ou utilisez les flèches) pour réordonner. La suite est recalculée
+                  automatiquement (plus proche voisin, vol d&apos;oiseau) à partir du point déposé.
+                </p>
                 <div className="divide-y">
                   {visibleClients.map((client, idx) => {
                     const bikes = getClientBikeCount(client)
                     const time = getTimeAtClient(bikes)
-                    const origIdx = proposal.clients.findIndex(c => c.id === client.id)
-                    const dist = proposal.distances?.[origIdx]
+                    const dist = segmentDistances[idx]
+                    const isDragging = dragIndex === idx
+                    const isDragOver = dragOverIndex === idx
                     return (
                       <div key={client.id}>
                         {/* Distance depuis le point précédent (y compris départ → 1er client) */}
@@ -1053,8 +1149,22 @@ function TourneesIntelligentesContent() {
                             <div className="flex-1 border-t border-dashed border-gray-200" />
                           </div>
                         )}
-                        <div className="px-3 py-1.5 flex items-center justify-between hover:bg-gray-50 group">
+                        <div
+                          draggable
+                          onDragStart={() => setDragIndex(idx)}
+                          onDragOver={(e) => { e.preventDefault(); if (dragOverIndex !== idx) setDragOverIndex(idx) }}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            if (dragIndex !== null && dragIndex !== idx) moveClient(dragIndex, idx)
+                            setDragIndex(null); setDragOverIndex(null)
+                          }}
+                          onDragEnd={() => { setDragIndex(null); setDragOverIndex(null) }}
+                          className={`px-3 py-1.5 flex items-center justify-between group transition-colors ${
+                            isDragging ? 'opacity-40' : isDragOver ? 'bg-blue-50' : 'hover:bg-gray-50'
+                          }`}
+                        >
                           <div className="flex items-center gap-2 min-w-0">
+                            <GripVertical className="h-3.5 w-3.5 text-gray-300 group-hover:text-gray-400 cursor-grab shrink-0" />
                             <div
                               className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                               style={{ backgroundColor: PIN_COLORS[idx % PIN_COLORS.length] }}
@@ -1074,13 +1184,31 @@ function TourneesIntelligentesContent() {
                               </div>
                             </div>
                           </div>
-                          <button
-                            onClick={() => setRemovedClientIds(prev => [...prev, client.id])}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-50 rounded"
-                            title="Retirer ce client"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-red-400 hover:text-red-600" />
-                          </button>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <button
+                              onClick={() => moveClient(idx, idx - 1)}
+                              disabled={idx === 0}
+                              className="p-1 rounded hover:bg-gray-100 disabled:opacity-20 disabled:cursor-not-allowed"
+                              title="Monter"
+                            >
+                              <ChevronUp className="h-3.5 w-3.5 text-gray-500" />
+                            </button>
+                            <button
+                              onClick={() => moveClient(idx, idx + 1)}
+                              disabled={idx === visibleClients.length - 1}
+                              className="p-1 rounded hover:bg-gray-100 disabled:opacity-20 disabled:cursor-not-allowed"
+                              title="Descendre"
+                            >
+                              <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
+                            </button>
+                            <button
+                              onClick={() => setRemovedClientIds(prev => [...prev, client.id])}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-50 rounded"
+                              title="Retirer ce client"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-red-400 hover:text-red-600" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )

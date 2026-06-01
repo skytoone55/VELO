@@ -67,6 +67,7 @@ export async function GET(request: Request) {
         complement_adresse,
         heure_precise,
         livreur_id,
+        tournee_id,
         tournee_position,
         created_at
       `)

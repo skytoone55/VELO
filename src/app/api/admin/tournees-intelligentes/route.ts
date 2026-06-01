@@ -430,6 +430,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'client_ids, date et depot_id requis' }, { status: 400 })
     }
 
+    // Doctrine WORKFLOW-TOURNEE-PPE.md : une tournée finalisée atterrit dans le créneau
+    // "Journée entière" (00:00–23:59) sauf si un créneau horaire précis est explicitement fourni
+    // (mode créneau). Le planning regroupe par creneau_heure_debit ; un créneau NULL tombe en EXTRA.
+    const finalCreneauDebut = creneau_heure_debut || '00:00'
+    const finalCreneauFin = creneau_heure_fin || '23:59'
+
     // Créer la tournée
     const { data: tournee, error: tourneeError } = await supabase
       .from('tournees')
@@ -566,8 +572,8 @@ export async function POST(request: NextRequest) {
       adresse_livraison_cp: c.adresse_livraison_cp,
       adresse_livraison_ville: c.adresse_livraison_ville,
       date_programmation: new Date().toISOString(),
-      ...(creneau_heure_debut ? { creneau_heure_debut } : {}),
-      ...(creneau_heure_fin ? { creneau_heure_fin } : {}),
+      creneau_heure_debut: finalCreneauDebut,
+      creneau_heure_fin: finalCreneauFin,
     }))
 
     const { error: livraisonsError } = await supabase

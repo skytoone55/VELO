@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Circle } from '@react-google-maps/api'
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Circle, Polygon } from '@react-google-maps/api'
 import { GOOGLE_MAPS_OPTIONS } from '@/lib/google-maps'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -223,10 +223,18 @@ export default function MapPage() {
   const [simulationRayon, setSimulationRayon] = useState(30)
   const [simulationResult, setSimulationResult] = useState<any | null>(null)
   const [simulationLoading, setSimulationLoading] = useState(false)
+  // Sous-mode de sélection : 'rayon' (cercle) ou 'zone' (polygone libre)
+  const [simShape, setSimShape] = useState<'rayon' | 'zone'>('rayon')
+  // Points du polygone (mode zone) + indicateur de fermeture
+  const [polygonPoints, setPolygonPoints] = useState<{ lat: number; lng: number }[]>([])
+  const [polygonClosed, setPolygonClosed] = useState(false)
 
   // Google services refs
   const geocoderRef = useRef<google.maps.Geocoder | null>(null)
   const autocompleteRef = useRef<google.maps.places.AutocompleteService | null>(null)
+  // Cercle de simulation (mode rayon) géré impérativement : une seule instance
+  // google.maps.Circle, déplacée/redimensionnée en place, jamais accumulée.
+  const simCircleRef = useRef<google.maps.Circle | null>(null)
 
   // Simulation address autocomplete
   const [simAddress, setSimAddress] = useState('')
@@ -296,6 +304,37 @@ export default function MapPage() {
     geocoderRef.current = new google.maps.Geocoder()
     autocompleteRef.current = new google.maps.places.AutocompleteService()
   }, [agenceCenters, selectedAgence])
+
+  // Cercle de simulation (mode rayon) — gestion impérative fiable.
+  // On garde UNE seule instance google.maps.Circle dans simCircleRef : on la
+  // déplace/redimensionne en place. Le <Circle> déclaratif causait des cercles
+  // orphelins (la key réactive remontait le composant sans retirer l'ancien
+  // google.maps.Circle de la carte). Ici : zéro accumulation possible.
+  useEffect(() => {
+    const actif = simulationMode && simShape === 'rayon' && !!simulationPos && !!mapInstance
+    if (actif && simulationPos && mapInstance) {
+      if (!simCircleRef.current) {
+        simCircleRef.current = new google.maps.Circle({
+          fillColor: '#8B5CF6',
+          fillOpacity: 0.1,
+          strokeColor: '#8B5CF6',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          clickable: false, // laisser passer le clic pour repositionner la simulation
+        })
+      }
+      simCircleRef.current.setCenter(simulationPos)
+      simCircleRef.current.setRadius(simulationRayon * 1000)
+      simCircleRef.current.setMap(mapInstance)
+    } else {
+      simCircleRef.current?.setMap(null)
+    }
+    // Cleanup : garantit zéro cercle résiduel à chaque re-run et au démontage.
+    return () => {
+      simCircleRef.current?.setMap(null)
+      simCircleRef.current = null
+    }
+  }, [simulationMode, simShape, simulationPos, simulationRayon, mapInstance])
 
   // Empêcher Google Maps de bloquer la navigation
   // Patch addEventListener pour intercepter et bloquer tout ajout de beforeunload
@@ -617,14 +656,16 @@ export default function MapPage() {
     }
   }
 
-  // Simulation : appeler l'API quand la position ou le rayon change
-  const runSimulation = useCallback(async (lat: number, lng: number, rayon: number) => {
+  // Simulation : appeler l'API. `payload` est soit { latitude, longitude, rayonKm }
+  // (mode rayon) soit { polygon: [...] } (mode zone). Le résultat alimente le MÊME
+  // state simulationResult → même panneau, même export (parité garantie).
+  const runSimulation = useCallback(async (payload: Record<string, any>) => {
     setSimulationLoading(true)
     try {
       const response = await fetch('/api/admin/depots/simulate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latitude: lat, longitude: lng, rayonKm: rayon }),
+        body: JSON.stringify(payload),
       })
       const data = await response.json()
       if (!data.error) {
@@ -638,28 +679,57 @@ export default function MapPage() {
     setSimulationLoading(false)
   }, [])
 
-  // Debounce simulation
+  // Debounce simulation — mode rayon (déclenché par position/rayon)
   useEffect(() => {
-    if (!simulationMode || !simulationPos) return
+    if (!simulationMode || simShape !== 'rayon' || !simulationPos) return
     const timer = setTimeout(() => {
-      runSimulation(simulationPos.lat, simulationPos.lng, simulationRayon)
+      runSimulation({ latitude: simulationPos.lat, longitude: simulationPos.lng, rayonKm: simulationRayon })
     }, 500)
     return () => clearTimeout(timer)
-  }, [simulationPos, simulationRayon, simulationMode, runSimulation])
+  }, [simulationPos, simulationRayon, simulationMode, simShape, runSimulation])
+
+  // Debounce simulation — mode zone (déclenché à la fermeture du polygone)
+  useEffect(() => {
+    if (!simulationMode || simShape !== 'zone' || !polygonClosed || polygonPoints.length < 3) return
+    const timer = setTimeout(() => {
+      runSimulation({ polygon: polygonPoints })
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [polygonClosed, polygonPoints, simulationMode, simShape, runSimulation])
 
   const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
     if (!simulationMode || !e.latLng) return
-    setSimulationPos({ lat: e.latLng.lat(), lng: e.latLng.lng() })
-  }, [simulationMode])
+    const pt = { lat: e.latLng.lat(), lng: e.latLng.lng() }
+    if (simShape === 'zone') {
+      // En mode zone : chaque clic ajoute un point au polygone (tant qu'il n'est pas fermé)
+      if (polygonClosed) return
+      setPolygonPoints(prev => [...prev, pt])
+    } else {
+      setSimulationPos(pt)
+    }
+  }, [simulationMode, simShape, polygonClosed])
+
+  // Réinitialise tout l'état de simulation (sélection + résultat)
+  const resetSimulationState = useCallback(() => {
+    setSimulationPos(null)
+    setSimulationResult(null)
+    setSimAddress('')
+    setSimSuggestions([])
+    setPolygonPoints([])
+    setPolygonClosed(false)
+  }, [])
+
+  // Changement de sous-mode (rayon <-> zone) : on repart d'une sélection vierge
+  const switchSimShape = useCallback((shape: 'rayon' | 'zone') => {
+    setSimShape(shape)
+    resetSimulationState()
+  }, [resetSimulationState])
 
   const toggleSimulation = () => {
     if (simulationMode) {
       // Désactiver la simulation
       setSimulationMode(false)
-      setSimulationPos(null)
-      setSimulationResult(null)
-      setSimAddress('')
-      setSimSuggestions([])
+      resetSimulationState()
     } else {
       setSimulationMode(true)
     }
@@ -1091,7 +1161,33 @@ export default function MapPage() {
                   <Crosshair className="h-4 w-4 text-primary" />
                   Simulation
                 </Label>
-                {/* Champ adresse simulation avec autocomplétion */}
+
+                {/* Sous-mode de sélection : rayon (cercle) ou zone (polygone libre) */}
+                <div className="grid grid-cols-2 gap-1 rounded-md border p-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={simShape === 'rayon' ? 'default' : 'ghost'}
+                    className="h-7 text-xs"
+                    onClick={() => switchSimShape('rayon')}
+                  >
+                    <Crosshair className="h-3 w-3 mr-1" />
+                    Rayon
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={simShape === 'zone' ? 'default' : 'ghost'}
+                    className="h-7 text-xs"
+                    onClick={() => switchSimShape('zone')}
+                  >
+                    <MapPin className="h-3 w-3 mr-1" />
+                    Zone personnalisée
+                  </Button>
+                </div>
+
+                {/* Champ adresse simulation avec autocomplétion (mode rayon uniquement) */}
+                {simShape === 'rayon' && (
                 <div className="space-y-1 relative">
                   <Label className="text-xs">Adresse du dépôt virtuel</Label>
                   <Input
@@ -1116,12 +1212,72 @@ export default function MapPage() {
                     </div>
                   )}
                 </div>
-                {!simulationPos ? (
+                )}
+
+                {/* Contrôles mode zone (polygone) */}
+                {simShape === 'zone' && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Cliquez sur la carte pour ajouter des points, puis fermez la zone.
+                    </p>
+                    <p className="text-xs">
+                      Points : <span className="font-medium">{polygonPoints.length}</span>
+                      {polygonClosed && <span className="ml-1 text-emerald-700">(zone fermée)</span>}
+                    </p>
+                    <div className="grid grid-cols-1 gap-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={polygonPoints.length < 3 || polygonClosed}
+                        onClick={() => setPolygonClosed(true)}
+                      >
+                        Fermer la zone
+                      </Button>
+                      <div className="grid grid-cols-2 gap-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          disabled={polygonPoints.length === 0}
+                          onClick={() => {
+                            setPolygonPoints(prev => prev.slice(0, -1))
+                            setPolygonClosed(false)
+                            setSimulationResult(null)
+                          }}
+                        >
+                          Effacer dernier point
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          disabled={polygonPoints.length === 0}
+                          onClick={() => {
+                            setPolygonPoints([])
+                            setPolygonClosed(false)
+                            setSimulationResult(null)
+                          }}
+                        >
+                          Réinitialiser la zone
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bloc résultats — partagé entre rayon et zone (PARITÉ) */}
+                {(simShape === 'rayon' ? !simulationPos : !polygonClosed) ? (
                   <p className="text-xs text-muted-foreground">
-                    Saisissez une adresse ci-dessus ou cliquez sur la carte
+                    {simShape === 'rayon'
+                      ? 'Saisissez une adresse ci-dessus ou cliquez sur la carte'
+                      : 'Tracez une zone d\'au moins 3 points puis cliquez sur « Fermer la zone »'}
                   </p>
                 ) : (
                   <>
+                    {simShape === 'rayon' && (
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs">
                         <span>Rayon de couverture</span>
@@ -1130,11 +1286,12 @@ export default function MapPage() {
                       <Slider
                         value={[simulationRayon]}
                         onValueChange={([v]) => setSimulationRayon(v)}
-                        min={5}
+                        min={1}
                         max={150}
-                        step={5}
+                        step={1}
                       />
                     </div>
+                    )}
 
                     {simulationLoading ? (
                       <div className="flex items-center justify-center py-4">
@@ -1305,11 +1462,26 @@ export default function MapPage() {
                         </div>
 
                         <div className="grid grid-cols-1 gap-2 pt-1">
+                          {/* Tournée intelligente : mode rayon (centre = point simulé) OU
+                              mode zone polygone (centre = centroïde du polygone). Dans les
+                              deux cas on passe la liste EXACTE d'IDs éligibles via localStorage
+                              (clé `tournee_zone_ids`) que la page tournée relit (évite l'URL
+                              trop longue avec beaucoup de clients + garde un périmètre identique). */}
+                          {((simShape === 'rayon' && simulationPos) || (simShape === 'zone' && polygonClosed && polygonPoints.length >= 3)) && (
                           <Button
                             size="sm"
                             className="w-full"
                             disabled={!simulationResult.clientsEligibles}
                             onClick={() => {
+                              // Point de référence (anchor) transmis à la page tournée :
+                              // - rayon : le point simulé
+                              // - zone  : le centroïde du polygone (moyenne des sommets)
+                              const refPoint = simShape === 'zone'
+                                ? {
+                                    lat: polygonPoints.reduce((s, p) => s + p.lat, 0) / polygonPoints.length,
+                                    lng: polygonPoints.reduce((s, p) => s + p.lng, 0) / polygonPoints.length,
+                                  }
+                                : { lat: simulationPos!.lat, lng: simulationPos!.lng }
                               // Intersection éligibles tournée ∩ filtres carte (statuts/NAF/commerciaux/etc.)
                               // pour que la tournée respecte aussi ce que l'utilisateur a coché sur la carte.
                               try {
@@ -1323,9 +1495,9 @@ export default function MapPage() {
                                   JSON.stringify({
                                     ids: finalIds,
                                     ts: Date.now(),
-                                    lat: simulationPos.lat,
-                                    lng: simulationPos.lng,
-                                    radius: simulationRayon,
+                                    lat: refPoint.lat,
+                                    lng: refPoint.lng,
+                                    radius: simShape === 'zone' ? null : simulationRayon,
                                   })
                                 )
                               } catch {}
@@ -1339,8 +1511,11 @@ export default function MapPage() {
                               // l'algo NN exclut les clients trop éloignés et la tournée
                               // est plus petite que la zone affichée.
                               const mtt = 999
+                              // zone_radius : en mode zone, l'API ignore le rayon dès lors
+                              // qu'une liste d'IDs `include` est fournie (périmètre = IDs exacts).
+                              const zoneRadius = simShape === 'zone' ? 30 : simulationRayon
                               window.open(
-                                `/admin/tournees-intelligentes?method=zone&zone_lat=${simulationPos.lat}&zone_lng=${simulationPos.lng}&zone_radius=${simulationRayon}&capacite=${cap}&max_travel_minutes=${mtt}`,
+                                `/admin/tournees-intelligentes?method=zone&zone_lat=${refPoint.lat}&zone_lng=${refPoint.lng}&zone_radius=${zoneRadius}&capacite=${cap}&max_travel_minutes=${mtt}`,
                                 '_blank'
                               )
                             }}
@@ -1351,6 +1526,7 @@ export default function MapPage() {
                               <span className="ml-1 text-xs opacity-90">({simulationResult.clientsEligibles})</span>
                             )}
                           </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
@@ -1358,15 +1534,14 @@ export default function MapPage() {
                             disabled={!simulationResult.clientsAbsorbed}
                             onClick={async () => {
                               try {
+                                // Même route, payload selon le mode (parité d'export rayon/zone)
+                                const exportBody = simShape === 'zone'
+                                  ? { polygon: polygonPoints, scope: 'absorbed' }
+                                  : { latitude: simulationPos!.lat, longitude: simulationPos!.lng, rayonKm: simulationRayon, scope: 'absorbed' }
                                 const res = await fetch('/api/admin/depots/simulate/export', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    latitude: simulationPos.lat,
-                                    longitude: simulationPos.lng,
-                                    rayonKm: simulationRayon,
-                                    scope: 'absorbed',
-                                  }),
+                                  body: JSON.stringify(exportBody),
                                 })
                                 if (!res.ok) {
                                   const err = await res.json().catch(() => ({}))
@@ -1377,7 +1552,9 @@ export default function MapPage() {
                                 const url = URL.createObjectURL(blob)
                                 const a = document.createElement('a')
                                 a.href = url
-                                a.download = `zone-simulee-${simulationRayon}km-${new Date().toISOString().slice(0, 10)}.xlsx`
+                                a.download = (simShape === 'zone'
+                                  ? `zone-simulee-polygone-${new Date().toISOString().slice(0, 10)}.xlsx`
+                                  : `zone-simulee-${simulationRayon}km-${new Date().toISOString().slice(0, 10)}.xlsx`)
                                 document.body.appendChild(a)
                                 a.click()
                                 a.remove()
@@ -1391,6 +1568,7 @@ export default function MapPage() {
                             <Download className="h-3 w-3 mr-1" />
                             Exporter Excel ({simulationResult.clientsAbsorbed})
                           </Button>
+                          {simShape === 'rayon' && simulationPos && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -1405,6 +1583,7 @@ export default function MapPage() {
                             <Plus className="h-3 w-3 mr-1" />
                             Créer un dépôt ici
                           </Button>
+                          )}
                         </div>
                       </div>
                     ) : null}
@@ -1520,8 +1699,42 @@ export default function MapPage() {
                   )
                 })}
 
-                {/* Marqueur et cercle de simulation */}
-                {simulationMode && simulationPos && (
+                {/* Zone personnalisée (polygone) : sommets + tracé */}
+                {simulationMode && simShape === 'zone' && polygonPoints.length > 0 && (
+                  <>
+                    {/* Polygone rempli (refermé visuellement par <Polygon>) */}
+                    <Polygon
+                      paths={polygonPoints}
+                      options={{
+                        fillColor: '#8B5CF6',
+                        fillOpacity: polygonClosed ? 0.12 : 0.06,
+                        strokeColor: '#8B5CF6',
+                        strokeOpacity: 0.85,
+                        strokeWeight: 2,
+                        clickable: false,
+                      }}
+                    />
+                    {/* Sommets cliqués */}
+                    {polygonPoints.map((pt, i) => (
+                      <Marker
+                        key={`poly-pt-${i}`}
+                        position={pt}
+                        icon={{
+                          path: google.maps.SymbolPath.CIRCLE,
+                          scale: 5,
+                          fillColor: '#8B5CF6',
+                          fillOpacity: 1,
+                          strokeColor: '#fff',
+                          strokeWeight: 2,
+                        }}
+                        clickable={false}
+                      />
+                    ))}
+                  </>
+                )}
+
+                {/* Marqueur et cercle de simulation (mode rayon) */}
+                {simulationMode && simShape === 'rayon' && simulationPos && (
                   <>
                     <Marker
                       position={simulationPos}
@@ -1541,18 +1754,8 @@ export default function MapPage() {
                       }}
                       title="Dépôt simulé (déplaçable)"
                     />
-                    <Circle
-                      center={simulationPos}
-                      radius={simulationRayon * 1000}
-                      options={{
-                        fillColor: '#8B5CF6',
-                        fillOpacity: 0.1,
-                        strokeColor: '#8B5CF6',
-                        strokeOpacity: 0.8,
-                        strokeWeight: 2,
-                        clickable: false, // laisser passer le clic pour repositionner la simulation
-                      }}
-                    />
+                    {/* Le cercle de simulation est géré impérativement via simCircleRef
+                        (voir useEffect plus haut) : une seule instance, jamais accumulée. */}
                   </>
                 )}
 
