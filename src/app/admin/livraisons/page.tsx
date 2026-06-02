@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { PROCESS_STATUTS, PROCESS_STATUTS_SELECTABLES, STATUT_COLORS, type ProcessStatut } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -80,45 +81,11 @@ interface LivraisonRow {
   depot: { id: string; nom: string } | null
 }
 
+// Statuts alignes sur la page Client (PROCESS_STATUTS = client.statut_commercial).
 const statutOptions = [
   { value: 'all', label: 'Statut' },
-  { value: 'a_livrer', label: 'À livrer' },
-  { value: 'programmee', label: 'Programmée' },
-  { value: 'en_livraison', label: 'En livraison' },
-  { value: 'livree', label: 'Livré' },
-  { value: 'probleme_livraison', label: 'Problème livraison' },
-  { value: 'a_relivrer', label: 'À relivrer' },
-  { value: 'retrait_planifie', label: 'Retrait planifié' },
-  { value: 'retrait_effectue', label: 'Retrait effectué' },
-  { value: 'annulee', label: 'Annulé' },
-  { value: 'refuse', label: 'Refusé' },
+  ...PROCESS_STATUTS_SELECTABLES.map((k) => ({ value: k as string, label: PROCESS_STATUTS[k] })),
 ]
-
-const statutColors: Record<string, string> = {
-  a_livrer: 'bg-amber-100 text-amber-800',
-  programmee: 'bg-blue-100 text-blue-800',
-  en_livraison: 'bg-orange-100 text-orange-800',
-  livree: 'bg-green-100 text-green-800',
-  probleme_livraison: 'bg-red-100 text-red-800',
-  a_relivrer: 'bg-pink-100 text-pink-800',
-  retrait_planifie: 'bg-indigo-100 text-indigo-800',
-  retrait_effectue: 'bg-teal-100 text-teal-800',
-  annulee: 'bg-gray-100 text-gray-500',
-  refuse: 'bg-slate-100 text-slate-600',
-}
-
-const statutLabels: Record<string, string> = {
-  a_livrer: 'À livrer',
-  programmee: 'Programmée',
-  en_livraison: 'En livraison',
-  livree: 'Livré',
-  probleme_livraison: 'Problème livraison',
-  a_relivrer: 'À relivrer',
-  retrait_planifie: 'Retrait planifié',
-  retrait_effectue: 'Retrait effectué',
-  annulee: 'Annulé',
-  refuse: 'Refusé',
-}
 
 function SortableHeader({ label, column, currentSort, currentOrder, onSort, className }: {
   label: string; column: string; currentSort: string; currentOrder: 'asc' | 'desc'; onSort: (col: string) => void; className?: string
@@ -1030,8 +997,8 @@ export default function AdminLivraisonsPage() {
                           ) : (liv as any).cq_en_cours ? (
                             <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 animate-pulse" title="Contrôle en cours — à finaliser" />
                           ) : null}
-                          <Badge className={statutColors[liv.statut || 'a_livrer']}>
-                            {statutLabels[liv.statut || 'a_livrer'] || liv.statut}
+                          <Badge className={STATUT_COLORS[liv.client?.statut_commercial as ProcessStatut] || 'bg-gray-100 text-gray-800'}>
+                            {PROCESS_STATUTS[liv.client?.statut_commercial as ProcessStatut] || liv.client?.statut_commercial || '—'}
                           </Badge>
                         </div>
                         {liv.confirmation_statut && (
