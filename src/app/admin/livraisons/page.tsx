@@ -597,13 +597,19 @@ export default function AdminLivraisonsPage() {
   // Computed helpers for bulk action button states
   const selectedLivraisonsData = livraisons.filter(l => selectedLivraisons.has(l.id))
 
-  // "Formulaire retrait" — enabled only if ALL selected clients have depot_retrait_id (retrait clients)
-  const canSendFormulaireRetrait = selectedLivraisonsData.length > 0 &&
-    selectedLivraisonsData.every(l => l.client?.depot_retrait_id)
+  // Un client est en mode RETRAIT seulement s'il a un depot_retrait_id ET n'est PAS hors zone.
+  // Un client hors zone est toujours traite en livraison a domicile, meme s'il a un
+  // depot_retrait_id residuel (incoherence de classement) → il recoit le mail de livraison.
+  const isRetraitClient = (l: typeof selectedLivraisonsData[number]) =>
+    !!l.client?.depot_retrait_id && l.client?.type_de_zone !== 'hors_zone'
 
-  // "Mail livraison" — enabled only if ALL selected clients do NOT have depot_retrait_id (domicile/logistique)
+  // "Formulaire retrait" — enabled only if ALL selected clients are retrait clients
+  const canSendFormulaireRetrait = selectedLivraisonsData.length > 0 &&
+    selectedLivraisonsData.every(isRetraitClient)
+
+  // "Mail livraison" — enabled only if ALL selected clients are NOT retrait (domicile/logistique/hors zone)
   const canSendMailLivraison = selectedLivraisonsData.length > 0 &&
-    selectedLivraisonsData.every(l => !l.client?.depot_retrait_id)
+    selectedLivraisonsData.every(l => !isRetraitClient(l))
 
   // "Mail planning" — enabled only if ALL selected livraisons have statut 'en_livraison' (= programmé)
   const canSendMailPlanning = selectedLivraisonsData.length > 0 &&
