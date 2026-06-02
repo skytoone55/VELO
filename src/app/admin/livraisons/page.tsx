@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-  Loader2, Search, Truck, MapPin, Calendar, Phone, RefreshCw,
+  Loader2, Search, Truck, Calendar, Phone, RefreshCw,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
   Eye, X, Send, Mail, CheckCircle, ChevronDown, CalendarCheck, Copy,
   Download, RotateCcw, FileCheck,
@@ -905,7 +905,6 @@ export default function AdminLivraisonsPage() {
                   <SortableHeader label="Dép." column="departement" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="Zone" column="zone" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="Dépôt" column="depot" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
-                  <SortableHeader label="Mode" column="mode_livraison" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden md:table-cell" />
                   <SortableHeader label="Adresse" column="adresse" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell" />
                   <SortableHeader label="Vélos" column="velos" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} className="hidden lg:table-cell w-14 text-center" />
                   <SortableHeader label="Date prévue" column="creneau_date" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort} />
@@ -979,15 +978,6 @@ export default function AdminLivraisonsPage() {
                       <span className="text-sm">
                         {liv.depot?.nom || depotOptions.find(d => d.value === (liv.client?.depot_retrait_id || liv.client?.depot_logistique_id))?.label || '-'}
                       </span>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <div className="flex items-center gap-1 text-sm">
-                        {liv.mode_livraison === 'domicile' ? (
-                          <><Truck className="h-3 w-3" /> Domicile</>
-                        ) : (
-                          <><MapPin className="h-3 w-3" /> Relais</>
-                        )}
-                      </div>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       <div className="text-sm">
