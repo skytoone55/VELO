@@ -8,7 +8,7 @@ import { isMondayConfigured } from '@/lib/monday/config'
 import { geocodeAddress, buildClientAddress, classifyClientZone, DepotWithCoords } from '@/lib/geo/utils'
 import { getTenantConfig } from '@/lib/tenants'
 
-type BulkAction = 'send_form' | 'change_status'
+type BulkAction = 'send_form' | 'change_status' | 'bypass_livraison'
 
 interface BulkResult {
   clientId: string
@@ -89,6 +89,9 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Statut requis pour cette action' }, { status: 400 })
         }
         response = await handleBulkChangeStatus(clients, adminClient, data.statut)
+        break
+      case 'bypass_livraison':
+        response = await handleBulkBypassLivraison(clients, adminClient, user.id)
         break
       default:
         return NextResponse.json({ error: 'Action non reconnue' }, { status: 400 })
@@ -229,6 +232,89 @@ async function handleBulkSendForm(
 
   return {
     action: 'send_form',
+    total: clients.length,
+    success: results.filter(r => r.success).length,
+    failed: results.filter(r => !r.success).length,
+    results,
+  }
+}
+
+async function handleBulkBypassLivraison(
+  clients: any[],
+  adminClient: ReturnType<typeof createAdminClient>,
+  userId: string
+): Promise<BulkResponse> {
+  const results: BulkResult[] = []
+
+  for (const client of clients) {
+    try {
+      // Déjà bypassé / déjà en livraison → on ignore (comme l'action individuelle)
+      if (client.bypass_formulaire) {
+        results.push({ clientId: client.id, success: false, error: 'Bypass déjà effectué' })
+        continue
+      }
+
+      const now = new Date().toISOString()
+
+      // Pose le bypass + passage direct au statut "À livrer"
+      const { error: updateClientError } = await adminClient
+        .from('clients')
+        .update({
+          bypass_formulaire: true,
+          bypass_formulaire_par: userId,
+          bypass_formulaire_at: now,
+          statut_commercial: 'a_livrer',
+          date_statut: now,
+          updated_at: now,
+        })
+        .eq('id', client.id)
+
+      if (updateClientError) {
+        results.push({ clientId: client.id, success: false, error: updateClientError.message })
+        continue
+      }
+
+      // Crée la livraison si aucune active n'existe
+      const { data: existingLivraison } = await adminClient
+        .from('livraisons')
+        .select('id')
+        .eq('client_id', client.id)
+        .not('statut', 'eq', 'annulee')
+        .limit(1)
+        .maybeSingle()
+
+      if (!existingLivraison) {
+        const depotId = client.depot_logistique_id || client.depot_retrait_id || null
+        await adminClient
+          .from('livraisons')
+          .insert({
+            client_id: client.id,
+            statut: 'a_livrer',
+            mode_livraison: client.depot_retrait_id ? 'retrait' : 'livraison',
+            depot_id: depotId,
+            created_at: now,
+            updated_at: now,
+          })
+      }
+
+      // Trace la transition
+      await adminClient.from('workflow_transitions').insert({
+        entity_type: 'client',
+        entity_id: client.id,
+        statut_avant: client.statut_commercial,
+        statut_apres: 'a_livrer',
+        effectue_par: userId,
+        raison: `Bypass formulaire (masse) — passage direct en livraison (${client.raison_sociale})`,
+      })
+
+      results.push({ clientId: client.id, success: true })
+    } catch (error: any) {
+      results.push({ clientId: client.id, success: false, error: error.message })
+    }
+  }
+
+  return {
+    action: 'bypass_livraison',
     total: clients.length,
     success: results.filter(r => r.success).length,
     failed: results.filter(r => !r.success).length,

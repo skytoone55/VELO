@@ -194,6 +194,7 @@ export default function AdminClientsPage() {
   const [bypassClient, setBypassClient] = useState<Client | null>(null)
   const [bypassStep, setBypassStep] = useState(0) // 0=closed, 1=first confirm, 2=second confirm
   const [bypassLoading, setBypassLoading] = useState(false)
+  const [bulkBypassConfirm, setBulkBypassConfirm] = useState(false) // confirmation bypass de masse
 
   // Sélection multiple
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
@@ -654,7 +655,7 @@ export default function AdminClientsPage() {
   }
 
   // === Actions groupées ===
-  const handleBulkAction = async (action: 'send_form' | 'change_status', data?: { statut?: string }) => {
+  const handleBulkAction = async (action: 'send_form' | 'change_status' | 'bypass_livraison', data?: { statut?: string }) => {
     if (selectedClients.size === 0) return
     setBulkActionLoading(true)
 
@@ -1371,6 +1372,16 @@ export default function AdminClientsPage() {
               </Button>
               <Button
                 size="sm"
+                variant="outline"
+                onClick={() => setBulkBypassConfirm(true)}
+                disabled={bulkActionLoading}
+                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200"
+              >
+                <Navigation className="h-4 w-4 mr-2" />
+                Passage direct en livraison
+              </Button>
+              <Button
+                size="sm"
                 variant="ghost"
                 onClick={handleClearSelection}
                 disabled={bulkActionLoading}
@@ -1730,6 +1741,32 @@ export default function AdminClientsPage() {
               className="bg-orange-600 hover:bg-orange-700 text-white"
             >
               {bypassLoading ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Bypass en cours...</>
+              ) : (
+                'Confirmer le bypass'
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bypass de masse — confirmation */}
+      <AlertDialog open={bulkBypassConfirm} onOpenChange={(open) => { if (!open && !bulkActionLoading) setBulkBypassConfirm(false) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Passage direct en livraison — {selectedClients.size} client{selectedClients.size > 1 ? 's' : ''}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Les <strong>{selectedClients.size}</strong> client{selectedClients.size > 1 ? 's' : ''} sélectionné{selectedClients.size > 1 ? 's' : ''} vont être bypassés et passés directement au statut &quot;À livrer&quot; sans formulaire. Les clients déjà bypassés sont ignorés. Cette action est tracée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkActionLoading}>Annuler</AlertDialogCancel>
+            <Button
+              onClick={async () => { await handleBulkAction('bypass_livraison'); setBulkBypassConfirm(false) }}
+              disabled={bulkActionLoading}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {bulkActionLoading ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Bypass en cours...</>
               ) : (
                 'Confirmer le bypass'
