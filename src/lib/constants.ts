@@ -223,6 +223,11 @@ export const CQ_CATEGORIES = {
   mail_client_recu: 'Mail client reçu',
   mail_enemat_sav: 'Mail enemat SAV',
   client_nrp: 'Client NRP',
+  urgent: 'URGENT',
+  a_refaire: 'À refaire',
+  attente_signature: 'Attente signature',
+  attente_photo: 'Attente photo',
+  attente_mail_client: 'Attente mail client',
   autre: 'Autre',
 } as const
 
@@ -236,6 +241,11 @@ export const CQ_CATEGORIE_COLORS: Record<CqCategorie, string> = {
   mail_client_recu: 'bg-green-100 text-green-800',
   mail_enemat_sav: 'bg-purple-100 text-purple-800',
   client_nrp: 'bg-orange-100 text-orange-800',
+  urgent: 'bg-red-600 text-white',
+  a_refaire: 'bg-green-600 text-white',
+  attente_signature: 'bg-amber-100 text-amber-800',
+  attente_photo: 'bg-cyan-100 text-cyan-800',
+  attente_mail_client: 'bg-indigo-100 text-indigo-800',
   autre: 'bg-slate-100 text-slate-800',
 }
 
