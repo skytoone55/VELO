@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateHaversineDistance } from '@/lib/geo/utils'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
+import { parseFilters, isClientEligible } from '../_filters'
 
 type LatLng = { lat: number; lng: number }
 
@@ -48,6 +49,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { latitude, longitude, rayonKm = 30, scope = 'absorbed', polygon } = body
+    // Filtres actifs de la carte (statut / NAF / commercial). Vide = pas de restriction.
+    const filters = parseFilters(body)
 
     const isPolygonMode = Array.isArray(polygon) && polygon.length >= 3
 
@@ -81,7 +84,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Filtre : polygone (point-in-polygon) OU rayon (Haversine). Distance vs réf (centre ou centroïde).
-    const STATUTS_ELIGIBLES = new Set(['controle_valide', 'formulaire_envoye', 'a_livrer'])
+    // Éligible tournée = ensemble livrable ∩ filtres actifs (voir _filters.ts) :
+    // exclut systématiquement livre / client_hs.
     const inZone: any[] = []
     for (const c of allClients) {
       const d = calculateHaversineDistance(refPoint.lat, refPoint.lng, c.latitude, c.longitude)
@@ -89,10 +93,7 @@ export async function POST(request: NextRequest) {
         ? pointInPolygon(c.latitude, c.longitude, polygon as LatLng[])
         : d <= rayonKm
       if (!inSelection) continue
-      const isEligible =
-        c.validation_naf === 'OUI' &&
-        !!c.depot_logistique_id &&
-        STATUTS_ELIGIBLES.has(c.statut_commercial || '')
+      const isEligible = isClientEligible(c, filters)
       if (scope === 'eligibles' && !isEligible) continue
       inZone.push({ ...c, _distance_km: Math.round(d * 10) / 10, _eligible_tournee: isEligible ? 'OUI' : 'NON' })
     }

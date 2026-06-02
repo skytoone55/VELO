@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateHaversineDistance } from '@/lib/geo/utils'
 import { requireRole, isAuthError } from '@/lib/auth/require-role'
+import { parseFilters, isClientEligible } from './_filters'
 
 type LatLng = { lat: number; lng: number }
 
@@ -54,6 +55,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { latitude, longitude, rayonKm = 30, rayonPayantKm, polygon } = body
+    // Filtres actifs de la carte (statut / NAF / commercial). Vide = pas de restriction.
+    const filters = parseFilters(body)
 
     const isPolygonMode = Array.isArray(polygon) && polygon.length >= 3
 
@@ -80,7 +83,7 @@ export async function POST(request: NextRequest) {
     while (true) {
       const { data: clients, error } = await adminClient
         .from('clients')
-        .select('id, latitude, longitude, depot_retrait_id, depot_logistique_id, velo_valide, velo_devis, raison_sociale, statut_commercial, validation_naf')
+        .select('id, latitude, longitude, depot_retrait_id, depot_logistique_id, velo_valide, velo_devis, raison_sociale, statut_commercial, validation_naf, monday_board_id')
         .not('monday_sync_status', 'eq', 'deleted')
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
@@ -118,9 +121,8 @@ export async function POST(request: NextRequest) {
     const statutsBreakdown: Record<string, { clients: number; velos: number }> = {}
     const nafBreakdown: Record<string, number> = { OUI: 0, NON: 0, AUTRE: 0 }
 
-    // Critères "éligible tournée intelligente" : NAF=OUI + dépôt logistique assigné +
-    // statut commercial actif (par défaut : controle_valide / formulaire_envoye / a_livrer)
-    const STATUTS_ELIGIBLES_TOURNEE = new Set(['controle_valide', 'formulaire_envoye', 'a_livrer'])
+    // Éligible tournée intelligente = client AVANT livraison (ensemble livrable)
+    // ∩ filtres actifs de la carte (statut / NAF / commercial). Voir _filters.ts.
     let clientsEligibles = 0
     let velosEligibles = 0
     let clientsNonEligibles = 0
@@ -155,12 +157,9 @@ export async function POST(request: NextRequest) {
         totalVelosDevis += client.velo_devis || 0
         clientsAbsorbedIds.push(client.id)
 
-        // Éligibilité tournée intelligente
-        // Cascade depot_logistique_id ?? depot_retrait_id (doctrine multi-tenant Velo)
-        const isEligible =
-          client.validation_naf === 'OUI' &&
-          !!(client.depot_logistique_id || client.depot_retrait_id) &&
-          STATUTS_ELIGIBLES_TOURNEE.has(client.statut_commercial || '')
+        // Éligibilité tournée intelligente : ensemble livrable ∩ filtres actifs.
+        // Exclut systématiquement livre / client_hs (jamais dans STATUTS_LIVRABLES).
+        const isEligible = isClientEligible(client, filters)
         if (isEligible) {
           clientsEligibles++
           velosEligibles += velosClient

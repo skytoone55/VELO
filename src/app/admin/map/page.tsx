@@ -698,23 +698,34 @@ export default function MapPage() {
     setSimulationLoading(false)
   }, [])
 
+  // Filtres actifs de la carte transmis à la simulation (statut / NAF / commercial).
+  // Un filtre vide = pas de restriction côté serveur. (Pas de filtre département dans l'UI carte.)
+  const simulationFilters = useMemo(
+    () => ({
+      selectedStatuts,
+      selectedNaf,
+      selectedCommerciaux,
+    }),
+    [selectedStatuts, selectedNaf, selectedCommerciaux]
+  )
+
   // Debounce simulation — mode rayon (déclenché par position/rayon)
   useEffect(() => {
     if (!simulationMode || simShape !== 'rayon' || !simulationPos) return
     const timer = setTimeout(() => {
-      runSimulation({ latitude: simulationPos.lat, longitude: simulationPos.lng, rayonKm: simulationRayon })
+      runSimulation({ latitude: simulationPos.lat, longitude: simulationPos.lng, rayonKm: simulationRayon, ...simulationFilters })
     }, 500)
     return () => clearTimeout(timer)
-  }, [simulationPos, simulationRayon, simulationMode, simShape, runSimulation])
+  }, [simulationPos, simulationRayon, simulationMode, simShape, simulationFilters, runSimulation])
 
   // Debounce simulation — mode zone (déclenché à la fermeture du polygone)
   useEffect(() => {
     if (!simulationMode || simShape !== 'zone' || !polygonClosed || polygonPoints.length < 3) return
     const timer = setTimeout(() => {
-      runSimulation({ polygon: polygonPoints })
+      runSimulation({ polygon: polygonPoints, ...simulationFilters })
     }, 300)
     return () => clearTimeout(timer)
-  }, [polygonClosed, polygonPoints, simulationMode, simShape, runSimulation])
+  }, [polygonClosed, polygonPoints, simulationMode, simShape, simulationFilters, runSimulation])
 
   const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
     if (!simulationMode || !e.latLng) return
@@ -1353,7 +1364,7 @@ export default function MapPage() {
                               </div>
                             </div>
                             <p className="text-[10px] text-muted-foreground italic">
-                              Critères : NAF OUI + dépôt logistique assigné + statut Contrôle validé / Formulaire envoyé / À livrer
+                              Éligibles = clients livrables (statut avant « Livré » : À livrer, Formulaire envoyé, Contrôle validé, En livraison, À relivrer), restreints aux filtres actifs (statut, NAF, commercial). Les clients livrés et HS sont exclus.
                             </p>
                           </div>
                         )}
@@ -1554,9 +1565,10 @@ export default function MapPage() {
                             onClick={async () => {
                               try {
                                 // Même route, payload selon le mode (parité d'export rayon/zone)
+                                // + mêmes filtres actifs que la simulation (statut / NAF / commercial)
                                 const exportBody = simShape === 'zone'
-                                  ? { polygon: polygonPoints, scope: 'absorbed' }
-                                  : { latitude: simulationPos!.lat, longitude: simulationPos!.lng, rayonKm: simulationRayon, scope: 'absorbed' }
+                                  ? { polygon: polygonPoints, scope: 'absorbed', ...simulationFilters }
+                                  : { latitude: simulationPos!.lat, longitude: simulationPos!.lng, rayonKm: simulationRayon, scope: 'absorbed', ...simulationFilters }
                                 const res = await fetch('/api/admin/depots/simulate/export', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
