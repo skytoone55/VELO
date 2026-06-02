@@ -790,7 +790,7 @@ export async function sendMailLivraisonEmail(data: {
               </div>
 
               <h2 style="margin: 0 0 20px 0; color: #18181b; font-size: 22px; text-align: center;">
-                Votre vélo cargo est prêt !
+                Bonne nouvelle, vos vélos cargo sont arrivés !
               </h2>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
@@ -798,17 +798,24 @@ export async function sendMailLivraisonEmail(data: {
               </p>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Nous avons le plaisir de vous informer que votre vélo cargo à assistance électrique est prêt pour la livraison au nom de <strong>${raisonSociale}</strong>.
+                Nous avons le plaisir de vous annoncer que vos vélos cargo à assistance électrique sont enfin arrivés dans nos dépôts logistiques, au nom de <strong>${raisonSociale}</strong>.
               </p>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Vous serez prochainement contacté par l'un de nos livreurs pour convenir des modalités de livraison, ou vous recevrez un email contenant les informations et le créneau de livraison.
+                Ils seront livrés <strong>entre le 4 juin et le 13 juillet 2026</strong>.
               </p>
 
               <div style="background-color: #f0fdf4; border-radius: 8px; padding: 16px; margin: 0 0 20px 0;">
                 <p style="margin: 0; color: #166534; font-size: 14px; line-height: 1.6;">
-                  <strong>🚚 Livraison à domicile</strong><br>
-                  Notre équipe prendra contact avec vous dans les prochains jours pour fixer la date et le créneau de livraison qui vous convient.
+                  <strong>📬 Surveillez bien vos emails</strong><br>
+                  Vous serez prévenu <strong>24 à 48 heures avant</strong> le passage de notre livreur.
+                </p>
+              </div>
+
+              <div style="background-color: #fef2f2; border-radius: 8px; padding: 16px; margin: 0 0 20px 0;">
+                <p style="margin: 0; color: #991b1b; font-size: 14px; line-height: 1.6;">
+                  <strong>📍 Adresse de livraison</strong><br>
+                  La livraison s'effectuera <strong>obligatoirement à l'adresse indiquée dans votre dossier</strong>. Cette adresse ne peut pas être modifiée.
                 </p>
               </div>
 
@@ -833,7 +840,7 @@ export async function sendMailLivraisonEmail(data: {
   try {
     await sendEmail({
       to,
-      subject: `${tenant.name} - Votre vélo cargo est prêt — informations de livraison`,
+      subject: `${tenant.name} - Bonne nouvelle, vos vélos cargo sont arrivés`,
       html,
     })
     return true
