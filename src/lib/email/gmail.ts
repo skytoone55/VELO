@@ -178,8 +178,11 @@ function getContactSection(tenant: ReturnType<typeof getTenantConfig>): string {
  */
 function getFullContactSection(tenant: ReturnType<typeof getTenantConfig>): string {
   return `
-    <p style="margin: 0; color: #52525b; font-size: 17px; line-height: 1.6; font-weight: 500;">
-      En cas de question, contactez-nous à <a href="mailto:${tenant.email}" style="color: ${tenant.branding.colors.secondary}; font-weight: bold;">${tenant.email}</a> ou par téléphone au <strong>${tenant.phoneFormatted}</strong>
+    <p style="margin: 0; color: #52525b; font-size: 17px; line-height: 1.7; font-weight: 500;">
+      En cas de question, contactez-nous à<br>
+      ✉️ <a href="mailto:${tenant.email}" style="color: ${tenant.branding.colors.secondary}; font-weight: bold;">${tenant.email}</a><br>
+      ou par téléphone au<br>
+      📞 <strong>${tenant.phoneFormatted}</strong>
     </p>
   `
 }

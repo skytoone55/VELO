@@ -85,7 +85,7 @@ const ecovoltConfig: TenantConfig = {
 
   name: 'ECO-VOLT',
   fullName: 'ECO-VOLT',
-  tagline: 'Vélos cargo électriques',
+  tagline: 'Vélos cargo à assistance électrique VAS',
 
   territories: ['971', '972', '973', '974'],
   url: 'https://velo-fawn.vercel.app',
@@ -143,7 +143,7 @@ const ppeConfig: TenantConfig = {
 
   name: 'PPE Énergie',
   fullName: 'PRESERVATION DU PATRIMOINE ENERGIE (PPE)',
-  tagline: 'Vélos cargo électriques',
+  tagline: 'Vélos cargo à assistance électrique VAS',
 
   territories: ['FR'],
   url: 'https://velo-ppe.vercel.app',
