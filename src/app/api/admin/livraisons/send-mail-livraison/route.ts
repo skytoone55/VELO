@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
   const { data: client } = await adminClient
     .from('clients')
-    .select('id, email_beneficiaire, email, contact_nom, contact_prenom, nom_contact, prenom_contact, raison_sociale, reference_retina')
+    .select('id, email_beneficiaire, email, contact_nom, contact_prenom, nom_contact, prenom_contact, raison_sociale, reference_retina, adresse_livraison_ligne1, adresse_livraison_ligne2, adresse_livraison_cp, adresse_livraison_ville, adresse_societe_ligne1, adresse_societe_ligne2, adresse_societe_cp, adresse_societe_ville')
     .eq('id', clientId)
     .single()
 
@@ -35,11 +35,23 @@ export async function POST(request: NextRequest) {
     client.nom_contact || client.contact_nom,
   ].filter(Boolean).join(' ') || client.raison_sociale
 
+  // Adresse de livraison (prioritaire) sinon adresse societe — celle du dossier.
+  const hasLivraison = client.adresse_livraison_ligne1 || client.adresse_livraison_ville
+  const adresse = [
+    hasLivraison ? client.adresse_livraison_ligne1 : client.adresse_societe_ligne1,
+    hasLivraison ? client.adresse_livraison_ligne2 : client.adresse_societe_ligne2,
+    [
+      hasLivraison ? client.adresse_livraison_cp : client.adresse_societe_cp,
+      hasLivraison ? client.adresse_livraison_ville : client.adresse_societe_ville,
+    ].filter(Boolean).join(' '),
+  ].filter(Boolean).join(', ') || null
+
   const success = await sendMailLivraisonEmail({
     to: recipientEmail,
     clientName,
     raisonSociale: client.raison_sociale,
     referenceRetina: client.reference_retina,
+    adresse,
   })
 
   if (!success) {

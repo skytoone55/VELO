@@ -156,8 +156,8 @@ function getContactSection(tenant: ReturnType<typeof getTenantConfig>): string {
  */
 function getFullContactSection(tenant: ReturnType<typeof getTenantConfig>): string {
   return `
-    <p style="margin: 0; color: #71717a; font-size: 13px; line-height: 1.5;">
-      En cas de question, contactez-nous à <a href="mailto:${tenant.email}" style="color: ${tenant.branding.colors.secondary};">${tenant.email}</a> ou par téléphone au <strong>${tenant.phoneFormatted}</strong>
+    <p style="margin: 0; color: #52525b; font-size: 17px; line-height: 1.6; font-weight: 500;">
+      En cas de question, contactez-nous à <a href="mailto:${tenant.email}" style="color: ${tenant.branding.colors.secondary}; font-weight: bold;">${tenant.email}</a> ou par téléphone au <strong>${tenant.phoneFormatted}</strong>
     </p>
   `
 }
@@ -760,10 +760,11 @@ export async function sendMailLivraisonEmail(data: {
   clientName: string
   raisonSociale: string
   referenceRetina?: string | null
+  adresse?: string | null
   tenantId?: string
 }): Promise<boolean> {
   const tenant = getTenantConfig()
-  const { to, clientName, raisonSociale, referenceRetina } = data
+  const { to, clientName, raisonSociale, referenceRetina, adresse } = data
 
   const html = `
 <!DOCTYPE html>
@@ -816,7 +817,7 @@ export async function sendMailLivraisonEmail(data: {
               <div style="background-color: #fef2f2; border-radius: 8px; padding: 16px; margin: 0 0 20px 0;">
                 <p style="margin: 0; color: #991b1b; font-size: 14px; line-height: 1.6;">
                   <strong>📍 Adresse de livraison</strong><br>
-                  La livraison s'effectuera <strong>obligatoirement à l'adresse indiquée dans votre dossier</strong>. Cette adresse ne peut pas être modifiée.
+                  La livraison s'effectuera <strong>obligatoirement à l'adresse indiquée dans votre dossier</strong>. Cette adresse ne peut pas être modifiée.${adresse ? `<br><br><span style="font-size: 16px; font-weight: bold; color: #18181b;">${adresse}</span>` : ''}
                 </p>
               </div>
 
@@ -841,7 +842,7 @@ export async function sendMailLivraisonEmail(data: {
   try {
     await sendEmail({
       to,
-      subject: `${tenant.name} - Bonne nouvelle, vos vélos cargo à assistance électrique sont arrivés${referenceRetina ? ` — Ref: ${referenceRetina}` : ''}`,
+      subject: `Bonne nouvelle, vos vélos cargo à assistance électrique sont arrivés${referenceRetina ? ` — Ref: ${referenceRetina}` : ''}`,
       html,
     })
     return true
