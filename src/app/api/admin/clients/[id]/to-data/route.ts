@@ -5,9 +5,12 @@ import { requireRole, isAuthError } from '@/lib/auth/require-role'
 /**
  * POST /api/admin/clients/[id]/to-data
  * Renvoyer un client vers data_clients
- * Body: { comment: string } (obligatoire)
+ * Body: { comment: string (obligatoire), statut_data?: 'HS' | 'retour_client' | 'en_attente' }
+ * Si statut_data est fourni, il prime ; sinon fallback sur le mapping derive du statut_commercial.
  * Nettoie les livraisons et FNUCI associes
  */
+const ALLOWED_STATUT_DATA = ['HS', 'retour_client', 'en_attente'] as const
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -17,10 +20,17 @@ export async function POST(
     if (isAuthError(authResult)) return authResult
 
     const { id } = await params
-    const { comment } = await request.json()
+    const { comment, statut_data: statutDataInput } = await request.json()
 
     if (!comment?.trim()) {
       return NextResponse.json({ error: 'Commentaire obligatoire pour renvoyer vers Data' }, { status: 400 })
+    }
+
+    if (statutDataInput !== undefined && !ALLOWED_STATUT_DATA.includes(statutDataInput)) {
+      return NextResponse.json(
+        { error: `statut_data invalide (valeurs autorisees : ${ALLOWED_STATUT_DATA.join(', ')})` },
+        { status: 400 }
+      )
     }
 
     const adminClient = createAdminClient()
@@ -73,10 +83,12 @@ export async function POST(
     }
 
     // Inserer dans data_clients
-    const logEntry = `[Retour Data ${new Date().toLocaleDateString('fr-FR')} par ${userName}] ${comment.trim()}`
+    const effectiveStatut = statutDataInput ?? (client.statut_commercial === 'client_hs' ? 'HS' : 'retour_client')
+    const logLabel = effectiveStatut === 'HS' ? 'HS' : 'Retour Data'
+    const logEntry = `[${logLabel} ${new Date().toLocaleDateString('fr-FR')} par ${userName}] ${comment.trim()}`
     const existingNotes = client.notes_internes ? client.notes_internes + '\n' : ''
 
-    const { error: insertError } = await adminClient
+    const { data: insertedDataClient, error: insertError } = await adminClient
       .from('data_clients')
       .insert({
         raison_sociale: client.raison_sociale,
@@ -100,21 +112,89 @@ export async function POST(
         commercial_assigne: client.commercial_assigne,
         code_ape: client.code_ape,
         validation_naf: client.validation_naf,
-        // Report du statut : un client HS reste HS dans Data Client (definitivement mort),
+        // Report du statut : statut_data explicite prime (ex. bouton "Client HS" envoie 'HS').
+        // Sinon fallback : un client HS reste HS dans Data Client (definitivement mort),
         // les autres arrivent en retour_client (susceptibles de revenir).
-        statut_data: client.statut_commercial === 'client_hs' ? 'HS' : 'retour_client',
+        statut_data: effectiveStatut,
         motif_retour: comment.trim(),
         retour_par: authResult.id,
         retour_at: now,
         notes_internes: existingNotes + logEntry,
       })
+      .select('id')
+      .single()
 
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 })
+    if (insertError || !insertedDataClient) {
+      return NextResponse.json({ error: insertError?.message || 'Echec insertion data_clients' }, { status: 500 })
     }
 
-    // Supprimer de clients
-    await adminClient.from('clients').delete().eq('id', id)
+    // Helper de rollback : retire la ligne data_clients qu'on vient d'inserer
+    // pour ne jamais laisser le client en double si la suppression echoue ensuite.
+    const rollbackDataClient = async () => {
+      await adminClient.from('data_clients').delete().eq('id', insertedDataClient.id)
+    }
+
+    // Nettoyer les FK RESTRICTIVES (NO ACTION) qui bloqueraient le DELETE du client.
+    // Les FK CASCADE (livraisons, clients_hors_zone, distances_cache, formulaires_log,
+    // user_societes) et SET NULL (fnuci, deja libere ci-dessus) se gerent automatiquement.
+    //
+    // - webhook_logs : logs transients -> suppression OK
+    // - codes_enemat / email_alerts / sync_monday_log : nullable -> on detache (client_id=null)
+    // - enemat_history : historique a CONSERVER -> on detache (client_id=null), colonne rendue
+    //   nullable par migration pour permettre le detachement sans perdre l'historique.
+    const { error: webhookDelError } = await adminClient
+      .from('webhook_logs')
+      .delete()
+      .eq('client_id', id)
+    if (webhookDelError) {
+      await rollbackDataClient()
+      return NextResponse.json(
+        { error: `Echec nettoyage webhook_logs : ${webhookDelError.message}` },
+        { status: 500 }
+      )
+    }
+
+    const detachTables = ['enemat_history', 'codes_enemat', 'email_alerts', 'sync_monday_log'] as const
+    for (const table of detachTables) {
+      const { error: detachError } = await adminClient
+        .from(table)
+        .update({ client_id: null })
+        .eq('client_id', id)
+      if (detachError) {
+        await rollbackDataClient()
+        return NextResponse.json(
+          { error: `Echec detachement ${table} : ${detachError.message}` },
+          { status: 500 }
+        )
+      }
+    }
+
+    // Supprimer de clients et VERIFIER que la suppression a reussi.
+    const { error: deleteError } = await adminClient
+      .from('clients')
+      .delete()
+      .eq('id', id)
+    if (deleteError) {
+      await rollbackDataClient()
+      return NextResponse.json(
+        { error: `Echec suppression du client : ${deleteError.message}` },
+        { status: 500 }
+      )
+    }
+
+    // Garde-fou : confirmer que le client n'existe plus (FK restrictive residuelle imprevue).
+    const { data: stillThere } = await adminClient
+      .from('clients')
+      .select('id')
+      .eq('id', id)
+      .maybeSingle()
+    if (stillThere) {
+      await rollbackDataClient()
+      return NextResponse.json(
+        { error: 'Le client n\'a pas pu etre supprime (reference bloquante residuelle). Aucun doublon cree.' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
       success: true,

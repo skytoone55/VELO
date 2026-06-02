@@ -324,27 +324,26 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     fetchData()
   }, [resolvedParams.id])
 
+  // Client HS = bascule directe vers data_clients avec statut_data='HS'
+  // (annule livraisons/FNUCI, supprime de la table clients, puis redirige).
   const handleClientHS = async () => {
     if (!client || !hsComment.trim()) return
     setHsLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/admin/clients/${client.id}/hs`, {
+      const res = await fetch(`/api/admin/clients/${client.id}/to-data`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comment: hsComment.trim() }),
+        body: JSON.stringify({ comment: hsComment.trim(), statut_data: 'HS' }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur')
-      const now = new Date().toISOString()
-      const logEntry = `[HS ${new Date().toLocaleDateString('fr-FR')} par ${user?.nom || user?.email || 'Admin'}] ${hsComment.trim()}`
-      const existingNotes = client.notes_internes ? client.notes_internes + '\n' : ''
-      setClient({ ...client, statut_commercial: 'client_hs', notes_internes: existingNotes + logEntry, date_statut: now, fnuci_ids: [] })
-      setLivraisons(livraisons.map(l => ({ ...l, statut: 'annulee', cq_valide: false, cq_en_cours: false })))
-      setSuccess(`Client HS — ${data.livraisons_annulees} livraison(s) annulée(s), ${data.fnuci_liberes} FNUCI libéré(s)`)
       setHsDialogOpen(false)
       setHsConfirmOpen(false)
       setHsComment('')
+      setSuccess(`Client passé en HS et envoyé vers Data — ${data.livraisonsAnnulees} livraison(s) annulée(s), ${data.fnuciLiberes} FNUCI libéré(s)`)
+      // Le client n'existe plus dans la table clients → rediriger vers la liste
+      setTimeout(() => router.push('/admin/clients'), 2000)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -828,7 +827,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             )}
 
             {/* Copier lien formulaire — visible si formulaire envoyé et pas encore complété */}
-            {client.token_formulaire && !formulaireComplete && (
+            {client.token_formulaire && !formulaireComplete && client.statut_commercial !== 'client_hs' && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -856,7 +855,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                   <DialogHeader>
                     <DialogTitle>Passer le client en HS</DialogTitle>
                     <DialogDescription>
-                      Cette action marquera le client comme annulé (HS). Veuillez indiquer la raison.
+                      Le client sera marqué HS et envoyé dans Data Client (statut HS). Il quittera l&apos;espace clients actif, ses livraisons et FNUCI seront annulés. Veuillez indiquer la raison.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-3">
@@ -882,8 +881,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </Dialog>
             )}
 
-            {/* Bouton Renvoyer vers Data — admin et super_admin uniquement */}
-            {(user?.role === 'super_admin' || user?.role === 'admin') && client.statut_commercial !== 'client_hs' && (
+            {/* Bouton Renvoyer vers Data — admin et super_admin uniquement (inclut les clients HS : ils conservent leur statut HS dans Data Client) */}
+            {(user?.role === 'super_admin' || user?.role === 'admin') && (
               <Dialog open={toDataDialogOpen} onOpenChange={setToDataDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm" variant="outline" className="border-orange-400 text-orange-300 hover:bg-orange-500/20">
@@ -1803,7 +1802,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer le passage en HS</AlertDialogTitle>
             <AlertDialogDescription>
-              Le client <strong>{client?.raison_sociale}</strong> sera marqué comme HS (annulé).<br />
+              Le client <strong>{client?.raison_sociale}</strong> sera marqué HS et déplacé dans Data Client (statut HS). Il sera retiré de l&apos;espace clients actif.<br />
               Raison : &quot;{hsComment}&quot;<br /><br />
               Cette action est enregistrée avec votre nom et la date.
             </AlertDialogDescription>

@@ -128,6 +128,22 @@ function normalizeAgence(agence: string | null | undefined): string {
   return 'FR'
 }
 
+// Déduit le DOM (971/972/973/974) à partir des coordonnées GPS.
+// Les DOM sont géographiquement très distincts : on les sépare par bornes lat/lng.
+// Retourne null si les coordonnées ne tombent dans aucune zone DOM (ex. métropole).
+function domFromCoords(lat: number | null | undefined, lng: number | null | undefined): '971' | '972' | '973' | '974' | null {
+  if (lat == null || lng == null) return null
+  // Réunion (974) : océan Indien (~55°E)
+  if (lng > 40) return '974'
+  // Guyane (973) : Amérique du Sud, ~1..7°N et -55..-51°O
+  if (lat >= 1 && lat <= 7 && lng >= -55 && lng <= -51) return '973'
+  // Guadeloupe (971) : Antilles nord, lat ≥ 15.3
+  if (lat >= 15.3 && lng >= -62 && lng <= -60.8) return '971'
+  // Martinique (972) : Antilles sud, lat 14.2..15.0
+  if (lat >= 14.2 && lat <= 15.0 && lng >= -61.4 && lng <= -60.7) return '972'
+  return null
+}
+
 // Centres géographiques par agence
 function getAgenceCenters(tid: string): Record<string, { lat: number; lng: number; zoom: number }> {
   return tid === 'ppe'
@@ -263,7 +279,10 @@ export default function MapPage() {
         // Normaliser les agences des clients
         const normalizedClients = (data.clients || []).map((client: Client) => ({
           ...client,
-          agence: normalizeAgence(client.agence || client.departement),
+          // Autorité = coordonnées GPS : un client en DOM est classé au bon endroit
+          // même si departement='97' (générique). Hors DOM → fallback agence/departement.
+          agence: domFromCoords(client.latitude, client.longitude)
+            ?? normalizeAgence(client.agence || client.departement),
         }))
 
         console.log('Données carte chargées:', normalizedClients.length, 'clients,', normalizedDepots.length, 'dépôts')

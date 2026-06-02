@@ -4,8 +4,10 @@ import { requireRole, isAuthError } from '@/lib/auth/require-role'
 
 /**
  * POST /api/admin/data-clients/[id]/hs
- * Met un data_client directement en client_hs
- * Le client est cree dans clients avec statut client_hs puis supprime de data_clients
+ * Marque un data_client comme HS.
+ * Doctrine : un client HS RESTE dans data_clients (statut_data='HS'). Il ne revient PAS
+ * dans l'espace actif `clients`. On met donc simplement a jour la ligne data_clients
+ * existante (UPDATE), au lieu de recreer un client dans `clients`.
  * Body: { comment: string } (obligatoire)
  */
 export async function POST(
@@ -39,43 +41,24 @@ export async function POST(
     const now = new Date().toISOString()
     const userName = authResult.email || 'Admin'
     const logEntry = `[HS ${new Date().toLocaleDateString('fr-FR')} par ${userName}] ${comment.trim()}`
+    const existingNotes = dc.notes_internes ? dc.notes_internes + '\n' : ''
 
-    // Inserer dans clients avec statut client_hs
-    const { error: insertError } = await adminClient
-      .from('clients')
-      .insert({
-        raison_sociale: dc.raison_sociale,
-        siret: dc.siret,
-        reference_retina: dc.reference_retina,
-        contact_nom: dc.contact_nom,
-        contact_prenom: dc.contact_prenom,
-        email_beneficiaire: dc.email_beneficiaire,
-        telephone: dc.telephone,
-        adresse_societe_ligne1: dc.adresse_societe_ligne1,
-        adresse_societe_ligne2: dc.adresse_societe_ligne2,
-        adresse_societe_cp: dc.adresse_societe_cp,
-        adresse_societe_ville: dc.adresse_societe_ville,
-        departement: dc.departement,
-        latitude: dc.latitude,
-        longitude: dc.longitude,
-        velo_devis: dc.velo_devis,
-        velo_valide: dc.velo_valide,
-        monday_board_id: dc.monday_board_id,
-        monday_item_id: dc.monday_item_id,
-        commercial_assigne: dc.commercial_assigne,
-        code_ape: dc.code_ape,
-        validation_naf: dc.validation_naf,
-        statut_commercial: 'client_hs',
-        date_statut: now,
-        notes_internes: logEntry,
+    // Doctrine : un HS reste dans data_clients. On met simplement a jour le statut_data
+    // de la ligne existante, sans recreer de client dans l'espace actif `clients`.
+    const { error: updateError } = await adminClient
+      .from('data_clients')
+      .update({
+        statut_data: 'HS',
+        motif_retour: comment.trim(),
+        retour_par: authResult.id,
+        retour_at: now,
+        notes_internes: existingNotes + logEntry,
       })
+      .eq('id', dc.id)
 
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 })
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
-
-    // Supprimer de data_clients
-    await adminClient.from('data_clients').delete().eq('id', dc.id)
 
     return NextResponse.json({
       success: true,
