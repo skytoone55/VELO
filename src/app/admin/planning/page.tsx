@@ -1679,6 +1679,12 @@ function PlanningContent() {
                               >
                                 <Truck className="h-3.5 w-3.5" />
                               </button>
+                              <LivreurActions
+                                livraisonId={livraison.id}
+                                clientNom={client?.raison_sociale || 'Client inconnu'}
+                                triggerClassName="w-7 h-7 rounded flex items-center justify-center text-amber-600 hover:bg-amber-50 transition-colors"
+                                iconClassName="h-3.5 w-3.5"
+                              />
                               <button
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveLivraison(livraison.id) }}
                                 disabled={removingLivraisonId === livraison.id}
@@ -2137,34 +2143,37 @@ function LivraisonCard({
             <p className="text-xs text-gray-400 italic line-clamp-2">{livraison.notes_admin}</p>
           )}
         </div>
-        <div className="absolute top-2 right-2 flex items-center gap-1">
+        <div className="mt-1.5 flex items-center justify-end gap-1.5">
           {draggable && (
             <span
               {...dragHandleProps}
-              className={`w-5 h-5 rounded-full bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing`}
+              className="w-7 h-7 rounded-full bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 flex items-center justify-center transition-colors cursor-grab active:cursor-grabbing"
               title="Glisser pour déplacer (réordonner dans le créneau ou changer de jour)"
               onClick={(e) => { e.preventDefault(); e.stopPropagation() }}
             >
-              <GripVertical className="h-3 w-3" />
+              <GripVertical className="h-3.5 w-3.5" />
             </span>
           )}
           {onMove && (
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMove(livraison) }}
-              className="w-5 h-5 rounded-full bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+              className="w-7 h-7 rounded-full bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 flex items-center justify-center transition-colors"
               title="Déplacer vers une autre date / livreur / créneau"
             >
-              <Move className="h-3 w-3" />
+              <Move className="h-3.5 w-3.5" />
             </button>
           )}
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity">
-            <LivreurActions livraisonId={livraison.id} clientNom={clientName} />
-          </span>
+          <LivreurActions
+            livraisonId={livraison.id}
+            clientNom={clientName}
+            triggerClassName="w-7 h-7 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-700 flex items-center justify-center transition-colors"
+            iconClassName="h-3.5 w-3.5"
+          />
           {onRemove && (
             <RemoveConfirmPopover
               onConfirm={() => onRemove(livraison.id)}
               removing={removing}
-              className="w-5 h-5 rounded-full bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center text-xs font-bold leading-none opacity-0 group-hover:opacity-100 transition-opacity"
+              className="w-7 h-7 rounded-full bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center text-xs font-bold leading-none"
             />
           )}
         </div>
@@ -2213,19 +2222,23 @@ function LivraisonCard({
         {onMove && (
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMove(livraison) }}
-            className="flex-1 inline-flex items-center justify-center gap-1 rounded px-1 py-0.5 text-[10px] bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 transition-colors"
+            className="w-6 h-6 shrink-0 inline-flex items-center justify-center rounded bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 transition-colors"
             title="Déplacer vers une autre date"
           >
-            <Move className="h-2.5 w-2.5" />
-            <span>Déplacer</span>
+            <Move className="h-3 w-3" />
           </button>
         )}
-        <LivreurActions livraisonId={livraison.id} clientNom={clientName} compact />
+        <LivreurActions
+          livraisonId={livraison.id}
+          clientNom={clientName}
+          triggerClassName="w-6 h-6 shrink-0 inline-flex items-center justify-center rounded bg-amber-100 hover:bg-amber-200 text-amber-700 transition-colors"
+          iconClassName="h-3 w-3"
+        />
         {onRemove && (
           <RemoveConfirmPopover
             onConfirm={() => onRemove(livraison.id)}
             removing={removing}
-            className="w-4 h-4 shrink-0 rounded-full bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center text-[10px] font-bold leading-none"
+            className="w-6 h-6 shrink-0 rounded bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center text-[10px] font-bold leading-none"
           />
         )}
       </div>

@@ -28,11 +28,13 @@ const ACTIONS: { key: ActionKey; label: string; icon: typeof RotateCcw; warn?: s
 export function LivreurActions({
   livraisonId,
   clientNom,
-  compact,
+  triggerClassName,
+  iconClassName = 'h-3 w-3',
 }: {
   livraisonId: string
   clientNom: string
-  compact?: boolean
+  triggerClassName?: string
+  iconClassName?: string
 }) {
   const [open, setOpen] = useState(false)
   const [action, setAction] = useState<ActionKey | null>(null)
@@ -73,13 +75,10 @@ export function LivreurActions({
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true) }}
-        className={`shrink-0 inline-flex items-center justify-center gap-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-700 transition-colors ${
-          compact ? 'px-1 py-0.5 text-[10px]' : 'px-1.5 py-0.5 text-[10px]'
-        }`}
+        className={triggerClassName || 'shrink-0 inline-flex items-center justify-center rounded px-1 py-0.5 bg-amber-100 hover:bg-amber-200 text-amber-700 transition-colors'}
         title="Signaler un incident (à relivrer / problème / rétractation)"
       >
-        <AlertTriangle className={compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
-        <span>Incident</span>
+        <AlertTriangle className={iconClassName} />
       </button>
 
       {open && (
