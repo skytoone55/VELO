@@ -128,6 +128,9 @@ export async function POST(request: NextRequest) {
     let clientsNonEligibles = 0
     let velosNonEligibles = 0
     const clientsEligiblesIds: string[] = []
+    // Répartition par statut commercial, calculée UNIQUEMENT sur les clients éligibles.
+    // La somme de ses entrées = clientsEligibles / velosEligibles.
+    const statutsBreakdownEligibles: Record<string, { count: number; velos: number }> = {}
 
     for (const client of allClients) {
       const distance = calculateHaversineDistance(
@@ -164,6 +167,12 @@ export async function POST(request: NextRequest) {
           clientsEligibles++
           velosEligibles += velosClient
           clientsEligiblesIds.push(client.id)
+
+          // Breakdown par statut commercial — éligibles seulement.
+          const statutElig = client.statut_commercial || 'non_renseigne'
+          if (!statutsBreakdownEligibles[statutElig]) statutsBreakdownEligibles[statutElig] = { count: 0, velos: 0 }
+          statutsBreakdownEligibles[statutElig].count++
+          statutsBreakdownEligibles[statutElig].velos += velosClient
         } else {
           clientsNonEligibles++
           velosNonEligibles += velosClient
@@ -218,6 +227,7 @@ export async function POST(request: NextRequest) {
       clientsCurrentlyUnassigned,
       clientsByDistance,
       statutsBreakdown,
+      statutsBreakdownEligibles,
       nafBreakdown,
       clientsAbsorbedIds,
       totalClientsWithCoords: allClients.length,

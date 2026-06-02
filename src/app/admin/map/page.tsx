@@ -1330,39 +1330,23 @@ export default function MapPage() {
                       </div>
                     ) : simulationResult ? (
                       <div className="space-y-2 text-sm">
-                        {/* Total absorbé (tous clients dans la zone) */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="bg-primary/10 rounded p-2 text-center">
-                            <p className="text-lg font-bold">{simulationResult.clientsAbsorbed}</p>
-                            <p className="text-xs text-muted-foreground">Clients (zone)</p>
-                          </div>
-                          <div className="bg-primary/10 rounded p-2 text-center">
-                            <p className="text-lg font-bold">{simulationResult.velosAbsorbed}</p>
-                            <p className="text-xs text-muted-foreground">Vélos validés</p>
-                          </div>
-                        </div>
-                        {simulationResult.velosDevisAbsorbed != null && simulationResult.velosDevisAbsorbed !== simulationResult.velosAbsorbed && (
-                          <p className="text-xs text-muted-foreground">
-                            ({simulationResult.velosDevisAbsorbed} vélos en devis au total)
-                          </p>
-                        )}
-
-                        {/* Éligibilité tournée intelligente (NAF=OUI + dépôt assigné + statut actif) */}
+                        {/* Bloc principal : éligibles tournée intelligente (livrables ∩ filtres actifs) */}
                         {simulationResult.clientsEligibles != null && (
                           <div className="rounded border border-emerald-200 bg-emerald-50 p-2 space-y-1">
-                            <p className="text-xs font-semibold text-emerald-800">
-                              Éligibles tournée intelligente
-                            </p>
-                            <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="grid grid-cols-2 gap-2 text-center">
                               <div>
-                                <span className="text-emerald-700">✓ Éligibles : </span>
-                                <strong>{simulationResult.clientsEligibles}</strong> clients · <strong>{simulationResult.velosEligibles}</strong> vélos
+                                <p className="text-lg font-bold text-emerald-800">{simulationResult.clientsEligibles}</p>
+                                <p className="text-xs text-emerald-700">Clients éligibles</p>
                               </div>
                               <div>
-                                <span className="text-amber-700">✗ Non éligibles : </span>
-                                <strong>{simulationResult.clientsNonEligibles}</strong> clients · <strong>{simulationResult.velosNonEligibles}</strong> vélos
+                                <p className="text-lg font-bold text-emerald-800">{simulationResult.velosEligibles}</p>
+                                <p className="text-xs text-emerald-700">Vélos éligibles</p>
                               </div>
                             </div>
+                            <p className="text-xs text-amber-700 border-t border-emerald-200 pt-1">
+                              ✗ Non éligibles : <strong>{simulationResult.clientsNonEligibles}</strong> clients · <strong>{simulationResult.velosNonEligibles}</strong> vélos
+                              <span className="text-muted-foreground"> (livrés, HS ou hors filtre)</span>
+                            </p>
                             <p className="text-[10px] text-muted-foreground italic">
                               Éligibles = clients livrables (statut avant « Livré » : À livrer, Formulaire envoyé, Contrôle validé, En livraison, À relivrer), restreints aux filtres actifs (statut, NAF, commercial). Les clients livrés et HS sont exclus.
                             </p>
@@ -1441,16 +1425,16 @@ export default function MapPage() {
                           )
                         })()}
 
-                        {/* Breakdown par statut commercial */}
-                        {simulationResult.statutsBreakdown && Object.keys(simulationResult.statutsBreakdown).length > 0 && (
+                        {/* Breakdown par statut commercial — éligibles seulement (somme = total éligibles) */}
+                        {simulationResult.statutsBreakdownEligibles && Object.keys(simulationResult.statutsBreakdownEligibles).length > 0 && (
                           <div className="space-y-1 border-t pt-2">
-                            <p className="text-xs font-medium">Par statut :</p>
-                            {Object.entries(simulationResult.statutsBreakdown as Record<string, { clients: number; velos: number }>)
-                              .sort((a, b) => b[1].clients - a[1].clients)
+                            <p className="text-xs font-medium">Par statut (éligibles) :</p>
+                            {Object.entries(simulationResult.statutsBreakdownEligibles as Record<string, { count: number; velos: number }>)
+                              .sort((a, b) => b[1].count - a[1].count)
                               .map(([statut, stats]) => (
                                 <div key={statut} className="flex justify-between text-xs">
                                   <span>{STATUT_LABELS[statut] || statut}</span>
-                                  <span>{stats.clients} ({stats.velos} v.)</span>
+                                  <span>{stats.count} ({stats.velos} v.)</span>
                                 </div>
                               ))
                             }
