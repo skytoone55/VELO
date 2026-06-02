@@ -137,6 +137,21 @@ export const PROCESS_STATUTS = {
 
 export type ProcessStatut = keyof typeof PROCESS_STATUTS
 
+// Statuts retires du selecteur manuel (definitions/couleurs conservees pour
+// l'affichage des donnees existantes, mais on ne peut plus les choisir a la main) :
+// - anomalie : automatisation debranchee (aucun interet, plus de bascule auto J+10)
+// - formulaire_valide : marqueur de flux, jamais pose a la main
+// - rcs_ferme : abandonne (aucun interet)
+// - retractation : remplace par le bouton livreur "Retractation" qui bascule en Client HS
+export const PROCESS_STATUTS_NON_SELECTABLES: ProcessStatut[] = [
+  'formulaire_valide',
+  'anomalie',
+  'rcs_ferme',
+  'retractation',
+]
+export const PROCESS_STATUTS_SELECTABLES = (Object.keys(PROCESS_STATUTS) as ProcessStatut[])
+  .filter(k => !PROCESS_STATUTS_NON_SELECTABLES.includes(k))
+
 // Couleurs par statut process (pour badges)
 export const STATUT_COLORS: Record<ProcessStatut, string> = {
   controle_valide: 'bg-blue-100 text-blue-800',

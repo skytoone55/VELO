@@ -328,18 +328,16 @@ async function handleBulkChangeStatus(
   newStatut: string
 ): Promise<BulkResponse> {
   const results: BulkResult[] = []
-  // 10 statuts process valides
+  // Statuts process selectionnables manuellement (anomalie / formulaire_valide /
+  // rcs_ferme / retractation retires : voir PROCESS_STATUTS_NON_SELECTABLES)
   const validStatuts = [
     'controle_valide',
     'formulaire_envoye',
-    'formulaire_valide',
     'a_livrer',
     'en_livraison',
     'livre',
     'probleme_livraison',
     'a_relivrer',
-    'retractation',
-    'anomalie',
   ]
 
   if (!validStatuts.includes(newStatut)) {

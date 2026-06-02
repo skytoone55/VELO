@@ -57,7 +57,7 @@ import { Client } from '@/lib/types/database'
 import { toast } from 'sonner'
 import { getTenantId, getTenantConfig } from '@/lib/tenants'
 import { exportToXlsx } from '@/lib/export-xlsx'
-import { PROCESS_STATUTS, STATUT_COLORS, type ProcessStatut } from '@/lib/constants'
+import { PROCESS_STATUTS, PROCESS_STATUTS_SELECTABLES, STATUT_COLORS, type ProcessStatut } from '@/lib/constants'
 import { getDepartementLabel, getStaticDepartementOptions } from '@/lib/tenants/commercial'
 import { useCommerciaux } from '@/lib/tenants/use-commerciaux'
 import { CommercialFilter } from '@/components/admin/commercial-filter'
@@ -246,9 +246,9 @@ export default function AdminClientsPage() {
 
   // Charger les statuts : utiliser PROCESS_STATUTS comme source de vérité
   useEffect(() => {
-    const options = Object.entries(PROCESS_STATUTS).map(([value, label]) => ({
+    const options = PROCESS_STATUTS_SELECTABLES.map((value) => ({
       value,
-      label,
+      label: PROCESS_STATUTS[value],
     }))
     setStatutOptions([{ value: 'all', label: 'Statut' }, ...options])
   }, [])
@@ -1641,8 +1641,8 @@ export default function AdminClientsPage() {
                       <SelectValue placeholder="Statut" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(PROCESS_STATUTS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                      {PROCESS_STATUTS_SELECTABLES.map((value) => (
+                        <SelectItem key={value} value={value}>{PROCESS_STATUTS[value]}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
