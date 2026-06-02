@@ -23,6 +23,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
 import { DELIVERY_STATUS } from '@/lib/constants'
+import { LivreurActions } from './livreur-actions'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getTenantConfig } from '@/lib/tenants'
@@ -468,6 +469,13 @@ function PlanningContent() {
 
   useEffect(() => {
     loadPlanningData()
+  }, [loadPlanningData])
+
+  // Rechargement apres une action livreur (Incident) depuis une carte de livraison
+  useEffect(() => {
+    const onRefresh = () => loadPlanningData()
+    window.addEventListener('planning:refresh', onRefresh)
+    return () => window.removeEventListener('planning:refresh', onRefresh)
   }, [loadPlanningData])
 
   // Navigation — adapts to current view mode
@@ -2149,6 +2157,9 @@ function LivraisonCard({
               <Move className="h-3 w-3" />
             </button>
           )}
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <LivreurActions livraisonId={livraison.id} clientNom={clientName} />
+          </span>
           {onRemove && (
             <RemoveConfirmPopover
               onConfirm={() => onRemove(livraison.id)}
@@ -2209,6 +2220,7 @@ function LivraisonCard({
             <span>Déplacer</span>
           </button>
         )}
+        <LivreurActions livraisonId={livraison.id} clientNom={clientName} compact />
         {onRemove && (
           <RemoveConfirmPopover
             onConfirm={() => onRemove(livraison.id)}
