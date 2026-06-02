@@ -2,10 +2,20 @@ import nodemailer from 'nodemailer'
 import { google } from 'googleapis'
 import { getTenantConfig } from '@/lib/tenants'
 
+// Transporter SMTP mis en cache (pool) : reutilise UNE seule connexion pour tout
+// un lot d'envois (ex. boucle "mail planning"), au lieu d'ouvrir une connexion par
+// mail — ce qui faisait throttler/timeouter le SMTP Microsoft 365 (echecs silencieux).
+let cachedSmtpTransporter: nodemailer.Transporter | null = null
+
+function resetSmtpTransporter() {
+  cachedSmtpTransporter = null
+}
+
 async function createTransporter() {
   // Mode 1 : SMTP direct (Microsoft 365, etc.)
   if (process.env.SMTP_HOST) {
-    return nodemailer.createTransport({
+    if (cachedSmtpTransporter) return cachedSmtpTransporter
+    cachedSmtpTransporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: process.env.SMTP_SECURE === 'true',
@@ -13,10 +23,14 @@ async function createTransporter() {
         user: process.env.SMTP_USER || process.env.GMAIL_USER,
         pass: process.env.SMTP_PASSWORD,
       },
+      pool: true,
+      maxConnections: 1,
+      maxMessages: 50,
       connectionTimeout: 10000,
       greetingTimeout: 10000,
-      socketTimeout: 15000,
+      socketTimeout: 20000,
     } as nodemailer.TransportOptions)
+    return cachedSmtpTransporter
   }
 
   // Mode 2 : Gmail OAuth2 (ECO-VOLT)
@@ -61,26 +75,34 @@ interface EmailOptions {
 }
 
 export async function sendEmail({ to, subject, html, from }: EmailOptions) {
-  try {
-    const tenant = getTenantConfig()
-    const transporter = await createTransporter()
-
-    const mailOptions = {
-      from: from || `=?UTF-8?B?${Buffer.from(tenant.name).toString('base64')}?= <${process.env.SMTP_USER || process.env.GMAIL_USER}>`,
-      to,
-      subject,
-      html,
-      encoding: 'utf-8' as const,
-      textEncoding: 'base64' as const,
-    }
-
-    const result = await transporter.sendMail(mailOptions)
-    console.log('Email envoyé:', result.messageId)
-    return { success: true, messageId: result.messageId }
-  } catch (error) {
-    console.error('Erreur envoi email:', error)
-    throw error
+  const tenant = getTenantConfig()
+  const mailOptions = {
+    from: from || `=?UTF-8?B?${Buffer.from(tenant.name).toString('base64')}?= <${process.env.SMTP_USER || process.env.GMAIL_USER}>`,
+    to,
+    subject,
+    html,
+    encoding: 'utf-8' as const,
+    textEncoding: 'base64' as const,
   }
+
+  // Retry : les SMTP (M365) throttlent/timeoutent par intermittence sous une rafale
+  // d'envois. Un envoi qui echoue reussit quasi systematiquement a la tentative
+  // suivante (constate dans les logs). 3 tentatives avec backoff court.
+  let lastError: unknown
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const transporter = await createTransporter()
+      const result = await transporter.sendMail(mailOptions)
+      console.log('Email envoyé:', result.messageId)
+      return { success: true, messageId: result.messageId }
+    } catch (error) {
+      lastError = error
+      console.error(`Erreur envoi email (tentative ${attempt}/3) vers ${to}:`, error)
+      resetSmtpTransporter() // la connexion poolee est peut-etre morte -> on la recree
+      if (attempt < 3) await new Promise(r => setTimeout(r, 600 * attempt))
+    }
+  }
+  throw lastError
 }
 
 /**
