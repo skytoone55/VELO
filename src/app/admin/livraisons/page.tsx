@@ -994,7 +994,8 @@ export default function AdminLivraisonsPage() {
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-center">
                       <div className="text-sm">
-                        <span className="font-medium">{liv.client?.velo_valide || liv.client?.velo_devis || 0}</span>
+                        <span className="font-medium">{liv.client?.velo_valide ?? 0}</span>
+                        <span className="text-muted-foreground">/{liv.client?.velo_devis ?? 0}</span>
                       </div>
                     </TableCell>
                     <TableCell>
