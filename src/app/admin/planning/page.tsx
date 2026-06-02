@@ -22,7 +22,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
-import { DELIVERY_STATUS } from '@/lib/constants'
+import { DELIVERY_STATUS, PROCESS_STATUTS, STATUT_COLORS } from '@/lib/constants'
 import { LivreurActions } from './livreur-actions'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -266,12 +266,16 @@ const LIVRAISON_STATUT_COLORS: Record<string, string> = {
 
 function getStatutLabel(statut: string | null): string {
   if (!statut) return 'Inconnu'
-  return DELIVERY_STATUS[statut as keyof typeof DELIVERY_STATUS] || statut
+  return DELIVERY_STATUS[statut as keyof typeof DELIVERY_STATUS]
+    || PROCESS_STATUTS[statut as keyof typeof PROCESS_STATUTS]
+    || statut
 }
 
 function getStatutColor(statut: string | null): string {
   if (!statut) return 'bg-gray-100 text-gray-800'
-  return LIVRAISON_STATUT_COLORS[statut] || 'bg-gray-100 text-gray-800'
+  return LIVRAISON_STATUT_COLORS[statut]
+    || STATUT_COLORS[statut as keyof typeof STATUT_COLORS]
+    || 'bg-gray-100 text-gray-800'
 }
 
 // ---------------------------------------------------------------------------

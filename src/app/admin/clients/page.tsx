@@ -1248,7 +1248,7 @@ export default function AdminClientsPage() {
                           <Eye className="h-4 w-4" />
                         </Button>
                         {/* Bypass formulaire — tous les profils, sauf client HS */}
-                        {!['en_livraison', 'livre', 'a_livrer', 'client_hs', 'retractation'].includes(client.statut_commercial || '') && (
+                        {!['en_livraison', 'livre', 'a_livrer', 'client_hs', 'retractation', 'a_relivrer', 'probleme_livraison'].includes(client.statut_commercial || '') && (
                           <Button
                             variant="ghost"
                             size="sm"
