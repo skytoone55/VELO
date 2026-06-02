@@ -228,6 +228,8 @@ export const CQ_CATEGORIES = {
   attente_signature: 'Attente signature',
   attente_photo: 'Attente photo',
   attente_mail_client: 'Attente mail client',
+  velo_a_recuperer: 'Vélo à récupérer',
+  velo_facture: 'Vélo facturé',
   autre: 'Autre',
 } as const
 
@@ -246,6 +248,8 @@ export const CQ_CATEGORIE_COLORS: Record<CqCategorie, string> = {
   attente_signature: 'bg-amber-100 text-amber-800',
   attente_photo: 'bg-cyan-100 text-cyan-800',
   attente_mail_client: 'bg-indigo-100 text-indigo-800',
+  velo_a_recuperer: 'bg-rose-100 text-rose-800',
+  velo_facture: 'bg-teal-100 text-teal-800',
   autre: 'bg-slate-100 text-slate-800',
 }
 
