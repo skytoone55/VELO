@@ -94,7 +94,7 @@ function getIdentityReminderHtml(clientName: string, isRetrait: boolean): string
         ⚠️ Rappel important
       </p>
       <p style="margin: 0 0 8px 0; color: #92400e; font-size: 14px; line-height: 1.5;">
-        C'est bien <strong>Monsieur/Madame ${clientName}</strong> qui réceptionnera le(s) vélo(s) cargo.
+        C'est bien <strong>Monsieur/Madame ${clientName}</strong> qui réceptionnera le(s) vélo(s) cargo à assistance électrique.
       </p>
       <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
         Un <strong>justificatif d'identité valide</strong> sera obligatoire lors ${action}.
@@ -285,7 +285,7 @@ export async function sendFormulaireLinkEmail(
               </h2>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Nous avons le plaisir de vous informer que votre commande de vélo cargo électrique est en cours de traitement.
+                Nous avons le plaisir de vous informer que votre commande de vélo cargo à assistance électrique est en cours de traitement.
               </p>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
@@ -338,7 +338,7 @@ export async function sendFormulaireLinkEmail(
 
   return sendEmail({
     to: clientEmail,
-    subject: `${tenant.name} - Formulaire de livraison de votre vélo cargo`,
+    subject: `${tenant.name} - Formulaire de livraison de votre vélo cargo à assistance électrique`,
     html,
   })
 }
@@ -442,7 +442,7 @@ export async function sendFormulaireRecapEmail(
               </p>
 
               <p style="margin: 0 0 30px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Nous avons bien reçu votre demande de ${data.modeLivraison === 'retrait' ? 'retrait' : 'livraison'} de vélo cargo électrique. Voici le récapitulatif :
+                Nous avons bien reçu votre demande de ${data.modeLivraison === 'retrait' ? 'retrait' : 'livraison'} de vélo cargo à assistance électrique. Voici le récapitulatif :
               </p>
 
               <!-- Récap société -->
@@ -489,7 +489,7 @@ export async function sendFormulaireRecapEmail(
 
               <p style="margin: 30px 0 0 0; color: #52525b; font-size: 16px; line-height: 1.6;">
                 <strong>Prochaines étapes :</strong><br>
-                Notre équipe va traiter votre demande et vous contactera prochainement pour ${data.modeLivraison === 'retrait' ? 'convenir du retrait' : 'programmer la livraison'} de votre vélo cargo.
+                Notre équipe va traiter votre demande et vous contactera prochainement pour ${data.modeLivraison === 'retrait' ? 'convenir du retrait' : 'programmer la livraison'} de votre vélo cargo à assistance électrique.
               </p>
 
               <hr style="margin: 30px 0; border: none; border-top: 1px solid #e4e4e7;">
@@ -510,7 +510,7 @@ export async function sendFormulaireRecapEmail(
 
   return sendEmail({
     to: clientEmail,
-    subject: `${tenant.name} - Confirmation de votre demande de vélo cargo`,
+    subject: `${tenant.name} - Confirmation de votre demande de vélo cargo à assistance électrique`,
     html,
   })
 }
@@ -746,7 +746,7 @@ export async function sendFormulaireLivraisonEmail(params: {
 
   return sendEmail({
     to,
-    subject: `Vélo cargo - Choisissez votre créneau de retrait`,
+    subject: `Vélo cargo à assistance électrique - Choisissez votre créneau de retrait`,
     html,
   })
 }
@@ -759,10 +759,11 @@ export async function sendMailLivraisonEmail(data: {
   to: string
   clientName: string
   raisonSociale: string
+  referenceRetina?: string | null
   tenantId?: string
 }): Promise<boolean> {
   const tenant = getTenantConfig()
-  const { to, clientName, raisonSociale } = data
+  const { to, clientName, raisonSociale, referenceRetina } = data
 
   const html = `
 <!DOCTYPE html>
@@ -770,7 +771,7 @@ export async function sendMailLivraisonEmail(data: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${tenant.name} - Votre vélo cargo est prêt</title>
+  <title>${tenant.name} - Vos vélos cargo à assistance électrique sont arrivés</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
@@ -790,7 +791,7 @@ export async function sendMailLivraisonEmail(data: {
               </div>
 
               <h2 style="margin: 0 0 20px 0; color: #18181b; font-size: 22px; text-align: center;">
-                Bonne nouvelle, vos vélos cargo sont arrivés !
+                Bonne nouvelle, vos vélos cargo à assistance électrique sont arrivés !
               </h2>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
@@ -840,7 +841,7 @@ export async function sendMailLivraisonEmail(data: {
   try {
     await sendEmail({
       to,
-      subject: `${tenant.name} - Bonne nouvelle, vos vélos cargo sont arrivés`,
+      subject: `${tenant.name} - Bonne nouvelle, vos vélos cargo à assistance électrique sont arrivés${referenceRetina ? ` — Ref: ${referenceRetina}` : ''}`,
       html,
     })
     return true
@@ -900,7 +901,7 @@ export async function sendMailPlanningEmail(data: {
               </p>
 
               <p style="margin: 0 0 20px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Nous vous confirmons votre rendez-vous de livraison de vélo cargo électrique au nom de <strong>${raisonSociale}</strong>.
+                Nous vous confirmons votre rendez-vous de livraison de vélo cargo à assistance électrique au nom de <strong>${raisonSociale}</strong>.
               </p>
 
               <!-- Bloc info RDV -->
@@ -947,7 +948,7 @@ export async function sendMailPlanningEmail(data: {
   try {
     await sendEmail({
       to,
-      subject: `Vélo cargo - Confirmation de votre rendez-vous de livraison du ${dateLivraison}`,
+      subject: `Vélo cargo à assistance électrique - Confirmation de votre rendez-vous de livraison du ${dateLivraison}`,
       html,
     })
     return true
@@ -1040,7 +1041,7 @@ export async function sendConfirmationCreneauEmail({
           </p>
 
           <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">
-            Votre vélo cargo est prêt ! Voici le créneau de ${modeLabel} confirmé :
+            Votre vélo cargo à assistance électrique est prêt ! Voici le créneau de ${modeLabel} confirmé :
           </p>
 
           <div style="background-color: #eff6ff; border-radius: 12px; padding: 20px; margin-bottom: 25px; border-left: 4px solid ${tenant.branding.colors.primary};">
@@ -1086,7 +1087,7 @@ export async function sendConfirmationCreneauEmail({
 
   return sendEmail({
     to,
-    subject: `Vélo cargo - Confirmation de votre ${modeLabel} du ${dateFormatted}`,
+    subject: `Vélo cargo à assistance électrique - Confirmation de votre ${modeLabel} du ${dateFormatted}`,
     html,
   })
 }

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
   const { data: client } = await adminClient
     .from('clients')
-    .select('id, email_beneficiaire, email, contact_nom, contact_prenom, nom_contact, prenom_contact, raison_sociale')
+    .select('id, email_beneficiaire, email, contact_nom, contact_prenom, nom_contact, prenom_contact, raison_sociale, reference_retina')
     .eq('id', clientId)
     .single()
 
@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     to: recipientEmail,
     clientName,
     raisonSociale: client.raison_sociale,
+    referenceRetina: client.reference_retina,
   })
 
   if (!success) {
