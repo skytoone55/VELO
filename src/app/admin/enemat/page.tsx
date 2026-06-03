@@ -15,7 +15,7 @@ import {
 import {
   Loader2, Search, RefreshCw, ChevronLeft, ChevronRight,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, Eye, X,
-  Phone, Calendar, RotateCcw, FileCheck, Download,
+  Phone, Calendar, RotateCcw, FileCheck, Download, Upload,
 } from 'lucide-react'
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -616,6 +616,73 @@ export default function AdminEnematPage() {
     return result
   }, [clients, cqFilter, dateDepotFrom, dateDepotTo, dateApfFrom, dateApfTo, datePayeFrom, datePayeTo])
 
+  // ─── Import Excel : passage direct en APF / Payé via liste de réf Retina ─────
+  // APF  : colonne A = réf Retina, colonne B = numéro de lot (par ligne).
+  // Payé : colonne A = réf Retina ; numéro de facture commun demandé via dialogue.
+  const [importLoading, setImportLoading] = useState<null | 'apf_enemat' | 'paye_enemat'>(null)
+  const importApfInputRef = useRef<HTMLInputElement>(null)
+  const [payeDialogOpen, setPayeDialogOpen] = useState(false)
+  const [payeFacture, setPayeFacture] = useState('')
+  const [payeFile, setPayeFile] = useState<File | null>(null)
+
+  const doImport = async (
+    file: File,
+    statut: 'apf_enemat' | 'paye_enemat',
+    numeroFacture?: string
+  ) => {
+    if (importLoading) return
+    setImportLoading(statut)
+    const label = statut === 'apf_enemat' ? 'APF' : 'Payé'
+    const toastId = toast.loading(`Import en cours → ${label}…`)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('statut', statut)
+      if (numeroFacture) formData.append('numero_facture', numeroFacture)
+
+      const res = await fetch('/api/admin/enemat/import-status', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur import')
+
+      const parts = [`${data.updated} client${data.updated > 1 ? 's' : ''} passé${data.updated > 1 ? 's' : ''} en ${data.statut_label}`]
+      if (statut === 'apf_enemat') parts.push(`${data.lots_appliques} lot(s) appliqué(s)`)
+      if (data.numero_facture) parts.push(`facture ${data.numero_facture}`)
+      if (data.not_found_count > 0) {
+        parts.push(`${data.not_found_count} référence${data.not_found_count > 1 ? 's' : ''} introuvable${data.not_found_count > 1 ? 's' : ''}`)
+      }
+      toast.success(parts.join(' — '), { id: toastId })
+      if (data.not_found_count > 0) {
+        const apercu = (data.not_found as string[]).slice(0, 10).join(', ')
+        toast.warning(
+          `Réf. non trouvées (${data.not_found_count}) : ${apercu}${data.not_found_count > 10 ? '…' : ''}`,
+          { duration: 12000 }
+        )
+      }
+      fetchClients()
+    } catch (err) {
+      toast.error((err as Error).message, { id: toastId })
+    } finally {
+      setImportLoading(null)
+    }
+  }
+
+  const handleImportApf = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // reset pour re-sélectionner le même fichier
+    if (file) doImport(file, 'apf_enemat')
+  }
+
+  const submitPayeImport = async () => {
+    if (!payeFile || payeFacture.trim().length === 0) return
+    await doImport(payeFile, 'paye_enemat', payeFacture.trim())
+    setPayeDialogOpen(false)
+    setPayeFacture('')
+    setPayeFile(null)
+  }
+
   // ─── Export Excel (refetch toutes les lignes filtrees, max 5000) ─────
   const [exportLoading, setExportLoading] = useState(false)
   const handleExport = async () => {
@@ -695,10 +762,90 @@ export default function AdminEnematPage() {
           <FileCheck className="h-6 w-6 text-primary" />
           <h1 className="text-xl font-bold">ENEMAT</h1>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchClients} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Import APF : Excel colonne A = réf Retina, colonne B = numéro de lot */}
+          <input
+            ref={importApfInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={handleImportApf}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => importApfInputRef.current?.click()}
+            disabled={importLoading !== null}
+            title="Importer un Excel (colonne A = réf Retina, colonne B = numéro de lot) → passage direct en APF"
+          >
+            {importLoading === 'apf_enemat'
+              ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              : <Upload className="h-4 w-4 mr-1" />}
+            Importer → APF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => setPayeDialogOpen(true)}
+            disabled={importLoading !== null}
+            title="Importer un Excel de réf. Retina + numéro de facture → passage direct en Payé"
+          >
+            {importLoading === 'paye_enemat'
+              ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              : <Upload className="h-4 w-4 mr-1" />}
+            Importer → Payé
+          </Button>
+          <Button variant="outline" size="sm" onClick={fetchClients} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </div>
+
+      {/* Dialogue Import Payé : numéro de facture + fichier Excel */}
+      <Dialog open={payeDialogOpen} onOpenChange={(open) => {
+        setPayeDialogOpen(open)
+        if (!open) { setPayeFacture(''); setPayeFile(null) }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Importer une liste → Payé</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Numéro de facture</label>
+              <Input
+                value={payeFacture}
+                onChange={(e) => setPayeFacture(e.target.value)}
+                placeholder="ex : FAC-2026-0042"
+              />
+              <p className="text-xs text-muted-foreground">Appliqué à tous les clients du fichier.</p>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Fichier Excel</label>
+              <Input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={(e) => setPayeFile(e.target.files?.[0] ?? null)}
+              />
+              <p className="text-xs text-muted-foreground">Colonne A = réf. Retina (titre en ligne 1, données dès la ligne 2).</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayeDialogOpen(false)} disabled={importLoading !== null}>
+              Annuler
+            </Button>
+            <Button
+              onClick={submitPayeImport}
+              disabled={importLoading !== null || !payeFile || payeFacture.trim().length === 0}
+            >
+              {importLoading === 'paye_enemat' ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+              Importer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Stats compteurs */}
       <div className="flex flex-wrap items-center gap-2 text-sm">
