@@ -58,35 +58,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Erreur envoi email' }, { status: 500 })
   }
 
-  // Mettre a jour le statut commercial du client → en_livraison
-  await adminClient
-    .from('clients')
-    .update({
-      statut_commercial: 'en_livraison',
-      date_statut: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', clientId)
-
-  // Sync statut client ↔ livraison
-  const { data: activeLivraison } = await adminClient
-    .from('livraisons')
-    .select('id')
-    .eq('client_id', clientId)
-    .not('statut', 'in', '("annulee","retractation")')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  if (activeLivraison) {
-    await adminClient
-      .from('livraisons')
-      .update({
-        statut: 'en_livraison',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', activeLivraison.id)
-  }
+  // NB : le Mail livraison est une simple annonce d'arrivée — il ne doit PAS
+  // changer le statut du client ni de la livraison. (Avant, il forçait
+  // 'en_livraison', ce qui sortait les clients du workflow tournée.)
 
   return NextResponse.json({ success: true })
 }
