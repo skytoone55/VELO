@@ -81,6 +81,10 @@ const ENEMAT_STATUTS = [
   { value: 'paye_enemat', label: 'Paye' },
 ] as const
 
+// Chiffre d'affaires ENEMAT : 607 € par vélo validé
+const PRIX_VELO_ENEMAT = 607
+const formatEuros = (n: number) => `${Math.round(n).toLocaleString('fr-FR')} €`
+
 const ENEMAT_COLORS: Record<string, string> = {
   a_deposer_enemat: 'bg-amber-100 text-amber-800',
   depose_enemat: 'bg-blue-100 text-blue-800',
@@ -154,6 +158,7 @@ export default function AdminEnematPage() {
   const [pageSize, setPageSize] = useState(200)
   const [paginationInfo, setPaginationInfo] = useState({ totalPages: 0, totalFiltered: 0, startIndex: 0, endIndex: 0 })
   const [counts, setCounts] = useState<Record<string, number>>({ a_deposer_enemat: 0, depose_enemat: 0, apf_enemat: 0, paye_enemat: 0 })
+  const [velosParStatut, setVelosParStatut] = useState<Record<string, number>>({ a_deposer_enemat: 0, depose_enemat: 0, apf_enemat: 0, paye_enemat: 0 })
   const [velosValidesFiltered, setVelosValidesFiltered] = useState(0)
 
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
@@ -242,6 +247,9 @@ export default function AdminEnematPage() {
         if (commercialFilter.length > 0) p.set('commercial', commercialFilter.join(','))
         if (livreurFilter.length > 0) p.set('livreur', livreurFilter.join(','))
         if (fnuciFilter !== 'all') p.set('fnuci', fnuciFilter)
+        if (cqFilter !== 'all') p.set('cq', cqFilter)
+        if (lotFilter) p.set('lot', lotFilter)
+        if (factureFilter) p.set('facture', factureFilter)
         if (dateDepotFrom) p.set('date_depot_from', dateDepotFrom)
         if (dateDepotTo) p.set('date_depot_to', dateDepotTo)
         if (dateApfFrom) p.set('date_apf_from', dateApfFrom)
@@ -254,12 +262,15 @@ export default function AdminEnematPage() {
         statuts.map(s => fetch(`/api/admin/enemat?${buildParams(s)}`).then(r => r.json()))
       )
       const newCounts: Record<string, number> = {}
+      const newVelos: Record<string, number> = {}
       statuts.forEach((s, i) => {
         newCounts[s] = results[i]?.total || 0
+        newVelos[s] = results[i]?.velosValidesFiltered || 0
       })
       setCounts(newCounts)
+      setVelosParStatut(newVelos)
     } catch {}
-  }, [searchQuery, depotFilter, zoneFilter, commercialFilter, livreurFilter, fnuciFilter, dateDepotFrom, dateDepotTo, dateApfFrom, dateApfTo, datePayeFrom, datePayeTo])
+  }, [searchQuery, depotFilter, zoneFilter, commercialFilter, livreurFilter, fnuciFilter, cqFilter, lotFilter, factureFilter, dateDepotFrom, dateDepotTo, dateApfFrom, dateApfTo, datePayeFrom, datePayeTo])
 
   const fetchClients = useCallback(async () => {
     setLoading(true)
@@ -274,6 +285,7 @@ export default function AdminEnematPage() {
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
       if (livreurFilter.length > 0) params.set('livreur', livreurFilter.join(','))
       if (fnuciFilter !== 'all') params.set('fnuci', fnuciFilter)
+      if (cqFilter !== 'all') params.set('cq', cqFilter)
       if (lotFilter) params.set('lot', lotFilter)
       if (factureFilter) params.set('facture', factureFilter)
       if (dateDepotFrom) params.set('date_depot_from', dateDepotFrom)
@@ -314,7 +326,7 @@ export default function AdminEnematPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, searchQuery, statutFilter, depotFilter, zoneFilter, commercialFilter, livreurFilter, fnuciFilter, lotFilter, factureFilter, dateDepotFrom, dateDepotTo, dateApfFrom, dateApfTo, datePayeFrom, datePayeTo, fetchCounts])
+  }, [page, pageSize, searchQuery, statutFilter, depotFilter, zoneFilter, commercialFilter, livreurFilter, fnuciFilter, cqFilter, lotFilter, factureFilter, dateDepotFrom, dateDepotTo, dateApfFrom, dateApfTo, datePayeFrom, datePayeTo, fetchCounts])
 
   // Debounce search
   const searchTimerRef = useRef<NodeJS.Timeout>(null)
@@ -582,12 +594,7 @@ export default function AdminEnematPage() {
   const filteredClients = useMemo(() => {
     let result = clients
 
-    // CQ filter
-    if (cqFilter === 'valide') {
-      result = result.filter(c => !!c.livraison?.cq_valide_at || !!c.date_controle)
-    } else if (cqFilter === 'non_valide') {
-      result = result.filter(c => !c.livraison?.cq_valide_at && !c.date_controle)
-    }
+    // Le filtre CQ est désormais appliqué côté serveur (param `cq`, basé sur cq_valide).
 
     // Date depot ENEMAT filter
     if (dateDepotFrom) {
@@ -614,7 +621,7 @@ export default function AdminEnematPage() {
     }
 
     return result
-  }, [clients, cqFilter, dateDepotFrom, dateDepotTo, dateApfFrom, dateApfTo, datePayeFrom, datePayeTo])
+  }, [clients, dateDepotFrom, dateDepotTo, dateApfFrom, dateApfTo, datePayeFrom, datePayeTo])
 
   // ─── Import Excel : passage direct en APF / Payé via liste de réf Retina ─────
   // APF  : colonne A = réf Retina, colonne B = numéro de lot (par ligne).
@@ -701,6 +708,7 @@ export default function AdminEnematPage() {
       if (commercialFilter.length > 0) params.set('commercial', commercialFilter.join(','))
       if (livreurFilter.length > 0) params.set('livreur', livreurFilter.join(','))
       if (fnuciFilter !== 'all') params.set('fnuci', fnuciFilter)
+      if (cqFilter !== 'all') params.set('cq', cqFilter)
       if (lotFilter) params.set('lot', lotFilter)
       if (factureFilter) params.set('facture', factureFilter)
       if (dateDepotFrom) params.set('date_depot_from', dateDepotFrom)
@@ -715,10 +723,8 @@ export default function AdminEnematPage() {
       if (!res.ok) throw new Error(data.error || 'Erreur export')
       const allClients: EnematClient[] = data.clients || []
 
-      // Re-applique les filtres locaux (CQ + dates) que l'API ne gere pas
+      // Re-applique les filtres de dates locaux (CQ désormais géré côté serveur via `cq`)
       const filtered = allClients.filter(c => {
-        if (cqFilter === 'valide' && !(c.livraison?.cq_valide_at || c.date_controle)) return false
-        if (cqFilter === 'non_valide' && (c.livraison?.cq_valide_at || c.date_controle)) return false
         if (dateDepotFrom && (!c.date_depot_enemat || c.date_depot_enemat < dateDepotFrom)) return false
         if (dateDepotTo && (!c.date_depot_enemat || c.date_depot_enemat > dateDepotTo)) return false
         if (dateApfFrom && (!c.date_apf_enemat || c.date_apf_enemat < dateApfFrom)) return false
@@ -847,23 +853,29 @@ export default function AdminEnematPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Stats compteurs */}
-      <div className="flex flex-wrap items-center gap-2 text-sm">
+      {/* Stats compteurs : total + nb vélos et CA (607 €/vélo) par statut, réactifs aux filtres */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
         <span className="font-semibold">{paginationInfo.totalFiltered} <span className="text-muted-foreground font-normal">clients</span></span>
         <span className="text-muted-foreground">—</span>
-        <span className="font-semibold text-blue-600">{velosValidesFiltered} <span className="text-muted-foreground font-normal">vélos validés</span></span>
+        <span className="font-semibold text-blue-600">{velosValidesFiltered} <span className="text-muted-foreground font-normal">vélos</span></span>
+        <span className="text-muted-foreground">—</span>
+        <span className="font-semibold text-emerald-600">{formatEuros(velosValidesFiltered * PRIX_VELO_ENEMAT)} <span className="text-muted-foreground font-normal">CA</span></span>
         <span className="text-muted-foreground">|</span>
-        {ENEMAT_STATUTS.map(s => (
-          <button
-            key={s.value}
-            onClick={() => setStatutFilter(statutFilter.includes(s.value) ? statutFilter.filter(v => v !== s.value) : [...statutFilter, s.value])}
-            className="cursor-pointer"
-          >
-            <Badge className={`${ENEMAT_COLORS[s.value]} ${statutFilter.includes(s.value) ? 'ring-2 ring-offset-1 ring-primary' : ''}`}>
-              {s.label} ({counts[s.value] || 0})
-            </Badge>
-          </button>
-        ))}
+        {ENEMAT_STATUTS.map(s => {
+          const v = velosParStatut[s.value] || 0
+          return (
+            <button
+              key={s.value}
+              onClick={() => setStatutFilter(statutFilter.includes(s.value) ? statutFilter.filter(val => val !== s.value) : [...statutFilter, s.value])}
+              className="cursor-pointer"
+              title={`${counts[s.value] || 0} client(s)`}
+            >
+              <Badge className={`${ENEMAT_COLORS[s.value]} ${statutFilter.includes(s.value) ? 'ring-2 ring-offset-1 ring-primary' : ''}`}>
+                {s.label} · {v} vélo{v > 1 ? 's' : ''} · {formatEuros(v * PRIX_VELO_ENEMAT)}
+              </Badge>
+            </button>
+          )
+        })}
       </div>
 
       {/* Filters */}

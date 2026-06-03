@@ -64,6 +64,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Filtre CQ : sous-select sur livraisons par le booleen cq_valide (et non la date).
+    // 'valide' = a une livraison livree avec CQ validé ; 'non_valide' = CQ non validé (retours/SAV).
+    const cqFilter = searchParams.get('cq')
+    let cqClientIds: string[] | null = null
+    if (cqFilter === 'valide' || cqFilter === 'non_valide') {
+      const { data: cqLiv } = await supabase
+        .from('livraisons')
+        .select('client_id')
+        .eq('statut', 'livree')
+        .eq('cq_valide', cqFilter === 'valide')
+      cqClientIds = [...new Set((cqLiv || []).map((l: { client_id: string | null }) => l.client_id).filter(Boolean) as string[])]
+      if (cqClientIds.length === 0) {
+        return NextResponse.json({ clients: [], total: 0, page, limit, velosValidesFiltered: 0 })
+      }
+    }
+
     let query = supabase
       .from('clients')
       .select(
@@ -142,6 +158,10 @@ export async function GET(request: NextRequest) {
 
     if (livreurClientIds) {
       query = query.in('id', livreurClientIds)
+    }
+
+    if (cqClientIds) {
+      query = query.in('id', cqClientIds)
     }
 
     query = applyDateFilters(query)
@@ -251,6 +271,10 @@ export async function GET(request: NextRequest) {
 
     if (livreurClientIds) {
       sumQuery = sumQuery.in('id', livreurClientIds)
+    }
+
+    if (cqClientIds) {
+      sumQuery = sumQuery.in('id', cqClientIds)
     }
 
     sumQuery = applyDateFilters(sumQuery)
