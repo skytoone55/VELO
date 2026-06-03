@@ -229,7 +229,7 @@ function TourneesIntelligentesContent() {
       }
       // Temps max entre 2 clients adapté au rayon zone (sinon NN bloque dans son cluster)
       if (paramMaxTravelMinutes) {
-        const mtt = Math.max(5, Math.min(120, parseInt(paramMaxTravelMinutes) || 30))
+        const mtt = Math.max(5, Math.min(999, parseInt(paramMaxTravelMinutes) || 30))
         setMaxTravelMinutes(mtt)
       }
       // Récupérer la liste exacte d'IDs éligibles transmise par la carte (localStorage)
@@ -337,6 +337,11 @@ function TourneesIntelligentesContent() {
       if (zoneClientIds && zoneClientIds.length > 0) {
         params.set('include', zoneClientIds.join(','))
       }
+      // Mode zone = liste de clients choisie à la main sur la carte : on veut TOUS les
+      // inclure dans la tournée. On lève donc le plafond de budget temps total (10h) qui,
+      // sinon, coupe la tournée et laisse des clients de côté (le temps max entre 2 clients
+      // reste réglable par l'utilisateur).
+      params.set('budget_minutes', '100000')
     }
     // En mode créneau, limiter le budget temps à la durée du créneau
     if (isCreneauMode && creneauDureeMinutes) {
@@ -741,14 +746,14 @@ function TourneesIntelligentesContent() {
                     <Input
                       type="number"
                       min={5}
-                      max={120}
+                      max={999}
                       value={TEMPS_MAX_PRESETS.includes(maxTravelMinutes) ? '' : maxTravelMinutes}
                       placeholder="autre"
                       onChange={e => {
                         const raw = e.target.value
                         if (raw === '') return
                         const v = parseInt(raw)
-                        if (!isNaN(v) && v >= 5 && v <= 120) setMaxTravelMinutes(v)
+                        if (!isNaN(v) && v >= 5 && v <= 999) setMaxTravelMinutes(v)
                       }}
                       disabled={configReady}
                       className="w-20 h-9"
@@ -1100,7 +1105,7 @@ function TourneesIntelligentesContent() {
                     anchorPoint={useDepartureAddress && departureLat && departureLng ? { lat: departureLat, lng: departureLng } : null}
                   />
                 ) : (
-                  <div className="h-[400px] bg-gray-100 flex items-center justify-center text-gray-400">
+                  <div className="h-[520px] bg-gray-100 flex items-center justify-center text-gray-400">
                     Aucun client à afficher
                   </div>
                 )}
