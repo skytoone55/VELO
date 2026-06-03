@@ -98,6 +98,7 @@ function getStatutDisplay(statut: string | null | undefined): { label: string; c
 
 // Options de pagination
 const pageSizeOptions = [
+  { value: 10, label: '10' },
   { value: 20, label: '20' },
   { value: 50, label: '50' },
   { value: 100, label: '100' },
@@ -161,7 +162,7 @@ export default function AdminClientsPage() {
 
   // Pagination côté serveur
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  const [pageSize, setPageSize] = useState(10)
   const [pagination, setPagination] = useState<{
     page: number
     pageSize: number
