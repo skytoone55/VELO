@@ -593,12 +593,17 @@ function PlanningContent() {
 
     try {
       const supabase = createClient()
-      // Trouver la livraison du client
+      // Trouver la livraison ACTIVE du client (un client peut avoir plusieurs
+      // livraisons : annulée/livrée + une active). On réutilise l'active s'il y en
+      // a une, sinon on en crée une. (.single() plantait si >1 ligne existait.)
       let { data: livraison } = await supabase
         .from('livraisons')
         .select('id')
         .eq('client_id', clientId)
-        .single()
+        .in('statut', ['a_livrer', 'en_livraison'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
       if (!livraison) {
         // Auto-créer la livraison si elle n'existe pas
