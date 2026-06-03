@@ -91,6 +91,8 @@ const STATUTS_OPTIONS = [
   { value: 'controle_valide', label: 'Contrôle validé' },
   { value: 'formulaire_envoye', label: 'Formulaire envoyé' },
   { value: 'a_livrer', label: 'À livrer' },
+  { value: 'en_livraison', label: 'En livraison' },
+  { value: 'a_relivrer', label: 'À relivrer' },
 ]
 
 const TEMPS_MAX_PRESETS = [20, 30, 40]
