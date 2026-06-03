@@ -123,7 +123,7 @@ export default function AdminLivraisonsPage() {
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(100)
   const [pagination, setPagination] = useState({ totalPages: 0, totalFiltered: 0, startIndex: 0, endIndex: 0 })
 
   const [selectedLivraisons, setSelectedLivraisons] = useState<Set<string>>(new Set())
@@ -827,7 +827,7 @@ export default function AdminLivraisonsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {[10, 20, 50, 100, 200, 500].map(n => <SelectItem key={n} value={n.toString()}>{n}</SelectItem>)}
+            {[20, 50, 100, 200, 500].map(n => <SelectItem key={n} value={n.toString()}>{n}</SelectItem>)}
           </SelectContent>
         </Select>
         {hasActiveFilters && (
