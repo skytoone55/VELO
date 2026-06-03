@@ -72,16 +72,42 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Trouver ou créer la tournée cible
-    const { data: existingTournee } = await adminClient
+    // Trouver ou créer la tournée cible.
+    // NB : il peut exister PLUSIEURS tournées pour un même (date, livreur)
+    // (ex : plusieurs "tournées intelligentes" créées, dont des vides). On ne peut
+    // donc pas utiliser .maybeSingle() (qui plante sur >1 ligne et faisait alors
+    // créer à tort une nouvelle tournée à chaque déplacement).
+    const { data: candidateTournees } = await adminClient
       .from('tournees')
       .select('id, depot_id')
       .eq('date', new_date)
       .eq('livreur_id', targetLivreurId)
-      .maybeSingle()
 
-    let targetTournee: { id: string; depot_id: string | null } | null = existingTournee
+    let targetTournee: { id: string; depot_id: string | null } | null = null
     let createdNewTournee = false
+
+    if (candidateTournees && candidateTournees.length > 0) {
+      // 1) Réutiliser la tournée où la livraison se trouve déjà (réordonnancement intra-jour)
+      const current = candidateTournees.find(t => t.id === livraison.tournee_id)
+      if (current) {
+        targetTournee = current
+      } else {
+        // 2) Sinon, choisir la tournée existante la plus remplie (évite de créer un
+        //    doublon et d'atterrir dans une tournée résiduelle vide)
+        const withCounts = await Promise.all(
+          candidateTournees.map(async t => {
+            const { count } = await adminClient
+              .from('livraisons')
+              .select('id', { count: 'exact', head: true })
+              .eq('tournee_id', t.id)
+              .not('statut', 'in', '("annulee","retractation")')
+            return { t, count: count ?? 0 }
+          })
+        )
+        withCounts.sort((a, b) => b.count - a.count)
+        targetTournee = withCounts[0].t
+      }
+    }
 
     if (!targetTournee) {
       // Déterminer depot_id de la nouvelle tournée
