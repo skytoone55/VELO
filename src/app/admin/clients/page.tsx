@@ -222,7 +222,7 @@ export default function AdminClientsPage() {
       if (pinned.depot) setDepotFilter(Array.isArray(pinned.depot) ? pinned.depot : pinned.depot === 'all' ? [] : [pinned.depot])
       if (pinned.controle) setControleFilter(pinned.controle)
       if (pinned.enemat) setEnematFilter(pinned.enemat)
-      if (pinned.pageSize) setPageSize(pinned.pageSize)
+      // pageSize volontairement non restauré : la taille de page reste au défaut (100).
     }
     setFiltersReady(true)
   }, [loadPinned])
@@ -238,7 +238,6 @@ export default function AdminClientsPage() {
       depot: depotFilter,
       controle: controleFilter,
       enemat: enematFilter,
-      pageSize,
     })
     setIsPinned(true)
     toast.success('Filtres figés comme vue par défaut')

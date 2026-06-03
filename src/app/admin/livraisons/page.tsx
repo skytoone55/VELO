@@ -254,7 +254,7 @@ export default function AdminLivraisonsPage() {
       if (pinned.zone) setZoneFilter(pinned.zone)
       if (pinned.controle) setControleFilter(pinned.controle)
       if (pinned.enemat) setEnematFilter(pinned.enemat)
-      if (pinned.pageSize) setPageSize(pinned.pageSize)
+      // pageSize volontairement non restauré : la taille de page reste au défaut (100).
     }
     setFiltersReady(true)
   }, [loadPinned])
@@ -269,7 +269,6 @@ export default function AdminLivraisonsPage() {
       zone: zoneFilter,
       controle: controleFilter,
       enemat: enematFilter,
-      pageSize,
     })
     setIsPinned(true)
   }
