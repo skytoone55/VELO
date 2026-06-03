@@ -24,9 +24,10 @@ export async function POST(request: NextRequest) {
 
     const code = reference.trim().toUpperCase()
 
-    if (code.length < 6) {
+    // Unique critère bloquant : 10 caractères, format BC + 8.
+    if (code.length !== 10 || !code.startsWith('BC')) {
       return NextResponse.json(
-        { valid: false, error: 'Code FNUCI trop court (minimum 6 caractères)' },
+        { valid: false, error: 'Le code FNUCI doit faire 10 caractères et commencer par BC' },
         { status: 400 }
       )
     }
@@ -37,16 +38,18 @@ export async function POST(request: NextRequest) {
       .from('fnuci')
       .select('*')
       .eq('reference', code)
-      .single()
+      .maybeSingle()
 
+    // Code inexistant : autorisé. Il sera créé automatiquement à la validation
+    // du bon de livraison (nouvelles étiquettes non pré-enregistrées).
     if (error || !fnuci) {
       return NextResponse.json(
-        { valid: false, error: 'Code FNUCI introuvable' },
+        { valid: true, isNew: true },
         { status: 200 }
       )
     }
 
-    // Un code attribué ou bloqué n'est pas disponible
+    // Un code déjà attribué (à un autre client) reste bloquant : pas de doublon.
     if (fnuci.statut === 'attribue') {
       return NextResponse.json(
         { valid: false, error: 'Ce code FNUCI est déjà attribué à un autre client', fnuci },

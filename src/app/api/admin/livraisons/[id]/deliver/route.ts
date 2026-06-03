@@ -144,7 +144,17 @@ export async function POST(
 
     // --- 4. Valider chaque code FNUCI ---
     const normalizedCodes = fnuci_codes.map(c => c.trim().toUpperCase())
-    const { data: fnuciRecords, error: fnuciError } = await supabase
+
+    // Unique critère bloquant sur le format : 10 caractères, BC + 8.
+    const badFormat = normalizedCodes.filter(c => c.length !== 10 || !c.startsWith('BC'))
+    if (badFormat.length > 0) {
+      return NextResponse.json(
+        { error: `Codes FNUCI invalides (10 caractères + BC requis) : ${badFormat.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    const { data: fnuciRecordsRaw, error: fnuciError } = await supabase
       .from('fnuci')
       .select('*')
       .in('reference', normalizedCodes)
@@ -157,16 +167,28 @@ export async function POST(
       )
     }
 
-    if (!fnuciRecords || fnuciRecords.length !== normalizedCodes.length) {
-      const foundCodes = new Set((fnuciRecords || []).map(r => r.reference))
-      const missing = normalizedCodes.filter(c => !foundCodes.has(c))
-      return NextResponse.json(
-        { error: `Codes FNUCI introuvables : ${missing.join(', ')}` },
-        { status: 400 }
-      )
+    let fnuciRecords = fnuciRecordsRaw || []
+
+    // Codes non pré-enregistrés (nouvelles étiquettes) : on les crée à la volée
+    // (statut "disponible"), puis ils sont attribués comme les autres ci-dessous.
+    const foundCodes = new Set(fnuciRecords.map(r => r.reference))
+    const missingCodes = normalizedCodes.filter(c => !foundCodes.has(c))
+    if (missingCodes.length > 0) {
+      const { data: createdRecords, error: createError } = await supabase
+        .from('fnuci')
+        .insert(missingCodes.map(ref => ({ numero: 0, reference: ref, statut: 'disponible' })))
+        .select('*')
+      if (createError) {
+        console.error('Erreur création FNUCI:', createError)
+        return NextResponse.json(
+          { error: `Erreur lors de la création des codes FNUCI : ${missingCodes.join(', ')}` },
+          { status: 500 }
+        )
+      }
+      fnuciRecords = [...fnuciRecords, ...(createdRecords || [])]
     }
 
-    // Vérifier qu'aucun n'est déjà attribué à un autre client
+    // Vérifier qu'aucun n'est déjà attribué à un autre client (pas de doublon)
     const alreadyAttribue = fnuciRecords.filter(
       r => r.statut === 'attribue' && r.client_id !== client.id
     )
