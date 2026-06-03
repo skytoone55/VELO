@@ -236,7 +236,7 @@ export default function MapPage() {
   const [simulationMode, setSimulationMode] = useState(false)
   const [filtersCollapsed, setFiltersCollapsed] = useState(false)
   const [simulationPos, setSimulationPos] = useState<{ lat: number; lng: number } | null>(null)
-  const [simulationRayon, setSimulationRayon] = useState(30)
+  const [simulationRayon, setSimulationRayon] = useState(15)
   const [simulationResult, setSimulationResult] = useState<any | null>(null)
   const [simulationLoading, setSimulationLoading] = useState(false)
   // Sous-mode de sélection : 'rayon' (cercle) ou 'zone' (polygone libre)
