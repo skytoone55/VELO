@@ -53,6 +53,7 @@ import {
   Search,
   Filter,
   Download,
+  Upload,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -557,6 +558,46 @@ export default function AdminPaiementsPage() {
     }
   }
 
+  // ========== Import facture (commercial / livreur) → marquer payé ==========
+  const importCommInputRef = useRef<HTMLInputElement>(null)
+  const importLivInputRef = useRef<HTMLInputElement>(null)
+  const [importLoading, setImportLoading] = useState<null | 'commercial' | 'livreur'>(null)
+
+  const handleImportFacture = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: 'commercial' | 'livreur'
+  ) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // reset pour re-sélectionner le même fichier
+    if (!file || importLoading) return
+    setImportLoading(type)
+    const label = type === 'commercial' ? 'commerciale' : 'livreur'
+    const toastId = toast.loading(`Import facture ${label}…`)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('type', type)
+      const res = await fetch('/api/admin/paiements/import-facture', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur import')
+
+      const parts = [`${data.paid} client(s) marqué(s) payé ${type} (${data.velos_payes} vélos)`]
+      if (data.already_paid > 0) parts.push(`${data.already_paid} déjà payé(s)`)
+      if (data.not_eligible > 0) parts.push(`${data.not_eligible} hors ENEMAT`)
+      if (data.not_found > 0) parts.push(`${data.not_found} réf introuvable(s)`)
+      toast.success(parts.join(' · '), { id: toastId, duration: 8000 })
+      if (data.not_found > 0) {
+        const apercu = (data.details?.not_found || []).slice(0, 10).join(', ')
+        toast.warning(`Réf introuvables (${data.not_found}) : ${apercu}${data.not_found > 10 ? '…' : ''}`, { duration: 12000 })
+      }
+      await fetchClients()
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur import facture', { id: toastId })
+    } finally {
+      setImportLoading(null)
+    }
+  }
+
   // Toggle individuel sur une ligne
   const runToggleSingle = async (
     clientId: string,
@@ -730,6 +771,23 @@ export default function AdminPaiementsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Import factures → marquage payé (réf Retina extraites du PDF/Excel) */}
+          <input ref={importCommInputRef} type="file" accept=".pdf,.xlsx,.xls" className="hidden"
+            onChange={(e) => handleImportFacture(e, 'commercial')} />
+          <input ref={importLivInputRef} type="file" accept=".pdf,.xlsx,.xls" className="hidden"
+            onChange={(e) => handleImportFacture(e, 'livreur')} />
+          <Button variant="outline" size="sm" className="h-9 gap-1.5"
+            onClick={() => importCommInputRef.current?.click()} disabled={importLoading !== null}
+            title="Importer une facture commerciale (PDF/Excel) → marque payé commercial">
+            {importLoading === 'commercial' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            Facture commerciale
+          </Button>
+          <Button variant="outline" size="sm" className="h-9 gap-1.5"
+            onClick={() => importLivInputRef.current?.click()} disabled={importLoading !== null}
+            title="Importer une facture livreur (PDF/Excel) → marque payé livreur">
+            {importLoading === 'livreur' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            Facture livreur
+          </Button>
           <Button variant="outline" size="sm" onClick={() => fetchClients()} className="h-9">
             <RefreshCw className="h-4 w-4" />
           </Button>
