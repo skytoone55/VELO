@@ -138,18 +138,32 @@ export async function POST(request: NextRequest) {
     const matchedRefs = new Set(matchedClients.map(c => c.reference_retina as string))
     const notFound = refs.filter(r => !matchedRefs.has(r))
 
-    // Gate ENEMAT + anti-doublon (identique à /bulk)
+    // BLOCAGE STRICT anti double-paiement : on ne peut PAS payer 2× le même dossier
+    // (côté livreur ou commercial). Si UN seul client de la facture est déjà payé
+    // pour ce côté → on ABANDONNE tout l'import (aucune modification) et on signale
+    // les dossiers en problème (popup rouge côté front).
+    const dejaPayes = matchedClients
+      .filter(c => c[paidField] === true)
+      .map(c => ({
+        reference_retina: c.reference_retina as string,
+        raison_sociale: (c.raison_sociale as string) || '—',
+      }))
+    if (dejaPayes.length > 0) {
+      return NextResponse.json({
+        blocked: true,
+        type,
+        error: `Import refusé : ${dejaPayes.length} dossier(s) déjà payé(s) côté ${type}. Aucune modification effectuée.`,
+        deja_payes: dejaPayes,
+      }, { status: 409 })
+    }
+
+    // Gate ENEMAT (identique à /bulk) — les non éligibles sont signalés, pas payés.
     const notEligible: string[] = []
-    const alreadyPaid: string[] = []
     const toPayIds: string[] = []
     let velosToPay = 0
     for (const c of matchedClients) {
       if (!ELIGIBLE_STATUTS.has(c.statut_enemat as string)) {
         notEligible.push(c.reference_retina as string)
-        continue
-      }
-      if (c[paidField] === true) {
-        alreadyPaid.push(c.reference_retina as string)
         continue
       }
       toPayIds.push(c.id as string)
@@ -174,11 +188,9 @@ export async function POST(request: NextRequest) {
       total_refs: refs.length,
       paid: toPayIds.length,
       velos_payes: velosToPay,
-      already_paid: alreadyPaid.length,
       not_eligible: notEligible.length,
       not_found: notFound.length,
       details: {
-        already_paid: alreadyPaid,
         not_eligible: notEligible,
         not_found: notFound,
       },

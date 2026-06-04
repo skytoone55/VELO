@@ -284,12 +284,15 @@ export async function POST(
     }
 
     // --- 7. Mettre à jour le client ---
+    // Auto-remplir le livreur de paiement avec le livreur qui a livré, SANS écraser
+    // une éventuelle attribution manuelle déjà saisie (override conservé).
     const { error: updateClientError } = await supabase
       .from('clients')
       .update({
         statut_commercial: 'livre',
         date_statut: now,
         fnuci_ids: normalizedCodes,
+        ...(client.paiement_livreur_id ? {} : { paiement_livreur_id: currentUser.id }),
         updated_at: now,
       })
       .eq('id', client.id)

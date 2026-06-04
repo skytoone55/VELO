@@ -562,6 +562,9 @@ export default function AdminPaiementsPage() {
   const importCommInputRef = useRef<HTMLInputElement>(null)
   const importLivInputRef = useRef<HTMLInputElement>(null)
   const [importLoading, setImportLoading] = useState<null | 'commercial' | 'livreur'>(null)
+  const [blockedImport, setBlockedImport] = useState<
+    null | { type: 'commercial' | 'livreur'; dossiers: { reference_retina: string; raison_sociale: string }[] }
+  >(null)
 
   const handleImportFacture = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -579,6 +582,13 @@ export default function AdminPaiementsPage() {
       fd.append('type', type)
       const res = await fetch('/api/admin/paiements/import-facture', { method: 'POST', body: fd })
       const data = await res.json()
+
+      // Blocage strict anti double-paiement → popup rouge, aucune modification
+      if (res.status === 409 && data.blocked) {
+        toast.dismiss(toastId)
+        setBlockedImport({ type, dossiers: data.deja_payes || [] })
+        return
+      }
       if (!res.ok) throw new Error(data.error || 'Erreur import')
 
       const parts = [`${data.paid} client(s) marqué(s) payé ${type} (${data.velos_payes} vélos)`]
@@ -818,6 +828,40 @@ export default function AdminPaiementsPage() {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Popup rouge : import bloqué (double-paiement) */}
+      <Dialog open={blockedImport !== null} onOpenChange={(o) => { if (!o) setBlockedImport(null) }}>
+        <DialogContent className="border-2 border-red-500">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-6 w-6" />
+              Import refusé — dossier déjà payé
+            </DialogTitle>
+            <DialogDescription>
+              {blockedImport && (
+                <>Impossible d&apos;importer cette facture <strong>{blockedImport.type}</strong> : on ne peut pas payer deux fois le même dossier.
+                <br /><strong>Aucune modification n&apos;a été effectuée.</strong> Corrige la facture puis réimporte.</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-72 overflow-auto rounded-md border border-red-200 bg-red-50 p-3">
+            <p className="mb-2 text-sm font-semibold text-red-700">
+              {blockedImport?.dossiers.length} dossier(s) déjà payé(s) côté {blockedImport?.type} :
+            </p>
+            <ul className="space-y-1 text-sm text-red-800">
+              {blockedImport?.dossiers.map((d) => (
+                <li key={d.reference_retina} className="flex justify-between gap-3">
+                  <span className="font-medium">{d.raison_sociale}</span>
+                  <span className="font-mono text-xs opacity-80">{d.reference_retina}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <DialogFooter>
+            <Button variant="destructive" onClick={() => setBlockedImport(null)}>J&apos;ai compris</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Filtres */}
       <Card>
