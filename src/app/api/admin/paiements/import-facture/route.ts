@@ -33,12 +33,29 @@ const ELIGIBLE_STATUTS = new Set(['depose_enemat', 'apf_enemat', 'paye_enemat'])
 /** Réf Retina = 8 caractères hexadécimaux (ex: 131b0982). */
 const REF_RETINA_RE = /\b[0-9a-f]{8}\b/gi
 
-/** Extrait les réf Retina d'un PDF texte (annexe générée par le système). */
+/**
+ * Extrait les réf Retina d'un PDF texte.
+ * Le client/livreur envoie souvent un PDF multi-pages = SA facture + l'annexe
+ * (la liste) qu'on lui a fournie. On ne lit donc QUE la/les page(s) de l'annexe,
+ * repérée(s) par l'en-tête « Réf Retina » (présent uniquement sur le tableau).
+ * La page facture est ignorée → pas de faux positif venant du n° de facture, etc.
+ * Fallback : si aucune page « annexe » détectée, on lit tout (ancien format).
+ */
 async function extractRefsFromPdf(buffer: Uint8Array): Promise<string[]> {
   const pdf = await getDocumentProxy(buffer)
-  const { text } = await extractText(pdf, { mergePages: true })
-  const matches = String(text).toLowerCase().match(REF_RETINA_RE) || []
-  return matches
+  const { text } = await extractText(pdf, { mergePages: false })
+  const pages: string[] = Array.isArray(text) ? text.map(String) : [String(text)]
+
+  // Page d'annexe = contient le mot "retina" (en-tête de colonne "Réf Retina")
+  const annexePages = pages.filter(p => /retina/i.test(p))
+  const target = annexePages.length > 0 ? annexePages : pages
+
+  const refs: string[] = []
+  for (const p of target) {
+    const matches = p.toLowerCase().match(REF_RETINA_RE)
+    if (matches) refs.push(...matches)
+  }
+  return refs
 }
 
 /** Extrait les réf Retina d'un Excel (colonne dont l'entête contient "retina", sinon colonne B). */
