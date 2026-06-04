@@ -17,6 +17,7 @@ interface ClientRow {
   raison_sociale: string | null
   reference_retina: string | null
   velo_valide: number | null
+  type_de_zone: string | null
   paiement_livreur_id: string | null
   commercial_code: string | null
   commercial_apf_envoye: boolean | null
@@ -56,15 +57,36 @@ function todayDdMmYyyy(): string {
  * Genere le buffer XLSX pour un groupe de clients.
  * Colonnes : Client (raison_sociale) | Ref Retina | Nb velos livres
  */
-function buildXlsx(clients: ClientRow[]): Buffer {
+function isHorsZone(c: ClientRow): boolean {
+  return c.type_de_zone === 'hors_zone'
+}
+
+function buildXlsx(clients: ClientRow[], splitByZone: boolean): Buffer {
   const headers = ['Client', 'Réf Retina', 'Nb vélos livrés']
-  const rows = clients.map(c => [
+  const mkRows = (list: ClientRow[]) => list.map(c => [
     c.raison_sociale ?? '',
     c.reference_retina ?? '',
     c.velo_valide ?? 0,
   ])
-  const totalVelos = clients.reduce((acc, c) => acc + (c.velo_valide ?? 0), 0)
-  const sheetData = [headers, ...rows, ['', 'Total', totalVelos]]
+  const sumVelos = (list: ClientRow[]) => list.reduce((acc, c) => acc + (c.velo_valide ?? 0), 0)
+
+  let sheetData: (string | number)[][]
+  if (splitByZone) {
+    const dans = clients.filter(c => !isHorsZone(c))
+    const hors = clients.filter(isHorsZone)
+    sheetData = [headers]
+    sheetData.push(['CLIENTS DANS LA ZONE', '', ''])
+    sheetData.push(...mkRows(dans))
+    sheetData.push(['', 'Sous-total dans la zone', sumVelos(dans)])
+    sheetData.push(['', '', ''])
+    sheetData.push(['CLIENTS HORS ZONE', '', ''])
+    sheetData.push(...mkRows(hors))
+    sheetData.push(['', 'Sous-total hors zone', sumVelos(hors)])
+    sheetData.push(['', '', ''])
+    sheetData.push(['', 'TOTAL', sumVelos(clients)])
+  } else {
+    sheetData = [headers, ...mkRows(clients), ['', 'Total', sumVelos(clients)]]
+  }
 
   const ws = XLSX.utils.aoa_to_sheet(sheetData)
   ws['!cols'] = headers.map((h, i) => {
@@ -85,6 +107,7 @@ function buildXlsx(clients: ClientRow[]): Buffer {
  */
 async function buildPdf(
   clients: ClientRow[],
+  splitByZone: boolean,
   opts: { title: string; subtitle: string; tenantName: string }
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -138,38 +161,48 @@ async function buildPdf(
         y += rowH
       }
 
-      // Entete
-      drawRow(['Client', 'Réf Retina', 'Nb vélos livrés'], true, '#f0f0f0')
-
-      // Corps
-      for (const c of clients) {
-        // Page break
+      const sumVelos = (list: ClientRow[]) => list.reduce((acc, c) => acc + (c.velo_valide ?? 0), 0)
+      const drawHeader = () => drawRow(['Client', 'Réf Retina', 'Nb vélos livrés'], true, '#f0f0f0')
+      const drawSectionTitle = (label: string) => {
         if (y + rowH > doc.page.height - doc.page.margins.bottom - 40) {
-          doc.addPage()
-          y = doc.page.margins.top
-          drawRow(['Client', 'Réf Retina', 'Nb vélos livrés'], true, '#f0f0f0')
+          doc.addPage(); y = doc.page.margins.top
         }
-        drawRow(
-          [c.raison_sociale ?? '', c.reference_retina ?? '', String(c.velo_valide ?? 0)],
-          false
-        )
+        doc.font('Helvetica-Bold').fontSize(13).fillColor('#000').text(label, doc.page.margins.left, y + 4)
+        y += rowH + 4
+      }
+      const renderRows = (list: ClientRow[]) => {
+        drawHeader()
+        for (const c of list) {
+          if (y + rowH > doc.page.height - doc.page.margins.bottom - 40) {
+            doc.addPage(); y = doc.page.margins.top
+            drawHeader()
+          }
+          drawRow([c.raison_sociale ?? '', c.reference_retina ?? '', String(c.velo_valide ?? 0)], false)
+        }
+      }
+      const drawTotal = (label: string, n: number, big = false) => {
+        y += 8
+        if (y + 30 > doc.page.height - doc.page.margins.bottom) { doc.addPage(); y = doc.page.margins.top }
+        doc.font('Helvetica-Bold').fontSize(big ? 12 : 11).fillColor('#000')
+          .text(`${label} : ${n} vélo${n > 1 ? 's' : ''}`, doc.page.margins.left, y, { width: pageWidth, align: 'right' })
+        y += big ? 24 : 20
       }
 
-      // Footer total
-      const totalVelos = clients.reduce((acc, c) => acc + (c.velo_valide ?? 0), 0)
-      y += 10
-      if (y + 30 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage()
-        y = doc.page.margins.top
+      if (splitByZone) {
+        const dans = clients.filter(c => !isHorsZone(c))
+        const hors = clients.filter(isHorsZone)
+        drawSectionTitle('Clients dans la zone')
+        renderRows(dans)
+        drawTotal('Sous-total dans la zone', sumVelos(dans))
+        y += 6
+        drawSectionTitle('Clients hors zone')
+        renderRows(hors)
+        drawTotal('Sous-total hors zone', sumVelos(hors))
+        drawTotal('TOTAL', sumVelos(clients), true)
+      } else {
+        renderRows(clients)
+        drawTotal('Total', sumVelos(clients), true)
       }
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(12)
-        .fillColor('#000')
-        .text(`Total : ${totalVelos} vélo${totalVelos > 1 ? 's' : ''}`, doc.page.margins.left, y, {
-          width: pageWidth,
-          align: 'right',
-        })
 
       doc.end()
     } catch (err) {
@@ -205,7 +238,7 @@ export async function POST(request: NextRequest) {
     const { data: rows, error } = await supabase
       .from('clients')
       .select(
-        `id, raison_sociale, reference_retina, velo_valide,
+        `id, raison_sociale, reference_retina, velo_valide, type_de_zone,
          paiement_livreur_id, commercial_code,
          commercial_apf_envoye, commercial_paye,
          livreur_apf_envoye, livreur_paye,
@@ -314,8 +347,9 @@ export async function POST(request: NextRequest) {
       const totalVelosGroup = g.clients.reduce((acc, c) => acc + (c.velo_valide ?? 0), 0)
       const baseName = `${filePrefix}-${dateStr}-${totalVelosGroup}velos`
 
-      const xlsxBuf = buildXlsx(g.clients)
-      const pdfBuf = await buildPdf(g.clients, {
+      // Pour les livreurs : tableau séparé en "dans la zone" / "hors zone".
+      const xlsxBuf = buildXlsx(g.clients, isLivreur)
+      const pdfBuf = await buildPdf(g.clients, isLivreur, {
         title: titleText,
         subtitle: `${g.label} — ${dateStr}`,
         tenantName,
