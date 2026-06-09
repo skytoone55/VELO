@@ -5,9 +5,12 @@ import { expandCommercialCodes } from '@/lib/tenants/commercial'
 
 /**
  * GET /api/admin/paiements
- * Liste des clients deposes ENEMAT (statut_enemat = 'depose_enemat') pour le module paiements.
+ * Liste des clients LIVRES (statut_commercial = 'livre') pour le module paiements.
+ * Le paiement est INDEPENDANT d'ENEMAT : un dossier apparait des qu'il est livre, qu'il
+ * soit deja depose ENEMAT ou non. Le statut ENEMAT n'est plus qu'un filtre de confort.
  *
  * Query params :
+ * - controle ('oui'|'non') : filtre Controle qualite (cq_valide de la livraison)
  * - tenant (string) : filtre tenant (info, pas applique au filtre SQL direct — tenant vient de env)
  * - depot_id (uuid)
  * - paiement_livreur_id (uuid)
@@ -70,9 +73,22 @@ export async function GET(request: NextRequest) {
     const lotFilter = searchParams.get('lot')
     const factureFilter = searchParams.get('facture')
     const zoneFilter = searchParams.get('zone')
+    // Filtre Controle qualite : 'oui' (CQ valide) | 'non' (tout le reste : SAV, en cours, non commence)
+    const controleFilter = searchParams.get('controle')
     const offset = (page - 1) * limit
 
     const supabase = createAdminClient()
+
+    // Le controle qualite (cq_valide) vit sur la table `livraisons`. On pre-charge l'ensemble
+    // des clients ayant AU MOINS une livraison avec CQ valide. Ce set sert a la fois a la
+    // colonne "Controle valide" (derivee) et au filtre `controle`, tout en conservant la
+    // pagination cote table `clients`.
+    const { data: cqRows } = await supabase
+      .from('livraisons')
+      .select('client_id')
+      .eq('cq_valide', true)
+    const cqOkIds = [...new Set((cqRows || []).map((r: any) => r.client_id).filter(Boolean))] as string[]
+    const cqOkSet = new Set(cqOkIds)
 
     let query = supabase
       .from('clients')
@@ -94,8 +110,12 @@ export async function GET(request: NextRequest) {
          livreur:paiement_livreur_id (id, nom, prenom, email)`,
         { count: 'exact' }
       )
-      .in('statut_enemat', ['depose_enemat', 'apf_enemat', 'paye_enemat'])
-      .order('date_depot_enemat', { ascending: false })
+      // Apparition = des que le client est LIVRE (paiement independant d'ENEMAT).
+      // `statut_commercial = 'livre'` englobe TOUS les dossiers ENEMAT (qui sont livres),
+      // donc aucun dossier ENEMAT existant ne disparait ; s'ajoutent les livres pas encore deposes.
+      .eq('statut_commercial', 'livre')
+      // Les ENEMAT dates remontent en premier ; les livres sans depot ENEMAT (date null) ensuite.
+      .order('date_depot_enemat', { ascending: false, nullsFirst: false })
       .range(offset, offset + limit - 1)
 
     if (depotIds.length === 1) {
@@ -176,6 +196,15 @@ export async function GET(request: NextRequest) {
       else if (zones.length > 1) query = query.in('type_de_zone', zones)
     }
 
+    // Filtre Controle qualite (cq_valide via la table livraisons, pre-charge plus haut)
+    if (controleFilter === 'oui') {
+      query = cqOkIds.length > 0
+        ? query.in('id', cqOkIds)
+        : query.eq('id', '00000000-0000-0000-0000-000000000000') // aucun CQ valide => 0 resultat
+    } else if (controleFilter === 'non' && cqOkIds.length > 0) {
+      query = query.not('id', 'in', `(${cqOkIds.join(',')})`)
+    }
+
     const { data, error, count } = await query
 
     if (error) {
@@ -190,13 +219,15 @@ export async function GET(request: NextRequest) {
       depot: c.depot_retrait ?? c.depot_logistique ?? null,
       enemat_paye: c.statut_enemat === 'paye_enemat',
       enemat_paye_le: c.statut_enemat === 'paye_enemat' ? (c.date_paye_enemat ?? null) : null,
+      // Controle qualite valide (derive de livraisons.cq_valide) : Oui si dans le set, Non sinon
+      controle_valide: cqOkSet.has(c.id),
     }))
 
     // Deuxieme requete : somme des velos valides sur TOUS les clients filtres (pas seulement la page)
     let sumQuery = supabase
       .from('clients')
       .select('velo_valide')
-      .in('statut_enemat', ['depose_enemat', 'apf_enemat', 'paye_enemat'])
+      .eq('statut_commercial', 'livre')
 
     if (depotIds.length === 1) {
       sumQuery = sumQuery.or(`depot_retrait_id.eq.${depotIds[0]},depot_logistique_id.eq.${depotIds[0]}`)
@@ -252,6 +283,13 @@ export async function GET(request: NextRequest) {
       const zones = zoneFilter.split(',').filter(Boolean)
       if (zones.length === 1) sumQuery = sumQuery.eq('type_de_zone', zones[0])
       else if (zones.length > 1) sumQuery = sumQuery.in('type_de_zone', zones)
+    }
+    if (controleFilter === 'oui') {
+      sumQuery = cqOkIds.length > 0
+        ? sumQuery.in('id', cqOkIds)
+        : sumQuery.eq('id', '00000000-0000-0000-0000-000000000000')
+    } else if (controleFilter === 'non' && cqOkIds.length > 0) {
+      sumQuery = sumQuery.not('id', 'in', `(${cqOkIds.join(',')})`)
     }
 
     const { data: sumData } = await sumQuery

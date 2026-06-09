@@ -28,7 +28,9 @@ const PAYE_FIELD: Record<FactureType, 'commercial_paye' | 'livreur_paye'> = {
   livreur: 'livreur_paye',
 }
 
-const ELIGIBLE_STATUTS = new Set(['depose_enemat', 'apf_enemat', 'paye_enemat'])
+// Le paiement ne depend PAS d'ENEMAT : un dossier est payable des qu'il est LIVRE
+// (statut_commercial = 'livre'), meme avant le depot ENEMAT.
+const STATUT_PAYABLE = 'livre'
 
 /** Réf Retina = 8 caractères hexadécimaux (ex: 131b0982). */
 const REF_RETINA_RE = /\b[0-9a-f]{8}\b/gi
@@ -126,7 +128,7 @@ export async function POST(request: NextRequest) {
     // Récupérer les clients correspondants
     const { data: matched, error: fetchError } = await supabase
       .from('clients')
-      .select(`id, raison_sociale, reference_retina, velo_valide, statut_enemat, ${paidField}`)
+      .select(`id, raison_sociale, reference_retina, velo_valide, statut_commercial, ${paidField}`)
       .in('reference_retina', refs)
 
     if (fetchError) {
@@ -157,12 +159,13 @@ export async function POST(request: NextRequest) {
       }, { status: 409 })
     }
 
-    // Gate ENEMAT (identique à /bulk) — les non éligibles sont signalés, pas payés.
+    // Gate LIVRE (identique à /bulk) — les non livrés sont signalés, pas payés.
+    // Le paiement ne dépend pas d'ENEMAT.
     const notEligible: string[] = []
     const toPayIds: string[] = []
     let velosToPay = 0
     for (const c of matchedClients) {
-      if (!ELIGIBLE_STATUTS.has(c.statut_enemat as string)) {
+      if ((c.statut_commercial as string) !== STATUT_PAYABLE) {
         notEligible.push(c.reference_retina as string)
         continue
       }

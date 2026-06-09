@@ -26,12 +26,14 @@ interface ExportBody {
   lot?: string
   facture?: string
   zone?: string
+  // Filtre Controle qualite : 'oui' (CQ valide) | 'non' (le reste)
+  controle?: 'oui' | 'non'
   export_mode: ExportMode
 }
 
 /**
  * POST /api/admin/paiements/export
- * Genere un fichier XLSX des clients deposes ENEMAT, selon filtres + mode d'export.
+ * Genere un fichier XLSX des clients LIVRES (paiement independant d'ENEMAT), selon filtres + mode d'export.
  *
  * Body : mêmes filtres que GET /api/admin/paiements + export_mode.
  * Acces : super_admin uniquement.
@@ -48,6 +50,11 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient()
+
+    // CQ valide (table livraisons) -> set pour la colonne "Controle valide" + le filtre 'controle'
+    const { data: cqRows } = await supabase.from('livraisons').select('client_id').eq('cq_valide', true)
+    const cqOkIds = [...new Set((cqRows || []).map((r: any) => r.client_id).filter(Boolean))] as string[]
+    const cqOkSet = new Set(cqOkIds)
 
     let query = supabase
       .from('clients')
@@ -68,8 +75,8 @@ export async function POST(request: NextRequest) {
          commercial:commercial_code (code, nom, parent_code),
          livreur:paiement_livreur_id (id, nom, prenom, email)`
       )
-      .in('statut_enemat', ['depose_enemat', 'apf_enemat', 'paye_enemat'])
-      .order('date_depot_enemat', { ascending: false })
+      .eq('statut_commercial', 'livre')
+      .order('date_depot_enemat', { ascending: false, nullsFirst: false })
 
     // Resolution des filtres multi-select (pluriel prioritaire, sinon fallback singulier)
     const depotIds = Array.isArray(body.depot_ids) && body.depot_ids.length > 0
@@ -125,6 +132,13 @@ export async function POST(request: NextRequest) {
       if (zones.length === 1) query = query.eq('type_de_zone', zones[0])
       else if (zones.length > 1) query = query.in('type_de_zone', zones)
     }
+    if (body.controle === 'oui') {
+      query = cqOkIds.length > 0
+        ? query.in('id', cqOkIds)
+        : query.eq('id', '00000000-0000-0000-0000-000000000000')
+    } else if (body.controle === 'non' && cqOkIds.length > 0) {
+      query = query.not('id', 'in', `(${cqOkIds.join(',')})`)
+    }
 
     const { data, error } = await query
 
@@ -157,6 +171,7 @@ export async function POST(request: NextRequest) {
       { header: 'Email', get: r => r.email ?? '' },
       { header: 'Commercial', get: commercialName },
       { header: 'Livreur', get: livreurName },
+      { header: 'Controle valide', get: (r: any) => (cqOkSet.has(r.id) ? 'Oui' : 'Non') },
       { header: 'Lot', get: r => r.numero_lot_enemat ?? '' },
       { header: 'N° facture', get: r => r.numero_facture_enemat ?? '' },
     ]

@@ -34,7 +34,9 @@ const BOOL_FIELDS: BoolPaymentField[] = [
  * - Les booleens true  → set aussi le timestamp `*_le = now()`
  * - Les booleens false → set aussi `*_le = null`
  *
- * Validation : tous les client_ids doivent avoir statut_enemat IN ('depose_enemat','apf_enemat','paye_enemat').
+ * Validation : tous les client_ids doivent etre LIVRES (statut_commercial = 'livre').
+ *   Le paiement ne depend PAS d'ENEMAT : un livreur/commercial peut etre paye des que
+ *   la livraison est faite, meme avant le depot ENEMAT.
  * Refuse : tout body contenant `enemat_paye` (gere par le module ENEMAT).
  * Acces : super_admin uniquement.
  */
@@ -66,10 +68,10 @@ export async function PATCH(request: NextRequest) {
 
     const supabase = createAdminClient()
 
-    // Verifier que tous les clients sont bien dans un statut ENEMAT eligible paiement
+    // Verifier que tous les clients sont bien LIVRES (le paiement ne depend pas d'ENEMAT)
     const { data: existing, error: fetchError } = await supabase
       .from('clients')
-      .select('id, statut_enemat, commercial_apf_envoye, commercial_paye, livreur_apf_envoye, livreur_paye')
+      .select('id, statut_commercial, commercial_apf_envoye, commercial_paye, livreur_apf_envoye, livreur_paye')
       .in('id', client_ids)
 
     if (fetchError) {
@@ -77,9 +79,9 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: fetchError.message }, { status: 500 })
     }
 
-    const ELIGIBLE_STATUTS = new Set(['depose_enemat', 'apf_enemat', 'paye_enemat'])
-    // Filtre 1 : statut ENEMAT eligible
-    let eligibleRows = (existing || []).filter((c: any) => ELIGIBLE_STATUTS.has(c.statut_enemat))
+    // Filtre 1 : le client doit etre LIVRE (paiement independant d'ENEMAT — un livreur
+    // peut etre paye des que la livraison est faite, meme avant le depot ENEMAT).
+    let eligibleRows = (existing || []).filter((c: any) => c.statut_commercial === 'livre')
 
     // Filtre 2 : verrou anti-doublon — si on met a true un flag deja a true, on ignore ce client
     // (evite les "marquer paye" en double ou "APF envoye" en double)
@@ -100,7 +102,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({
         error: skippedAlreadyDone.length > 0
           ? `Aucun client eligible : ${skippedAlreadyDone.length} deja traite(s) pour cette action.`
-          : 'Aucun client eligible (statut_enemat invalide pour paiements)',
+          : 'Aucun client eligible (client non livre)',
         updated: 0,
         alreadyDone: skippedAlreadyDone.length,
       }, { status: 400 })

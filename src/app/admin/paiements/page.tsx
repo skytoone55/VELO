@@ -102,6 +102,8 @@ interface PaiementClient {
   // Champs virtuels (calcules server-side depuis statut_enemat)
   enemat_paye: boolean | null
   enemat_paye_le: string | null
+  // Controle qualite valide (derive server-side de livraisons.cq_valide)
+  controle_valide: boolean | null
   commercial_apf_envoye: boolean | null
   commercial_apf_envoye_le: string | null
   commercial_paye: boolean | null
@@ -282,6 +284,8 @@ export default function AdminPaiementsPage() {
   const [livreurFilter, setLivreurFilter] = useState<string[]>([])
   const [commercialFilter, setCommercialFilter] = useState<string[]>([])
   const [enematFilter, setEnematFilter] = useState<EnematStatutFiltre>('all')
+  // Filtre Controle qualite : 'all' | 'oui' (CQ valide) | 'non' (reste : SAV / en cours / non commence)
+  const [controleFilter, setControleFilter] = useState<'all' | 'oui' | 'non'>('all')
   const [commercialPayeFilter, setCommercialPayeFilter] = useState<TriState>('all')
   const [livreurPayeFilter, setLivreurPayeFilter] = useState<TriState>('all')
   const [commercialApfFilter, setCommercialApfFilter] = useState<TriState>('all')
@@ -394,7 +398,7 @@ export default function AdminPaiementsPage() {
   // Reset page 1 quand filtres changent
   useEffect(() => {
     setCurrentPage(1)
-  }, [debouncedSearch, depotFilter, zoneFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, pageSize])
+  }, [debouncedSearch, depotFilter, zoneFilter, livreurFilter, commercialFilter, enematFilter, controleFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, pageSize])
 
   // ========== Fetch clients ==========
   const fetchClients = async () => {
@@ -409,6 +413,7 @@ export default function AdminPaiementsPage() {
       if (livreurFilter.length > 0) params.set('livreur_ids', livreurFilter.join(','))
       if (commercialFilter.length > 0) params.set('commercial_codes', commercialFilter.join(','))
       if (enematFilter !== 'all') params.set('statut_enemat', enematFilter)
+      if (controleFilter !== 'all') params.set('controle', controleFilter)
       if (commercialPayeFilter !== 'all') params.set('commercial_paye', commercialPayeFilter === 'oui' ? 'true' : 'false')
       if (livreurPayeFilter !== 'all') params.set('livreur_paye', livreurPayeFilter === 'oui' ? 'true' : 'false')
       if (commercialApfFilter !== 'all') params.set('commercial_apf_envoye', commercialApfFilter === 'oui' ? 'true' : 'false')
@@ -439,7 +444,7 @@ export default function AdminPaiementsPage() {
     if (!filtersReady) return
     fetchClients()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, debouncedSearch, depotFilter, zoneFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, filtersReady])
+  }, [currentPage, pageSize, debouncedSearch, depotFilter, zoneFilter, livreurFilter, commercialFilter, enematFilter, controleFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, filtersReady])
 
   // ========== Sélection ==========
   const allSelectedOnPage = clients.length > 0 && clients.every(c => selectedIds.has(c.id))
@@ -648,6 +653,7 @@ export default function AdminPaiementsPage() {
       if (livreurFilter.length > 0) body.livreur_ids = livreurFilter
       if (commercialFilter.length > 0) body.commercial_codes = commercialFilter
       if (enematFilter !== 'all') body.statut_enemat = enematFilter
+      if (controleFilter !== 'all') body.controle = controleFilter
       if (commercialPayeFilter !== 'all') body.commercial_paye = commercialPayeFilter === 'oui'
       if (livreurPayeFilter !== 'all') body.livreur_paye = livreurPayeFilter === 'oui'
       if (commercialApfFilter !== 'all') body.commercial_apf_envoye = commercialApfFilter === 'oui'
@@ -697,10 +703,10 @@ export default function AdminPaiementsPage() {
 
   const hasActiveFilters = useMemo(() => {
     return depotFilter.length > 0 || zoneFilter.length > 0 || livreurFilter.length > 0 || commercialFilter.length > 0 ||
-      enematFilter !== 'all' || commercialPayeFilter !== 'all' || livreurPayeFilter !== 'all' ||
+      enematFilter !== 'all' || controleFilter !== 'all' || commercialPayeFilter !== 'all' || livreurPayeFilter !== 'all' ||
       !!lotFilter || !!factureFilter ||
       searchQuery.length > 0
-  }, [depotFilter, zoneFilter, livreurFilter, commercialFilter, enematFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, searchQuery])
+  }, [depotFilter, zoneFilter, livreurFilter, commercialFilter, enematFilter, controleFilter, commercialPayeFilter, livreurPayeFilter, commercialApfFilter, livreurApfFilter, lotFilter, factureFilter, searchQuery])
 
   const selectedCount = selectedIds.size
 
@@ -777,7 +783,7 @@ export default function AdminPaiementsPage() {
             Paiements
           </h1>
           <p className="text-sm text-muted-foreground">
-            Gestion des APF commerciaux et livreurs pour les clients déposés ENEMAT.
+            Gestion des APF commerciaux et livreurs pour les clients livrés (indépendamment d'ENEMAT).
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -999,6 +1005,18 @@ export default function AdminPaiementsPage() {
               </SelectContent>
             </Select>
 
+            {/* Filtre Controle qualite (derive de livraisons.cq_valide) */}
+            <Select value={controleFilter} onValueChange={(v) => setControleFilter(v as 'all' | 'oui' | 'non')}>
+              <SelectTrigger className="h-9 w-[200px]">
+                <SelectValue>Contrôle qualité : {controleFilter === 'all' ? 'Tous' : controleFilter === 'oui' ? 'Oui' : 'Non'}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous</SelectItem>
+                <SelectItem value="oui">Oui (CQ validé)</SelectItem>
+                <SelectItem value="non">Non</SelectItem>
+              </SelectContent>
+            </Select>
+
             {/* Tri-states (autres filtres binaires) */}
 
             <Select value={commercialPayeFilter} onValueChange={(v) => setCommercialPayeFilter(v as TriState)}>
@@ -1192,7 +1210,7 @@ export default function AdminPaiementsPage() {
             <div className="py-16 text-center">
               <Filter className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">
-                Aucun client déposé ENEMAT ne correspond aux filtres.
+                Aucun client livré ne correspond aux filtres.
               </p>
             </div>
           ) : (
@@ -1218,6 +1236,7 @@ export default function AdminPaiementsPage() {
                     <TableHead>Date dépôt</TableHead>
                     <TableHead>Commercial</TableHead>
                     <TableHead>Livreur</TableHead>
+                    <TableHead>Contrôle</TableHead>
                     <TableHead>ENEMAT</TableHead>
                     <TableHead>Lot</TableHead>
                     <TableHead>N° facture</TableHead>
@@ -1266,6 +1285,13 @@ export default function AdminPaiementsPage() {
                             <span className="text-sm">{livreurLabel}</span>
                           ) : (
                             <span className="text-xs text-muted-foreground italic">Non attribué</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {c.controle_valide ? (
+                            <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-green-200">Oui</Badge>
+                          ) : (
+                            <Badge className="bg-gray-100 text-gray-600 hover:bg-gray-200 border-gray-200">Non</Badge>
                           )}
                         </TableCell>
                         <TableCell>
