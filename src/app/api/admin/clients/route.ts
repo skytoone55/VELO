@@ -27,7 +27,10 @@ export async function GET(request: Request) {
     const adminClient = createAdminClient()
 
     // Pagination pour récupérer TOUS les clients (Supabase limite à 1000 par requête)
-    const allClients: any[] = []
+    // Tri déterministe par id (unique) + dédup par id : created_at n'est pas
+    // unique, donc l'ordre des ex-aequo varie entre pages et certaines lignes
+    // reviennent sur plusieurs pages (sur-comptage des vélos).
+    const clientsById = new Map<string, any>()
     const PAGE_SIZE = 1000
     let offset = 0
     let hasMore = true
@@ -36,7 +39,7 @@ export async function GET(request: Request) {
       let query = adminClient
         .from('clients')
         .select('*, livraisons(cq_valide, cq_en_cours, date_livraison_effective)')
-        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
         .range(offset, offset + PAGE_SIZE - 1)
 
       // Filtrer par territoire (admin regional) ou depots (agent_secteur)
@@ -57,7 +60,7 @@ export async function GET(request: Request) {
       }
 
       if (data && data.length > 0) {
-        allClients.push(...data)
+        for (const c of data) clientsById.set(c.id, c)
         offset += PAGE_SIZE
         hasMore = data.length === PAGE_SIZE
       } else {
@@ -65,7 +68,7 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({ clients: allClients })
+    return NextResponse.json({ clients: Array.from(clientsById.values()) })
   } catch (error: any) {
     console.error('Erreur API:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })

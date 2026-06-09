@@ -28,7 +28,9 @@ export async function GET() {
     if (depotsError) throw depotsError
 
     // Récupérer tous les clients (non supprimés)
-    let allClients: any[] = []
+    // Tri déterministe par id + dédup par id : sans ordre stable la pagination
+    // se chevauche et les mêmes clients sont comptés plusieurs fois (sur-comptage).
+    const clientsById = new Map<string, any>()
     let page = 0
     const pageSize = 1000
 
@@ -37,16 +39,18 @@ export async function GET() {
         .from('clients')
         .select('id, latitude, longitude, depot_retrait_id, depot_logistique_id, velo_valide, velo_devis, agence')
         .not('monday_sync_status', 'eq', 'deleted')
+        .order('id', { ascending: true })
         .range(page * pageSize, (page + 1) * pageSize - 1)
 
       if (error) throw error
       if (!clients || clients.length === 0) break
 
-      allClients = allClients.concat(clients)
+      for (const c of clients) clientsById.set(c.id, c)
       if (clients.length < pageSize) break
       page++
     }
 
+    const allClients = Array.from(clientsById.values())
     const totalClients = allClients.length
     const clientsWithCoords = allClients.filter(c => c.latitude && c.longitude).length
     const clientsAssigned = allClients.filter(c => c.depot_retrait_id || c.depot_logistique_id).length

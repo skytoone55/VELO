@@ -52,7 +52,9 @@ export async function GET(request: NextRequest) {
     // Récupérer TOUS les clients par batches (Supabase limite à 1000 par défaut)
     const BATCH_SIZE = 1000
     const clientFields = 'id, raison_sociale, adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville, latitude, longitude, agence, departement, depot_retrait_id, depot_logistique_id, velo_devis, velo_valide, statut_commercial, validation_naf, monday_board_id'
-    let allClients: any[] = []
+    // Tri déterministe par id + dédup par id : sans ordre stable la pagination
+    // se chevauche et les mêmes clients sont comptés plusieurs fois (sur-comptage).
+    const clientsById = new Map<string, any>()
     let offset = 0
     let hasMore = true
 
@@ -60,6 +62,7 @@ export async function GET(request: NextRequest) {
       let clientQuery = adminClient
         .from('clients')
         .select(clientFields)
+        .order('id', { ascending: true })
         .range(offset, offset + BATCH_SIZE - 1)
 
       // Agent secteur ne voit que les clients de ses dépôts
@@ -74,12 +77,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Erreur lors du chargement des clients' }, { status: 500 })
       }
 
-      allClients = allClients.concat(batch || [])
+      for (const c of (batch || [])) clientsById.set(c.id, c)
       hasMore = (batch?.length || 0) === BATCH_SIZE
       offset += BATCH_SIZE
     }
 
-    const clients = allClients
+    const clients = Array.from(clientsById.values())
 
     // Calculer le nombre de clients et vélos par dépôt
     const depotsWithCounts = (depots || []).map(depot => {

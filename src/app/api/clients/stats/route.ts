@@ -21,22 +21,26 @@ export async function GET() {
     let page = 0
     const pageSize = 1000
 
+    // Tri déterministe par id + dédup par id : sans ordre stable la pagination
+    // se chevauche et les mêmes lignes sont comptées plusieurs fois (sur-comptage).
+    const clientsById = new Map<string, any>()
     while (true) {
       const { data: clients, error } = await adminClient
         .from('clients')
-        .select('statut_commercial, velo_valide, velo_devis')
+        .select('id, statut_commercial, velo_valide, velo_devis')
         .not('monday_sync_status', 'eq', 'deleted')
+        .order('id', { ascending: true })
         .range(page * pageSize, (page + 1) * pageSize - 1)
 
       if (error) throw error
       if (!clients || clients.length === 0) break
 
-      allClients = allClients.concat(clients)
+      for (const c of clients) clientsById.set(c.id, c)
       if (clients.length < pageSize) break
       page++
     }
 
-    const clients = allClients
+    const clients = Array.from(clientsById.values())
 
     // Normalisation des statuts : fusion des variantes orthographiques
     // (certains boards Monday ont "CONTROL VALIDER" au lieu de "CONTROL VALIDÉ", etc.)

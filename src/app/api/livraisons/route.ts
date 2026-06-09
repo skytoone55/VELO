@@ -265,7 +265,7 @@ export async function GET(request: NextRequest) {
     if (!isExport) {
       let velosQuery = adminClient
         .from('livraisons')
-        .select('cq_valide, cq_en_cours, statut, client:clients!livraisons_client_id_fkey!inner(velo_valide, in_enemat, type_de_zone, statut_commercial)')
+        .select('client_id, cq_valide, cq_en_cours, statut, client:clients!livraisons_client_id_fkey!inner(velo_valide, in_enemat, type_de_zone, statut_commercial)')
 
       // Ré-appliquer les mêmes filtres (sans pagination)
       if (statutFilter && statutFilter !== 'all') {
@@ -315,9 +315,16 @@ export async function GET(request: NextRequest) {
       }
 
       const { data: velosData } = await velosQuery
-      velosValidesFiltered = (velosData || []).reduce((sum: number, liv: any) => {
-        return sum + (Number(liv.client?.velo_valide) || 0)
-      }, 0)
+      // Dédup par client_id : un client avec plusieurs livraisons ne doit
+      // compter ses vélos qu'une seule fois (sinon sur-comptage via le JOIN).
+      const velosByClient = new Map<string, number>()
+      for (const liv of (velosData || []) as any[]) {
+        if (liv.client_id != null) {
+          velosByClient.set(liv.client_id, Number(liv.client?.velo_valide) || 0)
+        }
+      }
+      velosValidesFiltered = 0
+      for (const v of velosByClient.values()) velosValidesFiltered += v
     }
 
     return NextResponse.json({

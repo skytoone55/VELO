@@ -76,7 +76,9 @@ export async function POST(request: NextRequest) {
     const adminClient = createAdminClient()
 
     // Récupérer tous les clients avec coordonnées
-    let allClients: any[] = []
+    // Tri déterministe par id + dédup par id : sans ordre stable la pagination
+    // se chevauche et les mêmes clients sont comptés plusieurs fois (sur-comptage).
+    const clientsById = new Map<string, any>()
     let page = 0
     const pageSize = 1000
 
@@ -87,15 +89,18 @@ export async function POST(request: NextRequest) {
         .not('monday_sync_status', 'eq', 'deleted')
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
+        .order('id', { ascending: true })
         .range(page * pageSize, (page + 1) * pageSize - 1)
 
       if (error) throw error
       if (!clients || clients.length === 0) break
 
-      allClients = allClients.concat(clients)
+      for (const c of clients) clientsById.set(c.id, c)
       if (clients.length < pageSize) break
       page++
     }
+
+    const allClients = Array.from(clientsById.values())
 
     // Calculer les distances et filtrer par rayon
     const maxRayon = rayonPayantKm || rayonKm

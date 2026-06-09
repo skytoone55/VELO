@@ -245,7 +245,7 @@ export async function GET(request: NextRequest) {
     // Requête séparée pour sommer les vélos validés sur TOUS les résultats filtrés (pas juste la page)
     let velosQuery = adminClient
       .from('clients')
-      .select('velo_valide')
+      .select('id, velo_valide')
       .not('monday_sync_status', 'eq', 'deleted')
 
     // Ré-appliquer les mêmes filtres
@@ -345,21 +345,27 @@ export async function GET(request: NextRequest) {
     }
 
     // Paginer pour dépasser la limite Supabase de 1000 rows
-    let allVelosData: any[] = []
+    // Tri déterministe par id + dédup par id : sans ordre stable, les pages se
+    // chevauchent et les mêmes lignes sont comptées plusieurs fois (sur-comptage).
+    velosQuery = velosQuery.order('id', { ascending: true })
+    const velosById = new Map<string, number>()
     let veloOffset = 0
     const VELO_PAGE = 1000
     let hasMoreVelos = true
     while (hasMoreVelos) {
       const { data: batch } = await velosQuery.range(veloOffset, veloOffset + VELO_PAGE - 1)
       if (batch && batch.length > 0) {
-        allVelosData = allVelosData.concat(batch)
+        for (const c of batch) {
+          velosById.set(c.id, Number(c.velo_valide) || 0)
+        }
         veloOffset += VELO_PAGE
         if (batch.length < VELO_PAGE) hasMoreVelos = false
       } else {
         hasMoreVelos = false
       }
     }
-    const velosValidesFiltered = allVelosData.reduce((sum, c) => sum + (Number(c.velo_valide) || 0), 0)
+    let velosValidesFiltered = 0
+    for (const v of velosById.values()) velosValidesFiltered += v
 
     // Appliquer la pagination
     const startIndex = (page - 1) * pageSize
