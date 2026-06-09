@@ -78,6 +78,8 @@ interface LivraisonRow {
     in_enemat?: boolean
   } | null
   cq_valide?: boolean
+  livreur_id?: string | null
+  livreur?: { id: string; prenom: string | null; nom: string | null } | null
   depot: { id: string; nom: string } | null
 }
 
@@ -86,6 +88,29 @@ const statutOptions = [
   { value: 'all', label: 'Statut' },
   ...PROCESS_STATUTS_SELECTABLES.map((k) => ({ value: k as string, label: PROCESS_STATUTS[k] })),
 ]
+
+// Resout le nom du livreur quel que soit son role.
+// Priorite 1 : jointure API livreur:livreur_id(users_profile) -> couvre TOUS les roles
+//   (un livreur peut etre admin, ex. Charlotte Pochet, et n'apparait alors pas dans la
+//    liste filtree /api/admin/livreurs reservee aux roles livreur/agent_secteur).
+// Priorite 2 (fallback) : liste filtree livreurOptions (selecteur de filtre).
+function resolveLivreurName(
+  row: LivraisonRow,
+  livreurOptions: { value: string; label: string }[],
+  fallback = '-',
+): string {
+  const lv = row.livreur
+  if (lv) {
+    const name = `${lv.nom || ''} ${lv.prenom || ''}`.trim()
+    if (name) return name
+  }
+  const id = row.livreur_id
+  if (id) {
+    const opt = livreurOptions.find(o => o.value === id)
+    if (opt) return opt.label
+  }
+  return fallback
+}
 
 function SortableHeader({ label, column, currentSort, currentOrder, onSort, className }: {
   label: string; column: string; currentSort: string; currentOrder: 'asc' | 'desc'; onSort: (col: string) => void; className?: string
@@ -205,7 +230,7 @@ export default function AdminLivraisonsPage() {
         { header: 'Téléphone', accessor: r => r.client?.telephone },
         { header: 'Email', accessor: r => r.client?.email },
         { header: 'Commercial', accessor: r => (r.client as any)?.commercial?.nom || r.client?.commercial_code || r.client?.commercial_assigne || '' },
-        { header: 'Livreur', accessor: r => (r as any).livreur_id ? (livreurOptions.find(o => o.value === (r as any).livreur_id)?.label || '') : '' },
+        { header: 'Livreur', accessor: r => resolveLivreurName(r, livreurOptions, '') },
         { header: 'ENEMAT', accessor: r => r.client?.in_enemat ? 'Oui' : 'Non' },
         { header: 'Statut ENEMAT', accessor: r => {
           const s = (r.client as any)?.statut_enemat
@@ -930,7 +955,7 @@ export default function AdminLivraisonsPage() {
                       {liv.client ? <CommercialCell client={liv.client} /> : <span className="text-sm text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-sm">
-                      {(liv as any).livreur_id ? (livreurOptions.find(o => o.value === (liv as any).livreur_id)?.label || '-') : '-'}
+                      {resolveLivreurName(liv, livreurOptions)}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm">
                       {getDepartementLabel(liv.client?.departement, liv.client?.adresse_societe_cp)}

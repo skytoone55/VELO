@@ -127,6 +127,7 @@ export async function GET(request: NextRequest) {
         date_livraison, date_livraison_effective,
         adresse_livraison_ligne1, adresse_livraison_cp, adresse_livraison_ville,
         depot_id, livreur_id, cq_valide, client_id, created_at,
+        livreur:livreur_id(id, prenom, nom),
         client:clients!livraisons_client_id_fkey!inner(
           id, raison_sociale, reference_retina, telephone, email, email_beneficiaire,
           contact_nom, contact_prenom, departement, adresse_societe_cp,
@@ -137,6 +138,7 @@ export async function GET(request: NextRequest) {
       `
     const fullSelect = `
         *,
+        livreur:livreur_id(id, prenom, nom),
         client:clients!livraisons_client_id_fkey!inner(
           id, raison_sociale, siret, email, email_beneficiaire, telephone,
           contact_nom, contact_prenom,
