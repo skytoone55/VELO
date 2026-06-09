@@ -243,7 +243,15 @@ export default function AdminLivraisonsPage() {
         { header: 'Dépôt', accessor: r => r.depot?.nom },
         { header: 'Département', accessor: r => r.client?.departement },
         { header: 'Nb vélos', accessor: r => r.client?.velo_valide },
-        { header: 'Date', accessor: r => r.creneau_date || r.date_livraison },
+        { header: 'Date', accessor: r => {
+          // MEME logique que la colonne "Date prevue" affichee (voir rendu plus bas) :
+          // si le dossier est livre -> date REELLE de livraison ; sinon -> creneau prevu.
+          // Evite que l'Excel affiche le creneau (date future) pour un dossier deja livre.
+          const raw = (r.statut === 'livree' && r.date_livraison) ? r.date_livraison : (r.creneau_date || r.date_livraison)
+          if (!raw) return ''
+          return new Date(raw.length === 10 ? raw + 'T00:00:00' : raw)
+            .toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        } },
       ], `Export-Livraisons-${tenant.name}-${today}.xlsx`)
       toast.success(`Export Livraisons : ${allLivraisons.length} lignes`)
     } catch (e: any) {
