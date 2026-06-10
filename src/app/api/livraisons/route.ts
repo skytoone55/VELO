@@ -155,9 +155,13 @@ export async function GET(request: NextRequest) {
       : adminClient.from('livraisons').select(fullSelect, { count: 'exact' })
 
     // Le filtre Statut porte sur le statut PROCESS du client (statut_commercial),
-    // aligne sur la page Client. Par defaut on masque les livraisons annulees
-    // (anciennes versions remplacees) ; des qu'un filtre statut est actif, le
-    // filtre fait foi (on ne masque plus).
+    // aligne sur la page Client. Les livraisons annulees (anciennes versions
+    // remplacees lors du re-import) ne doivent JAMAIS remonter : on les masque
+    // TOUJOURS, que le filtre statut soit actif ou non. Avant, le masquage etait
+    // dans le else, mais depuis que le filtre porte sur le client (et non sur le
+    // statut de la livraison), un filtre actif faisait remonter les annulees
+    // (dossier "livre" affiche sans livreur/date + bouton livraison reapparait).
+    query = query.neq('statut', 'annulee')
     if (statutFilter && statutFilter !== 'all') {
       const statuts = statutFilter.split(',').filter(Boolean)
       if (statuts.length === 1) {
@@ -165,8 +169,6 @@ export async function GET(request: NextRequest) {
       } else if (statuts.length > 1) {
         query = query.in('client.statut_commercial', statuts)
       }
-    } else {
-      query = query.neq('statut', 'annulee')
     }
 
     // Apply search filter (client IDs from step 1)
@@ -269,13 +271,13 @@ export async function GET(request: NextRequest) {
         .from('livraisons')
         .select('client_id, cq_valide, cq_en_cours, statut, client:clients!livraisons_client_id_fkey!inner(velo_valide, in_enemat, type_de_zone, statut_commercial)')
 
-      // Ré-appliquer les mêmes filtres (sans pagination)
+      // Ré-appliquer les mêmes filtres (sans pagination).
+      // Masquer TOUJOURS les annulees (cf. requete principale ci-dessus).
+      velosQuery = velosQuery.neq('statut', 'annulee')
       if (statutFilter && statutFilter !== 'all') {
         const statuts = statutFilter.split(',').filter(Boolean)
         if (statuts.length === 1) velosQuery = velosQuery.eq('client.statut_commercial', statuts[0])
         else if (statuts.length > 1) velosQuery = velosQuery.in('client.statut_commercial', statuts)
-      } else {
-        velosQuery = velosQuery.neq('statut', 'annulee')
       }
       if (clientIds) velosQuery = velosQuery.in('client_id', clientIds)
       if (hasEnemat) {
