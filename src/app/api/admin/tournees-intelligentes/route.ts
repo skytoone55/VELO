@@ -165,12 +165,15 @@ export async function GET(request: NextRequest) {
       .in('statut_commercial', statuts)
       .eq('validation_naf', 'OUI')
 
-    // Exclure les clients en retrait (sans dépôt logistique) — pas de livraison = pas de tournée
-    query = query.not('depot_logistique_id', 'is', null)
+    // Exclure les clients sans aucun dépôt rattaché — pas de livraison = pas de tournée.
+    // On accepte depot_retrait_id (PPE+Ecovolt) OU depot_logistique_id (legacy PPE) :
+    // côté Ecovolt depot_logistique_id est toujours NULL, ce filtre excluait donc
+    // TOUS les clients Ecovolt (y compris ceux sélectionnés manuellement sur la carte).
+    query = query.or('depot_retrait_id.not.is.null,depot_logistique_id.not.is.null')
 
-    // Filtre dépôt spécifique si sélectionné
+    // Filtre dépôt spécifique si sélectionné (sur l'un ou l'autre des deux dépôts)
     if (depotId) {
-      query = query.eq('depot_logistique_id', depotId)
+      query = query.or(`depot_retrait_id.eq.${depotId},depot_logistique_id.eq.${depotId}`)
     }
 
     let anchor: { lat: number; lng: number }

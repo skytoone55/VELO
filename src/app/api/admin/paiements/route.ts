@@ -240,8 +240,17 @@ export async function GET(request: NextRequest) {
     }
     if (livreurIds.length === 1) sumQuery = sumQuery.eq('paiement_livreur_id', livreurIds[0])
     else if (livreurIds.length > 1) sumQuery = sumQuery.in('paiement_livreur_id', livreurIds)
-    if (commercialCodes.length === 1) sumQuery = sumQuery.eq('commercial_code', commercialCodes[0])
-    else if (commercialCodes.length > 1) sumQuery = sumQuery.in('commercial_code', commercialCodes)
+    // Meme expansion master->enfants que la requete principale : sinon, filtrer
+    // par un commercial "parent" (cas Ecovolt avec hierarchie) ne matchait aucun
+    // commercial_code dans la sumQuery et faisait tomber le total velos a 0.
+    if (commercialCodes.length > 0) {
+      const tenant = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
+      const expandedCodesSum = await expandCommercialCodes(supabase as any, tenant, commercialCodes)
+      if (expandedCodesSum !== null) {
+        if (expandedCodesSum.length === 1) sumQuery = sumQuery.eq('commercial_code', expandedCodesSum[0])
+        else sumQuery = sumQuery.in('commercial_code', expandedCodesSum)
+      }
+    }
     if (statutEnematFiltre) {
       sumQuery = sumQuery.eq('statut_enemat', statutEnematFiltre)
     } else if (enematPaye === 'true') {

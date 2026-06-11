@@ -115,12 +115,17 @@ export async function POST(request: NextRequest) {
       if (livraison.client_id) {
         const { data: client } = await adminClient
           .from('clients')
-          .select('depot_logistique_id')
+          .select('depot_retrait_id, depot_logistique_id')
           .eq('id', livraison.client_id)
           .single()
-        depotForTournee = client?.depot_logistique_id ?? null
+        // depot_retrait_id (PPE+Ecovolt) prioritaire ; depot_logistique_id (legacy PPE)
+        // en repli. Cote Ecovolt depot_logistique_id est NULL -> sans ca on tombait
+        // sur DEFAULT_DEPOT_ID (un depot PPE qui n'existe pas dans la base Ecovolt),
+        // ce qui faisait echouer la creation de tournee et donc le deplacement.
+        depotForTournee = client?.depot_retrait_id ?? client?.depot_logistique_id ?? null
       }
-      if (!depotForTournee) depotForTournee = DEFAULT_DEPOT_ID
+      // Repli sur la livraison elle-meme avant le defaut en dur.
+      if (!depotForTournee) depotForTournee = livraison.depot_id ?? DEFAULT_DEPOT_ID
 
       const { data: livreurInfo } = await adminClient
         .from('users_profile')
