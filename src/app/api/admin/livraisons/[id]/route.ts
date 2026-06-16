@@ -84,7 +84,7 @@ export async function PATCH(
     const allowedFields = [
       'complement_adresse', 'notes_admin', 'statut',
       'creneau_date', 'creneau_heure_debut', 'creneau_heure_fin',
-      'heure_precise', 'mode_livraison',
+      'heure_precise', 'mode_livraison', 'rdv_confirme',
     ]
 
     const updateData: Record<string, unknown> = {}

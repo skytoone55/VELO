@@ -69,6 +69,7 @@ export async function GET(request: Request) {
         livreur_id,
         tournee_id,
         tournee_position,
+        rdv_confirme,
         created_at
       `)
       .eq('depot_id', depotId)

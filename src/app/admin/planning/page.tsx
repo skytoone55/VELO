@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dialog'
 import { DELIVERY_STATUS, PROCESS_STATUTS, STATUT_COLORS } from '@/lib/constants'
 import { LivreurActions } from './livreur-actions'
+import { RdvToggle } from '@/components/admin/rdv-toggle'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getTenantConfig } from '@/lib/tenants'
@@ -85,6 +86,7 @@ interface PlanningLivraison {
   livreur_id: string | null
   tournee_id: string | null
   tournee_position: number | null
+  rdv_confirme: boolean | null
   created_at: string
   client: PlanningClient | null
 }
@@ -1632,6 +1634,11 @@ function PlanningContent() {
                                 <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 shrink-0 ${getStatutColor(livraison.statut)}`}>
                                   {getStatutLabel(livraison.statut)}
                                 </Badge>
+                                <RdvToggle
+                                  livraisonId={livraison.id}
+                                  initial={!!livraison.rdv_confirme}
+                                  onChanged={(v) => setLivraisons(prev => prev.map(l => l.id === livraison.id ? { ...l, rdv_confirme: v } : l))}
+                                />
                               </div>
                               <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                                 <span className="flex items-center gap-0.5">
@@ -2153,6 +2160,13 @@ function LivraisonCard({
           )}
         </div>
         <div className="mt-1.5 flex items-center justify-end gap-1.5">
+          <span className="mr-auto">
+            <RdvToggle
+              livraisonId={livraison.id}
+              initial={!!livraison.rdv_confirme}
+              onChanged={(v) => onUpdate?.(livraison.id, { rdv_confirme: v })}
+            />
+          </span>
           {draggable && (
             <span
               {...dragHandleProps}
@@ -2218,6 +2232,13 @@ function LivraisonCard({
         </div>
       </Link>
       <div className="mt-0.5 flex items-center gap-1">
+        <span className="mr-auto">
+          <RdvToggle
+            livraisonId={livraison.id}
+            initial={!!livraison.rdv_confirme}
+            onChanged={(v) => onUpdate?.(livraison.id, { rdv_confirme: v })}
+          />
+        </span>
         {draggable && (
           <span
             {...dragHandleProps}

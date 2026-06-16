@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, ArrowLeft, MapPin, Phone, Navigation, Clock, User, Home } from 'lucide-react'
+import { RdvToggle } from '@/components/admin/rdv-toggle'
 import type { RouteStop, RouteDepot } from './tournee-route-map'
 
 const TourneeRouteMap = dynamic(() => import('./tournee-route-map'), { ssr: false })
@@ -20,6 +21,7 @@ interface Stop extends RouteStop {
   adresse: string
   creneau_heure_debut: string | null
   creneau_heure_fin: string | null
+  rdv_confirme: boolean | null
   distance_to_next_km: number | null
   time_to_next_min: number | null
 }
@@ -192,6 +194,13 @@ export default function TourneeMapPage({ params }: { params: Promise<{ id: strin
                     {(s.latitude == null || s.longitude == null) && (
                       <p className="text-[11px] text-orange-500 mt-0.5">Sans coordonnées GPS (absent de la carte)</p>
                     )}
+                  </div>
+                  <div className="shrink-0">
+                    <RdvToggle
+                      livraisonId={s.livraison_id}
+                      initial={!!s.rdv_confirme}
+                      onChanged={(v) => setStops(prev => prev.map(st => st.livraison_id === s.livraison_id ? { ...st, rdv_confirme: v } : st))}
+                    />
                   </div>
                 </div>
                 {(s.distance_to_next_km != null && s.time_to_next_min != null) && (

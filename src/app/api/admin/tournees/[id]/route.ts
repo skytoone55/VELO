@@ -48,6 +48,7 @@ export async function GET(
         tournee_position,
         creneau_heure_debut,
         creneau_heure_fin,
+        rdv_confirme,
         adresse_livraison_ligne1,
         adresse_livraison_cp,
         adresse_livraison_ville,
@@ -108,6 +109,7 @@ export async function GET(
         livraison_id: liv.id,
         position: idx + 1,
         tournee_position: liv.tournee_position,
+        rdv_confirme: liv.rdv_confirme ?? false,
         client_id: c?.id ?? null,
         nom: c
           ? ([c.contact_prenom, c.contact_nom].filter(Boolean).join(' ') || c.raison_sociale)
