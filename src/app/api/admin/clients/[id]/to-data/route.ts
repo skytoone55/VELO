@@ -11,6 +11,13 @@ import { requireRole, isAuthError } from '@/lib/auth/require-role'
  */
 const ALLOWED_STATUT_DATA = ['HS', 'retour_client', 'en_attente'] as const
 
+// Multi-tenant : certaines tables auxiliaires existent sur une base (Ecovolt) mais
+// pas sur l'autre (PPE) — ex. webhook_logs. PostgREST renvoie alors PGRST205
+// ("Could not find the table 'public.X' in the schema cache"). Dans ce cas la table
+// n'a tout simplement rien a nettoyer : on ignore l'erreur au lieu de bloquer la bascule.
+const isMissingTableError = (e: { code?: string; message?: string } | null | undefined): boolean =>
+  !!e && (e.code === 'PGRST205' || /Could not find the table|schema cache/i.test(e.message || ''))
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -146,7 +153,8 @@ export async function POST(
       .from('webhook_logs')
       .delete()
       .eq('client_id', id)
-    if (webhookDelError) {
+    // Table absente sur cette base (ex. PPE) -> rien a nettoyer, on continue.
+    if (webhookDelError && !isMissingTableError(webhookDelError)) {
       await rollbackDataClient()
       return NextResponse.json(
         { error: `Echec nettoyage webhook_logs : ${webhookDelError.message}` },
@@ -160,7 +168,8 @@ export async function POST(
         .from(table)
         .update({ client_id: null })
         .eq('client_id', id)
-      if (detachError) {
+      // Table absente sur cette base -> rien a detacher, on continue.
+      if (detachError && !isMissingTableError(detachError)) {
         await rollbackDataClient()
         return NextResponse.json(
           { error: `Echec detachement ${table} : ${detachError.message}` },
