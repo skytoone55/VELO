@@ -381,7 +381,7 @@ export default function AdminPaiementsPage() {
     supabase
       .from('users_profile')
       .select('id, nom, prenom, depot_id, depot_ids')
-      .or('role.eq.livreur,and(role.eq.agent_secteur,est_aussi_livreur.eq.true)')
+      .or('role.eq.livreur,est_aussi_livreur.eq.true')
       .eq('actif', true)
       .order('nom')
       .then(({ data }) => {
