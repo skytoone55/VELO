@@ -144,10 +144,32 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
+    // Propager le changement de livreur PAIEMENT au livreur REEL des livraisons.
+    // "Changer le livreur" dans Paiement doit prendre effet partout (fiche client, planning),
+    // pas seulement sur le champ paiement (sinon le changement reste purement visuel).
+    // On ne propage que l'assignation d'un livreur (non null) : retirer l'assignation paiement
+    // ne doit pas effacer qui a physiquement livre.
+    let livraisonsReassignees = 0
+    if ('paiement_livreur_id' in updates && updates.paiement_livreur_id) {
+      const { data: reassigned, error: livError } = await supabase
+        .from('livraisons')
+        .update({ livreur_id: updates.paiement_livreur_id, updated_at: now })
+        .in('client_id', eligibleIds)
+        .not('statut', 'in', '("annulee","retractation")')
+        .select('id')
+
+      if (livError) {
+        console.error('Erreur PATCH /api/admin/paiements/bulk (livraisons):', livError)
+        return NextResponse.json({ error: livError.message }, { status: 500 })
+      }
+      livraisonsReassignees = (reassigned || []).length
+    }
+
     return NextResponse.json({
       updated: (updated || []).length,
       rejected: client_ids.length - eligibleIds.length,
       alreadyDone: skippedAlreadyDone.length,
+      livraisonsReassignees,
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erreur interne'
