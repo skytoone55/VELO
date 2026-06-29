@@ -267,67 +267,80 @@ export async function GET(request: NextRequest) {
     // Skip en mode export pour eviter le timeout (le total n'apparait pas dans le fichier Excel)
     let velosValidesFiltered = 0
     if (!isExport) {
-      let velosQuery = adminClient
-        .from('livraisons')
-        .select('client_id, cq_valide, cq_en_cours, statut, client:clients!livraisons_client_id_fkey!inner(velo_valide, in_enemat, type_de_zone, statut_commercial)')
-
-      // Ré-appliquer les mêmes filtres (sans pagination).
-      // Masquer TOUJOURS les annulees (cf. requete principale ci-dessus).
-      velosQuery = velosQuery.neq('statut', 'annulee')
-      if (statutFilter && statutFilter !== 'all') {
-        const statuts = statutFilter.split(',').filter(Boolean)
-        if (statuts.length === 1) velosQuery = velosQuery.eq('client.statut_commercial', statuts[0])
-        else if (statuts.length > 1) velosQuery = velosQuery.in('client.statut_commercial', statuts)
-      }
-      if (clientIds) velosQuery = velosQuery.in('client_id', clientIds)
-      if (hasEnemat) {
-        velosQuery = velosQuery.eq('client.in_enemat', enematFilter === 'oui')
-      }
-      if (hasZone) {
-        const zones = zoneFilter!.split(',').filter(Boolean)
-        if (zones.length === 1) velosQuery = velosQuery.eq('client.type_de_zone', zones[0])
-        else if (zones.length > 1) velosQuery = velosQuery.in('client.type_de_zone', zones)
-      }
-      if (hasCommercial && expandedCommercialCodes) {
-        if (expandedCommercialCodes.length === 1) velosQuery = velosQuery.eq('client.commercial_code', expandedCommercialCodes[0])
-        else velosQuery = velosQuery.in('client.commercial_code', expandedCommercialCodes)
-      }
-      if (depotFilter && depotFilter !== 'all') {
-        const depots = depotFilter.split(',').filter(Boolean)
-        if (depots.length === 1) velosQuery = velosQuery.eq('depot_id', depots[0])
-        else if (depots.length > 1) velosQuery = velosQuery.in('depot_id', depots)
-      }
-      if (livreurFilter && livreurFilter !== 'all') {
-        const livreurs = livreurFilter.split(',').filter(Boolean)
-        if (livreurs.length === 1) velosQuery = velosQuery.eq('livreur_id', livreurs[0])
-        else if (livreurs.length > 1) velosQuery = velosQuery.in('livreur_id', livreurs)
-      }
-      if (hasControle) {
-        const vals = controleFilter!.split(',').filter(Boolean)
-        const conditions: string[] = []
-        if (vals.includes('ok')) conditions.push('cq_valide.eq.true')
-        if (vals.includes('en_cours')) conditions.push('cq_en_cours.eq.true')
-        if (vals.includes('attente')) {
-          conditions.push('and(statut.eq.livree,cq_valide.eq.false,cq_en_cours.eq.false)')
+      // Construit la requête vélos (mêmes filtres que la requête principale, sans pagination).
+      // Fabriquée à la demande car un PostgrestFilterBuilder est consommé après await :
+      // on en recrée un à chaque lot de pagination.
+      const buildVelosQuery = () => {
+        let q = adminClient
+          .from('livraisons')
+          .select('client_id, client:clients!livraisons_client_id_fkey!inner(velo_valide, in_enemat, type_de_zone, statut_commercial, commercial_code)')
+          // Masquer TOUJOURS les annulees (cf. requete principale ci-dessus).
+          .neq('statut', 'annulee')
+        if (statutFilter && statutFilter !== 'all') {
+          const statuts = statutFilter.split(',').filter(Boolean)
+          if (statuts.length === 1) q = q.eq('client.statut_commercial', statuts[0])
+          else if (statuts.length > 1) q = q.in('client.statut_commercial', statuts)
         }
-        if (conditions.length > 0) velosQuery = velosQuery.or(conditions.join(','))
-      }
-      if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
-        velosQuery = velosQuery.in('depot_id', currentUser.depot_ids)
-      } else if (currentUser.role === 'livreur') {
-        velosQuery = velosQuery.eq('livreur_id', currentUser.id)
+        if (clientIds) q = q.in('client_id', clientIds)
+        if (hasEnemat) q = q.eq('client.in_enemat', enematFilter === 'oui')
+        if (hasZone) {
+          const zones = zoneFilter!.split(',').filter(Boolean)
+          if (zones.length === 1) q = q.eq('client.type_de_zone', zones[0])
+          else if (zones.length > 1) q = q.in('client.type_de_zone', zones)
+        }
+        if (hasCommercial && expandedCommercialCodes) {
+          if (expandedCommercialCodes.length === 1) q = q.eq('client.commercial_code', expandedCommercialCodes[0])
+          else q = q.in('client.commercial_code', expandedCommercialCodes)
+        }
+        if (depotFilter && depotFilter !== 'all') {
+          const depots = depotFilter.split(',').filter(Boolean)
+          if (depots.length === 1) q = q.eq('depot_id', depots[0])
+          else if (depots.length > 1) q = q.in('depot_id', depots)
+        }
+        if (livreurFilter && livreurFilter !== 'all') {
+          const livreurs = livreurFilter.split(',').filter(Boolean)
+          if (livreurs.length === 1) q = q.eq('livreur_id', livreurs[0])
+          else if (livreurs.length > 1) q = q.in('livreur_id', livreurs)
+        }
+        if (hasControle) {
+          const vals = controleFilter!.split(',').filter(Boolean)
+          const conditions: string[] = []
+          if (vals.includes('ok')) conditions.push('cq_valide.eq.true')
+          if (vals.includes('en_cours')) conditions.push('cq_en_cours.eq.true')
+          if (vals.includes('attente')) {
+            conditions.push('and(statut.eq.livree,cq_valide.eq.false,cq_en_cours.eq.false)')
+          }
+          if (conditions.length > 0) q = q.or(conditions.join(','))
+        }
+        if (currentUser.role === 'agent_secteur' && currentUser.depot_ids?.length) {
+          q = q.in('depot_id', currentUser.depot_ids)
+        } else if (currentUser.role === 'livreur') {
+          q = q.eq('livreur_id', currentUser.id)
+        }
+        return q
       }
 
-      const { data: velosData } = await velosQuery
       // Dédup par client_id : un client avec plusieurs livraisons ne doit
       // compter ses vélos qu'une seule fois (sinon sur-comptage via le JOIN).
+      // PAGINATION OBLIGATOIRE : PostgREST tronque à ~1000 lignes/requête, ce qui
+      // plafonnait le total des vélos (~1501) au lieu du vrai total. On boucle par lots.
       const velosByClient = new Map<string, number>()
-      for (const liv of (velosData || []) as any[]) {
-        if (liv.client_id != null) {
-          velosByClient.set(liv.client_id, Number(liv.client?.velo_valide) || 0)
+      const BATCH = 1000
+      let fromIdx = 0
+      for (let i = 0; i < 100; i++) { // garde-fou : 100 lots max (100k livraisons)
+        const { data: batch, error: batchErr } = await buildVelosQuery().range(fromIdx, fromIdx + BATCH - 1)
+        if (batchErr) {
+          console.error('Erreur calcul total vélos:', batchErr.message)
+          break
         }
+        for (const liv of (batch || []) as any[]) {
+          if (liv.client_id != null) {
+            velosByClient.set(liv.client_id, Number(liv.client?.velo_valide) || 0)
+          }
+        }
+        if (!batch || batch.length < BATCH) break
+        fromIdx += BATCH
       }
-      velosValidesFiltered = 0
       for (const v of velosByClient.values()) velosValidesFiltered += v
     }
 
