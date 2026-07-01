@@ -83,17 +83,49 @@ export async function GET(request: NextRequest) {
     // des clients ayant AU MOINS une livraison avec CQ valide. Ce set sert a la fois a la
     // colonne "Controle valide" (derivee) et au filtre `controle`, tout en conservant la
     // pagination cote table `clients`.
-    const { data: cqRows } = await supabase
-      .from('livraisons')
-      .select('client_id')
-      .eq('cq_valide', true)
-    const cqOkIds = [...new Set((cqRows || []).map((r: any) => r.client_id).filter(Boolean))] as string[]
-    const cqOkSet = new Set(cqOkIds)
+    // PAGINATION OBLIGATOIRE : PostgREST tronque à ~1000 lignes/requête. Sans pagination,
+    // les clients dont le CQ est validé au-delà des 1000 premières livraisons étaient
+    // absents du set → colonne "Contrôle" affichée "non" à tort.
+    const cqOkSet = new Set<string>()
+    {
+      const BATCH = 1000
+      let cqFrom = 0
+      for (let i = 0; i < 100; i++) {
+        const { data: cqRows, error: cqErr } = await supabase
+          .from('livraisons')
+          .select('client_id')
+          .eq('cq_valide', true)
+          .range(cqFrom, cqFrom + BATCH - 1)
+        if (cqErr) { console.error('Erreur chargement CQ valide:', cqErr.message); break }
+        for (const r of (cqRows || []) as any[]) if (r.client_id) cqOkSet.add(r.client_id as string)
+        if (!cqRows || cqRows.length < BATCH) break
+        cqFrom += BATCH
+      }
+    }
 
-    let query = supabase
-      .from('clients')
-      .select(
-        `id, raison_sociale, reference_retina, telephone, email,
+    // Filtre Contrôle : on n'injecte JAMAIS ~1150 UUID dans l'URL (=> 400 Bad Request).
+    // 'oui'  → jointure interne sur livraisons.cq_valide (max 1 CQ validé/client, pas de doublon).
+    // 'non'  → complément (clients livrés SANS CQ validé), ensemble petit → .in() sûr.
+    let nonCqIds: string[] | null = null
+    if (controleFilter === 'non') {
+      const livreIds: string[] = []
+      const BATCH = 1000
+      let lFrom = 0
+      for (let i = 0; i < 100; i++) {
+        const { data: lRows, error: lErr } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('statut_commercial', 'livre')
+          .range(lFrom, lFrom + BATCH - 1)
+        if (lErr) { console.error('Erreur chargement livrés:', lErr.message); break }
+        for (const r of (lRows || []) as any[]) if (r.id && !cqOkSet.has(r.id)) livreIds.push(r.id as string)
+        if (!lRows || lRows.length < BATCH) break
+        lFrom += BATCH
+      }
+      nonCqIds = livreIds
+    }
+
+    const baseSelect = `id, raison_sociale, reference_retina, telephone, email,
          adresse_societe_ligne1, adresse_societe_cp, adresse_societe_ville, departement,
          commercial_assigne, commercial_code, monday_board_id,
          depot_retrait_id, depot_logistique_id, paiement_livreur_id,
@@ -107,9 +139,12 @@ export async function GET(request: NextRequest) {
          depot_retrait:depot_retrait_id (id, nom),
          depot_logistique:depot_logistique_id (id, nom),
          commercial:commercial_code (code, nom, parent_code),
-         livreur:paiement_livreur_id (id, nom, prenom, email)`,
-        { count: 'exact' }
-      )
+         livreur:paiement_livreur_id (id, nom, prenom, email)`
+    // 'oui' : jointure interne pour ne garder que les clients ayant une livraison CQ validée.
+    const controleEmbed = controleFilter === 'oui' ? ', cqctrl:livraisons!inner(cq_valide)' : ''
+    let query = supabase
+      .from('clients')
+      .select(`${baseSelect}${controleEmbed}`, { count: 'exact' })
       // Apparition = des que le client est LIVRE (paiement independant d'ENEMAT).
       // `statut_commercial = 'livre'` englobe TOUS les dossiers ENEMAT (qui sont livres),
       // donc aucun dossier ENEMAT existant ne disparait ; s'ajoutent les livres pas encore deposes.
@@ -196,13 +231,13 @@ export async function GET(request: NextRequest) {
       else if (zones.length > 1) query = query.in('type_de_zone', zones)
     }
 
-    // Filtre Controle qualite (cq_valide via la table livraisons, pre-charge plus haut)
+    // Filtre Controle qualite (cf. explication plus haut : jointure pour 'oui', complement pour 'non')
     if (controleFilter === 'oui') {
-      query = cqOkIds.length > 0
-        ? query.in('id', cqOkIds)
-        : query.eq('id', '00000000-0000-0000-0000-000000000000') // aucun CQ valide => 0 resultat
-    } else if (controleFilter === 'non' && cqOkIds.length > 0) {
-      query = query.not('id', 'in', `(${cqOkIds.join(',')})`)
+      query = query.eq('cqctrl.cq_valide', true)
+    } else if (controleFilter === 'non') {
+      query = (nonCqIds && nonCqIds.length > 0)
+        ? query.in('id', nonCqIds)
+        : query.eq('id', '00000000-0000-0000-0000-000000000000') // aucun non-valide => 0 resultat
     }
 
     const { data, error, count } = await query
@@ -214,19 +249,24 @@ export async function GET(request: NextRequest) {
 
     // Injecter le champ virtuel `enemat_paye` (lecture seule)
     // Cascade `depot` : depot_retrait (PPE+Ecovolt) > depot_logistique (legacy)
-    const clients = (data || []).map((c: any) => ({
-      ...c,
-      depot: c.depot_retrait ?? c.depot_logistique ?? null,
-      enemat_paye: c.statut_enemat === 'paye_enemat',
-      enemat_paye_le: c.statut_enemat === 'paye_enemat' ? (c.date_paye_enemat ?? null) : null,
-      // Controle qualite valide (derive de livraisons.cq_valide) : Oui si dans le set, Non sinon
-      controle_valide: cqOkSet.has(c.id),
-    }))
+    const clients = (data || []).map((c: any) => {
+      // Retirer l'embed technique de jointure (present uniquement quand controle='oui')
+      const { cqctrl, ...rest } = c
+      void cqctrl
+      return {
+        ...rest,
+        depot: c.depot_retrait ?? c.depot_logistique ?? null,
+        enemat_paye: c.statut_enemat === 'paye_enemat',
+        enemat_paye_le: c.statut_enemat === 'paye_enemat' ? (c.date_paye_enemat ?? null) : null,
+        // Controle qualite valide (derive de livraisons.cq_valide) : Oui si dans le set, Non sinon
+        controle_valide: cqOkSet.has(c.id),
+      }
+    })
 
     // Deuxieme requete : somme des velos valides sur TOUS les clients filtres (pas seulement la page)
     let sumQuery = supabase
       .from('clients')
-      .select('velo_valide')
+      .select(controleFilter === 'oui' ? 'velo_valide, cqctrl:livraisons!inner(cq_valide)' : 'velo_valide')
       .eq('statut_commercial', 'livre')
 
     if (depotIds.length === 1) {
@@ -294,11 +334,11 @@ export async function GET(request: NextRequest) {
       else if (zones.length > 1) sumQuery = sumQuery.in('type_de_zone', zones)
     }
     if (controleFilter === 'oui') {
-      sumQuery = cqOkIds.length > 0
-        ? sumQuery.in('id', cqOkIds)
+      sumQuery = sumQuery.eq('cqctrl.cq_valide', true)
+    } else if (controleFilter === 'non') {
+      sumQuery = (nonCqIds && nonCqIds.length > 0)
+        ? sumQuery.in('id', nonCqIds)
         : sumQuery.eq('id', '00000000-0000-0000-0000-000000000000')
-    } else if (controleFilter === 'non' && cqOkIds.length > 0) {
-      sumQuery = sumQuery.not('id', 'in', `(${cqOkIds.join(',')})`)
     }
 
     const { data: sumData } = await sumQuery
