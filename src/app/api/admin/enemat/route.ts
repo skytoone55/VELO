@@ -209,84 +209,91 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Deuxieme requete : somme des velos valides sur TOUS les clients filtres (pas seulement la page)
-    let sumQuery = supabase
-      .from('clients')
-      .select('velo_valide')
-      .eq('in_enemat', true)
-
-    if (statutEnemat) {
-      sumQuery = sumQuery.eq('statut_enemat', statutEnemat)
-    }
-    if (search) {
-      sumQuery = sumQuery.or(
-        `raison_sociale.ilike.%${search}%,siret.ilike.%${search}%,reference_retina.ilike.%${search}%,telephone.ilike.%${search}%,email.ilike.%${search}%`
-      )
-    }
-    if (depotId) {
-      const depots = depotId.split(',').filter(Boolean)
-      if (depots.length === 1) {
-        const d = depots[0]
-        sumQuery = sumQuery.or(`depot_retrait_id.eq.${d},depot_logistique_id.eq.${d}`)
-      } else if (depots.length > 1) {
-        const conds = depots.flatMap(d => [`depot_retrait_id.eq.${d}`, `depot_logistique_id.eq.${d}`]).join(',')
-        sumQuery = sumQuery.or(conds)
-      }
-    }
+    // Deuxieme requete : somme des velos valides sur TOUS les clients filtres (pas seulement la page).
+    // PostgREST tronque a 1000 lignes par requete : sans pagination, la somme plafonnait a ~1000
+    // clients (le compteur "X velos" en haut etait donc sous-evalue des que >1000 dossiers ENEMAT).
+    // On pagine par lots de 1000 en reconstruisant la requete a chaque lot (un builder n'est
+    // consommable qu'une fois). L'expansion commercial (async) est calculee une seule fois avant.
+    let expandedCommercialCodes: string[] | null = null
     if (commercial) {
-      // Aligner sur la requete principale : expansion master->enfants + commercial_code
-      // (et NON commercial_assigne en exact match, qui renvoyait 0 vélos sous filtre commercial)
       const commerciaux = commercial.split(',').filter(Boolean)
       const tenant = process.env.NEXT_PUBLIC_TENANT_ID || 'ecovolt'
-      const expandedCodes = await expandCommercialCodes(supabase as any, tenant, commerciaux)
-      if (expandedCodes !== null) {
-        if (expandedCodes.length === 1) sumQuery = sumQuery.eq('commercial_code', expandedCodes[0])
-        else sumQuery = sumQuery.in('commercial_code', expandedCodes)
+      expandedCommercialCodes = await expandCommercialCodes(supabase as any, tenant, commerciaux)
+    }
+
+    const buildSumQuery = () => {
+      let q = supabase
+        .from('clients')
+        .select('velo_valide')
+        .eq('in_enemat', true)
+
+      if (statutEnemat) q = q.eq('statut_enemat', statutEnemat)
+      if (search) {
+        q = q.or(
+          `raison_sociale.ilike.%${search}%,siret.ilike.%${search}%,reference_retina.ilike.%${search}%,telephone.ilike.%${search}%,email.ilike.%${search}%`
+        )
       }
-    }
-    if (fnuciFilter === 'oui') {
-      sumQuery = sumQuery.eq('fnuci_declared', true)
-    } else if (fnuciFilter === 'non') {
-      sumQuery = sumQuery.or('fnuci_declared.eq.false,fnuci_declared.is.null')
-    }
-    if (lotFilter === '__none__') {
-      sumQuery = sumQuery.is('numero_lot_enemat', null)
-    } else if (lotFilter === '__any__') {
-      sumQuery = sumQuery.not('numero_lot_enemat', 'is', null)
-    } else if (lotFilter) {
-      sumQuery = sumQuery.ilike('numero_lot_enemat', `%${lotFilter}%`)
-    }
-    if (factureFilter === '__none__') {
-      sumQuery = sumQuery.is('numero_facture_enemat', null)
-    } else if (factureFilter === '__any__') {
-      sumQuery = sumQuery.not('numero_facture_enemat', 'is', null)
-    } else if (factureFilter) {
-      sumQuery = sumQuery.ilike('numero_facture_enemat', `%${factureFilter}%`)
-    }
-    if (zoneFilter && zoneFilter !== 'all') {
-      const zones = zoneFilter.split(',').filter(Boolean)
-      if (zones.length === 1) sumQuery = sumQuery.eq('type_de_zone', zones[0])
-      else if (zones.length > 1) sumQuery = sumQuery.in('type_de_zone', zones)
+      if (depotId) {
+        const depots = depotId.split(',').filter(Boolean)
+        if (depots.length === 1) {
+          const d = depots[0]
+          q = q.or(`depot_retrait_id.eq.${d},depot_logistique_id.eq.${d}`)
+        } else if (depots.length > 1) {
+          const conds = depots.flatMap(d => [`depot_retrait_id.eq.${d}`, `depot_logistique_id.eq.${d}`]).join(',')
+          q = q.or(conds)
+        }
+      }
+      // Aligner sur la requete principale : expansion master->enfants + commercial_code
+      // (et NON commercial_assigne en exact match, qui renvoyait 0 vélos sous filtre commercial)
+      if (expandedCommercialCodes !== null) {
+        if (expandedCommercialCodes.length === 1) q = q.eq('commercial_code', expandedCommercialCodes[0])
+        else q = q.in('commercial_code', expandedCommercialCodes)
+      }
+      if (fnuciFilter === 'oui') {
+        q = q.eq('fnuci_declared', true)
+      } else if (fnuciFilter === 'non') {
+        q = q.or('fnuci_declared.eq.false,fnuci_declared.is.null')
+      }
+      if (lotFilter === '__none__') {
+        q = q.is('numero_lot_enemat', null)
+      } else if (lotFilter === '__any__') {
+        q = q.not('numero_lot_enemat', 'is', null)
+      } else if (lotFilter) {
+        q = q.ilike('numero_lot_enemat', `%${lotFilter}%`)
+      }
+      if (factureFilter === '__none__') {
+        q = q.is('numero_facture_enemat', null)
+      } else if (factureFilter === '__any__') {
+        q = q.not('numero_facture_enemat', 'is', null)
+      } else if (factureFilter) {
+        q = q.ilike('numero_facture_enemat', `%${factureFilter}%`)
+      }
+      if (zoneFilter && zoneFilter !== 'all') {
+        const zones = zoneFilter.split(',').filter(Boolean)
+        if (zones.length === 1) q = q.eq('type_de_zone', zones[0])
+        else if (zones.length > 1) q = q.in('type_de_zone', zones)
+      }
+      if (livreurClientIds) q = q.in('id', livreurClientIds)
+      if (cqClientIds) q = q.in('id', cqClientIds)
+      q = applyDateFilters(q)
+      return q
     }
 
-    if (livreurClientIds) {
-      sumQuery = sumQuery.in('id', livreurClientIds)
+    const SUM_BATCH = 1000
+    let velosValidesFiltered = 0
+    for (let from = 0; from < SUM_BATCH * 100; from += SUM_BATCH) {
+      const { data: sumData, error: sumError } = await buildSumQuery().range(from, from + SUM_BATCH - 1)
+      if (sumError) {
+        console.error('Erreur GET /api/admin/enemat (sum):', sumError)
+        break
+      }
+      const batch = sumData || []
+      velosValidesFiltered += batch.reduce(
+        (sum: number, c: { velo_valide: number | null }) => sum + (Number(c.velo_valide) || 0),
+        0
+      )
+      if (batch.length < SUM_BATCH) break
     }
-
-    if (cqClientIds) {
-      sumQuery = sumQuery.in('id', cqClientIds)
-    }
-
-    sumQuery = applyDateFilters(sumQuery)
-
-    const { data: sumData, error: sumError } = await sumQuery
-    if (sumError) {
-      console.error('Erreur GET /api/admin/enemat (sum):', sumError)
-    }
-    const velosValidesFiltered = (sumData || []).reduce(
-      (sum: number, c: { velo_valide: number | null }) => sum + (Number(c.velo_valide) || 0),
-      0
-    )
 
     return NextResponse.json({ clients, total: count ?? 0, page, limit, velosValidesFiltered })
   } catch (error: unknown) {
