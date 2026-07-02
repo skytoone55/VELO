@@ -513,6 +513,21 @@ export default function ControlePage() {
           </PopoverTrigger>
           <PopoverContent className="w-56 p-2" align="start">
             <div className="space-y-0.5">
+              {/* Case maitre : tout selectionner / tout deselectionner d'un coup */}
+              <label className="flex items-center gap-2 px-2 py-1.5 text-sm font-medium cursor-pointer hover:bg-muted rounded border-b mb-0.5">
+                <input
+                  type="checkbox"
+                  checked={categorieFilter.length === CQ_CATEGORIE_KEYS.length}
+                  ref={el => {
+                    if (el) el.indeterminate = categorieFilter.length > 0 && categorieFilter.length < CQ_CATEGORIE_KEYS.length
+                  }}
+                  onChange={e => {
+                    setCategorieFilter(e.target.checked ? [...CQ_CATEGORIE_KEYS] : [])
+                  }}
+                  className="rounded border-gray-300"
+                />
+                Tout {categorieFilter.length === CQ_CATEGORIE_KEYS.length ? 'décocher' : 'cocher'}
+              </label>
               {CQ_CATEGORIE_KEYS.map(key => (
                 <label key={key} className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer hover:bg-muted rounded">
                   <input
