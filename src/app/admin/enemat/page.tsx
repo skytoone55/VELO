@@ -742,6 +742,7 @@ export default function AdminEnematPage() {
         { header: 'Nb vélos', accessor: r => r.velo_valide },
         { header: 'Date contrôle', accessor: r => r.livraison?.cq_valide_at || r.date_controle },
         { header: 'Date dépôt ENEMAT', accessor: r => r.date_depot_enemat },
+        { header: 'Date déclaration FNUCI', accessor: r => r.fnuci_declared_at },
         { header: 'Statut commercial', accessor: r => r.statut_commercial || '' },
         { header: 'Statut ENEMAT', accessor: r => ENEMAT_LABELS[r.statut_enemat || ''] || r.statut_enemat },
         { header: 'Date APF', accessor: r => r.date_apf_enemat },
